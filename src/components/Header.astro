@@ -1,0 +1,49 @@
+---
+import { NAV_LINKS, SITE_NAME } from "@/consts";
+
+const currentPath = Astro.url.pathname;
+function isActive(href: string) {
+  if (href === "/") return currentPath === "/";
+  return currentPath.startsWith(href);
+}
+---
+
+<header class="sticky top-0 z-40 border-b border-neutral-100 bg-white/90 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+    <a href="/" class="text-lg font-extrabold tracking-tight text-ink-950">
+      {SITE_NAME}
+    </a>
+
+    <nav class="hidden items-center gap-1 md:flex">
+      {
+        NAV_LINKS.map((link) => (
+          <a
+            href={link.href}
+            class={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              isActive(link.href)
+                ? "bg-brand-50 text-brand-700"
+                : "text-neutral-600 hover:bg-neutral-50 hover:text-ink-950"
+            }`}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <details class="relative md:hidden">
+      <summary class="list-none rounded-full border border-neutral-200 px-3 py-1.5 text-sm font-medium text-ink-950 [&::-webkit-details-marker]:hidden">
+        メニュー
+      </summary>
+      <nav class="absolute right-0 mt-2 w-52 rounded-2xl border border-neutral-100 bg-white p-2 shadow-lg">
+        {
+          NAV_LINKS.map((link) => (
+            <a href={link.href} class="block rounded-xl px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
+    </details>
+  </div>
+</header>

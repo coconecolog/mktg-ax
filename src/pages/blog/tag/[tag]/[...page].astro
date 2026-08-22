@@ -1,0 +1,52 @@
+---
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import TagFilter from "@/components/TagFilter.astro";
+import PostCard from "@/components/PostCard.astro";
+import Pagination from "@/components/Pagination.astro";
+import { getAllTags, getPostsByTag } from "@/lib/posts";
+import { POSTS_PER_PAGE } from "@/consts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const tags = getAllTags();
+  return tags.flatMap(({ name }) =>
+    paginate(getPostsByTag(name), {
+      params: { tag: name },
+      pageSize: POSTS_PER_PAGE,
+    }),
+  );
+}) satisfies GetStaticPaths;
+
+const { tag } = Astro.params;
+const { page } = Astro.props;
+const tags = getAllTags();
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ブログ", href: "/blog" },
+  { name: `タグ: ${tag}`, href: `/blog/tag/${tag}` },
+];
+---
+
+<BaseLayout
+  title={`タグ「${tag}」の記事一覧`}
+  description={`「${tag}」タグが付いた記事の一覧です。`}
+  ogImage="/open-graph/default.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-6xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">
+      タグ: <span class="text-brand-600">{tag}</span>
+    </h1>
+
+    <div class="mt-6"><TagFilter tags={tags} activeTag={tag} /></div>
+
+    <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {page.data.map((post) => <PostCard post={post} />)}
+    </div>
+
+    <Pagination page={page} basePath={`/blog/tag/${tag}`} />
+  </section>
+</BaseLayout>

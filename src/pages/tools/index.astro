@@ -1,0 +1,106 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+];
+---
+
+<BaseLayout
+  title="便利ツール"
+  description="広告費用対効果（ROAS）やCPAをその場で試算できる、マーケティング担当者向けの無料計算ツールです。"
+  ogImage="/open-graph/tools.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-3xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">便利ツール</h1>
+    <p class="mt-3 text-neutral-500">
+      日々の意思決定にそのまま使える無料ツールを公開しています。数値はブラウザ内だけで計算され、送信・保存はされません。
+    </p>
+
+    <div class="mt-10 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <h2 class="text-xl font-bold text-ink-950">広告費用対効果（ROAS・CPA）計算ツール</h2>
+      <p class="mt-2 text-sm text-neutral-500">
+        広告費・売上・コンバージョン数を入力すると、ROAS（費用対効果）とCPA（1件あたりの獲得コスト）を自動で計算します。
+      </p>
+
+      <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <label class="block">
+          <span class="text-sm font-medium text-neutral-700">広告費（円）</span>
+          <input
+            id="ad-cost"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="例: 500000"
+            class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-neutral-700">売上（円）</span>
+          <input
+            id="revenue"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="例: 2000000"
+            class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-neutral-700">コンバージョン数（件）</span>
+          <input
+            id="conversions"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="例: 40"
+            class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          />
+        </label>
+      </div>
+
+      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="rounded-xl bg-brand-50 p-5">
+          <p class="text-sm font-medium text-brand-700">ROAS（費用対効果）</p>
+          <p id="result-roas" class="mt-1 text-3xl font-extrabold text-brand-700">—</p>
+        </div>
+        <div class="rounded-xl bg-neutral-50 p-5">
+          <p class="text-sm font-medium text-neutral-600">CPA（1件あたりの獲得コスト）</p>
+          <p id="result-cpa" class="mt-1 text-3xl font-extrabold text-ink-950">—</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-10 text-sm text-neutral-400">
+      その他のツールも順次追加予定です。追加してほしいツールのご要望は
+      <a href="/contact" class="text-brand-700 underline">お問い合わせ</a>よりお気軽にお寄せください。
+    </p>
+  </section>
+</BaseLayout>
+
+<script>
+  const adCostInput = document.getElementById("ad-cost") as HTMLInputElement;
+  const revenueInput = document.getElementById("revenue") as HTMLInputElement;
+  const conversionsInput = document.getElementById("conversions") as HTMLInputElement;
+  const roasOutput = document.getElementById("result-roas") as HTMLElement;
+  const cpaOutput = document.getElementById("result-cpa") as HTMLElement;
+
+  function formatYen(value: number): string {
+    return `¥${Math.round(value).toLocaleString("ja-JP")}`;
+  }
+
+  function recalculate() {
+    const adCost = Number(adCostInput.value);
+    const revenue = Number(revenueInput.value);
+    const conversions = Number(conversionsInput.value);
+
+    roasOutput.textContent = adCost > 0 && revenue >= 0 ? `${((revenue / adCost) * 100).toFixed(1)}%` : "—";
+    cpaOutput.textContent = conversions > 0 && adCost >= 0 ? formatYen(adCost / conversions) : "—";
+  }
+
+  [adCostInput, revenueInput, conversionsInput].forEach((el) => el.addEventListener("input", recalculate));
+</script>

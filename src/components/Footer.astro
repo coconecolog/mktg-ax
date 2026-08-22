@@ -1,0 +1,25 @@
+---
+import { NAV_LINKS, SITE_NAME, SITE_TAGLINE } from "@/consts";
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-neutral-100 bg-neutral-50">
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <div class="flex flex-col gap-8 md:flex-row md:justify-between">
+      <div class="max-w-sm">
+        <p class="text-lg font-extrabold tracking-tight text-ink-950">{SITE_NAME}</p>
+        <p class="mt-2 text-sm leading-relaxed text-neutral-500">{SITE_TAGLINE}</p>
+      </div>
+      <nav class="grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-3">
+        {
+          NAV_LINKS.map((link) => (
+            <a href={link.href} class="text-sm text-neutral-600 hover:text-brand-700">
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
+    </div>
+    <p class="mt-10 text-xs text-neutral-400">© {year} {SITE_NAME}. All rights reserved.</p>
+  </div>
+</footer>

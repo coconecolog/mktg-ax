@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/*
+  デザインテイストは studio.design (https://studio.design/ja) を参考に、
+  「余白を広く取った、ミニマルで自信のあるB2Bらしい」トーンにしています。
+  ブランドカラーを変えたいときは下の --color-brand-* を編集してください。
+*/
+@theme {
+  --font-sans:
+    "Inter", "Noto Sans JP", ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
+    "Yu Gothic", sans-serif;
+
+  --color-brand-50: #f4f3ff;
+  --color-brand-100: #ebe9fe;
+  --color-brand-200: #d9d6fe;
+  --color-brand-300: #bcb5fd;
+  --color-brand-400: #9a8bfa;
+  --color-brand-500: #7c5cf5;
+  --color-brand-600: #6c3fe8;
+  --color-brand-700: #5c2fce;
+  --color-brand-800: #4c28a6;
+  --color-brand-900: #3f2483;
+
+  --color-ink-950: #0b0b12;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    @apply bg-white text-ink-950 antialiased;
+    font-feature-settings: "palt";
+  }
+}
+
+/* Notion本文（記事コンテンツ）の共通スタイル */
+.prose-notion {
+  @apply max-w-none text-[1.05rem] leading-[1.9] text-neutral-800;
+}
+.prose-notion > * + * {
+  @apply mt-5;
+}
+.prose-notion h2 {
+  @apply mt-14 scroll-mt-24 text-2xl font-bold tracking-tight text-ink-950;
+}
+.prose-notion h3 {
+  @apply mt-10 scroll-mt-24 text-xl font-bold tracking-tight text-ink-950;
+}
+.prose-notion h4 {
+  @apply mt-8 scroll-mt-24 text-lg font-bold tracking-tight text-ink-950;
+}
+.prose-notion a {
+  @apply text-brand-700 underline decoration-brand-300 underline-offset-2 hover:decoration-brand-600;
+}
+.prose-notion strong {
+  @apply font-bold text-ink-950;
+}
+.prose-notion code {
+  @apply rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[0.9em] text-brand-700;
+}
+.prose-notion pre {
+  @apply overflow-x-auto rounded-xl bg-neutral-900 p-4 text-sm text-neutral-100;
+}
+.prose-notion pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+.prose-notion ul {
+  @apply list-disc space-y-1.5 pl-6;
+}
+.prose-notion ol {
+  @apply list-decimal space-y-1.5 pl-6;
+}
+.prose-notion hr {
+  @apply my-10 border-neutral-200;
+}
+.prose-notion table {
+  @apply w-full border-collapse text-sm;
+}
+.prose-notion img {
+  @apply rounded-xl;
+}

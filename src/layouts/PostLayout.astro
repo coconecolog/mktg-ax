@@ -1,0 +1,92 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import TableOfContents from "@/components/TableOfContents.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
+import { buildArticleSchema } from "@/lib/schema";
+import { buildToc } from "@/lib/posts";
+import type { Post } from "@/lib/types";
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const toc = buildToc(post.blocks);
+const articleSchema = buildArticleSchema(post);
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ブログ", href: "/blog" },
+  { name: post.title, href: `/blog/${post.slug}` },
+];
+
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
+---
+
+<BaseLayout
+  title={post.title}
+  description={post.description}
+  ogImage={`/open-graph/blog/${post.slug}.png`}
+  jsonLd={articleSchema}
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <article class="mx-auto max-w-6xl px-5 py-10">
+    <header class="mx-auto max-w-3xl">
+      {
+        post.tags.length > 0 && (
+          <div class="mb-4 flex flex-wrap gap-1.5">
+            {post.tags.map((tag) => (
+              <a href={`/blog/tag/${encodeURIComponent(tag)}`} class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100">
+                {tag}
+              </a>
+            ))}
+          </div>
+        )
+      }
+      <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+        {post.title}
+      </h1>
+      <p class="mt-4 text-sm text-neutral-400">
+        公開日: <time datetime={post.publishedAt}>{dateLabel(post.publishedAt)}</time>
+        {post.updatedAt !== post.publishedAt && (
+          <>
+            {" "}／ 更新日: <time datetime={post.updatedAt}>{dateLabel(post.updatedAt)}</time>
+          </>
+        )}
+      </p>
+    </header>
+
+    {
+      post.thumbnail && (
+        <div class="mx-auto mt-8 aspect-[1200/630] max-w-4xl overflow-hidden rounded-2xl bg-neutral-100">
+          <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
+        </div>
+      )
+    }
+
+    {
+      toc.length > 0 && (
+        <details class="mx-auto mt-8 max-w-3xl rounded-2xl border border-neutral-100 bg-neutral-50 open:pb-2 lg:hidden">
+          <summary class="cursor-pointer px-5 py-4 text-sm font-bold text-ink-950 marker:text-brand-500">目次</summary>
+          <div class="px-5 pb-4">
+            <TableOfContents items={toc} showHeading={false} wrapped={false} />
+          </div>
+        </details>
+      )
+    }
+
+    <div class="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-10 lg:grid-cols-[1fr_280px]">
+      <div class="prose-notion mx-auto w-full max-w-3xl lg:mx-0">
+        <NotionBlocks blocks={post.blocks} />
+      </div>
+      <aside class="hidden lg:block">
+        <div class="sticky top-24">
+          <TableOfContents items={toc} />
+        </div>
+      </aside>
+    </div>
+  </article>
+</BaseLayout>

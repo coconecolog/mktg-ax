@@ -1,0 +1,54 @@
+---
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import { resources } from "@/data/resources";
+
+export const getStaticPaths = (async () => {
+  return resources.map((resource) => ({
+    params: { slug: resource.slug },
+    props: { resource },
+  }));
+}) satisfies GetStaticPaths;
+
+const { resource } = Astro.props;
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "資料一覧", href: "/resources" },
+  { name: resource.title, href: `/resources/${resource.slug}` },
+];
+
+const dateLabel = new Date(resource.updatedAt).toLocaleDateString("ja-JP", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+---
+
+<BaseLayout title={resource.title} description={resource.description}>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <article class="mx-auto max-w-3xl px-5 py-12">
+    <span class="text-xs font-medium text-brand-600">{resource.category}</span>
+    <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950">{resource.title}</h1>
+    <p class="mt-4 text-sm text-neutral-400">更新日: <time datetime={resource.updatedAt}>{dateLabel}</time></p>
+
+    <div class="mt-8 overflow-hidden rounded-2xl bg-neutral-50">
+      <img src={resource.thumbnail} alt="" class="w-full" />
+    </div>
+
+    <p class="mt-8 leading-relaxed text-neutral-700">{resource.description}</p>
+
+    <a
+      href={resource.downloadUrl}
+      class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white hover:bg-brand-700"
+    >
+      資料をダウンロード
+    </a>
+
+    <p class="mt-4 text-xs text-neutral-400">
+      ※現在はサンプル表示です。ダウンロードリンクは準備中です。
+    </p>
+  </article>
+</BaseLayout>

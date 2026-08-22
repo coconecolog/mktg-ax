@@ -1,0 +1,59 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import { SITE_NAME } from "@/consts";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "サービスについて", href: "/service" },
+];
+
+const services = [
+  {
+    title: "マーケティング診断",
+    description: "現状の施策・体制・数値をヒアリングし、優先的に着手すべき課題を整理します。",
+  },
+  {
+    title: "施策設計・実行支援",
+    description: "限られた予算・人員でも成果につながる施策を、実行計画レベルまで落とし込んでご提案します。",
+  },
+  {
+    title: "効果測定・レポーティング体制構築",
+    description: "GA4等のアクセス解析データをもとに、経営会議で使えるレポート運用の仕組みを整えます。",
+  },
+];
+---
+
+<BaseLayout
+  title="サービスについて"
+  description={`${SITE_NAME}が提供する、中小企業向けマーケティング支援サービスのご案内です。`}
+  ogImage="/open-graph/service.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-3xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">サービスについて</h1>
+    <p class="mt-4 leading-relaxed text-neutral-600">
+      {SITE_NAME}は、従業員50〜300名規模の中小企業に向けて、マーケティング分析・情報発信・実行支援を行っています。
+      大企業向けの理論をそのまま持ち込むのではなく、限られたリソースの中で成果を出すための現実的な打ち手にこだわっています。
+    </p>
+
+    <div class="mt-10 space-y-6">
+      {
+        services.map((service) => (
+          <div class="rounded-2xl border border-neutral-100 p-6">
+            <h2 class="text-lg font-bold text-ink-950">{service.title}</h2>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-500">{service.description}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="mt-12 rounded-2xl bg-brand-50 p-8 text-center">
+      <h2 class="text-xl font-bold text-ink-950">まずはお気軽にご相談ください</h2>
+      <a href="/contact" class="mt-4 inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white hover:bg-brand-700">
+        お問い合わせはこちら
+      </a>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,47 @@
+---
+import type { RichTextItem } from "@/lib/types";
+import { notionColorToStyle } from "@/lib/colors";
+
+interface Props {
+  items: RichTextItem[] | undefined;
+}
+
+const { items = [] } = Astro.props;
+
+function classesFor(item: RichTextItem): string {
+  const classes: string[] = [];
+  if (item.bold) classes.push("font-bold");
+  if (item.italic) classes.push("italic");
+  if (item.strikethrough) classes.push("line-through");
+  if (item.underline) classes.push("underline");
+  if (item.code) classes.push("rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[0.9em] text-brand-700");
+  return classes.join(" ");
+}
+---
+
+{
+  items.map((item) => {
+    const lines = item.text.split("\n");
+    const cls = classesFor(item);
+    const style = notionColorToStyle(item.color);
+    return item.href ? (
+      <a href={item.href} class={cls || undefined} style={style} target="_blank" rel="noopener noreferrer">
+        {lines.map((line, i) => (
+          <Fragment>
+            {i > 0 && <br />}
+            {line}
+          </Fragment>
+        ))}
+      </a>
+    ) : (
+      <span class={cls || undefined} style={style}>
+        {lines.map((line, i) => (
+          <Fragment>
+            {i > 0 && <br />}
+            {line}
+          </Fragment>
+        ))}
+      </span>
+    );
+  })
+}

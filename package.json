@@ -1,0 +1,24 @@
+{
+  "name": "mktg-ax",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "fetch-notion": "node scripts/fetch-notion.mjs",
+    "fetch-notion:sample": "node scripts/build-sample-cache.mjs",
+    "build:sample": "npm run fetch-notion:sample && astro build",
+    "dev": "astro dev",
+    "build": "npm run fetch-notion && astro build",
+    "build:skip-notion": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.2.4",
+    "astro-og-canvas": "^0.13.0",
+    "tailwindcss": "^4.3.3"
+  }
+}

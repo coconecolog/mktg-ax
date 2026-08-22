@@ -1,0 +1,118 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { getAllPosts } from "@/lib/posts";
+import { resources } from "@/data/resources";
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/consts";
+
+const latestPosts = getAllPosts().slice(0, 3);
+const latestResources = resources.slice(0, 3);
+---
+
+<BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png">
+  <section class="mx-auto max-w-6xl px-5 pb-20 pt-16 md:pt-24">
+    <div class="max-w-2xl">
+      <p class="text-sm font-bold uppercase tracking-wider text-brand-600">for 従業員50〜300名の中小企業</p>
+      <h1 class="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-5xl">
+        {SITE_TAGLINE}
+      </h1>
+      <p class="mt-6 text-lg leading-relaxed text-neutral-500">{SITE_DESCRIPTION}</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="/blog" class="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
+          最新記事を読む
+        </a>
+        <a href="/service" class="rounded-full border border-neutral-200 px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
+          サービスについて
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-t border-neutral-100 bg-neutral-50 py-16">
+    <div class="mx-auto max-w-6xl px-5">
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div class="rounded-2xl bg-white p-6">
+          <p class="text-2xl">📊</p>
+          <h3 class="mt-3 font-bold text-ink-950">データに基づく意思決定</h3>
+          <p class="mt-2 text-sm leading-relaxed text-neutral-500">
+            勘や経験だけに頼らない、数字で語れるマーケティング体制づくりを支援します。
+          </p>
+        </div>
+        <div class="rounded-2xl bg-white p-6">
+          <p class="text-2xl">🛠️</p>
+          <h3 class="mt-3 font-bold text-ink-950">すぐ使える便利ツール</h3>
+          <p class="mt-2 text-sm leading-relaxed text-neutral-500">
+            費用対効果の試算など、日々の意思決定にそのまま使える無料ツールを公開しています。
+          </p>
+        </div>
+        <div class="rounded-2xl bg-white p-6">
+          <p class="text-2xl">📚</p>
+          <h3 class="mt-3 font-bold text-ink-950">実務に落とし込める情報</h3>
+          <p class="mt-2 text-sm leading-relaxed text-neutral-500">
+            大企業向けの理論だけでなく、限られたリソースで動く中小企業の現場に即した施策を紹介します。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {
+    latestPosts.length > 0 && (
+      <section class="py-16">
+        <div class="mx-auto max-w-6xl px-5">
+          <div class="flex items-end justify-between">
+            <h2 class="text-2xl font-bold tracking-tight text-ink-950">最新記事</h2>
+            <a href="/blog" class="text-sm font-medium text-brand-700 hover:underline">
+              記事一覧へ →
+            </a>
+          </div>
+          <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {latestPosts.map((post) => (
+              <PostCard post={post} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="border-t border-neutral-100 bg-neutral-50 py-16">
+    <div class="mx-auto max-w-6xl px-5">
+      <div class="flex items-end justify-between">
+        <h2 class="text-2xl font-bold tracking-tight text-ink-950">資料ダウンロード</h2>
+        <a href="/resources" class="text-sm font-medium text-brand-700 hover:underline">
+          資料一覧へ →
+        </a>
+      </div>
+      <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          latestResources.map((resource) => (
+            <a href={`/resources/${resource.slug}`} class="block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
+              <div class="aspect-[1200/630] w-full overflow-hidden bg-neutral-50">
+                <img src={resource.thumbnail} alt="" class="h-full w-full object-cover" />
+              </div>
+              <div class="p-5">
+                <span class="text-xs font-medium text-brand-600">{resource.category}</span>
+                <h3 class="mt-1 line-clamp-2 font-bold text-ink-950">{resource.title}</h3>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="py-20">
+    <div class="mx-auto max-w-3xl px-5 text-center">
+      <h2 class="text-2xl font-bold tracking-tight text-ink-950 md:text-3xl">
+        自社のマーケティング体制について相談したい方へ
+      </h2>
+      <p class="mt-4 text-neutral-500">
+        現状の課題整理から施策の優先順位づけまで、まずはお気軽にご相談ください。
+      </p>
+      <a href="/contact" class="mt-8 inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white hover:bg-brand-700">
+        お問い合わせはこちら
+      </a>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,40 @@
+---
+// 「お問い合わせ」ページの実装方法（Googleフォーム／外部フォーム埋め込み等）は
+// 依頼者と相談のうえ後日決定する予定です。それまでの仮実装として、
+// メールでの問い合わせを受け付けるページにしています。
+// CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import { SITE_NAME, CONTACT_EMAIL } from "@/consts";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "お問い合わせ", href: "/contact" },
+];
+---
+
+<BaseLayout
+  title="お問い合わせ"
+  description={`${SITE_NAME}へのお問い合わせはこちらから。`}
+  ogImage="/open-graph/contact.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-2xl px-5 py-16 text-center">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">お問い合わせ</h1>
+    <p class="mt-4 leading-relaxed text-neutral-600">
+      サービス内容やご相談など、お気軽に下記メールアドレスまでご連絡ください。
+    </p>
+
+    <a
+      href={`mailto:${CONTACT_EMAIL}`}
+      class="mt-8 inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white hover:bg-brand-700"
+    >
+      {CONTACT_EMAIL}
+    </a>
+
+    <p class="mt-6 text-xs text-neutral-400">
+      通常2〜3営業日以内にご返信いたします。
+    </p>
+  </section>
+</BaseLayout>
