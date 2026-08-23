@@ -15,7 +15,7 @@ const dateLabel = new Date(post.publishedAt).toLocaleDateString("ja-JP", {
 ---
 
 <a href={`/blog/${post.slug}`} class="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
-  <div class="aspect-[1200/630] w-full overflow-hidden bg-neutral-100">
+  <div class="aspect-video w-full overflow-hidden bg-neutral-100">
     <img
       src={post.thumbnail || DEFAULT_OG_IMAGE}
       alt=""
