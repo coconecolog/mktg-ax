@@ -11,13 +11,14 @@ import {
   resolveDataSourceId,
   queryAllPages,
   fetchBlockChildrenRecursive,
+  getRelationNames,
+  getFirstRelationName,
 } from "./lib/notion-client.mjs";
 import {
   PROP,
   getTitleText,
   getRichTextPlain,
   getCheckbox,
-  getMultiSelectNames,
   getDateISO,
   getFirstFileUrl,
   resolveSlug,
@@ -78,7 +79,11 @@ async function main() {
     console.log(`  - ${title}`);
 
     const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
-    const tags = getMultiSelectNames(page, PROP.tags);
+    // タグ・メインタグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
+    // 値には関連ページのIDしか入っていないため、関連ページを取得して名前に解決する。
+    const tags = await getRelationNames(token, page, PROP.tags);
+    const mainTag = await getFirstRelationName(token, page, PROP.mainTag);
+    const category = await getFirstRelationName(token, page, PROP.category);
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, PROP.updatedAt) || page.last_edited_time;
 
@@ -99,6 +104,8 @@ async function main() {
       title,
       description,
       tags,
+      mainTag,
+      category,
       publishedAt,
       updatedAt,
       thumbnail,
@@ -129,9 +136,5 @@ async function main() {
 main().catch((err) => {
   console.error("\n[fetch-notion] エラーが発生しました。ビルドを中止します:");
   console.error(err);
-  // ここで空データにフォールバックしてビルドを続けてしまうと、Notion側の一時的な不調で
-  // 「記事が0件の空サイト」を本番に上書きデプロイしてしまう危険がある。
-  // それよりは今回のデプロイを止めて、前回公開したサイトをそのまま残すほうが安全なため、
-  // 環境変数が未設定の場合（開発者がNotionなしでUI確認したいケース）以外は失敗させる。
   process.exit(1);
 });

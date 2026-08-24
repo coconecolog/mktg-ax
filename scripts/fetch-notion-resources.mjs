@@ -8,14 +8,12 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveDataSourceId, queryAllPages } from "./lib/notion-client.mjs";
+import { resolveDataSourceId, queryAllPages, getRelationNames, getFirstRelationName } from "./lib/notion-client.mjs";
 import {
   RESOURCE_PROP,
   getTitleText,
   getRichTextPlain,
   getCheckbox,
-  getMultiSelectNames,
-  getSelectName,
   getDateISO,
   getFirstFileUrl,
   resolveSlug,
@@ -75,8 +73,11 @@ async function main() {
     console.log(`  - ${title}`);
 
     const slug = resolveSlug(getRichTextPlain(page, RESOURCE_PROP.slug), page.id, title);
-    const tags = getMultiSelectNames(page, RESOURCE_PROP.tags);
-    const mainTag = getSelectName(page, RESOURCE_PROP.mainTag);
+    // タグ・メインタグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
+    // 値には関連ページのIDしか入っていないため、関連ページを取得して名前に解決する。
+    const tags = await getRelationNames(token, page, RESOURCE_PROP.tags);
+    const mainTag = await getFirstRelationName(token, page, RESOURCE_PROP.mainTag);
+    const category = await getFirstRelationName(token, page, RESOURCE_PROP.category);
     const publishedAt = getDateISO(page, RESOURCE_PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, RESOURCE_PROP.updatedAt) || page.last_edited_time;
 
@@ -103,6 +104,7 @@ async function main() {
       metaDescription,
       tags,
       mainTag,
+      category,
       targetToc,
       publishedAt,
       updatedAt,
