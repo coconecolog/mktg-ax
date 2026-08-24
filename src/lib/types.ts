@@ -42,6 +42,10 @@ export interface Post {
   title: string;
   description: string;
   tags: string[];
+  /** 「マスタータグ」DBとのリレーションから解決した単一の主タグ（未設定ならnull） */
+  mainTag: string | null;
+  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
+  category: string | null;
   publishedAt: string;
   updatedAt: string;
   thumbnail: string | null;
@@ -75,7 +79,10 @@ export interface Resource {
   /** ディスクリプション（SEO用メタディスクリプション。未入力ならdescriptionを流用） */
   metaDescription: string;
   tags: string[];
+  /** 「マスタータグ」DBとのリレーションから解決した単一の主タグ（未設定ならnull） */
   mainTag: string | null;
+  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
+  category: string | null;
   /** 「ターゲット・目次」を1行ずつに分割した配列 */
   targetToc: string[];
   publishedAt: string;
