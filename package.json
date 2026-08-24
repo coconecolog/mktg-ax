@@ -5,10 +5,11 @@
   "private": true,
   "scripts": {
     "fetch-notion": "node scripts/fetch-notion.mjs",
+    "fetch-notion-resources": "node scripts/fetch-notion-resources.mjs",
     "fetch-notion:sample": "node scripts/build-sample-cache.mjs",
     "build:sample": "npm run fetch-notion:sample && astro build",
     "dev": "astro dev",
-    "build": "npm run fetch-notion && astro build",
+    "build": "npm run fetch-notion && npm run fetch-notion-resources && astro build",
     "build:skip-notion": "astro build",
     "preview": "astro preview",
     "astro": "astro"
