@@ -5,15 +5,17 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import TagFilter from "@/components/TagFilter.astro";
 import PostCard from "@/components/PostCard.astro";
 import Pagination from "@/components/Pagination.astro";
-import { getAllTags, getPostsByTag } from "@/lib/posts";
-import { POSTS_PER_PAGE } from "@/consts";
+import BlogSidebar from "@/components/BlogSidebar.astro";
+import MoreExplore from "@/components/MoreExplore.astro";
+import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag } from "@/lib/posts";
+import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const tags = getAllTags();
   return tags.flatMap(({ name }) =>
     paginate(getPostsByTag(name), {
       params: { tag: name },
-      pageSize: POSTS_PER_PAGE,
+      pageSize: CATEGORY_TAG_PAGE_SIZE,
     }),
   );
 }) satisfies GetStaticPaths;
@@ -21,6 +23,9 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { tag } = Astro.params;
 const { page } = Astro.props;
 const tags = getAllTags();
+const categories = getAllCategories();
+const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
+const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -36,17 +41,35 @@ const breadcrumbItems = [
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-6xl px-5 py-12">
-    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">
-      タグ: <span class="text-brand-600">{tag}</span>
-    </h1>
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div class="min-w-0">
+        <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">
+          タグ: <span class="text-brand-600">{tag}</span>
+        </h1>
 
-    <div class="mt-6"><TagFilter tags={tags} activeTag={tag} /></div>
+        <div class="mt-6"><TagFilter tags={tags} activeTag={tag} /></div>
 
-    <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {page.data.map((post) => <PostCard post={post} />)}
+        {
+          page.data.length > 0 ? (
+            <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {page.data.map((post) => (
+                <PostCard post={post} />
+              ))}
+            </div>
+          ) : (
+            <p class="mt-10 text-neutral-400">このタグの記事はまだありません。</p>
+          )
+        }
+
+        <Pagination page={page} basePath={`/blog/tag/${tag}`} />
+
+        <MoreExplore categories={categories} popularPosts={sitePopularPosts} />
+      </div>
+
+      <aside class="lg:sticky lg:top-24 lg:self-start">
+        <BlogSidebar categories={categories} popularPosts={sidebarPopularPosts} tags={tags} />
+      </aside>
     </div>
-
-    <Pagination page={page} basePath={`/blog/tag/${tag}`} />
-  </section>
+  </div>
 </BaseLayout>
