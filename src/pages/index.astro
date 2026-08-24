@@ -12,6 +12,7 @@ const latestResources = getAllResources().slice(0, 3);
 <BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png">
   <section class="mx-auto max-w-6xl px-5 pb-20 pt-16 md:pt-24">
     <div class="max-w-2xl">
+      <p class="text-sm font-bold uppercase tracking-wider text-brand-600">for 従業員50〜300名の中小企業</p>
       <h1 class="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-5xl">
         {SITE_TAGLINE}
       </h1>
@@ -93,7 +94,7 @@ const latestResources = getAllResources().slice(0, 3);
                     <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" />
                   </div>
                   <div class="p-5">
-                    {resource.mainTag && <span class="text-xs font-medium text-brand-600">{resource.mainTag}</span>}
+                    {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
                     <h3 class="mt-1 line-clamp-2 font-bold text-ink-950">{resource.title}</h3>
                   </div>
                 </a>
