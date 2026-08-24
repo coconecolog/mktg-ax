@@ -152,4 +152,57 @@ export async function fetchBlockChildrenRecursive(token, blockId, depth = 0) {
   return blocks.filter((b) => !(b.in_trash || b.archived));
 }
 
+// ------------------------------------------------------------
+// リレーションプロパティの名前解決
+//
+// タグ・メインタグ・カテゴリ等が「マスタータグ」「マスターカテゴリ」のような
+// 別データベースとのリレーションになっている場合、プロパティの値には
+// 関連ページのID（relation配列）しか入っておらず、表示名（タイトル）が直接は取れない。
+// そのため関連ページを個別に取得してタイトルを解決する。
+//
+// 同じページを何度も取得しないよう、プロセス内（1回のnpm run実行内）でキャッシュする。
+// 万が一取得に失敗しても、記事・資料本体のビルドは止めたくないため、
+// 失敗時は警告を出してnull/空配列にフォールバックする（例外を投げない）。
+// ------------------------------------------------------------
+
+const relationTitleCache = new Map();
+
+/**
+ * ページIDからタイトルプロパティの文字列を取得する（リレーション先ページの名前解決用）。
+ */
+export async function getPageTitleById(token, pageId) {
+  if (relationTitleCache.has(pageId)) return relationTitleCache.get(pageId);
+  try {
+    const page = await notionRequest(token, "GET", `pages/${pageId}`);
+    const titleProp = Object.values(page.properties || {}).find((p) => p.type === "title");
+    const title = (titleProp?.title || []).map((t) => t.plain_text).join("").trim() || null;
+    relationTitleCache.set(pageId, title);
+    return title;
+  } catch (err) {
+    console.warn(`  [notion] リレーション先ページ(${pageId})の名前取得に失敗しました: ${err.message}`);
+    relationTitleCache.set(pageId, null);
+    return null;
+  }
+}
+
+/**
+ * relation型プロパティの関連ページ名を配列で取得する（複数選択のタグ等を想定）。
+ * プロパティが存在しない・relation型でない場合は空配列を返す。
+ */
+export async function getRelationNames(token, page, propertyName) {
+  const prop = page.properties?.[propertyName];
+  if (!prop || prop.type !== "relation") return [];
+  const ids = (prop.relation || []).map((r) => r.id);
+  const names = await Promise.all(ids.map((id) => getPageTitleById(token, id)));
+  return names.filter((n) => !!n);
+}
+
+/**
+ * relation型プロパティの先頭1件だけ名前を取得する（メインタグ・カテゴリ等、単一選択想定のものに使う）。
+ */
+export async function getFirstRelationName(token, page, propertyName) {
+  const names = await getRelationNames(token, page, propertyName);
+  return names[0] || null;
+}
+
 export { NotionApiError };

@@ -9,6 +9,10 @@ import crypto from "node:crypto";
 export const PROP = {
   title: "タイトル",
   tags: "タグ",
+  // メインタグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
+  // 値の解決には getRelationNames / getFirstRelationName（notion-client.mjs）を使う。
+  mainTag: "メインタグ",
+  category: "カテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
   thumbnail: "サムネイル画像",
@@ -415,7 +419,10 @@ async function transformBlock(block, makeAnchor, idHint) {
 export const RESOURCE_PROP = {
   title: "資料名",
   tags: "タグ",
+  // メインタグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
+  // 値の解決には getRelationNames / getFirstRelationName（notion-client.mjs）を使う。
   mainTag: "メインタグ",
+  category: "カテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
   thumbnail: "資料サムネイル",
