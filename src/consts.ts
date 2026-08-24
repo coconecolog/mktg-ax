@@ -20,7 +20,8 @@ export const NAV_LINKS = [
 ] as const;
 
 export const POSTS_PER_PAGE = 10;
-
+// カテゴリページ・タグページで1ページに表示する記事数（ブログ一覧とは別に6件区切りにしたいため分けている）
+export const CATEGORY_TAG_PAGE_SIZE = 6;
 // お問い合わせ先メールアドレス（仮の値です。実際のアドレスに書き換えてください）
 // お問い合わせページの実装方法（Googleフォーム等への切り替え）は別途検討予定です。
 export const CONTACT_EMAIL = "info@example.com";
