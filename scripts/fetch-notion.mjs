@@ -4,6 +4,7 @@
 //
 // 実行方法: npm run fetch-notion （npm run build の中で自動的に呼ばれます）
 // 必要な環境変数: NOTION_TOKEN, NOTION_DATABASE_ID
+// 任意の環境変数: NOTION_CATEGORIES_DATABASE_ID（未設定でもビルドは止まらず、カテゴリ機能が空になるだけ）
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -16,6 +17,7 @@ import {
 } from "./lib/notion-client.mjs";
 import {
   PROP,
+  CATEGORY_PROP,
   getTitleText,
   getRichTextPlain,
   getCheckbox,
@@ -37,8 +39,42 @@ async function writeEmptyCache(reason) {
   await fs.mkdir(CACHE_DIR, { recursive: true });
   await fs.writeFile(
     CACHE_FILE,
-    JSON.stringify({ generatedAt: new Date().toISOString(), posts: [], error: reason }, null, 2),
+    JSON.stringify(
+      { generatedAt: new Date().toISOString(), posts: [], categories: [], error: reason },
+      null,
+      2,
+    ),
   );
+}
+
+/**
+ * マスターカテゴリDB（記事DBの「カテゴリ」リレーション先）を取得する。
+ * NOTION_CATEGORIES_DATABASE_ID が未設定の場合は、カテゴリページ機能を使っていないとみなし、
+ * 記事の取得は止めずに空配列を返す（カテゴリナビ・カテゴリページが空で表示されるだけで、サイト自体は壊れない）。
+ */
+async function fetchCategories(token) {
+  const databaseId = process.env.NOTION_CATEGORIES_DATABASE_ID;
+  if (!databaseId) {
+    console.warn(
+      "[fetch-notion] NOTION_CATEGORIES_DATABASE_ID が未設定のため、カテゴリ一覧は空のまま続行します。",
+    );
+    return [];
+  }
+
+  console.log("[fetch-notion] カテゴリ一覧を取得中…");
+  const dataSourceId = await resolveDataSourceId(token, databaseId);
+  const rawPages = await queryAllPages(token, dataSourceId, {});
+
+  return rawPages.map((page) => {
+    const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
+    const description = getRichTextPlain(page, CATEGORY_PROP.description);
+    const representativeSlugRaw = getRichTextPlain(page, CATEGORY_PROP.representativeSlug).trim();
+    return {
+      name,
+      description,
+      representativeSlug: representativeSlugRaw || null,
+    };
+  });
 }
 
 async function main() {
@@ -124,17 +160,25 @@ async function main() {
     }
   }
 
+  const categories = await fetchCategories(token);
+
   await fs.mkdir(CACHE_DIR, { recursive: true });
   await fs.writeFile(
     CACHE_FILE,
-    JSON.stringify({ generatedAt: new Date().toISOString(), posts }, null, 2),
+    JSON.stringify({ generatedAt: new Date().toISOString(), posts, categories }, null, 2),
   );
 
-  console.log(`[fetch-notion] 完了: ${posts.length}件を .notion-cache/posts.json に書き出しました。`);
+  console.log(
+    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件を .notion-cache/posts.json に書き出しました。`,
+  );
 }
 
 main().catch((err) => {
   console.error("\n[fetch-notion] エラーが発生しました。ビルドを中止します:");
   console.error(err);
+  // ここで空データにフォールバックしてビルドを続けてしまうと、Notion側の一時的な不調で
+  // 「記事が0件の空サイト」を本番に上書きデプロイしてしまう危険がある。
+  // それよりは今回のデプロイを止めて、前回公開したサイトをそのまま残すほうが安全なため、
+  // 環境変数が未設定の場合（開発者がNotionなしでUI確認したいケース）以外は失敗させる。
   process.exit(1);
 });
