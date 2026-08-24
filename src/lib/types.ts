@@ -60,3 +60,33 @@ export interface TocItem {
   level: number;
   children: TocItem[];
 }
+
+// ------------------------------------------------------------
+// .notion-cache/resources.json （scripts/fetch-notion-resources.mjs が生成）の型定義。
+// こちらもスクリプト側（JS）と二重管理なので、片方を変えたらもう片方も直すこと。
+// ------------------------------------------------------------
+
+export interface Resource {
+  id: string;
+  slug: string;
+  title: string;
+  /** 資料説明（本文に表示する説明文） */
+  description: string;
+  /** ディスクリプション（SEO用メタディスクリプション。未入力ならdescriptionを流用） */
+  metaDescription: string;
+  tags: string[];
+  mainTag: string | null;
+  /** 「ターゲット・目次」を1行ずつに分割した配列 */
+  targetToc: string[];
+  publishedAt: string;
+  updatedAt: string;
+  thumbnail: string | null;
+  /** 資料本体ファイルの配信パス。Notion側に「資料ファイル」プロパティが無い間はnull */
+  fileUrl: string | null;
+}
+
+export interface ResourcesCache {
+  generatedAt: string;
+  resources: Resource[];
+  error?: string;
+}
