@@ -1,18 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { BlockNode, Post, PostsCache, TocItem } from "./types";
+import type { BlockNode, Category, Post, PostsCache, TocItem } from "./types";
 
 const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/posts.json");
 
 function loadCache(): PostsCache {
   try {
     const raw = fs.readFileSync(CACHE_PATH, "utf-8");
-    return JSON.parse(raw) as PostsCache;
+    const parsed = JSON.parse(raw) as PostsCache;
+    // categories は後から追加したフィールドなので、古いキャッシュ（categories未生成）にも耐えるようにする
+    return { ...parsed, categories: parsed.categories || [] };
   } catch {
     console.warn(
       "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
     );
-    return { generatedAt: new Date().toISOString(), posts: [] };
+    return { generatedAt: new Date().toISOString(), posts: [], categories: [] };
   }
 }
 
@@ -43,6 +45,42 @@ export function getAllTags(): { name: string; count: number }[] {
 
 export function getPostsByTag(tag: string): Post[] {
   return getAllPosts().filter((p) => p.tags.includes(tag));
+}
+
+/** マスターカテゴリDBの全カテゴリ（Notion側の並び順のまま）。 */
+export function getAllCategories(): Category[] {
+  return cache.categories;
+}
+
+export function getCategoryByName(name: string): Category | undefined {
+  return cache.categories.find((c) => c.name === name);
+}
+
+/** 指定カテゴリに属する記事（記事側の「カテゴリ」リレーションから解決した名前で判定）。 */
+export function getPostsByCategory(name: string): Post[] {
+  return getAllPosts().filter((p) => p.category === name);
+}
+
+/** カテゴリページの「関連するテーマ・キーワード」用に、そのカテゴリの記事に付いているタグだけを集計する。 */
+export function getCategoryTags(name: string): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const post of getPostsByCategory(name)) {
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tagName, count]) => ({ name: tagName, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * 人気記事（上位N件）。
+ * TODO: Google Analyticsとの連携が済み次第、閲覧数ベースのランキングに差し替える。
+ * 現在は連携準備が整うまでの仮実装として、公開日の新しい順で代用している。
+ */
+export function getPopularPosts(limit: number): Post[] {
+  return getAllPosts().slice(0, limit);
 }
 
 /**
