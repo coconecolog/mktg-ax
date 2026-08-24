@@ -27,11 +27,12 @@ jobs:
       - name: 依存パッケージをインストール
         run: npm ci
 
-      - name: Notionから記事データを取得してビルド
+      - name: Notionから記事・資料データを取得してビルド
         run: npm run build
         env:
           NOTION_TOKEN: ${{ secrets.MKTG_AX_NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_DATABASE_ID }}
+          NOTION_RESOURCES_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_RESOURCES_DATABASE_ID }}
           PUBLIC_SITE_URL: ${{ secrets.MKTG_AX_PUBLIC_SITE_URL }}
           PUBLIC_GA4_ID: ${{ secrets.MKTG_AX_PUBLIC_GA4_ID }}
           PUBLIC_CLARITY_ID: ${{ secrets.MKTG_AX_PUBLIC_CLARITY_ID }}
