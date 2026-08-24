@@ -4,9 +4,9 @@
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || "https://mktg-ax.pages.dev";
 
 export const SITE_NAME = "MKTG.AX";
-export const SITE_TAGLINE = "中小企業の経営層・マーケティング責任者のための分析ツール&情報メディア";
+export const SITE_TAGLINE = "経営層・マーケティング責任者のための分析ツール&情報メディア";
 export const SITE_DESCRIPTION =
-  "従業員50〜300名規模の中小企業の経営層・営業責任者・マーケティング責任者向けに、マーケティング分析ツールや実践的な施策・マーケット情報を発信するメディアです。";
+  "経営層・営業責任者・マーケティング責任者向けに、マーケティング分析ツールや実践的な施策・マーケット情報を発信するメディアです。";
 
 export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 
