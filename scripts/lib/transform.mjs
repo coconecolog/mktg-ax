@@ -406,3 +406,96 @@ async function transformBlock(block, makeAnchor, idHint) {
       return null;
   }
 }
+
+// ============================================================
+// 資料ダウンロードページ（/resources）用の追加ヘルパー
+// Notion側の「資料DB」（ブログ記事とは別のデータベース）のプロパティ名・変換ロジック。
+// ============================================================
+
+export const RESOURCE_PROP = {
+  title: "資料名",
+  tags: "タグ",
+  mainTag: "メインタグ",
+  publishedAt: "公開日",
+  updatedAt: "更新日",
+  thumbnail: "資料サムネイル",
+  description: "資料説明",
+  targetToc: "ターゲット・目次",
+  published: "公開",
+  slug: "Slug",
+  metaDescription: "ディスクリプション",
+  // 資料本体ファイル。Notion側に「ファイル&メディア」プロパティとしてこの名前で追加してください。
+  // 未追加の間は資料ファイルのURLが常にnullになります（ダウンロードボタンは準備中表示のまま）。
+  file: "資料ファイル",
+};
+
+export function getSelectName(page, name) {
+  const prop = getProperty(page, name);
+  if (!prop || prop.type !== "select") return null;
+  return prop.select?.name || null;
+}
+
+/**
+ * 箇条書き想定のリッチテキスト（複数行テキスト）を改行で分割し、
+ * 行頭の記号（・- * • など）を取り除いた配列にする。
+ * 「ターゲット・目次」のような項目を画面表示用のリストに変換するために使う。
+ */
+export function splitBulletLines(text) {
+  return (text || "")
+    .split("\n")
+    .map((line) => line.trim().replace(/^[・\-*•]\s*/, ""))
+    .filter((line) => line.length > 0);
+}
+
+const RESOURCE_FILE_CONTENT_TYPE_EXT = {
+  "application/pdf": "pdf",
+  "application/zip": "zip",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+};
+
+function guessResourceFileExt(url) {
+  const clean = url.split("?")[0];
+  const ext = path.extname(clean).replace(".", "").toLowerCase();
+  return ext || null;
+}
+
+const RESOURCE_FILE_OUT_DIR = path.resolve(process.cwd(), "public/files/resources");
+const resourceFileDownloadCache = new Map();
+
+/**
+ * 資料の実ファイル（PDF等）をダウンロードして public/files/resources/ に保存し、
+ * サイト内から参照できる絶対パスを返す。downloadImage() の資料ファイル版。
+ * 失敗した場合や資料ファイルが未設定の場合は null を返す。
+ */
+export async function downloadResourceFile(url, idHint) {
+  if (!url) return null;
+  if (resourceFileDownloadCache.has(url)) return resourceFileDownloadCache.get(url);
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const contentType = res.headers.get("content-type")?.split(";")[0]?.trim();
+    const ext = RESOURCE_FILE_CONTENT_TYPE_EXT[contentType] || guessResourceFileExt(url) || "pdf";
+
+    const hash = crypto.createHash("sha1").update(url).digest("hex").slice(0, 16);
+    const filename = `${idHint}-${hash}.${ext}`;
+    const outPath = path.join(RESOURCE_FILE_OUT_DIR, filename);
+
+    await fs.mkdir(RESOURCE_FILE_OUT_DIR, { recursive: true });
+    const buffer = Buffer.from(await res.arrayBuffer());
+    await fs.writeFile(outPath, buffer);
+
+    const publicPath = `/files/resources/${filename}`;
+    resourceFileDownloadCache.set(url, publicPath);
+    return publicPath;
+  } catch (err) {
+    console.warn(`  [notion] 資料ファイルのダウンロードに失敗しました (${idHint}): ${err.message}`);
+    resourceFileDownloadCache.set(url, null);
+    return null;
+  }
+}
