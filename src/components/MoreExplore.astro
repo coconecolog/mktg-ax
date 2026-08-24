@@ -1,0 +1,72 @@
+---
+// カテゴリページ・タグページの下部で共通の「サイト内検索／他のカテゴリ／サイト全体の人気記事」ブロック。
+import type { Category } from "@/lib/types";
+
+interface Props {
+  categories: Category[];
+  excludeCategory?: string; // 表示中のカテゴリ自身は「他のカテゴリ」から除外する
+  popularPosts: { slug: string; title: string }[];
+}
+
+const { categories, excludeCategory, popularPosts } = Astro.props;
+const otherCategories = categories.filter((c) => c.name !== excludeCategory);
+---
+
+<div class="mt-16 space-y-10">
+  <div class="rounded-2xl border border-neutral-100 bg-neutral-50 p-8 text-center">
+    <p class="text-base font-bold text-ink-950">お探しの情報が見つかりませんか？</p>
+    <p class="mt-2 text-sm text-neutral-500">キーワードで検索するか、別のテーマや人気記事から探してみましょう。</p>
+    <!-- TODO: サイト内検索は未実装（ダミー表示）。実装時は本フォームのaction/送信処理を差し替える。 -->
+    <form class="mx-auto mt-5 flex max-w-md gap-2">
+      <input
+        type="text"
+        disabled
+        placeholder="例: マネックス、アプリ、手数料"
+        class="w-full rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+      />
+      <button
+        type="button"
+        disabled
+        class="shrink-0 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white opacity-60"
+      >
+        検索
+      </button>
+    </form>
+  </div>
+
+  {
+    otherCategories.length > 0 && (
+      <div>
+        <p class="text-sm font-bold text-ink-950">他のカテゴリから探す</p>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {otherCategories.map((category) => (
+            <a href={`/blog/category/${encodeURIComponent(category.name)}`}
+              class="rounded-xl border border-neutral-100 p-4 text-sm hover:border-brand-300"
+            >
+              <p class="font-bold text-ink-950">{category.name}</p>
+              {category.description && <p class="mt-1 line-clamp-2 text-xs text-neutral-500">{category.description}</p>}
+            </a>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  {
+    popularPosts.length > 0 && (
+      <div class="rounded-2xl border border-amber-100 bg-amber-50 p-6">
+        <p class="text-sm font-bold text-ink-950">🏆 ブログ全体で特に読まれている決定版記事</p>
+        <ol class="mt-4 space-y-3">
+          {popularPosts.map((post, i) => (
+            <li class="flex gap-3">
+              <span class="mt-0.5 shrink-0 text-sm font-bold text-brand-500">{i + 1}</span>
+              <a href={`/blog/${post.slug}`} class="text-sm leading-snug text-neutral-700 hover:text-brand-700">
+                {post.title}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    )
+  }
+</div>
