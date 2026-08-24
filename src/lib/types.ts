@@ -52,9 +52,19 @@ export interface Post {
   blocks: BlockNode[];
 }
 
+// マスターカテゴリDB（Notion）1件分。記事DBの「カテゴリ」リレーション先そのもの。
+// representativeSlug は「代表記事Slug」プロパティの値で、
+// 対応する記事が見つからない場合は null として扱う。
+export interface Category {
+  name: string;
+  description: string;
+  representativeSlug: string | null;
+}
+
 export interface PostsCache {
   generatedAt: string;
   posts: Post[];
+  categories: Category[];
   error?: string;
 }
 
