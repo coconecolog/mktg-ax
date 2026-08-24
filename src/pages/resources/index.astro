@@ -39,7 +39,7 @@ const breadcrumbItems = [
               <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
             </div>
             <div class="p-5">
-              {resource.mainTag && <span class="text-xs font-medium text-brand-600">{resource.mainTag}</span>}
+              {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
               <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{resource.title}</h3>
               <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{resource.description}</p>
             </div>

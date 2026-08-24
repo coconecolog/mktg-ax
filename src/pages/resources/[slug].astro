@@ -25,6 +25,9 @@ const dateLabel = new Date(resource.updatedAt).toLocaleDateString("ja-JP", {
   month: "2-digit",
   day: "2-digit",
 });
+
+// メインタグはタグと同じ「マスタータグ」DBを参照しているため重複しうる。表示用に1本のタグ列にまとめる。
+const displayTags = [...new Set([resource.mainTag, ...resource.tags].filter((t): t is string => !!t))];
 ---
 
 <BaseLayout title={resource.title} description={resource.metaDescription || resource.description}>
@@ -33,13 +36,13 @@ const dateLabel = new Date(resource.updatedAt).toLocaleDateString("ja-JP", {
   <div class="mx-auto max-w-6xl px-5 py-12">
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
       <article>
-        {resource.mainTag && <span class="text-xs font-medium text-brand-600">{resource.mainTag}</span>}
+        {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
         <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950">{resource.title}</h1>
 
         {
-          resource.tags.length > 0 && (
+          displayTags.length > 0 && (
             <div class="mt-4 flex flex-wrap gap-1.5">
-              {resource.tags.map((tag) => (
+              {displayTags.map((tag) => (
                 <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">{tag}</span>
               ))}
             </div>
