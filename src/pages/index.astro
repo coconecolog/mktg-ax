@@ -4,7 +4,7 @@ import PostCard from "@/components/PostCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getAllPosts } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, DEFAULT_OG_IMAGE } from "@/consts";
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, DEFAULT_OG_IMAGE, TOOLS_NAV_ITEMS } from "@/consts";
 
 const latestPosts = getAllPosts().slice(0, 3);
 const latestResources = getAllResources().slice(0, 3);
@@ -75,7 +75,34 @@ const latestResources = getAllResources().slice(0, 3);
       </section>
     )
   }
+  <section class="py-16">
+    <div class="mx-auto max-w-6xl px-5">
+      <div class="flex items-end justify-between">
+        <h2 class="text-2xl font-bold tracking-tight text-ink-950">便利ツール</h2>
+        <a href="/tools" class="text-sm font-medium text-brand-700 hover:underline">
+          ツール一覧へ →
+        </a>
+      </div>
+      <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        {
+          TOOLS_NAV_ITEMS.map((tool) => (
+            <a href={tool.href} class="block rounded-2xl border border-neutral-100 bg-white p-6 transition-shadow hover:shadow-lg">
+              <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-2xl">
+                {tool.icon}
+              </span>
+              <h3 class="mt-4 font-bold text-ink-950">{tool.label}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-neutral-500">{tool.description}</p>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
 
+  <section class="border-t border-neutral-100 bg-neutral-50 py-16">
+    <div class="mx-auto max-w-6xl px-5">
+      <div class="flex items-end justify-between">
+        <h2 class="text-2xl font-bold tracking-tight text-ink-950">資料ダウンロード</h2>
   <section class="border-t border-neutral-100 bg-neutral-50 py-16">
     <div class="mx-auto max-w-6xl px-5">
       <div class="flex items-end justify-between">
