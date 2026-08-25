@@ -22,7 +22,8 @@ const tags = getAllTags();
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ブログ", href: "/blog" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ブログ記事", href: "/library/blog" },
   { name: post.title, href: `/blog/${post.slug}` },
 ];
 
@@ -43,8 +44,15 @@ const dateLabel = (iso: string) =>
       <div class="min-w-0">
         <header>
           {
-            post.tags.length > 0 && (
-              <div class="mb-4 flex flex-wrap gap-1.5">
+            (post.category || post.tags.length > 0) && (
+              <div class="mb-4 flex flex-wrap items-center gap-1.5">
+                {post.category && (
+                  <a href={`/blog/category/${encodeURIComponent(post.category)}`}
+                    class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
+                  >
+                    {post.category}
+                  </a>
+                )}
                 {post.tags.map((tag) => (
                   <a href={`/blog/tag/${encodeURIComponent(tag)}`}
                     class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100"
