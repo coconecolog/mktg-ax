@@ -24,6 +24,7 @@ type PageEntry = {
 const pages: Record<string, PageEntry> = {
   default: { title: SITE_NAME, description: SITE_TAGLINE },
   tools: { title: "便利ツール", description: SITE_DESCRIPTION },
+  "tools/roas-cac-simulator": { title: "広告費用対効果（ROAS/CAC）シミュレーター", description: SITE_DESCRIPTION },
   "tools/seo-aeo-aio-check": { title: "簡易SEO・AEO・AIO診断チェックリスト", description: SITE_DESCRIPTION },
   "tools/inhouse-vs-outsource": { title: "内製 vs 外注 コスト比較シミュレーター", description: SITE_DESCRIPTION },
   resources: { title: "資料一覧", description: SITE_DESCRIPTION },
