@@ -17,7 +17,7 @@ export const PROP = {
   updatedAt: "更新日",
   thumbnail: "サムネイル画像",
   published: "公開",
-  slug: "スラッグ",
+  slug: "Slug",
   description: "ディスクリプション",
 };
 
@@ -26,7 +26,7 @@ export const PROP = {
 export const CATEGORY_PROP = {
   name: "カテゴリ",
   description: "説明文",
-  representativeSlug: "代表記事Slug",
+  representativeSlug: "代表記事（Slug）",
 };
 
 // ------------------------------------------------------------
