@@ -1,0 +1,288 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+  { name: "広告費用対効果（ROAS/CAC）シミュレーター", href: "/tools/roas-cac-simulator" },
+];
+---
+
+<BaseLayout
+  title="広告費用対効果（ROAS/CAC）シミュレーター"
+  description="月額単価・粗利率・解約率・獲得単価（CAC）を入力するだけで、LTV/CAC比率と投資回収期間（Payback）を診断できる無料ツールです。"
+  ogImage="/open-graph/tools/roas-cac-simulator.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-3xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">広告費用対効果（ROAS/CAC）シミュレーター</h1>
+    <p class="mt-3 text-neutral-500">
+      サブスクリプション・リピート型ビジネスにおいて、LTV（顧客生涯価値）に基づいた健全な獲得単価（CAC）の上限と、投資回収までのスピードを診断します。入力内容はブラウザ内だけで処理され、送信・保存はされません。
+    </p>
+
+    <div class="mt-8 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div class="space-y-5">
+          <h2 class="border-b border-neutral-100 pb-2 text-sm font-bold text-brand-700">前提条件</h2>
+
+          <div>
+            <div class="mb-1 flex justify-between text-sm font-medium text-neutral-700">
+              <span>月額平均単価（ARPU）</span>
+              <span class="font-semibold text-brand-600" id="arpu-val">¥30,000</span>
+            </div>
+            <input
+              id="arpu"
+              type="range"
+              min="1000"
+              max="200000"
+              step="1000"
+              value="30000"
+              class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-200 accent-brand-600"
+            />
+          </div>
+
+          <div>
+            <div class="mb-1 flex justify-between text-sm font-medium text-neutral-700">
+              <span>粗利率</span>
+              <span class="font-semibold text-brand-600" id="margin-val">80%</span>
+            </div>
+            <input
+              id="margin"
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+              value="80"
+              class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-200 accent-brand-600"
+            />
+          </div>
+
+          <div>
+            <div class="mb-1 flex justify-between text-sm font-medium text-neutral-700">
+              <span>月次解約率（Churn Rate）</span>
+              <span class="font-semibold text-brand-600" id="churn-val">3.0%</span>
+            </div>
+            <input
+              id="churn"
+              type="range"
+              min="0.5"
+              max="15"
+              step="0.5"
+              value="3.0"
+              class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-200 accent-brand-600"
+            />
+          </div>
+
+          <div>
+            <div class="mb-1 flex justify-between text-sm font-medium text-neutral-700">
+              <span>想定 / 現在の獲得単価（CAC）</span>
+              <span class="font-semibold text-brand-600" id="cac-val">¥180,000</span>
+            </div>
+            <input
+              id="cac"
+              type="range"
+              min="5000"
+              max="1000000"
+              step="5000"
+              value="180000"
+              class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-200 accent-brand-600"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-neutral-50 p-4">
+              <p class="text-xs font-medium text-neutral-500">推定LTV（顧客生涯価値）</p>
+              <p id="out-ltv" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
+            </div>
+            <div class="rounded-xl bg-neutral-50 p-4">
+              <p class="text-xs font-medium text-neutral-500">LTV / CAC 比率</p>
+              <p id="out-ratio" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
+            </div>
+            <div class="rounded-xl bg-neutral-50 p-4">
+              <p class="text-xs font-medium text-neutral-500">投資回収期間（Payback）</p>
+              <p id="out-payback" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
+            </div>
+            <div class="rounded-xl bg-neutral-50 p-4">
+              <p class="text-xs font-medium text-neutral-500">許容上限CAC（LTV ÷ 3）</p>
+              <p id="out-allowable" class="mt-1 text-xl font-extrabold text-brand-700">—</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-neutral-200 p-4">
+            <div class="mb-2 flex justify-between text-xs font-semibold text-neutral-600">
+              <span>現在のCAC ／ 許容上限CAC</span>
+              <span id="gauge-label">—</span>
+            </div>
+            <div class="h-3 w-full overflow-hidden rounded-full bg-neutral-100">
+              <div id="gauge-bar" class="h-full rounded-full bg-brand-600" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div id="diagnosis-box" class="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+            <p id="diagnosis-title" class="font-bold text-ink-950">条件を入力すると診断結果が表示されます</p>
+            <p id="diagnosis-desc" class="mt-1 text-sm text-neutral-500"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col items-start gap-2 border-t border-neutral-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-neutral-400">入力条件はURLに保存されます。このURLをコピーすれば、今の試算結果のまま共有できます。</p>
+        <button
+          id="share-btn"
+          type="button"
+          class="inline-flex shrink-0 items-center rounded-xl bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100"
+        >
+          この結果のURLをコピー
+        </button>
+      </div>
+    </div>
+
+    <p class="mt-10 text-sm text-neutral-400">
+      その他のツールは<a href="/tools" class="text-brand-700 underline">便利ツール一覧</a>からご覧いただけます。
+    </p>
+  </section>
+</BaseLayout>
+
+<script>
+  const arpuInput = document.getElementById("arpu") as HTMLInputElement;
+  const marginInput = document.getElementById("margin") as HTMLInputElement;
+  const churnInput = document.getElementById("churn") as HTMLInputElement;
+  const cacInput = document.getElementById("cac") as HTMLInputElement;
+
+  const arpuVal = document.getElementById("arpu-val") as HTMLElement;
+  const marginVal = document.getElementById("margin-val") as HTMLElement;
+  const churnVal = document.getElementById("churn-val") as HTMLElement;
+  const cacVal = document.getElementById("cac-val") as HTMLElement;
+
+  const outLtv = document.getElementById("out-ltv") as HTMLElement;
+  const outRatio = document.getElementById("out-ratio") as HTMLElement;
+  const outPayback = document.getElementById("out-payback") as HTMLElement;
+  const outAllowable = document.getElementById("out-allowable") as HTMLElement;
+
+  const gaugeBar = document.getElementById("gauge-bar") as HTMLElement;
+  const gaugeLabel = document.getElementById("gauge-label") as HTMLElement;
+
+  const diagnosisBox = document.getElementById("diagnosis-box") as HTMLElement;
+  const diagnosisTitle = document.getElementById("diagnosis-title") as HTMLElement;
+  const diagnosisDesc = document.getElementById("diagnosis-desc") as HTMLElement;
+  const shareBtn = document.getElementById("share-btn") as HTMLButtonElement;
+
+  const allInputs = [arpuInput, marginInput, churnInput, cacInput];
+
+  function fmtYen(value: number): string {
+    return `¥${Math.round(value).toLocaleString("ja-JP")}`;
+  }
+
+  function restoreFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const mapping: [HTMLInputElement, string][] = [
+      [arpuInput, "arpu"],
+      [marginInput, "margin"],
+      [churnInput, "churn"],
+      [cacInput, "cac"],
+    ];
+    mapping.forEach(([el, key]) => {
+      const v = params.get(key);
+      if (v !== null && v !== "" && !Number.isNaN(Number(v))) {
+        el.value = v;
+      }
+    });
+  }
+
+  function syncUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("arpu", arpuInput.value);
+    url.searchParams.set("margin", marginInput.value);
+    url.searchParams.set("churn", churnInput.value);
+    url.searchParams.set("cac", cacInput.value);
+    history.replaceState(null, "", url);
+  }
+
+  function update() {
+    const arpu = parseFloat(arpuInput.value) || 0;
+    const margin = (parseFloat(marginInput.value) || 0) / 100;
+    const churn = (parseFloat(churnInput.value) || 0) / 100;
+    const cac = parseFloat(cacInput.value) || 0;
+
+    arpuVal.textContent = fmtYen(arpu);
+    marginVal.textContent = `${Math.round(margin * 100)}%`;
+    churnVal.textContent = `${(churn * 100).toFixed(1)}%`;
+    cacVal.textContent = fmtYen(cac);
+
+    const grossArpu = arpu * margin;
+    const ltv = churn > 0 ? grossArpu / churn : 0;
+    const ratio = cac > 0 ? ltv / cac : 0;
+    const payback = grossArpu > 0 ? cac / grossArpu : 0;
+    const allowableCac = ltv / 3;
+
+    outLtv.textContent = fmtYen(ltv);
+    outRatio.textContent = `${ratio.toFixed(1)} x`;
+    outPayback.textContent = `${payback.toFixed(1)} ヶ月`;
+    outAllowable.textContent = fmtYen(allowableCac);
+
+    const gaugePercent = allowableCac > 0 ? (cac / allowableCac) * 100 : 0;
+    gaugeBar.style.width = `${Math.min(Math.max(gaugePercent, 2), 100)}%`;
+    gaugeLabel.textContent = `${Math.round(gaugePercent)}%`;
+
+    let tier: "healthy" | "caution" | "danger";
+    if (ratio >= 3 && payback <= 12) {
+      tier = "healthy";
+    } else if (ratio >= 2 && payback <= 18) {
+      tier = "caution";
+    } else {
+      tier = "danger";
+    }
+
+    if (tier === "healthy") {
+      diagnosisBox.className = "rounded-xl border border-emerald-200 bg-emerald-50 p-5";
+      diagnosisTitle.className = "font-bold text-emerald-900";
+      diagnosisTitle.textContent = "健全なユニットエコノミクスです";
+      diagnosisDesc.className = "mt-1 text-sm text-emerald-800";
+      diagnosisDesc.textContent = `LTV/CAC比率が${ratio.toFixed(1)}倍、回収期間も${payback.toFixed(1)}ヶ月と短いため、積極的に広告投資を拡大しても安全な水準です。`;
+      gaugeBar.className = "h-full rounded-full bg-emerald-500";
+    } else if (tier === "caution") {
+      diagnosisBox.className = "rounded-xl border border-amber-200 bg-amber-50 p-5";
+      diagnosisTitle.className = "font-bold text-amber-900";
+      diagnosisTitle.textContent = "注意: やや回収期間が長めです";
+      diagnosisDesc.className = "mt-1 text-sm text-amber-800";
+      diagnosisDesc.textContent = `投資回収に${payback.toFixed(1)}ヶ月かかる見込みです。キャッシュフローに注意しつつ、ARPU改善や解約率の改善を優先しましょう。`;
+      gaugeBar.className = "h-full rounded-full bg-amber-500";
+    } else {
+      diagnosisBox.className = "rounded-xl border border-rose-200 bg-rose-50 p-5";
+      diagnosisTitle.className = "font-bold text-rose-900";
+      diagnosisTitle.textContent = "警告: 投資効率が危険な水準です";
+      diagnosisDesc.className = "mt-1 text-sm text-rose-800";
+      diagnosisDesc.textContent = `LTV/CAC比率が${ratio.toFixed(1)}倍と低く、獲得単価が割高な状態です。CACを抑えるか、解約率を下げる施策が必要です。`;
+      gaugeBar.className = "h-full rounded-full bg-rose-500";
+    }
+
+    syncUrl();
+  }
+
+  async function copyShareUrl() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = window.location.href;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    const original = shareBtn.textContent;
+    shareBtn.textContent = "コピーしました！";
+    setTimeout(() => {
+      shareBtn.textContent = original;
+    }, 2000);
+  }
+
+  restoreFromUrl();
+  update();
+  allInputs.forEach((el) => el.addEventListener("input", update));
+  shareBtn.addEventListener("click", copyShareUrl);
+</script>
