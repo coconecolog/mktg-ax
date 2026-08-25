@@ -88,8 +88,8 @@ const latestResources = getAllResources().slice(0, 3);
         {
           latestResources.map((resource) => (
             <a href={`/resources/${resource.slug}`} class="block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
-              <div class="aspect-video w-full overflow-hidden bg-neutral-50">
-                <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" />
+              <div class="aspect-video w-full overflow-hidden bg-brand-100 p-6">
+                <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full rounded-md object-cover shadow-lg" />
               </div>
               <div class="p-5">
                 {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
