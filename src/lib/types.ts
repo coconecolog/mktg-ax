@@ -93,7 +93,7 @@ export interface Resource {
   mainTag: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
   category: string | null;
-  /** 「ターゲット・目次」を1行ずつに分割した配列 */
+  /** 「ターゲット・目次」を1行ずつに分割した配列。1行目を見出し、2行目以降を箇条書きとして表示する。 */
   targetToc: string[];
   publishedAt: string;
   updatedAt: string;
