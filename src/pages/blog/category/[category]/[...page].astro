@@ -84,27 +84,27 @@ const breadcrumbItems = [
 
         {
           representativePost && (
-            <div class="mt-8 w-full rounded-2xl bg-ink-950 p-6 sm:p-8">
+            <div class="mt-8 w-full rounded-2xl bg-brand-50 p-6 sm:p-8">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-amber-300">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-700 shadow-sm">
                   ★ まず読むべき代表記事
                 </span>
-                <span class="text-xs font-medium text-white/40">{category.name}のロードマップ</span>
+                <span class="text-xs font-medium text-neutral-400">{category.name}のロードマップ</span>
               </div>
               <a href={`/blog/${representativePost.slug}`}
                 class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center"
               >
                 <div class="min-w-0 flex-1">
-                  <p class="text-lg font-bold leading-snug text-white sm:text-xl">{representativePost.title}</p>
+                  <p class="text-lg font-bold leading-snug text-ink-950 sm:text-xl">{representativePost.title}</p>
                   {representativePost.description && (
-                    <p class="mt-2 line-clamp-2 text-sm text-white/60">{representativePost.description}</p>
+                    <p class="mt-2 line-clamp-2 text-sm text-brand-800/80">{representativePost.description}</p>
                   )}
-                  <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white">
+                  <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full border-[1.5px] border-brand-600 bg-white px-5 py-2 text-sm font-bold text-brand-700">
                     この記事を読む →
                   </span>
                 </div>
                 {representativePost.thumbnail && (
-                  <div class="aspect-video w-full overflow-hidden rounded-xl sm:w-72 sm:shrink-0">
+                  <div class="aspect-video w-full overflow-hidden rounded-xl shadow-md sm:w-72 sm:shrink-0">
                     <img src={representativePost.thumbnail} alt="" class="h-full w-full object-cover" />
                   </div>
                 )}
