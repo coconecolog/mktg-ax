@@ -1,11 +1,36 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
+import FaqAccordion from "@/components/FaqAccordion.astro";
+import MoreExplore from "@/components/MoreExplore.astro";
+import ContactCta from "@/components/ContactCta.astro";
+import { getAllCategories, getPopularPosts } from "@/lib/posts";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "便利ツール", href: "/tools" },
   { name: "内製 vs 外注 コスト比較", href: "/tools/inhouse-vs-outsource" },
+];
+
+const categories = getAllCategories();
+const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
+
+const faqItems = [
+  {
+    question: "内製の月次コストにはどんな費用が含まれていますか？",
+    answer:
+      "想定年収を12で割った月額に、社会保険料などの法定福利費として概算15%を上乗せして計算しています。実際にはこれ以外にも教育コストや設備費などがかかる場合があります。",
+  },
+  {
+    question: "コストが安い方を選べばよいのでしょうか？",
+    answer:
+      "必ずしもそうとは限りません。業務量の波への対応力、社内へのノウハウ蓄積、専門性の高さやスピード感など、コスト以外の観点も踏まえて判断することをおすすめします。",
+  },
+  {
+    question: "比較期間はどのくらいに設定すればよいですか？",
+    answer:
+      "一般的には12〜24ヶ月程度で比較するケースが多いですが、採用計画や契約期間に合わせて6〜36ヶ月の範囲で調整してみてください。",
+  },
 ];
 ---
 
@@ -16,7 +41,7 @@ const breadcrumbItems = [
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-3xl px-5 py-12">
+  <section class="mx-auto max-w-5xl px-5 py-12">
     <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">内製 vs 外注 コスト比較シミュレーター</h1>
     <p class="mt-3 text-neutral-500">
       マーケティング担当者を新規採用する場合と、外注（代理店・フリーランス）に任せる場合の累計コストを比較します。入力内容はブラウザ内だけで処理され、送信・保存はされません。
@@ -156,7 +181,18 @@ const breadcrumbItems = [
     <p class="mt-10 text-sm text-neutral-400">
       その他のツールは<a href="/tools" class="text-brand-700 underline">便利ツール一覧</a>からご覧いただけます。
     </p>
+
+    <FaqAccordion items={faqItems} />
+
+    <MoreExplore
+      categories={categories}
+      popularPosts={popularPosts}
+      categoryHeading="カテゴリから探す"
+      popularHeading="💡 あわせて読みたい実践ノウハウ"
+    />
   </section>
+
+  <ContactCta />
 </BaseLayout>
 
 <script>
