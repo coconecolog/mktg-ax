@@ -8,7 +8,13 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveDataSourceId, queryAllPages, getRelationNames, getFirstRelationName } from "./lib/notion-client.mjs";
+import {
+  resolveDataSourceId,
+  queryAllPages,
+  fetchBlockChildrenRecursive,
+  getRelationNames,
+  getFirstRelationName,
+} from "./lib/notion-client.mjs";
 import {
   RESOURCE_PROP,
   getTitleText,
@@ -17,6 +23,8 @@ import {
   getDateISO,
   getFirstFileUrl,
   resolveSlug,
+  makeAnchorFactory,
+  transformBlocks,
   downloadImage,
   downloadResourceFile,
   splitBulletLines,
@@ -96,6 +104,12 @@ async function main() {
     const metaDescription = getRichTextPlain(page, RESOURCE_PROP.metaDescription).trim() || description;
     const targetToc = splitBulletLines(getRichTextPlain(page, RESOURCE_PROP.targetToc));
 
+    // ページ本文（記事と同じ仕組み）。「目次」「導入事例紹介」など、都度自由に見出し・内容を変えたい
+    // 可変セクションはここに書けば、資料DBのプロパティを増やさずにNotion側だけで表現できる。
+    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const makeAnchor = makeAnchorFactory();
+    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id);
+
     resources.push({
       id: page.id,
       slug,
@@ -110,6 +124,7 @@ async function main() {
       updatedAt,
       thumbnail,
       fileUrl,
+      blocks,
     });
   }
 
