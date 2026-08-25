@@ -24,6 +24,7 @@ type PageEntry = {
 const pages: Record<string, PageEntry> = {
   default: { title: SITE_NAME, description: SITE_TAGLINE },
   tools: { title: "便利ツール", description: SITE_DESCRIPTION },
+  "tools/seo-aeo-aio-check": { title: "簡易SEO・AEO・AIO診断チェックリスト", description: SITE_DESCRIPTION },
   resources: { title: "資料一覧", description: SITE_DESCRIPTION },
   service: { title: "サービスについて", description: SITE_DESCRIPTION },
   contact: { title: "お問い合わせ", description: SITE_DESCRIPTION },
