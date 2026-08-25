@@ -10,12 +10,37 @@ export const SITE_DESCRIPTION =
 
 export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 
+// ヘッダーの「便利ツール」プルダウンに表示するツール一覧。
+// ここに追加すればヘッダーのプルダウン・モバイルメニューの両方に自動で反映される。
+export const TOOLS_NAV_ITEMS = [
+  {
+    href: "/tools/roas-cac-simulator",
+    icon: "📊",
+    label: "ROAS/CACシミュレーター",
+    description: "LTV/CAC比率と投資回収期間を診断",
+  },
+  {
+    href: "/tools/seo-aeo-aio-check",
+    icon: "✅",
+    label: "SEO・AEO・AIO診断チェック",
+    description: "AI検索時代の対応状況を簡易診断",
+  },
+  {
+    href: "/tools/inhouse-vs-outsource",
+    icon: "⚖️",
+    label: "内製 vs 外注 コスト比較",
+    description: "採用と外注、コストで比較する",
+  },
+] as const;
+
+// グローバルナビゲーション。children を持つ項目はヘッダーでプルダウンとして表示される
+// （Footer.astro は children を使わず href/label のみをフラットに表示する）。
 export const NAV_LINKS = [
-  { href: "/", label: "トップ" },
-  { href: "/tools", label: "便利ツール" },
-  { href: "/library", label: "ライブラリ（記事・資料）" },
-  { href: "/service", label: "サービスについて" },
-  { href: "/contact", label: "お問い合わせ" },
+  { href: "/", label: "トップ", children: [] },
+  { href: "/tools", label: "便利ツール", children: TOOLS_NAV_ITEMS },
+  { href: "/library", label: "ライブラリ（記事・資料）", children: [] },
+  { href: "/service", label: "サービスについて", children: [] },
+  { href: "/contact", label: "お問い合わせ", children: [] },
 ] as const;
 
 export const POSTS_PER_PAGE = 10;
