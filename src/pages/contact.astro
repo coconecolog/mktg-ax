@@ -54,12 +54,14 @@ const snsLinks = [
 
     <FaqAccordion items={faqItems} heading="よくあるご質問" />
 
-    <div class="mx-auto mt-12 max-w-2xl">
-      <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
-      <p class="mt-2 text-sm text-neutral-500">現在準備中です。フォームが整うまでは、下記のメールアドレスまで直接ご連絡ください。</p>
+        <div class="mx-auto mt-12 max-w-2xl">
+      <div class="text-center">
+        <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
+        <p class="mt-2 text-sm text-neutral-500">現在準備中です。フォームが整うまでは、下記のメールアドレスまで直接ご連絡ください。</p>
+      </div>
 
       <!-- TODO: お問い合わせフォームは未実装（ダミー表示）。実装時はフォームのaction/送信処理・入力バリデーションを差し替える。 -->
-      <form class="mt-6 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <form class="mt-6 rounded-2xl border border-neutral-100 bg-white px-6 py-20 md:px-8 md:py-24">
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
             <label class="text-xs font-medium text-neutral-600">お名前<span class="ml-0.5 text-brand-600">*</span></label>
