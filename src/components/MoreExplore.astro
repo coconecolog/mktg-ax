@@ -6,9 +6,17 @@ interface Props {
   categories: Category[];
   excludeCategory?: string; // 表示中のカテゴリ自身は「他のカテゴリ」から除外する
   popularPosts: { slug: string; title: string }[];
+  categoryHeading?: string; // カテゴリ一覧ブロックの見出し（デフォルトはブログのカテゴリ/タグページ向けの文言）
+  popularHeading?: string; // 人気記事ブロックの見出し（デフォルトはブログのカテゴリ/タグページ向けの文言）
 }
 
-const { categories, excludeCategory, popularPosts } = Astro.props;
+const {
+  categories,
+  excludeCategory,
+  popularPosts,
+  categoryHeading = "他のカテゴリから探す",
+  popularHeading = "🏆 ブログ全体で特に読まれている決定版記事",
+} = Astro.props;
 const otherCategories = categories.filter((c) => c.name !== excludeCategory);
 ---
 
@@ -37,7 +45,7 @@ const otherCategories = categories.filter((c) => c.name !== excludeCategory);
   {
     otherCategories.length > 0 && (
       <div>
-        <p class="text-sm font-bold text-ink-950">他のカテゴリから探す</p>
+        <p class="text-sm font-bold text-ink-950">{categoryHeading}</p>
         <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {otherCategories.map((category) => (
             <a href={`/blog/category/${encodeURIComponent(category.name)}`}
@@ -55,7 +63,7 @@ const otherCategories = categories.filter((c) => c.name !== excludeCategory);
   {
     popularPosts.length > 0 && (
       <div class="rounded-2xl border border-amber-100 bg-amber-50 p-6">
-        <p class="text-sm font-bold text-ink-950">🏆 ブログ全体で特に読まれている決定版記事</p>
+        <p class="text-sm font-bold text-ink-950">{popularHeading}</p>
         <ol class="mt-4 space-y-3">
           {popularPosts.map((post, i) => (
             <li class="flex gap-3">
