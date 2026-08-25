@@ -26,6 +26,9 @@ const breadcrumbItems = [
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
+// 「ターゲット・目次」プロパティは1行目を見出し、2行目以降を箇条書きとして扱う。
+// 見出し名も箇条書きの内容も資料ごとにNotion側で自由に変えられる。
+const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 ---
 
 <BaseLayout title={resource.title} description={resource.metaDescription || resource.description}>
@@ -58,15 +61,17 @@ const dateLabel = (iso: string) =>
         {
           resource.targetToc.length > 0 && (
             <div class="mt-8 rounded-2xl border border-neutral-100 bg-neutral-50 p-6">
-              <p class="text-sm font-bold text-ink-950">こんな方におすすめです</p>
-              <ul class="mt-4 space-y-2">
-                {resource.targetToc.map((line) => (
-                  <li class="flex gap-2 text-sm leading-relaxed text-neutral-600">
-                    <span class="mt-0.5 shrink-0 text-brand-500">✓</span>
-                    {line}
-                  </li>
-                ))}
-              </ul>
+              {targetTocHeading && <p class="text-base font-bold text-ink-950">{targetTocHeading}</p>}
+              {targetTocItems.length > 0 && (
+                <ul class="mt-4 space-y-2">
+                  {targetTocItems.map((line) => (
+                    <li class="flex gap-2 text-sm leading-relaxed text-neutral-600">
+                      <span class="mt-0.5 shrink-0 text-brand-500">✓</span>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )
         }
