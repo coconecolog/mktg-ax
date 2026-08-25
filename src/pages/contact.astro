@@ -1,40 +1,156 @@
 ---
 // 「お問い合わせ」ページの実装方法（Googleフォーム／外部フォーム埋め込み等）は
 // 依頼者と相談のうえ後日決定する予定です。それまでの仮実装として、
-// メールでの問い合わせを受け付けるページにしています。
+// フォーム・SNS導線はダミー表示にし、メールでの問い合わせを受け付けるページにしています。
 // CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
+import FaqAccordion from "@/components/FaqAccordion.astro";
 import { SITE_NAME, CONTACT_EMAIL } from "@/consts";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "お問い合わせ", href: "/contact" },
 ];
+
+const faqItems = [
+  {
+    question: "回答までにどのくらいかかりますか？",
+    answer: "通常2〜3営業日以内にご返信いたします。内容によりお時間をいただく場合がございます。",
+  },
+  {
+    question: "ホワイトペーパーの掲載について相談できますか？",
+    answer:
+      "はい、掲載企業様からのお問い合わせも受け付けております。下記フォームの「お問い合わせ種別」で「資料掲載について」をお選びください。",
+  },
+  {
+    question: "個別のマーケティング相談は可能ですか？",
+    answer: "「サービス・ご相談について」からお問い合わせください。内容に応じて担当より詳しくご案内いたします。",
+  },
+];
+
+const snsLinks = [
+  { icon: "𝕏", name: "X" },
+  { icon: "🧵", name: "Threads" },
+  { icon: "📷", name: "Instagram" },
+  { icon: "💼", name: "LinkedIn" },
+  { icon: "▶️", name: "YouTube" },
+];
 ---
 
 <BaseLayout
   title="お問い合わせ"
-  description={`${SITE_NAME}へのお問い合わせはこちらから。`}
+  description={`${SITE_NAME}へのお問い合わせはこちらから。サービスに関するご相談、資料の掲載、記事・取材のご依頼などお気軽にご連絡ください。`}
   ogImage="/open-graph/contact.png"
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-2xl px-5 py-16 text-center">
-    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">お問い合わせ</h1>
-    <p class="mt-4 leading-relaxed text-neutral-600">
-      サービス内容やご相談など、お気軽に下記メールアドレスまでご連絡ください。
+  <section class="mx-auto max-w-3xl px-5 py-12">
+    <p class="text-sm font-bold uppercase tracking-wider text-brand-600">Contact</p>
+    <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-950">お問い合わせ</h1>
+    <p class="mt-4 leading-relaxed text-neutral-500">
+      サービスに関するご相談、資料の掲載、記事・取材のご依頼など、お気軽にご連絡ください。内容を確認のうえ、担当より折り返しご連絡いたします。
     </p>
 
-    <a
-      href={`mailto:${CONTACT_EMAIL}`}
-      class="mt-8 inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white hover:bg-brand-700"
-    >
-      {CONTACT_EMAIL}
-    </a>
+    <FaqAccordion items={faqItems} heading="よくあるご質問" />
 
-    <p class="mt-6 text-xs text-neutral-400">
-      通常2〜3営業日以内にご返信いたします。
-    </p>
+    <div class="mt-12">
+      <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
+      <p class="mt-2 text-sm text-neutral-500">現在準備中です。フォームが整うまでは、下記のメールアドレスまで直接ご連絡ください。</p>
+
+      <!-- TODO: お問い合わせフォームは未実装（ダミー表示）。実装時はフォームのaction/送信処理・入力バリデーションを差し替える。 -->
+      <form class="mt-6 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label class="text-xs font-medium text-neutral-600">お名前<span class="ml-0.5 text-brand-600">*</span></label>
+            <input
+              type="text"
+              disabled
+              placeholder="山田 太郎"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-neutral-600">会社名</label>
+            <input
+              type="text"
+              disabled
+              placeholder="株式会社サンプル"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-neutral-600">メールアドレス<span class="ml-0.5 text-brand-600">*</span></label>
+            <input
+              type="email"
+              disabled
+              placeholder="you@example.com"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-neutral-600">お問い合わせ種別<span class="ml-0.5 text-brand-600">*</span></label>
+            <select
+              disabled
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400"
+            >
+              <option>一般のお問い合わせ</option>
+              <option>サービス・ご相談について</option>
+              <option>資料掲載について</option>
+              <option>記事・取材について</option>
+              <option>その他</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-medium text-neutral-600">お問い合わせ内容<span class="ml-0.5 text-brand-600">*</span></label>
+            <textarea
+              disabled
+              rows="5"
+              placeholder="お問い合わせ内容をご記入ください"
+              class="mt-1.5 w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+            ></textarea>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled
+          class="mt-6 rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white opacity-60"
+        >
+          送信する
+        </button>
+        <p class="mt-3 text-xs text-neutral-400">送信いただいた内容は、お問い合わせへの対応以外の目的では使用いたしません。</p>
+      </form>
+    </div>
+
+    <div class="mt-12">
+      <h2 class="text-lg font-bold text-ink-950">その他の連絡方法</h2>
+      <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div class="rounded-2xl border border-neutral-100 bg-white p-6">
+          <h3 class="font-bold text-ink-950">メールでのお問い合わせ</h3>
+          <a href={`mailto:${CONTACT_EMAIL}`} class="mt-2 block break-all text-sm font-bold text-brand-700 hover:underline">
+            {CONTACT_EMAIL}
+          </a>
+          <p class="mt-2 text-xs leading-relaxed text-neutral-500">フォームのご利用が難しい場合はこちらへ直接ご連絡ください。</p>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-100 bg-white p-6">
+          <h3 class="font-bold text-ink-950">SNS</h3>
+          <p class="mt-1 text-xs leading-relaxed text-neutral-500">各種SNSアカウントは現在準備中です。開設まで今しばらくお待ちください。</p>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            {
+              snsLinks.map((sns) => (
+                <div class="flex flex-col gap-2 rounded-xl border border-neutral-100 p-3 opacity-60">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-sm">{sns.icon}</span>
+                  <span class="text-xs font-bold text-ink-950">{sns.name}</span>
+                  <span class="w-fit rounded-full border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+                    準備中
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </BaseLayout>
