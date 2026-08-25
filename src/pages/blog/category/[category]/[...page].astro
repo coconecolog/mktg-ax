@@ -125,27 +125,27 @@ const breadcrumbItems = [
           )
         }
 
+        <h2 class="mt-12 text-lg font-bold text-ink-950">このカテゴリの資料</h2>
         {
-          categoryResources.length > 0 && (
-            <div class="mt-12">
-              <h2 class="text-lg font-bold text-ink-950">このカテゴリの資料</h2>
-              <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {categoryResources.map((resource) => (
-                  <a href={`/resources/${resource.slug}`}
-                    class="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg"
-                  >
-                    <div class="aspect-video w-full overflow-hidden bg-neutral-50">
-                      <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                    </div>
-                    <div class="p-5">
-                      {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
-                      <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{resource.title}</h3>
-                      <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{resource.description}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
+          categoryResources.length > 0 ? (
+            <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {categoryResources.map((resource) => (
+                <a href={`/resources/${resource.slug}`}
+                  class="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg"
+                >
+                  <div class="aspect-video w-full overflow-hidden bg-neutral-50">
+                    <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  </div>
+                  <div class="p-5">
+                    {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
+                    <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{resource.title}</h3>
+                    <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{resource.description}</p>
+                  </div>
+                </a>
+              ))}
             </div>
+          ) : (
+            <p class="mt-4 text-neutral-400">このカテゴリの資料はまだありません。</p>
           )
         }
 
