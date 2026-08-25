@@ -28,6 +28,9 @@ export function getAllResources(): Resource[] {
 export function getResourceBySlug(slug: string): Resource | undefined {
   return cache.resources.find((r) => r.slug === slug);
 }
-
+/** 指定カテゴリに属する資料（資料側の「カテゴリ」リレーションから解決した名前で判定）。 */
+export function getResourcesByCategory(name: string): Resource[] {
+  return getAllResources().filter((r) => r.category === name);
+}
 export const RESOURCES_CACHE_GENERATED_AT = cache.generatedAt;
 export const RESOURCES_CACHE_ERROR = cache.error;
