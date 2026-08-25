@@ -15,7 +15,8 @@ import {
   getPostBySlug,
   getPostsByCategory,
 } from "@/lib/posts";
-import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+import { getResourcesByCategory } from "@/lib/resources";
+import { CATEGORY_TAG_PAGE_SIZE, DEFAULT_OG_IMAGE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const categories = getAllCategories();
@@ -33,6 +34,7 @@ const { category, page } = Astro.props as { category: Category; page: Page<Post>
 const allCategories = getAllCategories();
 const categoryTags = getCategoryTags(category.name);
 const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
+const categoryResources = getResourcesByCategory(category.name);
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
@@ -82,27 +84,32 @@ const breadcrumbItems = [
 
         {
           representativePost && (
-            <a href={`/blog/${representativePost.slug}`}
-              class="mt-8 flex flex-col overflow-hidden rounded-2xl bg-ink-950 sm:flex-row"
-            >
-              <div class="flex flex-1 flex-col justify-center p-8">
-                <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-amber-300">
+            <div class="mt-8 w-full rounded-2xl bg-ink-950 p-6 sm:p-8">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-amber-300">
                   ★ まず読むべき代表記事
                 </span>
-                <p class="mt-4 text-lg font-bold leading-snug text-white">{representativePost.title}</p>
-                {representativePost.description && (
-                  <p class="mt-2 line-clamp-2 text-sm text-white/60">{representativePost.description}</p>
-                )}
-                <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white">
-                  この記事を読む →
-                </span>
+                <span class="text-xs font-medium text-white/40">{category.name}のロードマップ</span>
               </div>
-              {representativePost.thumbnail && (
-                <div class="aspect-video shrink-0 sm:aspect-auto sm:w-64">
-                  <img src={representativePost.thumbnail} alt="" class="h-full w-full object-cover" />
+              <a href={`/blog/${representativePost.slug}`}
+                class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="text-lg font-bold leading-snug text-white sm:text-xl">{representativePost.title}</p>
+                  {representativePost.description && (
+                    <p class="mt-2 line-clamp-2 text-sm text-white/60">{representativePost.description}</p>
+                  )}
+                  <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white">
+                    この記事を読む →
+                  </span>
                 </div>
-              )}
-            </a>
+                {representativePost.thumbnail && (
+                  <div class="aspect-video w-full overflow-hidden rounded-xl sm:w-72 sm:shrink-0">
+                    <img src={representativePost.thumbnail} alt="" class="h-full w-full object-cover" />
+                  </div>
+                )}
+              </a>
+            </div>
           )
         }
 
@@ -115,6 +122,30 @@ const breadcrumbItems = [
             </div>
           ) : (
             <p class="mt-10 text-neutral-400">このカテゴリにはまだ記事がありません。</p>
+          )
+        }
+
+        {
+          categoryResources.length > 0 && (
+            <div class="mt-12">
+              <h2 class="text-lg font-bold text-ink-950">このカテゴリの資料</h2>
+              <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {categoryResources.map((resource) => (
+                  <a href={`/resources/${resource.slug}`}
+                    class="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg"
+                  >
+                    <div class="aspect-video w-full overflow-hidden bg-neutral-50">
+                      <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    </div>
+                    <div class="p-5">
+                      {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
+                      <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{resource.title}</h3>
+                      <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{resource.description}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
           )
         }
 
