@@ -1,0 +1,286 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+  { name: "内製 vs 外注 コスト比較", href: "/tools/inhouse-vs-outsource" },
+];
+---
+
+<BaseLayout
+  title="内製 vs 外注 コスト比較シミュレーター"
+  description="マーケティング担当者を採用するか、外注に任せるか。年収・採用コスト・外注費用を入力するだけで、月次の累計コストと損益分岐月を試算できる無料ツールです。"
+  ogImage="/open-graph/tools/inhouse-vs-outsource.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-3xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">内製 vs 外注 コスト比較シミュレーター</h1>
+    <p class="mt-3 text-neutral-500">
+      マーケティング担当者を新規採用する場合と、外注（代理店・フリーランス）に任せる場合の累計コストを比較します。入力内容はブラウザ内だけで処理され、送信・保存はされません。
+    </p>
+
+    <div class="mt-8 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div class="space-y-5">
+          <h2 class="border-b border-neutral-100 pb-2 text-sm font-bold text-brand-700">① 内製（採用）の条件</h2>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">想定年収（円）</span>
+            <input
+              id="salary"
+              type="number"
+              min="0"
+              step="100000"
+              value="5000000"
+              inputmode="numeric"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            />
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">採用初期費用（円・求人広告費等）</span>
+            <input
+              id="hire-setup"
+              type="number"
+              min="0"
+              step="10000"
+              value="300000"
+              inputmode="numeric"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            />
+          </label>
+
+          <h2 class="border-b border-neutral-100 pb-2 pt-2 text-sm font-bold text-brand-700">② 外注の条件</h2>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">外注月額費用（円）</span>
+            <input
+              id="out-monthly"
+              type="number"
+              min="0"
+              step="10000"
+              value="300000"
+              inputmode="numeric"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            />
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">外注初期費用（円・契約金等）</span>
+            <input
+              id="out-setup"
+              type="number"
+              min="0"
+              step="10000"
+              value="100000"
+              inputmode="numeric"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            />
+          </label>
+
+          <div>
+            <div class="mb-1 flex justify-between text-sm font-medium text-neutral-700">
+              <span>比較期間</span>
+              <span class="font-semibold text-brand-600" id="months-val">24 ヶ月</span>
+            </div>
+            <input
+              id="months"
+              type="range"
+              min="6"
+              max="36"
+              step="1"
+              value="24"
+              class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-200 accent-brand-600"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-neutral-50 p-4">
+              <p class="text-xs font-medium text-neutral-500">内製 累計コスト</p>
+              <p id="out-inhouse" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
+            </div>
+            <div class="rounded-xl bg-neutral-50 p-4">
+              <p class="text-xs font-medium text-neutral-500">外注 累計コスト</p>
+              <p id="out-outsource" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-neutral-200 p-4">
+            <p class="mb-3 text-xs font-semibold text-neutral-600">比較期間終了時点の累計コスト</p>
+            <div class="flex h-40 items-end gap-6">
+              <div class="flex flex-1 flex-col items-center">
+                <div class="flex h-32 w-full items-end justify-center">
+                  <div id="bar-inhouse" class="w-12 rounded-t-lg bg-brand-600" style="height: 0%;"></div>
+                </div>
+                <span class="mt-2 text-[11px] text-neutral-500">内製</span>
+              </div>
+              <div class="flex flex-1 flex-col items-center">
+                <div class="flex h-32 w-full items-end justify-center">
+                  <div id="bar-outsource" class="w-12 rounded-t-lg bg-neutral-400" style="height: 0%;"></div>
+                </div>
+                <span class="mt-2 text-[11px] text-neutral-500">外注</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="diagnosis-box" class="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+            <p id="diagnosis-title" class="font-bold text-ink-950">入力すると診断結果が表示されます</p>
+            <p id="diagnosis-desc" class="mt-1 text-sm text-neutral-500"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 rounded-xl border border-amber-100 bg-amber-50 p-4">
+        <p class="text-xs font-semibold text-amber-800">コストだけで判断する前に</p>
+        <ul class="mt-2 list-inside list-disc space-y-1 text-xs text-amber-800">
+          <li>繁忙期など業務量の増減が大きい場合は、外注の方が柔軟に調整しやすい</li>
+          <li>社内にノウハウ・データを蓄積したい場合は、内製に分がある</li>
+          <li>専門性の高い最新知見がすぐ必要な場合は、外注の方が早い</li>
+          <li>スピード重視で今すぐ動きたい場合は、外注の方が立ち上がりが早い</li>
+        </ul>
+      </div>
+
+      <div class="mt-6 flex flex-col items-start gap-2 border-t border-neutral-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-neutral-400">入力条件はURLに保存されます。このURLをコピーすれば、今の試算結果のまま共有できます。</p>
+        <button
+          id="share-btn"
+          type="button"
+          class="inline-flex shrink-0 items-center rounded-xl bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100"
+        >
+          この結果のURLをコピー
+        </button>
+      </div>
+    </div>
+
+    <p class="mt-10 text-sm text-neutral-400">
+      その他のツールは<a href="/tools" class="text-brand-700 underline">便利ツール一覧</a>からご覧いただけます。
+    </p>
+  </section>
+</BaseLayout>
+
+<script>
+  const salaryInput = document.getElementById("salary") as HTMLInputElement;
+  const hireSetupInput = document.getElementById("hire-setup") as HTMLInputElement;
+  const outMonthlyInput = document.getElementById("out-monthly") as HTMLInputElement;
+  const outSetupInput = document.getElementById("out-setup") as HTMLInputElement;
+  const monthsInput = document.getElementById("months") as HTMLInputElement;
+  const monthsVal = document.getElementById("months-val") as HTMLElement;
+
+  const outInhouseEl = document.getElementById("out-inhouse") as HTMLElement;
+  const outOutsourceEl = document.getElementById("out-outsource") as HTMLElement;
+  const barInhouse = document.getElementById("bar-inhouse") as HTMLElement;
+  const barOutsource = document.getElementById("bar-outsource") as HTMLElement;
+  const diagnosisBox = document.getElementById("diagnosis-box") as HTMLElement;
+  const diagnosisTitle = document.getElementById("diagnosis-title") as HTMLElement;
+  const diagnosisDesc = document.getElementById("diagnosis-desc") as HTMLElement;
+  const shareBtn = document.getElementById("share-btn") as HTMLButtonElement;
+
+  const allInputs = [salaryInput, hireSetupInput, outMonthlyInput, outSetupInput, monthsInput];
+
+  function fmtYen(value: number): string {
+    return `¥${Math.round(value).toLocaleString("ja-JP")}`;
+  }
+
+  function restoreFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const mapping: [HTMLInputElement, string][] = [
+      [salaryInput, "salary"],
+      [hireSetupInput, "hireSetup"],
+      [outMonthlyInput, "outMonthly"],
+      [outSetupInput, "outSetup"],
+      [monthsInput, "months"],
+    ];
+    mapping.forEach(([el, key]) => {
+      const v = params.get(key);
+      if (v !== null && v !== "" && !Number.isNaN(Number(v))) {
+        el.value = v;
+      }
+    });
+  }
+
+  function syncUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("salary", salaryInput.value);
+    url.searchParams.set("hireSetup", hireSetupInput.value);
+    url.searchParams.set("outMonthly", outMonthlyInput.value);
+    url.searchParams.set("outSetup", outSetupInput.value);
+    url.searchParams.set("months", monthsInput.value);
+    history.replaceState(null, "", url);
+  }
+
+  function update() {
+    const salary = parseFloat(salaryInput.value) || 0;
+    const hireSetup = parseFloat(hireSetupInput.value) || 0;
+    const outMonthly = parseFloat(outMonthlyInput.value) || 0;
+    const outSetup = parseFloat(outSetupInput.value) || 0;
+    const months = parseFloat(monthsInput.value) || 0;
+
+    monthsVal.textContent = `${months} ヶ月`;
+
+    const monthlyInhouse = (salary / 12) * 1.15;
+    const inhouseTotal = hireSetup + monthlyInhouse * months;
+    const outsourceTotal = outSetup + outMonthly * months;
+
+    outInhouseEl.textContent = fmtYen(inhouseTotal);
+    outOutsourceEl.textContent = fmtYen(outsourceTotal);
+
+    const maxTotal = Math.max(inhouseTotal, outsourceTotal, 1);
+    barInhouse.style.height = `${Math.max((inhouseTotal / maxTotal) * 100, 2)}%`;
+    barOutsource.style.height = `${Math.max((outsourceTotal / maxTotal) * 100, 2)}%`;
+
+    const diffMonthly = monthlyInhouse - outMonthly;
+    const diffSetup = outSetup - hireSetup;
+    const cheaper = inhouseTotal <= outsourceTotal ? "内製" : "外注";
+
+    let message: string;
+    if (Math.abs(diffMonthly) < 1) {
+      message =
+        inhouseTotal === outsourceTotal
+          ? "内製と外注のコストはほぼ同じです。"
+          : `月額コストはほぼ同じですが、初期費用の差で${cheaper}の方が総額は安くなります。`;
+    } else {
+      const breakEven = diffSetup / diffMonthly;
+      if (breakEven <= 0) {
+        message = `比較開始時点から${cheaper}の方が有利な条件です。`;
+      } else if (breakEven > months) {
+        message = `比較期間（${months}ヶ月）内では${cheaper}の方が総額は安くなります（逆転は約${Math.ceil(breakEven)}ヶ月目の想定）。`;
+      } else {
+        const laterCheaper = monthlyInhouse < outMonthly ? "内製" : "外注";
+        const earlierCheaper = laterCheaper === "内製" ? "外注" : "内製";
+        message = `約${Math.ceil(breakEven)}ヶ月目で${laterCheaper}の方が安くなります。それまでは${earlierCheaper}が有利です。`;
+      }
+    }
+
+    diagnosisBox.className = "rounded-xl border border-brand-200 bg-brand-50 p-5";
+    diagnosisTitle.className = "font-bold text-brand-900";
+    diagnosisTitle.textContent = `${months}ヶ月時点では「${cheaper}」の方がコストが低い試算です`;
+    diagnosisDesc.className = "mt-1 text-sm text-brand-800";
+    diagnosisDesc.textContent = message;
+
+    syncUrl();
+  }
+
+  async function copyShareUrl() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = window.location.href;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    const original = shareBtn.textContent;
+    shareBtn.textContent = "コピーしました！";
+    setTimeout(() => {
+      shareBtn.textContent = original;
+    }, 2000);
+  }
+
+  restoreFromUrl();
+  update();
+  allInputs.forEach((el) => el.addEventListener("input", update));
+  shareBtn.addEventListener("click", copyShareUrl);
+</script>
