@@ -71,8 +71,8 @@ const breadcrumbItems = [
 
         {
           categoryTags.length > 0 && (
-            <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <span class="text-neutral-400">関連するテーマ・キーワードから探す:</span>
+            <div class="mt-4 flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                            <span class="shrink-0 text-neutral-400">関連するテーマ・キーワードから探す:</span>
               {categoryTags.map((tag) => (
                 <a href={`/blog/tag/${encodeURIComponent(tag.name)}`} class="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 hover:bg-brand-50 hover:text-brand-700">
                   #{tag.name}
