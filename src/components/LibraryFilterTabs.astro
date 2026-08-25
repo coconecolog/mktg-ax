@@ -1,0 +1,32 @@
+---
+// ライブラリページの「すべて / ブログ記事 / 無料資料・eBook」絞り込みタブ。
+interface Props {
+  active: "all" | "post" | "resource";
+  counts: { all: number; post: number; resource: number };
+}
+
+const { active, counts } = Astro.props;
+
+const tabs = [
+  { key: "all" as const, label: "すべて", href: "/library" },
+  { key: "post" as const, label: "ブログ記事", href: "/library/blog" },
+  { key: "resource" as const, label: "無料資料・eBook", href: "/library/resources" },
+];
+---
+
+<div class="flex flex-wrap gap-2">
+  {
+    tabs.map((tab) => (
+      <a href={tab.href}
+        class={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${
+          active === tab.key ? "bg-ink-950 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+        }`}
+      >
+        {tab.label}
+        <span class={`rounded-full px-1.5 py-0.5 text-xs ${active === tab.key ? "bg-white/20" : "bg-white text-neutral-500"}`}>
+          {counts[tab.key]}
+        </span>
+      </a>
+    ))
+  }
+</div>
