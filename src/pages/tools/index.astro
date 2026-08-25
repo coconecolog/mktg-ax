@@ -239,3 +239,52 @@ const breadcrumbItems = [
 
   [adCostInput, revenueInput, conversionsInput].forEach((el) => el.addEventListener("input", recalculate));
 </script>
+<script>
+  const seoChecks = Array.from(document.querySelectorAll(".seo-check")) as HTMLInputElement[];
+  const aeoChecks = Array.from(document.querySelectorAll(".aeo-check")) as HTMLInputElement[];
+  const aioChecks = Array.from(document.querySelectorAll(".aio-check")) as HTMLInputElement[];
+
+  const scoreSeoEl = document.getElementById("score-seo") as HTMLElement;
+  const scoreAeoEl = document.getElementById("score-aeo") as HTMLElement;
+  const scoreAioEl = document.getElementById("score-aio") as HTMLElement;
+  const diagnosisBox = document.getElementById("diagnosis-box") as HTMLElement;
+  const diagnosisTitle = document.getElementById("diagnosis-title") as HTMLElement;
+  const diagnosisDesc = document.getElementById("diagnosis-desc") as HTMLElement;
+
+  function countChecked(list: HTMLInputElement[]): number {
+    return list.filter((el) => el.checked).length;
+  }
+
+  function updateDiagnosis() {
+    const seoScore = countChecked(seoChecks);
+    const aeoScore = countChecked(aeoChecks);
+    const aioScore = countChecked(aioChecks);
+    const total = seoScore + aeoScore + aioScore;
+
+    scoreSeoEl.textContent = `${seoScore}/5`;
+    scoreAeoEl.textContent = `${aeoScore}/5`;
+    scoreAioEl.textContent = `${aioScore}/5`;
+
+    if (total >= 12) {
+      diagnosisBox.className = "mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5";
+      diagnosisTitle.className = "font-bold text-emerald-900";
+      diagnosisTitle.textContent = "AI検索時代に対応できています";
+      diagnosisDesc.className = "mt-1 text-sm text-emerald-800";
+      diagnosisDesc.textContent = `合計${total}/15点。従来のSEOだけでなくAEO・AIO/GEOにも対応が進んでいます。`;
+    } else if (total >= 7) {
+      diagnosisBox.className = "mt-4 rounded-xl border border-amber-200 bg-amber-50 p-5";
+      diagnosisTitle.className = "font-bold text-amber-900";
+      diagnosisTitle.textContent = "基礎はできていますが、伸びしろがあります";
+      diagnosisDesc.className = "mt-1 text-sm text-amber-800";
+      diagnosisDesc.textContent = `合計${total}/15点。チェックが付かなかった項目から優先的に着手しましょう。`;
+    } else {
+      diagnosisBox.className = "mt-4 rounded-xl border border-rose-200 bg-rose-50 p-5";
+      diagnosisTitle.className = "font-bold text-rose-900";
+      diagnosisTitle.textContent = "従来型のSEOにとどまっている可能性があります";
+      diagnosisDesc.className = "mt-1 text-sm text-rose-800";
+      diagnosisDesc.textContent = `合計${total}/15点。特にAEO・AIO/GEO（AI検索・生成AI対策）から着手することをおすすめします。`;
+    }
+  }
+
+  [...seoChecks, ...aeoChecks, ...aioChecks].forEach((el) => el.addEventListener("change", updateDiagnosis));
+</script>
