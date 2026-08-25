@@ -6,11 +6,27 @@ const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "便利ツール", href: "/tools" },
 ];
+
+const tools = [
+  {
+    href: "/tools/seo-aeo-aio-check",
+    title: "簡易SEO・AEO・AIO診断チェックリスト",
+    description:
+      "全15項目のチェックだけで、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断します。",
+    available: true,
+  },
+  {
+    href: "",
+    title: "内製 vs 外注 コスト比較シミュレーター",
+    description: "マーケティング担当者を採用するか、外注に任せるか。月次・年間コストを試算して比較します。",
+    available: false,
+  },
+];
 ---
 
 <BaseLayout
   title="便利ツール"
-  description="広告費用対効果（ROAS）やCPAをその場で試算できる、マーケティング担当者向けの無料計算ツールです。"
+  description="日々の意思決定にそのまま使える無料のマーケティング診断・シミュレーションツールを公開しています。"
   ogImage="/open-graph/tools.png"
 >
   <Breadcrumb items={breadcrumbItems} />
@@ -21,270 +37,34 @@ const breadcrumbItems = [
       日々の意思決定にそのまま使える無料ツールを公開しています。数値はブラウザ内だけで計算され、送信・保存はされません。
     </p>
 
-    <div class="mt-10 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
-      <h2 class="text-xl font-bold text-ink-950">広告費用対効果（ROAS・CPA）計算ツール</h2>
-      <p class="mt-2 text-sm text-neutral-500">
-        広告費・売上・コンバージョン数を入力すると、ROAS（費用対効果）とCPA（1件あたりの獲得コスト）を自動で計算します。
-      </p>
-
-      <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <label class="block">
-          <span class="text-sm font-medium text-neutral-700">広告費（円）</span>
-          <input
-            id="ad-cost"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            placeholder="例: 500000"
-            class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-          />
-        </label>
-        <label class="block">
-          <span class="text-sm font-medium text-neutral-700">売上（円）</span>
-          <input
-            id="revenue"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            placeholder="例: 2000000"
-            class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-          />
-        </label>
-        <label class="block">
-          <span class="text-sm font-medium text-neutral-700">コンバージョン数（件）</span>
-          <input
-            id="conversions"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            placeholder="例: 40"
-            class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-          />
-        </label>
-      </div>
-
-      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div class="rounded-xl bg-brand-50 p-5">
-          <p class="text-sm font-medium text-brand-700">ROAS（費用対効果）</p>
-          <p id="result-roas" class="mt-1 text-3xl font-extrabold text-brand-700">—</p>
-        </div>
-        <div class="rounded-xl bg-neutral-50 p-5">
-          <p class="text-sm font-medium text-neutral-600">CPA（1件あたりの獲得コスト）</p>
-          <p id="result-cpa" class="mt-1 text-3xl font-extrabold text-ink-950">—</p>
-        </div>
-      </div>
+    <div class="mt-10 grid grid-cols-1 gap-5">
+      {
+        tools.map((tool) =>
+          tool.available ? (
+            
+              href={tool.href}
+              class="block rounded-2xl border border-neutral-100 bg-white p-6 transition-shadow hover:shadow-lg md:p-8"
+            >
+              <h2 class="text-xl font-bold text-ink-950">{tool.title}</h2>
+              <p class="mt-2 text-sm text-neutral-500">{tool.description}</p>
+              <span class="mt-4 inline-block text-sm font-medium text-brand-700">ツールを使う →</span>
+            </a>
+          ) : (
+            <div class="rounded-2xl border border-neutral-100 bg-neutral-50 p-6 opacity-70 md:p-8">
+              <span class="inline-block rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+                準備中
+              </span>
+              <h2 class="mt-2 text-xl font-bold text-ink-950">{tool.title}</h2>
+              <p class="mt-2 text-sm text-neutral-500">{tool.description}</p>
+            </div>
+          )
+        )
+      }
     </div>
-    <div class="mt-8 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
-      <h2 class="text-xl font-bold text-ink-950">簡易SEO・AEO・AIO診断チェックリスト</h2>
-      <p class="mt-2 text-sm text-neutral-500">
-        全15項目にチェックを入れると、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断します。実際のサイトをクロールするものではなく、自己申告のチェックリスト形式です。
-      </p>
 
-      <div class="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
-        <div>
-          <h3 class="text-sm font-bold text-brand-700">① 従来のSEO</h3>
-          <ul class="mt-3 space-y-2.5">
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>タイトルタグに狙ったキーワードを含めている</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>見出し（H1〜H3）が階層的に整理されている</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>メタディスクリプションを設定している</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>画像にalt属性を設定している</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>ページの表示速度が遅くないと感じる</span>
-              </label>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-sm font-bold text-brand-700">② AEO（AI検索最適化）</h3>
-          <ul class="mt-3 space-y-2.5">
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>よくある質問（FAQ）を掲載し、構造化データを設定している</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>Q&amp;A形式の見出しを使っている</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>記事冒頭で結論・要約を先に書いている</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>著者情報・監修者情報を明記している</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>独自データや一次情報を掲載している</span>
-              </label>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-sm font-bold text-brand-700">③ AIO / GEO（生成AI最適化）</h3>
-          <ul class="mt-3 space-y-2.5">
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>llms.txtを設置している</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>情報を箇条書きや表で整理している</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>AIに引用されやすい簡潔な定義文・要約文がある</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>他サイトやSNSでの言及・引用実績がある</span>
-              </label>
-            </li>
-            <li>
-              <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
-                <span>更新日を明記している</span>
-              </label>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-xl bg-neutral-50 p-4 text-center">
-          <p class="text-xs font-medium text-neutral-500">SEOスコア</p>
-          <p id="score-seo" class="mt-1 text-2xl font-extrabold text-ink-950">0/5</p>
-        </div>
-        <div class="rounded-xl bg-neutral-50 p-4 text-center">
-          <p class="text-xs font-medium text-neutral-500">AEOスコア</p>
-          <p id="score-aeo" class="mt-1 text-2xl font-extrabold text-ink-950">0/5</p>
-        </div>
-        <div class="rounded-xl bg-neutral-50 p-4 text-center">
-          <p class="text-xs font-medium text-neutral-500">AIO/GEOスコア</p>
-          <p id="score-aio" class="mt-1 text-2xl font-extrabold text-ink-950">0/5</p>
-        </div>
-      </div>
-
-      <div id="diagnosis-box" class="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
-        <p id="diagnosis-title" class="font-bold text-ink-950">項目にチェックを入れると診断結果が表示されます</p>
-        <p id="diagnosis-desc" class="mt-1 text-sm text-neutral-500">合計0/15点</p>
-      </div>
-    </div>
     <p class="mt-10 text-sm text-neutral-400">
-      その他のツールも順次追加予定です。追加してほしいツールのご要望は
+      追加してほしいツールのご要望は
       <a href="/contact" class="text-brand-700 underline">お問い合わせ</a>よりお気軽にお寄せください。
     </p>
   </section>
 </BaseLayout>
-
-<script>
-  const adCostInput = document.getElementById("ad-cost") as HTMLInputElement;
-  const revenueInput = document.getElementById("revenue") as HTMLInputElement;
-  const conversionsInput = document.getElementById("conversions") as HTMLInputElement;
-  const roasOutput = document.getElementById("result-roas") as HTMLElement;
-  const cpaOutput = document.getElementById("result-cpa") as HTMLElement;
-
-  function formatYen(value: number): string {
-    return `¥${Math.round(value).toLocaleString("ja-JP")}`;
-  }
-
-  function recalculate() {
-    const adCost = Number(adCostInput.value);
-    const revenue = Number(revenueInput.value);
-    const conversions = Number(conversionsInput.value);
-
-    roasOutput.textContent = adCost > 0 && revenue >= 0 ? `${((revenue / adCost) * 100).toFixed(1)}%` : "—";
-    cpaOutput.textContent = conversions > 0 && adCost >= 0 ? formatYen(adCost / conversions) : "—";
-  }
-
-  [adCostInput, revenueInput, conversionsInput].forEach((el) => el.addEventListener("input", recalculate));
-</script>
-<script>
-  const seoChecks = Array.from(document.querySelectorAll(".seo-check")) as HTMLInputElement[];
-  const aeoChecks = Array.from(document.querySelectorAll(".aeo-check")) as HTMLInputElement[];
-  const aioChecks = Array.from(document.querySelectorAll(".aio-check")) as HTMLInputElement[];
-
-  const scoreSeoEl = document.getElementById("score-seo") as HTMLElement;
-  const scoreAeoEl = document.getElementById("score-aeo") as HTMLElement;
-  const scoreAioEl = document.getElementById("score-aio") as HTMLElement;
-  const diagnosisBox = document.getElementById("diagnosis-box") as HTMLElement;
-  const diagnosisTitle = document.getElementById("diagnosis-title") as HTMLElement;
-  const diagnosisDesc = document.getElementById("diagnosis-desc") as HTMLElement;
-
-  function countChecked(list: HTMLInputElement[]): number {
-    return list.filter((el) => el.checked).length;
-  }
-
-  function updateDiagnosis() {
-    const seoScore = countChecked(seoChecks);
-    const aeoScore = countChecked(aeoChecks);
-    const aioScore = countChecked(aioChecks);
-    const total = seoScore + aeoScore + aioScore;
-
-    scoreSeoEl.textContent = `${seoScore}/5`;
-    scoreAeoEl.textContent = `${aeoScore}/5`;
-    scoreAioEl.textContent = `${aioScore}/5`;
-
-    if (total >= 12) {
-      diagnosisBox.className = "mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5";
-      diagnosisTitle.className = "font-bold text-emerald-900";
-      diagnosisTitle.textContent = "AI検索時代に対応できています";
-      diagnosisDesc.className = "mt-1 text-sm text-emerald-800";
-      diagnosisDesc.textContent = `合計${total}/15点。従来のSEOだけでなくAEO・AIO/GEOにも対応が進んでいます。`;
-    } else if (total >= 7) {
-      diagnosisBox.className = "mt-4 rounded-xl border border-amber-200 bg-amber-50 p-5";
-      diagnosisTitle.className = "font-bold text-amber-900";
-      diagnosisTitle.textContent = "基礎はできていますが、伸びしろがあります";
-      diagnosisDesc.className = "mt-1 text-sm text-amber-800";
-      diagnosisDesc.textContent = `合計${total}/15点。チェックが付かなかった項目から優先的に着手しましょう。`;
-    } else {
-      diagnosisBox.className = "mt-4 rounded-xl border border-rose-200 bg-rose-50 p-5";
-      diagnosisTitle.className = "font-bold text-rose-900";
-      diagnosisTitle.textContent = "従来型のSEOにとどまっている可能性があります";
-      diagnosisDesc.className = "mt-1 text-sm text-rose-800";
-      diagnosisDesc.textContent = `合計${total}/15点。特にAEO・AIO/GEO（AI検索・生成AI対策）から着手することをおすすめします。`;
-    }
-  }
-
-  [...seoChecks, ...aeoChecks, ...aioChecks].forEach((el) => el.addEventListener("change", updateDiagnosis));
-</script>
