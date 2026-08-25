@@ -1,0 +1,39 @@
+---
+// ライブラリページ用のカード。記事・資料どちらの LibraryItem も同じ見た目で表示する。
+import type { LibraryItem } from "@/lib/library";
+import { DEFAULT_OG_IMAGE } from "@/consts";
+
+interface Props {
+  item: LibraryItem;
+}
+
+const { item } = Astro.props;
+const dateLabel = new Date(item.publishedAt).toLocaleDateString("ja-JP", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+---
+
+<a href={item.href} class="group flex flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
+  <div class="aspect-video w-full overflow-hidden bg-neutral-50">
+    <img src={item.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+  </div>
+  <div class="flex flex-1 flex-col p-5">
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span class={`rounded-full px-2.5 py-0.5 font-bold ${item.kind === "resource" ? "bg-brand-600 text-white" : "bg-neutral-100 text-neutral-600"}`}>
+        {item.typeLabel}
+      </span>
+      {item.metaLabel && <span class="text-neutral-400">{item.metaLabel}</span>}
+    </div>
+    <div class="mt-2 flex items-center gap-2 text-xs text-neutral-400">
+      {item.category && <span class="font-medium text-brand-600">{item.category}</span>}
+      <time datetime={item.publishedAt}>{dateLabel}</time>
+    </div>
+    <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{item.title}</h3>
+    <p class="mt-2 line-clamp-2 flex-1 text-sm text-neutral-500">{item.description}</p>
+    <span class="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-bold text-white">
+      {item.ctaLabel}
+    </span>
+  </div>
+</a>
