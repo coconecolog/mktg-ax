@@ -16,7 +16,7 @@ const dateLabel = new Date(item.publishedAt).toLocaleDateString("ja-JP", {
 ---
 
 <a href={item.href} class="group flex flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
-  <div class={`aspect-video w-full overflow-hidden ${item.kind === "resource" ? "bg-brand-900 p-3" : "bg-neutral-50"}`}>
+  <div class={`aspect-video w-full overflow-hidden ${item.kind === "resource" ? "bg-brand-100 p-6" : "bg-neutral-50"}`}>
     <img
       src={item.thumbnail || DEFAULT_OG_IMAGE}
       alt=""
