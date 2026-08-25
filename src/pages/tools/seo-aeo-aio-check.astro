@@ -1,11 +1,36 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
+import FaqAccordion from "@/components/FaqAccordion.astro";
+import MoreExplore from "@/components/MoreExplore.astro";
+import ContactCta from "@/components/ContactCta.astro";
+import { getAllCategories, getPopularPosts } from "@/lib/posts";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "便利ツール", href: "/tools" },
   { name: "簡易SEO・AEO・AIO診断", href: "/tools/seo-aeo-aio-check" },
+];
+
+const categories = getAllCategories();
+const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
+
+const faqItems = [
+  {
+    question: "実際のサイトをクロールして診断してくれますか？",
+    answer:
+      "いいえ。このツールはURLを入力してクロールするものではなく、15項目のチェックリストに自己申告でチェックを入れる簡易診断です。",
+  },
+  {
+    question: "AEO・AIOとSEOはどう違うのですか？",
+    answer:
+      "SEOは検索エンジンの検索結果での上位表示を目指す従来の施策です。AEO（AI検索最適化）はAIチャットの回答に引用されること、AIO/GEO（生成AI最適化）は生成AIの学習・参照のされやすさを高める施策を指します。",
+  },
+  {
+    question: "スコアが低い項目から手をつけるべきですか？",
+    answer:
+      "はい。特にAEO・AIO/GEOはまだ対応していない企業が多く、着手のインパクトが大きい傾向にあります。チェックが付かなかった項目から優先的に検討することをおすすめします。",
+  },
 ];
 ---
 
@@ -16,7 +41,7 @@ const breadcrumbItems = [
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-3xl px-5 py-12">
+  <section class="mx-auto max-w-5xl px-5 py-12">
     <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">簡易SEO・AEO・AIO診断チェックリスト</h1>
     <p class="mt-3 text-neutral-500">
       全15項目にチェックを入れると、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断します。実際のサイトをクロールするものではなく、自己申告のチェックリスト形式です。入力内容はブラウザ内だけで処理され、送信・保存はされません。
@@ -168,7 +193,18 @@ const breadcrumbItems = [
     <p class="mt-10 text-sm text-neutral-400">
       その他のツールは<a href="/tools" class="text-brand-700 underline">便利ツール一覧</a>からご覧いただけます。
     </p>
+
+    <FaqAccordion items={faqItems} />
+
+    <MoreExplore
+      categories={categories}
+      popularPosts={popularPosts}
+      categoryHeading="カテゴリから探す"
+      popularHeading="💡 あわせて読みたい実践ノウハウ"
+    />
   </section>
+
+  <ContactCta />
 </BaseLayout>
 
 <script>
