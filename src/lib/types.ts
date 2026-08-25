@@ -100,6 +100,8 @@ export interface Resource {
   thumbnail: string | null;
   /** 資料本体ファイルの配信パス。Notion側に「資料ファイル」プロパティが無い間はnull */
   fileUrl: string | null;
+  /** 資料DBページ本文のブロック（記事と同じ形式）。見出し・リストなど自由に構成できる可変セクション用。 */
+  blocks: BlockNode[];
 }
 
 export interface ResourcesCache {
