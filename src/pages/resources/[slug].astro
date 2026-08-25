@@ -36,8 +36,25 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 
   <article class="mx-auto max-w-6xl px-5 py-10">
     <header>
-      {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
-      <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+      {
+        (resource.category || resource.tags.length > 0) && (
+          <div class="mb-4 flex flex-wrap items-center gap-1.5">
+            {resource.category && (
+              <a href={`/blog/category/${encodeURIComponent(resource.category)}`}
+                class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
+              >
+                {resource.category}
+              </a>
+            )}
+            {resource.tags.map((tag) => (
+              <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )
+      }
+      <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
         {resource.title}
       </h1>
       <p class="mt-4 text-sm text-neutral-400">
