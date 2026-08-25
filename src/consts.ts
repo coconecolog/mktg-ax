@@ -34,7 +34,7 @@ export const TOOLS_NAV_ITEMS = [
 ] as const;
 
 // グローバルナビゲーション。children を持つ項目はヘッダーでプルダウンとして表示される
-// （Footer.astro は children を使わず href/label のみをフラットに表示する）。
+// （Footer.astroは独自の3カラム構成のため、この配列は参照していません。フッターのリンクを変えたい場合はFooter.astroを直接編集してください）。
 export const NAV_LINKS = [
   { href: "/", label: "トップ", children: [] },
   { href: "/tools", label: "便利ツール", children: TOOLS_NAV_ITEMS },
