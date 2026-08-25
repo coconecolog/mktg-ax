@@ -1,0 +1,67 @@
+---
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
+import Pagination from "@/components/Pagination.astro";
+import BlogSidebar from "@/components/BlogSidebar.astro";
+import { getLibraryItems, getLibraryCounts } from "@/lib/library";
+import { getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
+import { LIBRARY_PAGE_SIZE } from "@/consts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  return paginate(getLibraryItems("all"), { pageSize: LIBRARY_PAGE_SIZE });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const counts = getLibraryCounts();
+
+const categories = getAllCategories();
+const tags = getAllTags();
+const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+];
+---
+
+<BaseLayout
+  title="マーケティング知見・無料資料ライブラリ"
+  description="業務に直結するノウハウ記事（ブログ）と、社内提案や設計にそのまま使える無料テンプレート・ホワイトペーパーを一括検索できます。"
+  ogImage="/open-graph/default.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">マーケティング知見・無料資料ライブラリ</h1>
+    <p class="mt-3 text-neutral-500">
+      業務に直結するノウハウ記事（ブログ）と、社内提案や設計にそのまま使える無料テンプレート・ホワイトペーパーを一括検索できます。
+    </p>
+
+    <div class="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div class="min-w-0">
+        <LibraryFilterTabs active="all" counts={counts} />
+
+        {
+          page.data.length > 0 ? (
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {page.data.map((item) => (
+                <LibraryCard item={item} />
+              ))}
+            </div>
+          ) : (
+            <p class="mt-10 text-neutral-400">まだコンテンツがありません。</p>
+          )
+        }
+
+        <Pagination page={page} basePath="/library" />
+      </div>
+
+      <aside class="lg:sticky lg:top-24 lg:self-start">
+        <BlogSidebar categories={categories} popularPosts={sidebarPopularPosts} tags={tags} searchLabel="ライブラリ内キーワード検索" />
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
