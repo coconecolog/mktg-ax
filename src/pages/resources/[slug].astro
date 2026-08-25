@@ -4,6 +4,7 @@ import type { Resource } from "@/lib/types";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllResources } from "@/lib/resources";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 
@@ -31,24 +32,24 @@ const dateLabel = (iso: string) =>
   <Breadcrumb items={breadcrumbItems} />
 
   <article class="mx-auto max-w-6xl px-5 py-10">
-    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
-      <div class="min-w-0">
-        <header>
-          {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
-          <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
-            {resource.title}
-          </h1>
-          <p class="mt-4 text-sm text-neutral-400">
-            公開日: <time datetime={resource.publishedAt}>{dateLabel(resource.publishedAt)}</time>
-            {resource.updatedAt !== resource.publishedAt && (
-              <>
-                {" "}／ 更新日: <time datetime={resource.updatedAt}>{dateLabel(resource.updatedAt)}</time>
-              </>
-            )}
-          </p>
-        </header>
+    <header>
+      {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
+      <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+        {resource.title}
+      </h1>
+      <p class="mt-4 text-sm text-neutral-400">
+        公開日: <time datetime={resource.publishedAt}>{dateLabel(resource.publishedAt)}</time>
+        {resource.updatedAt !== resource.publishedAt && (
+          <>
+            {" "}／ 更新日: <time datetime={resource.updatedAt}>{dateLabel(resource.updatedAt)}</time>
+          </>
+        )}
+      </p>
+    </header>
 
-        <div class="mt-8 aspect-video w-full overflow-hidden rounded-2xl bg-neutral-50">
+    <div class="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div class="min-w-0">
+        <div class="aspect-video w-full overflow-hidden rounded-2xl bg-neutral-50">
           <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" />
         </div>
 
@@ -66,6 +67,14 @@ const dateLabel = (iso: string) =>
                   </li>
                 ))}
               </ul>
+            </div>
+          )
+        }
+
+        {
+          resource.blocks.length > 0 && (
+            <div class="prose-notion mt-10 w-full">
+              <NotionBlocks blocks={resource.blocks} />
             </div>
           )
         }
