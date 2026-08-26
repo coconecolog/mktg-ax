@@ -3,6 +3,7 @@ import SEO from "@/components/SEO.astro";
 import Analytics from "@/components/Analytics.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
+import { GTM_ID } from "@/consts";
 import "@/styles/global.css";
 
 interface Props {
@@ -23,8 +24,20 @@ const { title, description, ogImage, noindex, jsonLd } = Astro.props;
     <Analytics />
   </head>
   <body class="flex min-h-screen flex-col">
+    {
+      GTM_ID && (
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style="display:none;visibility:hidden"
+          />
+        </noscript>
+      )
+    }
     <Header />
-     <main class="flex-1" data-pagefind-body>
+    <main class="flex-1" data-pagefind-body>
       <slot />
     </main>
     <Footer />
