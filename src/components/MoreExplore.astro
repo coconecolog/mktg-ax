@@ -24,19 +24,14 @@ const otherCategories = categories.filter((c) => c.name !== excludeCategory);
   <div class="rounded-2xl border border-neutral-100 bg-neutral-50 p-8 text-center">
     <p class="text-base font-bold text-ink-950">お探しの情報が見つかりませんか？</p>
     <p class="mt-2 text-sm text-neutral-500">キーワードで検索するか、別のテーマや人気記事から探してみましょう。</p>
-    <!-- TODO: サイト内検索は未実装（ダミー表示）。実装時は本フォームのaction/送信処理を差し替える。 -->
-    <form class="mx-auto mt-5 flex max-w-md gap-2">
+    <form action="/search" method="get" class="mx-auto mt-5 flex max-w-md gap-2">
       <input
         type="text"
-        disabled
-        placeholder="例: マネックス、アプリ、手数料"
-        class="w-full rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+        name="q"
+        placeholder="例: ROI、GA4、リード獲得"
+        class="w-full rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
       />
-      <button
-        type="button"
-        disabled
-        class="shrink-0 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white opacity-60"
-      >
+      <button type="submit" class="shrink-0 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white hover:bg-brand-700">
         検索
       </button>
     </form>
