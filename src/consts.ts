@@ -60,6 +60,10 @@ export const OPERATOR_REPRESENTATIVE = "準備中";
 export const OPERATOR_ADDRESS = "準備中";
 
 // アクセス解析（未設定の項目はタグを出力しない）
+// GTM_ID を設定すると、GA4の直接埋め込みタグの代わりにGoogleタグマネージャー(GTM)を読み込む
+// （Analytics.astro側で「GTM設定時はGA4直書きタグを出さない」ようにしており、二重計測を防いでいる）。
+// GA4の実際の計測タグは、GTMの管理画面側で「GA4設定タグ」として別途作成する必要がある（コード変更は不要）。
+export const GTM_ID = import.meta.env.PUBLIC_GTM_ID || "";
 export const GA4_ID = import.meta.env.PUBLIC_GA4_ID || "";
 export const CLARITY_ID = import.meta.env.PUBLIC_CLARITY_ID || "";
 export const GSC_VERIFICATION = import.meta.env.PUBLIC_GSC_VERIFICATION || "";
