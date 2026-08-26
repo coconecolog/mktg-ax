@@ -38,6 +38,7 @@ jobs:
           PUBLIC_GA4_ID: ${{ secrets.MKTG_AX_PUBLIC_GA4_ID }}
           PUBLIC_CLARITY_ID: ${{ secrets.MKTG_AX_PUBLIC_CLARITY_ID }}
           PUBLIC_GSC_VERIFICATION: ${{ secrets.MKTG_AX_PUBLIC_GSC_VERIFICATION }}
+          PUBLIC_GTM_ID: ${{ secrets.MKTG_AX_PUBLIC_GTM_ID }}
 
       - name: Cloudflare Pagesへデプロイ（direct upload / 無料枠のビルド回数を消費しない）
         uses: cloudflare/wrangler-action@v3
