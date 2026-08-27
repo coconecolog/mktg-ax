@@ -41,7 +41,7 @@ const { title, description, ogImage, noindex, jsonLd, pagefindIgnore } = Astro.p
       )
     }
     <Header />
-    <main class="flex-1" data-pagefind-body>
+   <main class="flex-1" data-pagefind-body={pagefindIgnore ? undefined : true} data-pagefind-ignore={pagefindIgnore ? "all" : undefined}>
       <slot />
     </main>
     <Footer />
