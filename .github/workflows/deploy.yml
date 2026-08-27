@@ -24,8 +24,11 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: 依存パッケージをインストール
+            - name: 依存パッケージをインストール
         run: npm ci
+
+      - name: PDFプレビュー画像生成用のツールをインストール
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
       - name: Notionから記事・資料データを取得してビルド
         run: npm run build
