@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 // ============================================================
 // Notionのプロパティ名（このサイトの仕様書どおりの名称）
@@ -441,7 +445,11 @@ export const RESOURCE_PROP = {
   metaDescription: "ディスクリプション",
   // 資料本体ファイル。Notion側に「ファイル&メディア」プロパティとしてこの名前で追加してください。
   // 未追加の間は資料ファイルのURLが常にnullになります（ダウンロードボタンは準備中表示のまま）。
-  file: "資料ファイル",
+    file: "資料ファイル",
+  // 表紙・抜粋ページの自動キャプチャ用。「テキスト」プロパティとしてこの名前で追加してください。
+  // 例: "3,7" のようにページ番号をカンマ区切りで入力（全角カンマ・スペース区切りも可）。
+  // 未追加・未入力の間は抜粋ページのキャプチャは行われません（表紙のみ自動生成されます）。
+  excerptPages: "抜粋ページ",
 };
 
 export function getSelectName(page, name) {
@@ -505,7 +513,7 @@ export async function downloadResourceFile(url, idHint) {
     const buffer = Buffer.from(await res.arrayBuffer());
     await fs.writeFile(outPath, buffer);
 
-    const publicPath = `/files/resources/${filename}`;
+        const publicPath = `/files/resources/${filename}`;
     resourceFileDownloadCache.set(url, publicPath);
     return publicPath;
   } catch (err) {
@@ -513,4 +521,60 @@ export async function downloadResourceFile(url, idHint) {
     resourceFileDownloadCache.set(url, null);
     return null;
   }
+}
+
+const RESOURCE_PREVIEW_OUT_DIR = path.resolve(process.cwd(), "public/images/resources");
+
+/**
+ * 資料ファイル（PDF）の表紙（1ページ目）と、指定した抜粋ページを画像化して
+ * public/images/resources/ に保存し、サイト内から参照できる絶対パスを返す。
+ * 変換にはpoppler-utils（pdftoppmコマンド）を使う。新しいnpmパッケージは追加しない。
+ *
+ * PDF以外のファイル形式（zip/doc/pptなど）の場合は何もせず null / 空配列を返す。
+ * ページ番号が存在しない等で個別のページの変換に失敗した場合は、そのページだけスキップし
+ * （downloadImage() 等と同じ方針で）ビルド全体は止めない。
+ *
+ * @param {string|null} fileUrl downloadResourceFile() が返した /files/resources/xxx.pdf 形式のパス
+ * @param {string} idHint ファイル名の一意性を保つための接頭辞（通常はNotionページID由来）
+ * @param {number[]} excerptPageNumbers 抜粋したいページ番号（1始まり）の配列
+ */
+export async function generateResourcePreviewImages(fileUrl, idHint, excerptPageNumbers = []) {
+  const result = { coverImage: null, excerptImages: [] };
+  if (!fileUrl || !fileUrl.toLowerCase().endsWith(".pdf")) return result;
+
+  const pdfLocalPath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""));
+  await fs.mkdir(RESOURCE_PREVIEW_OUT_DIR, { recursive: true });
+
+  async function renderPage(pageNumber, suffix) {
+    const outPrefix = path.join(RESOURCE_PREVIEW_OUT_DIR, `${idHint}-${suffix}`);
+    try {
+      await execFileAsync("pdftoppm", [
+        "-png",
+        "-r",
+        "150",
+        "-f",
+        String(pageNumber),
+        "-l",
+        String(pageNumber),
+        "-singlefile",
+        pdfLocalPath,
+        outPrefix,
+      ]);
+      return `/images/resources/${idHint}-${suffix}.png`;
+    } catch (err) {
+      console.warn(
+        `  [notion] PDFプレビュー画像の生成に失敗しました (${idHint}, ${pageNumber}ページ目): ${err.message}`,
+      );
+      return null;
+    }
+  }
+
+  result.coverImage = await renderPage(1, "cover");
+
+  for (const pageNumber of excerptPageNumbers) {
+    const image = await renderPage(pageNumber, `p${pageNumber}`);
+    if (image) result.excerptImages.push(image);
+  }
+
+  return result;
 }
