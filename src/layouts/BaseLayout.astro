@@ -11,10 +11,14 @@ interface Props {
   description: string;
   ogImage?: string;
   noindex?: boolean;
-  jsonLd?: object | object[];
+   jsonLd?: object | object[];
+  // true にすると、このページをサイト内検索（Pagefind）の索引対象から除外する。
+  // タグ一覧・カテゴリ一覧のように記事本文を含まない一覧ページ向け。
+  // 検索エンジン向けのnoindexとは別物（そちらはSEO.astro側でmeta robotsを制御）。
+  pagefindIgnore?: boolean;
 }
 
-const { title, description, ogImage, noindex, jsonLd } = Astro.props;
+const { title, description, ogImage, noindex, jsonLd, pagefindIgnore } = Astro.props;
 ---
 
 <!doctype html>
