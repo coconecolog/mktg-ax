@@ -25,8 +25,9 @@ import {
   resolveSlug,
   makeAnchorFactory,
   transformBlocks,
-  downloadImage,
+    downloadImage,
   downloadResourceFile,
+  generateResourcePreviewImages,
   splitBulletLines,
 } from "./lib/transform.mjs";
 
@@ -96,9 +97,22 @@ async function main() {
 
     // 「資料ファイル」プロパティ（ファイル&メディア）がまだNotion側に無い場合はnullのままになる。
     const fileSourceUrl = getFirstFileUrl(page, RESOURCE_PROP.file);
-    const fileUrl = fileSourceUrl
+        const fileUrl = fileSourceUrl
       ? await downloadResourceFile(fileSourceUrl, `resource-file-${page.id}`)
       : null;
+
+    // 「抜粋ページ」（例: "3,7"）で指定したページ番号を抜き出す。全角カンマ・スペース区切りも許容。
+    const excerptPageNumbers = getRichTextPlain(page, RESOURCE_PROP.excerptPages)
+      .split(/[,、\s]+/)
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isInteger(n) && n > 0);
+
+    // 資料ファイルがPDFの場合、表紙（1ページ目）と抜粋ページを自動でキャプチャする。
+    const { coverImage, excerptImages } = await generateResourcePreviewImages(
+      fileUrl,
+      `resource-preview-${page.id}`,
+      excerptPageNumbers,
+    );
 
     const description = getRichTextPlain(page, RESOURCE_PROP.description).trim();
     const metaDescription = getRichTextPlain(page, RESOURCE_PROP.metaDescription).trim() || description;
@@ -124,6 +138,8 @@ async function main() {
       updatedAt,
       thumbnail,
       fileUrl,
+      coverImage,
+      excerptImages,
       blocks,
     });
   }
