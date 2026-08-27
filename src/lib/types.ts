@@ -100,6 +100,10 @@ export interface Resource {
   thumbnail: string | null;
   /** 資料本体ファイルの配信パス。Notion側に「資料ファイル」プロパティが無い間はnull */
   fileUrl: string | null;
+  /** 資料ファイル（PDF）の1ページ目を自動キャプチャした表紙画像。PDF以外やキャプチャ失敗時はnull */
+  coverImage: string | null;
+  /** 「抜粋ページ」で指定したページ番号を自動キャプチャした画像（指定順）。未指定なら空配列 */
+  excerptImages: string[];
   /** 資料DBページ本文のブロック（記事と同じ形式）。見出し・リストなど自由に構成できる可変セクション用。 */
   blocks: BlockNode[];
 }
