@@ -19,10 +19,17 @@ export const PROP = {
   category: "カテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
+  // 通常は未入力のままでOK。ここに画像をアップロードした記事だけ、その画像がサムネイルとして
+  // 優先的に使われる（未入力の記事は generateFallbackThumbnail() が自動生成した画像になる）。
   thumbnail: "サムネイル画像",
   published: "公開",
   slug: "Slug",
   description: "ディスクリプション",
+  // サムネイル画像が未設定の記事で、自動生成サムネイルに乗せる文言。「テキスト」プロパティ。
+  // 未入力の場合はタイトルをそのまま使う。
+  thumbnailTitle: "サムネ用タイトル",
+  // 自動生成サムネイルの補足文言（1行）。「テキスト」プロパティ。未入力なら表示しない。
+  thumbnailSubtitle: "サムネ用サブタイトル",
 };
 
 // 「マスターカテゴリ」DB（記事DB・資料DBの「カテゴリ」リレーション先）自体のプロパティ名。
@@ -31,6 +38,10 @@ export const CATEGORY_PROP = {
   name: "カテゴリ",
   description: "説明文",
   representativeSlug: "代表記事（Slug）",
+  // 自動生成サムネイルの背景色。「セレクト」プロパティとして追加し、Notion標準の色から選ぶ運用にする
+  // （選択肢名は何でもよい。実際に使うのは getSelectColor() で取れるNotion側の色そのもの）。
+  // 未設定のカテゴリ・該当カテゴリが無い記事はグレー系の既定色になる。
+  themeColor: "テーマカラー",
 };
 
 // ------------------------------------------------------------
@@ -236,6 +247,140 @@ export async function downloadImage(url, idHint) {
   } catch (err) {
     console.warn(`  [notion] 画像のダウンロードに失敗しました (${idHint}): ${err.message}`);
     downloadCache.set(url, null);
+    return null;
+  }
+}
+
+// ------------------------------------------------------------
+// サムネイル画像未設定の記事用に、カテゴリの色＋記事タイトルから
+// その場でSVG画像を自動生成する（画像アップロード・外部サービス・追加npm依存いずれも不要）。
+// ------------------------------------------------------------
+
+// Notionのセレクトプロパティが持つ色キーワード → 背景グラデーション（開始色・終了色）。
+// 「テーマカラー」プロパティで選べる色はすべてここに用意してあるので、
+// 新しいカテゴリを追加したときはNotion側で色を選ぶだけでよい（コード変更不要）。
+const CATEGORY_COLOR_GRADIENTS = {
+  default: ["#94a3b8", "#64748b"],
+  gray: ["#9ca3af", "#6b7280"],
+  brown: ["#b08968", "#8b5e34"],
+  orange: ["#fb923c", "#ea580c"],
+  yellow: ["#fbbf24", "#ca8a04"],
+  green: ["#4ade80", "#15803d"],
+  blue: ["#60a5fa", "#1d4ed8"],
+  purple: ["#a78bfa", "#6c3fe8"],
+  pink: ["#f472b6", "#db2777"],
+  red: ["#f87171", "#b91c1c"],
+};
+
+function escapeXml(text) {
+  return (text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+// 半角英数字は0.55文字分、それ以外（全角文字）は1文字分として幅を見積もる簡易ロジック。
+// きちんとしたフォント計測はできないが、日本語主体の見出しをそれっぽく折り返すには十分。
+function estimateCharWidth(ch) {
+  return /[ -~]/.test(ch) ? 0.55 : 1;
+}
+
+function wrapText(text, maxWidth, maxLines) {
+  const chars = Array.from((text || "").trim());
+  const lines = [];
+  let current = "";
+  let currentWidth = 0;
+
+  for (const ch of chars) {
+    const w = estimateCharWidth(ch);
+    if (currentWidth + w > maxWidth && current) {
+      lines.push(current);
+      current = "";
+      currentWidth = 0;
+      if (lines.length === maxLines) break;
+    }
+    current += ch;
+    currentWidth += w;
+  }
+  if (current && lines.length < maxLines) lines.push(current);
+
+  // 収まりきらなかった場合は最終行を省略記号にする
+  const consumedLength = lines.reduce((sum, l) => sum + l.length, 0);
+  if (lines.length === maxLines && consumedLength < chars.length) {
+    let last = lines[maxLines - 1];
+    while (last.length > 1 && estimateCharWidth("…") + [...last].reduce((s, c) => s + estimateCharWidth(c), 0) > maxWidth) {
+      last = last.slice(0, -1);
+    }
+    lines[maxLines - 1] = `${last}…`;
+  }
+  return lines;
+}
+
+const GENERATED_THUMBNAIL_OUT_DIR = path.resolve(process.cwd(), "public/images/generated");
+
+/**
+ * サムネイル画像が未設定の記事用に、カテゴリのテーマカラーを背景にしたSVG画像を生成する。
+ * downloadImage() 同様、失敗してもビルドを止めずに null を返す（呼び出し側は既定画像にフォールバックする）。
+ *
+ * @param {string} idHint ファイル名の一意性を保つための接頭辞（通常はNotionページID）
+ * @param {string} categoryColorKey CATEGORY_COLOR_GRADIENTS のキー（Notionのセレクト色キーワード）
+ * @param {string} title 大きく表示するテキスト（サムネ用タイトル。未入力なら記事タイトルを渡す）
+ * @param {string} subtitle 補足として小さく表示するテキスト（空文字なら非表示）
+ */
+export async function generateFallbackThumbnail(idHint, categoryColorKey, title, subtitle) {
+  try {
+    const [colorFrom, colorTo] = CATEGORY_COLOR_GRADIENTS[categoryColorKey] || CATEGORY_COLOR_GRADIENTS.default;
+    const gradientId = `grad-${idHint}`;
+
+    const titleLines = wrapText(title, 15, 3);
+    const subtitleLines = subtitle ? wrapText(subtitle, 24, 2) : [];
+
+    const titleLineHeight = 60;
+    const subtitleLineHeight = 34;
+    const blockHeight =
+      titleLines.length * titleLineHeight + (subtitleLines.length > 0 ? subtitleLines.length * subtitleLineHeight + 24 : 0);
+    let cursorY = (675 - blockHeight) / 2 + titleLineHeight * 0.75;
+
+    const titleTspans = titleLines
+      .map((line) => {
+        const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
+        cursorY += titleLineHeight;
+        return tspan;
+      })
+      .join("");
+
+    if (subtitleLines.length > 0) cursorY += 24 - titleLineHeight + subtitleLineHeight * 0.75;
+    const subtitleTspans = subtitleLines
+      .map((line) => {
+        const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
+        cursorY += subtitleLineHeight;
+        return tspan;
+      })
+      .join("");
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <defs>
+    <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${colorFrom}" />
+      <stop offset="100%" stop-color="${colorTo}" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#${gradientId})" />
+  <circle cx="1080" cy="80" r="220" fill="#ffffff" opacity="0.08" />
+  <circle cx="1160" cy="600" r="140" fill="#ffffff" opacity="0.06" />
+  <text x="72" y="64" font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="26" font-weight="700" letter-spacing="2" fill="#ffffff" fill-opacity="0.85">MKTG.AX</text>
+  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="46" font-weight="700" fill="#ffffff">${titleTspans}</text>
+  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="24" font-weight="400" fill="#ffffff" fill-opacity="0.85">${subtitleTspans}</text>` : ""}
+</svg>`;
+
+    await fs.mkdir(GENERATED_THUMBNAIL_OUT_DIR, { recursive: true });
+    const filename = `thumb-${idHint}.svg`;
+    await fs.writeFile(path.join(GENERATED_THUMBNAIL_OUT_DIR, filename), svg, "utf-8");
+    return `/images/generated/${filename}`;
+  } catch (err) {
+    console.warn(`  [notion] 自動生成サムネイルの作成に失敗しました (${idHint}): ${err.message}`);
     return null;
   }
 }
@@ -463,6 +608,18 @@ export function getSelectName(page, name) {
 }
 
 /**
+ * セレクトプロパティに設定されている「色」（Notion標準の色キーワード。
+ * default/gray/brown/orange/yellow/green/blue/purple/pink/red のいずれか）を取得する。
+ * getSelectName() が返す選択肢の表示名（ユーザーが付けた文字列）とは別物なので注意。
+ * 自動生成サムネイルの背景色（CATEGORY_COLOR_GRADIENTSのキー）に使う。
+ */
+export function getSelectColor(page, name) {
+  const prop = getProperty(page, name);
+  if (!prop || prop.type !== "select") return null;
+  return prop.select?.color || null;
+}
+
+/**
  * 箇条書き想定のリッチテキスト（複数行テキスト）を改行で分割し、
  * 行頭の記号（・- * • など）を取り除いた配列にする。
  * 「ターゲット・目次」のような項目を画面表示用のリストに変換するために使う。
@@ -498,8 +655,6 @@ const resourceFileDownloadCache = new Map();
  * 資料の実ファイル（PDF等）をダウンロードして public/files/resources/ に保存し、
  * サイト内から参照できる絶対パスを返す。downloadImage() の資料ファイル版。
  * 失敗した場合や資料ファイルが未設定の場合は null を返す。
- * ※現在の運用では使用していない（資料ファイルはGitHubに直接アップロードするため）が、
- *   将来Notionアップロード方式に戻す可能性を考慮し、そのまま残してある。
  */
 export async function downloadResourceFile(url, idHint) {
   if (!url) return null;
@@ -566,7 +721,7 @@ const RESOURCE_PREVIEW_OUT_DIR = path.resolve(process.cwd(), "public/images/reso
  * ページ番号が存在しない等で個別のページの変換に失敗した場合は、そのページだけスキップし
  * （downloadImage() 等と同じ方針で）ビルド全体は止めない。
  *
- * @param {string|null} fileUrl resolveLocalRepoFile() が返した /files/resources/xxx.pdf 形式のパス
+ * @param {string|null} fileUrl downloadResourceFile() が返した /files/resources/xxx.pdf 形式のパス
  * @param {string} idHint ファイル名の一意性を保つための接頭辞（通常はNotionページID由来）
  * @param {number[]} excerptPageNumbers 抜粋したいページ番号（1始まり）の配列
  */
