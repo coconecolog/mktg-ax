@@ -71,7 +71,7 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 
     <div class="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
       <div class="min-w-0">
-                <div class="aspect-video w-full overflow-hidden rounded-2xl bg-neutral-50">
+        <div class="aspect-video w-full overflow-hidden rounded-2xl bg-neutral-50">
           <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" />
         </div>
 
@@ -79,16 +79,34 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
           (resource.coverImage || resource.excerptImages.length > 0) && (
             <div class="mt-6">
               <p class="text-sm font-bold text-ink-950">資料プレビュー</p>
-              <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {resource.coverImage && (
-                  <div class="overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50">
-                    <img src={resource.coverImage} alt={`${resource.title}の表紙`} class="h-full w-full object-cover" />
-                  </div>
+                  <button
+                    type="button"
+                    class="preview-thumb group overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50"
+                    data-preview-src={resource.coverImage}
+                    data-preview-alt={`${resource.title}の表紙`}
+                  >
+                    <img
+                      src={resource.coverImage}
+                      alt={`${resource.title}の表紙`}
+                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
+                    />
+                  </button>
                 )}
                 {resource.excerptImages.map((src, i) => (
-                  <div class="overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50">
-                    <img src={src} alt={`${resource.title}のプレビュー${i + 1}`} class="h-full w-full object-cover" />
-                  </div>
+                  <button
+                    type="button"
+                    class="preview-thumb group overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50"
+                    data-preview-src={src}
+                    data-preview-alt={`${resource.title}のプレビュー${i + 1}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`${resource.title}のプレビュー${i + 1}`}
+                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
+                    />
+                  </button>
                 ))}
               </div>
             </div>
@@ -174,4 +192,76 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
   </article>
 
   <ContactCta />
+
+  <dialog id="preview-modal" class="preview-modal">
+    <button type="button" class="preview-modal-close" aria-label="閉じる">✕</button>
+    <img id="preview-modal-img" src="" alt="" />
+  </dialog>
 </BaseLayout>
+
+<style>
+  .preview-thumb {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    cursor: zoom-in;
+  }
+
+  .preview-modal {
+    max-width: min(92vw, 1200px);
+    max-height: 92vh;
+    padding: 0;
+    border: none;
+    border-radius: 1rem;
+    background: transparent;
+  }
+
+  .preview-modal::backdrop {
+    background: rgba(15, 15, 25, 0.75);
+  }
+
+  .preview-modal img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 1rem;
+  }
+
+  .preview-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.92);
+    color: #111827;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  const modal = document.getElementById("preview-modal") as HTMLDialogElement | null;
+  const modalImg = document.getElementById("preview-modal-img") as HTMLImageElement | null;
+  const closeBtn = modal?.querySelector<HTMLButtonElement>(".preview-modal-close");
+
+  document.querySelectorAll<HTMLButtonElement>(".preview-thumb").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!modal || !modalImg) return;
+      modalImg.src = btn.dataset.previewSrc || "";
+      modalImg.alt = btn.dataset.previewAlt || "";
+      modal.showModal();
+    });
+  });
+
+  closeBtn?.addEventListener("click", () => modal?.close());
+
+  // 画像の外側（背景部分）をクリックしたら閉じる
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) modal.close();
+  });
+</script>
