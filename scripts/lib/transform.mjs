@@ -386,28 +386,38 @@ const GENERATED_THUMBNAIL_OUT_DIR = path.resolve(process.cwd(), "public/images/g
 export async function generateFallbackThumbnail(idHint, background, title, subtitle) {
   try {
     const { dataUri, colorKey } = background || {};
-    const titleLines = wrapText(title, 15, 3);
-    const subtitleLines = subtitle ? wrapText(subtitle, 24, 2) : [];
 
-    const titleLineHeight = 60;
-    const subtitleLineHeight = 34;
+    // サブタイトルを上・小さめ、メインタイトルを下・大きめに表示する。
+    const titleFontSize = 66;
+    const titleLineHeight = 82;
+    const titleWrapWidth = 10;
+    const subtitleFontSize = 34;
+    const subtitleLineHeight = 46;
+    const subtitleWrapWidth = 18;
+    const blockGap = 20;
+
+    const titleLines = wrapText(title, titleWrapWidth, 3);
+    const subtitleLines = subtitle ? wrapText(subtitle, subtitleWrapWidth, 2) : [];
+
     const blockHeight =
-      titleLines.length * titleLineHeight + (subtitleLines.length > 0 ? subtitleLines.length * subtitleLineHeight + 24 : 0);
-    let cursorY = (675 - blockHeight) / 2 + titleLineHeight * 0.75;
+      (subtitleLines.length > 0 ? subtitleLines.length * subtitleLineHeight + blockGap : 0) +
+      titleLines.length * titleLineHeight;
+    let cursorY = (675 - blockHeight) / 2;
 
-    const titleTspans = titleLines
-      .map((line) => {
-        const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
-        cursorY += titleLineHeight;
-        return tspan;
-      })
-      .join("");
-
-    if (subtitleLines.length > 0) cursorY += 24 - titleLineHeight + subtitleLineHeight * 0.75;
+    cursorY += subtitleLines.length > 0 ? subtitleLineHeight * 0.75 : titleLineHeight * 0.75;
     const subtitleTspans = subtitleLines
       .map((line) => {
         const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
         cursorY += subtitleLineHeight;
+        return tspan;
+      })
+      .join("");
+
+    if (subtitleLines.length > 0) cursorY += blockGap - subtitleLineHeight + titleLineHeight * 0.75;
+    const titleTspans = titleLines
+      .map((line) => {
+        const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
+        cursorY += titleLineHeight;
         return tspan;
       })
       .join("");
@@ -433,8 +443,8 @@ export async function generateFallbackThumbnail(idHint, background, title, subti
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   ${backgroundMarkup}
   <text x="72" y="64" font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="26" font-weight="700" letter-spacing="2" fill="#ffffff" fill-opacity="0.85">MKTG.AX</text>
-  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="46" font-weight="700" fill="#ffffff">${titleTspans}</text>
-  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="24" font-weight="400" fill="#ffffff" fill-opacity="0.85">${subtitleTspans}</text>` : ""}
+  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="400" fill="#ffffff" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
+  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="#ffffff">${titleTspans}</text>
 </svg>`;
 
     await fs.mkdir(GENERATED_THUMBNAIL_OUT_DIR, { recursive: true });
