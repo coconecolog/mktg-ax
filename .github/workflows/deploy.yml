@@ -24,7 +24,7 @@ jobs:
           node-version: 22
           cache: npm
 
-            - name: 依存パッケージをインストール
+      - name: 依存パッケージをインストール
         run: npm ci
 
       - name: PDFプレビュー画像生成用のツールをインストール
