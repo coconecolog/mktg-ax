@@ -38,9 +38,13 @@ export const CATEGORY_PROP = {
   name: "カテゴリ",
   description: "説明文",
   representativeSlug: "代表記事（Slug）",
-  // 自動生成サムネイルの背景色。「セレクト」プロパティとして追加し、Notion標準の色から選ぶ運用にする
-  // （選択肢名は何でもよい。実際に使うのは getSelectColor() で取れるNotion側の色そのもの）。
-  // 未設定のカテゴリ・該当カテゴリが無い記事はグレー系の既定色になる。
+  // 自動生成サムネイルの背景画像。「テキスト」プロパティとして追加し、GitHubリポジトリの
+  // public/images/category-backgrounds/ にアップロードした画像のファイル名を入力する運用にする
+  // （資料ファイル・資料サムネイルと同じ方式。差し替えたい時は同じファイル名で再アップロードするだけでよい）。
+  backgroundImage: "背景画像ファイル名",
+  // 上の画像が未設定・見つからない場合のフォールバック用の背景色。「セレクト」プロパティとして追加し、
+  // Notion標準の色から選ぶ（選択肢名は何でもよい。実際に使うのは getSelectColor() で取れる色そのもの）。
+  // どちらも未設定のカテゴリ・該当カテゴリが無い記事はグレー系の既定色になる。
   themeColor: "テーマカラー",
 };
 
@@ -318,22 +322,70 @@ function wrapText(text, maxWidth, maxLines) {
   return lines;
 }
 
+const CATEGORY_BACKGROUND_DIR = path.resolve(process.cwd(), "public/images/category-backgrounds");
+const categoryBackgroundCache = new Map();
+
+const IMAGE_MIME_BY_EXT = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
+
+/**
+ * カテゴリの背景画像（GitHubリポジトリの public/images/category-backgrounds/ に
+ * アップロードされたファイル）を読み込み、SVGにそのまま埋め込める data: URI にして返す。
+ * SVGを<img>タグ経由で表示する場合、そのSVGの中から外部の画像ファイルを参照しても
+ * ブラウザ側で読み込みがブロックされてしまうため、data: URIとして埋め込む必要がある
+ * （検証済み。相対パス参照では真っ白な画像になってしまう）。
+ * ファイルが見つからない場合はnullを返し、呼び出し側は色グラデーションにフォールバックする。
+ * 同じファイルを何十記事からも参照するため、一度読み込んだ内容はキャッシュする。
+ *
+ * @param {string} filename 「背景画像ファイル名」に入力されたファイル名（例: "lead-gen.png"）
+ */
+export async function resolveCategoryBackgroundDataUri(filename) {
+  const trimmed = (filename || "").trim();
+  if (!trimmed) return null;
+  if (categoryBackgroundCache.has(trimmed)) return categoryBackgroundCache.get(trimmed);
+
+  const ext = path.extname(trimmed).toLowerCase();
+  const mime = IMAGE_MIME_BY_EXT[ext];
+  if (!mime) {
+    console.warn(`  [notion] 背景画像ファイル名「${trimmed}」の拡張子が非対応です（png/jpg/jpeg/webpのみ）。`);
+    categoryBackgroundCache.set(trimmed, null);
+    return null;
+  }
+
+  const absolutePath = path.resolve(CATEGORY_BACKGROUND_DIR, trimmed);
+  try {
+    const buffer = await fs.readFile(absolutePath);
+    const dataUri = `data:${mime};base64,${buffer.toString("base64")}`;
+    categoryBackgroundCache.set(trimmed, dataUri);
+    return dataUri;
+  } catch {
+    console.warn(
+      `  [notion] 背景画像が見つかりません: public/images/category-backgrounds/${trimmed}（GitHubへのアップロード忘れ、またはファイル名のタイプミスがないか確認してください）`,
+    );
+    categoryBackgroundCache.set(trimmed, null);
+    return null;
+  }
+}
+
 const GENERATED_THUMBNAIL_OUT_DIR = path.resolve(process.cwd(), "public/images/generated");
 
 /**
- * サムネイル画像が未設定の記事用に、カテゴリのテーマカラーを背景にしたSVG画像を生成する。
+ * サムネイル画像が未設定の記事用に、カテゴリの背景（画像 or テーマカラー）を使ってSVG画像を生成する。
  * downloadImage() 同様、失敗してもビルドを止めずに null を返す（呼び出し側は既定画像にフォールバックする）。
  *
  * @param {string} idHint ファイル名の一意性を保つための接頭辞（通常はNotionページID）
- * @param {string} categoryColorKey CATEGORY_COLOR_GRADIENTS のキー（Notionのセレクト色キーワード）
+ * @param {object} background { dataUri: resolveCategoryBackgroundDataUri()の戻り値, colorKey: CATEGORY_COLOR_GRADIENTSのキー }
+ *   dataUriがあればそれを背景画像として使い、無ければcolorKeyのグラデーションを使う。
  * @param {string} title 大きく表示するテキスト（サムネ用タイトル。未入力なら記事タイトルを渡す）
  * @param {string} subtitle 補足として小さく表示するテキスト（空文字なら非表示）
  */
-export async function generateFallbackThumbnail(idHint, categoryColorKey, title, subtitle) {
+export async function generateFallbackThumbnail(idHint, background, title, subtitle) {
   try {
-    const [colorFrom, colorTo] = CATEGORY_COLOR_GRADIENTS[categoryColorKey] || CATEGORY_COLOR_GRADIENTS.default;
-    const gradientId = `grad-${idHint}`;
-
+    const { dataUri, colorKey } = background || {};
     const titleLines = wrapText(title, 15, 3);
     const subtitleLines = subtitle ? wrapText(subtitle, 24, 2) : [];
 
@@ -360,16 +412,26 @@ export async function generateFallbackThumbnail(idHint, categoryColorKey, title,
       })
       .join("");
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
-  <defs>
-    <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+    // 背景画像があればそれをフルサイズで敷き、文字が読めるよう上に薄暗いオーバーレイを重ねる。
+    // 画像が無ければ、これまでどおりカテゴリのテーマカラーのグラデーションにする。
+    const backgroundMarkup = dataUri
+      ? `<image href="${dataUri}" x="0" y="0" width="1200" height="675" preserveAspectRatio="xMidYMid slice" />
+  <rect width="1200" height="675" fill="#000000" opacity="0.35" />`
+      : (() => {
+          const [colorFrom, colorTo] = CATEGORY_COLOR_GRADIENTS[colorKey] || CATEGORY_COLOR_GRADIENTS.default;
+          return `<defs>
+    <linearGradient id="grad-${idHint}" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="${colorFrom}" />
       <stop offset="100%" stop-color="${colorTo}" />
     </linearGradient>
   </defs>
-  <rect width="1200" height="675" fill="url(#${gradientId})" />
+  <rect width="1200" height="675" fill="url(#grad-${idHint})" />
   <circle cx="1080" cy="80" r="220" fill="#ffffff" opacity="0.08" />
-  <circle cx="1160" cy="600" r="140" fill="#ffffff" opacity="0.06" />
+  <circle cx="1160" cy="600" r="140" fill="#ffffff" opacity="0.06" />`;
+        })();
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  ${backgroundMarkup}
   <text x="72" y="64" font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="26" font-weight="700" letter-spacing="2" fill="#ffffff" fill-opacity="0.85">MKTG.AX</text>
   <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="46" font-weight="700" fill="#ffffff">${titleTspans}</text>
   ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="24" font-weight="400" fill="#ffffff" fill-opacity="0.85">${subtitleTspans}</text>` : ""}
