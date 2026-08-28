@@ -29,6 +29,7 @@ import {
   transformBlocks,
   downloadImage,
   generateFallbackThumbnail,
+  resolveCategoryBackgroundDataUri,
   extractExcerpt,
 } from "./lib/transform.mjs";
 
@@ -71,13 +72,16 @@ async function fetchCategories(token) {
     const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
     const description = getRichTextPlain(page, CATEGORY_PROP.description);
     const representativeSlugRaw = getRichTextPlain(page, CATEGORY_PROP.representativeSlug).trim();
-    // サムネイル自動生成の背景色として使う（「テーマカラー」セレクトプロパティの色そのもの、未設定ならnull）。
+    // サムネイル自動生成の背景として使う。「背景画像ファイル名」が実在すればそれを優先し、
+    // 無ければ「テーマカラー」セレクトプロパティの色でグラデーションにフォールバックする。
+    const backgroundImageFilename = getRichTextPlain(page, CATEGORY_PROP.backgroundImage).trim();
     const themeColor = getSelectColor(page, CATEGORY_PROP.themeColor);
     return {
       name,
       description,
       representativeSlug: representativeSlugRaw || null,
       themeColor,
+      backgroundImageFilename,
     };
   });
 }
@@ -114,9 +118,13 @@ async function main() {
 
   console.log(`[fetch-notion] ${rawPages.length}件の公開記事を処理します。`);
 
-  // 自動生成サムネイルの背景色をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
+  // 自動生成サムネイルの背景をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
   const categories = await fetchCategories(token);
-  const categoryColorMap = new Map(categories.map((c) => [c.name, c.themeColor]));
+  const categoryBackgroundMap = new Map();
+  for (const c of categories) {
+    const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
+    categoryBackgroundMap.set(c.name, { dataUri, colorKey: c.themeColor });
+  }
 
   const posts = [];
   for (const page of rawPages) {
@@ -139,8 +147,9 @@ async function main() {
     if (!thumbnail) {
       const thumbnailTitle = getRichTextPlain(page, PROP.thumbnailTitle).trim() || title;
       const thumbnailSubtitle = getRichTextPlain(page, PROP.thumbnailSubtitle).trim();
-      const colorKey = categoryColorMap.get(category) || "default";
-      thumbnail = await generateFallbackThumbnail(page.id, colorKey, thumbnailTitle, thumbnailSubtitle);
+      // 記事に複数カテゴリが設定されている場合も、他のカテゴリ表示と同じく最初の1件を使う。
+      const background = categoryBackgroundMap.get(category) || { dataUri: null, colorKey: "default" };
+      thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
     }
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
