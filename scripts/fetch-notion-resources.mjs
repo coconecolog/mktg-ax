@@ -21,12 +21,10 @@ import {
   getRichTextPlain,
   getCheckbox,
   getDateISO,
-  getFirstFileUrl,
   resolveSlug,
   makeAnchorFactory,
   transformBlocks,
-    downloadImage,
-  downloadResourceFile,
+  resolveLocalRepoFile,
   generateResourcePreviewImages,
   splitBulletLines,
 } from "./lib/transform.mjs";
@@ -90,16 +88,14 @@ async function main() {
     const publishedAt = getDateISO(page, RESOURCE_PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, RESOURCE_PROP.updatedAt) || page.last_edited_time;
 
-    const thumbnailSourceUrl = getFirstFileUrl(page, RESOURCE_PROP.thumbnail);
-    const thumbnail = thumbnailSourceUrl
-      ? await downloadImage(thumbnailSourceUrl, `resource-thumb-${page.id}`)
-      : null;
+    // サムネイル・資料ファイルはNotionにはアップロードせず、GitHubリポジトリの
+    // public/images/resources/ ・ public/files/resources/ に直接アップロードしてもらう運用。
+    // Notion側の各プロパティには、そのファイル名だけを入力してもらう（テキストプロパティ）。
+    const thumbnailFilename = getRichTextPlain(page, RESOURCE_PROP.thumbnail);
+    const thumbnail = await resolveLocalRepoFile("images/resources", thumbnailFilename);
 
-    // 「資料ファイル」プロパティ（ファイル&メディア）がまだNotion側に無い場合はnullのままになる。
-    const fileSourceUrl = getFirstFileUrl(page, RESOURCE_PROP.file);
-        const fileUrl = fileSourceUrl
-      ? await downloadResourceFile(fileSourceUrl, `resource-file-${page.id}`)
-      : null;
+    const fileFilename = getRichTextPlain(page, RESOURCE_PROP.file);
+    const fileUrl = await resolveLocalRepoFile("files/resources", fileFilename);
 
     // 「抜粋ページ」（例: "3,7"）で指定したページ番号を抜き出す。全角カンマ・スペース区切りも許容。
     const excerptPageNumbers = getRichTextPlain(page, RESOURCE_PROP.excerptPages)
