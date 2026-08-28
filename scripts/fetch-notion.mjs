@@ -21,12 +21,14 @@ import {
   getTitleText,
   getRichTextPlain,
   getCheckbox,
+  getSelectColor,
   getDateISO,
   getFirstFileUrl,
   resolveSlug,
   makeAnchorFactory,
   transformBlocks,
   downloadImage,
+  generateFallbackThumbnail,
   extractExcerpt,
 } from "./lib/transform.mjs";
 
@@ -69,10 +71,13 @@ async function fetchCategories(token) {
     const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
     const description = getRichTextPlain(page, CATEGORY_PROP.description);
     const representativeSlugRaw = getRichTextPlain(page, CATEGORY_PROP.representativeSlug).trim();
+    // サムネイル自動生成の背景色として使う（「テーマカラー」セレクトプロパティの色そのもの、未設定ならnull）。
+    const themeColor = getSelectColor(page, CATEGORY_PROP.themeColor);
     return {
       name,
       description,
       representativeSlug: representativeSlugRaw || null,
+      themeColor,
     };
   });
 }
@@ -109,6 +114,10 @@ async function main() {
 
   console.log(`[fetch-notion] ${rawPages.length}件の公開記事を処理します。`);
 
+  // 自動生成サムネイルの背景色をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
+  const categories = await fetchCategories(token);
+  const categoryColorMap = new Map(categories.map((c) => [c.name, c.themeColor]));
+
   const posts = [];
   for (const page of rawPages) {
     const title = getTitleText(page, PROP.title) || "(無題)";
@@ -123,10 +132,16 @@ async function main() {
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, PROP.updatedAt) || page.last_edited_time;
 
+    // 「サムネイル画像」に実ファイルがアップロードされていればそれを優先。
+    // 未設定の場合は、カテゴリのテーマカラー＋「サムネ用タイトル/サブタイトル」から自動生成する。
     const thumbnailSourceUrl = getFirstFileUrl(page, PROP.thumbnail);
-    const thumbnail = thumbnailSourceUrl
-      ? await downloadImage(thumbnailSourceUrl, `thumb-${page.id}`)
-      : null;
+    let thumbnail = thumbnailSourceUrl ? await downloadImage(thumbnailSourceUrl, `thumb-${page.id}`) : null;
+    if (!thumbnail) {
+      const thumbnailTitle = getRichTextPlain(page, PROP.thumbnailTitle).trim() || title;
+      const thumbnailSubtitle = getRichTextPlain(page, PROP.thumbnailSubtitle).trim();
+      const colorKey = categoryColorMap.get(category) || "default";
+      thumbnail = await generateFallbackThumbnail(page.id, colorKey, thumbnailTitle, thumbnailSubtitle);
+    }
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
@@ -159,8 +174,6 @@ async function main() {
       );
     }
   }
-
-  const categories = await fetchCategories(token);
 
   await fs.mkdir(CACHE_DIR, { recursive: true });
   await fs.writeFile(
