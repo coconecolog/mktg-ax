@@ -437,15 +437,19 @@ export const RESOURCE_PROP = {
   category: "カテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
+  // Notionの容量課金を避けるため、画像・PDFの実ファイルはNotionにアップロードしない。
+  // 「テキスト」プロパティにファイル名だけを入力し、実ファイルはGitHubの
+  // public/images/resources/ フォルダにWeb画面から直接アップロードする運用にする。
   thumbnail: "資料サムネイル",
   description: "資料説明",
   targetToc: "ターゲット・目次",
   published: "公開",
   slug: "Slug",
   metaDescription: "ディスクリプション",
-  // 資料本体ファイル。Notion側に「ファイル&メディア」プロパティとしてこの名前で追加してください。
-  // 未追加の間は資料ファイルのURLが常にnullになります（ダウンロードボタンは準備中表示のまま）。
-    file: "資料ファイル",
+  // 資料本体ファイル（PDF等）。上のサムネイルと同じ理由で、Notionには
+  // 「テキスト」プロパティとしてファイル名だけを入力する。実ファイルは
+  // GitHubの public/files/resources/ フォルダにWeb画面から直接アップロードする。
+  file: "資料ファイル",
   // 表紙・抜粋ページの自動キャプチャ用。「テキスト」プロパティとしてこの名前で追加してください。
   // 例: "3,7" のようにページ番号をカンマ区切りで入力（全角カンマ・スペース区切りも可）。
   // 未追加・未入力の間は抜粋ページのキャプチャは行われません（表紙のみ自動生成されます）。
@@ -494,6 +498,8 @@ const resourceFileDownloadCache = new Map();
  * 資料の実ファイル（PDF等）をダウンロードして public/files/resources/ に保存し、
  * サイト内から参照できる絶対パスを返す。downloadImage() の資料ファイル版。
  * 失敗した場合や資料ファイルが未設定の場合は null を返す。
+ * ※現在の運用では使用していない（資料ファイルはGitHubに直接アップロードするため）が、
+ *   将来Notionアップロード方式に戻す可能性を考慮し、そのまま残してある。
  */
 export async function downloadResourceFile(url, idHint) {
   if (!url) return null;
@@ -513,12 +519,38 @@ export async function downloadResourceFile(url, idHint) {
     const buffer = Buffer.from(await res.arrayBuffer());
     await fs.writeFile(outPath, buffer);
 
-        const publicPath = `/files/resources/${filename}`;
+    const publicPath = `/files/resources/${filename}`;
     resourceFileDownloadCache.set(url, publicPath);
     return publicPath;
   } catch (err) {
     console.warn(`  [notion] 資料ファイルのダウンロードに失敗しました (${idHint}): ${err.message}`);
     resourceFileDownloadCache.set(url, null);
+    return null;
+  }
+}
+
+/**
+ * Notionの容量課金を避けるため、資料の実ファイル（PDF・サムネイル画像）はNotionにアップロードせず、
+ * GitHubリポジトリの public/ 配下に直接アップロードする運用にしている。
+ * Notion側の「テキスト」プロパティにはファイル名だけを入力してもらい、この関数で
+ * リポジトリ内に該当ファイルが実在するかを確認したうえで、サイト内から参照できる絶対パスを返す。
+ * ファイルが見つからない場合（アップロードし忘れ・ファイル名のタイプミス等）はnullを返し、警告を出す。
+ *
+ * @param {string} relativeDir public/ からの相対フォルダ（例: "files/resources"）
+ * @param {string} filename Notionのテキストプロパティに入力されたファイル名（例: "roas-guide.pdf"）
+ */
+export async function resolveLocalRepoFile(relativeDir, filename) {
+  const trimmed = (filename || "").trim();
+  if (!trimmed) return null;
+
+  const absolutePath = path.resolve(process.cwd(), "public", relativeDir, trimmed);
+  try {
+    await fs.access(absolutePath);
+    return `/${relativeDir}/${trimmed}`;
+  } catch {
+    console.warn(
+      `  [notion] ファイルが見つかりません: public/${relativeDir}/${trimmed}（GitHubへのアップロード忘れ、またはNotion側のファイル名の入力ミスがないか確認してください）`,
+    );
     return null;
   }
 }
@@ -534,7 +566,7 @@ const RESOURCE_PREVIEW_OUT_DIR = path.resolve(process.cwd(), "public/images/reso
  * ページ番号が存在しない等で個別のページの変換に失敗した場合は、そのページだけスキップし
  * （downloadImage() 等と同じ方針で）ビルド全体は止めない。
  *
- * @param {string|null} fileUrl downloadResourceFile() が返した /files/resources/xxx.pdf 形式のパス
+ * @param {string|null} fileUrl resolveLocalRepoFile() が返した /files/resources/xxx.pdf 形式のパス
  * @param {string} idHint ファイル名の一意性を保つための接頭辞（通常はNotionページID由来）
  * @param {number[]} excerptPageNumbers 抜粋したいページ番号（1始まり）の配列
  */
