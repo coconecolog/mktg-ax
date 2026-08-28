@@ -827,11 +827,15 @@ export async function generateResourcePreviewImages(fileUrl, idHint, excerptPage
     }
   }
 
-  result.coverImage = await renderPage(1, "cover");
-
-  for (const pageNumber of excerptPageNumbers) {
-    const image = await renderPage(pageNumber, `p${pageNumber}`);
-    if (image) result.excerptImages.push(image);
+  // 「抜粋ページ」の指定があるときは、指定ページだけを表示する（表紙は出さない）。
+  // 指定が無いときだけ、表紙をフォールバックとして自動生成する。
+  if (excerptPageNumbers.length > 0) {
+    for (const pageNumber of excerptPageNumbers) {
+      const image = await renderPage(pageNumber, `p${pageNumber}`);
+      if (image) result.excerptImages.push(image);
+    }
+  } else {
+    result.coverImage = await renderPage(1, "cover");
   }
 
   return result;
