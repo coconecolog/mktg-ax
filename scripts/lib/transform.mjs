@@ -391,9 +391,9 @@ export async function generateFallbackThumbnail(idHint, background, title, subti
     const titleFontSize = 66;
     const titleLineHeight = 82;
     const titleWrapWidth = 10;
-    const subtitleFontSize = 34;
-    const subtitleLineHeight = 46;
-    const subtitleWrapWidth = 18;
+    const subtitleFontSize = 42;
+    const subtitleLineHeight = 56;
+    const subtitleWrapWidth = 16;
     const blockGap = 20;
 
     const titleLines = wrapText(title, titleWrapWidth, 3);
@@ -442,7 +442,6 @@ export async function generateFallbackThumbnail(idHint, background, title, subti
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   ${backgroundMarkup}
-  <text x="72" y="64" font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="26" font-weight="700" letter-spacing="2" fill="#ffffff" fill-opacity="0.85">MKTG.AX</text>
   ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="400" fill="#ffffff" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
   <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="#ffffff">${titleTspans}</text>
 </svg>`;
