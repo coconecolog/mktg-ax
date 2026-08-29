@@ -1,0 +1,122 @@
+---
+import type { GetStaticPaths, Page } from "astro";
+import type { Category } from "@/lib/types";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
+import Pagination from "@/components/Pagination.astro";
+import BlogSidebar from "@/components/BlogSidebar.astro";
+import MoreExplore from "@/components/MoreExplore.astro";
+import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
+import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
+import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const categories = getAllCategories();
+  return categories.flatMap((category) =>
+    paginate(getLibraryItemsByCategory(category.name, "post"), {
+      params: { category: category.name },
+      pageSize: CATEGORY_TAG_PAGE_SIZE,
+      props: { category },
+    }),
+  );
+}) satisfies GetStaticPaths;
+
+const { category, page } = Astro.props as { category: Category; page: Page<LibraryItem> };
+
+const allCategories = getAllCategories();
+const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
+const counts = getLibraryCountsByCategory(category.name);
+const categoryBasePath = `/blog/category/${encodeURIComponent(category.name)}`;
+const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, resource: `${categoryBasePath}/resources` };
+
+const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
+const sidebarTags = getAllTags();
+const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: category.name, href: categoryBasePath },
+  { name: "ブログ記事", href: `${categoryBasePath}/blog` },
+];
+---
+
+<BaseLayout
+  title={`${category.name}のブログ記事一覧｜カテゴリ`}
+  description={category.description || `${category.name}に関する記事の一覧です。`}
+  ogImage="/open-graph/default.png"
+  pagefindIgnore
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-brand-600">カテゴリ　全{counts.all}件</p>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-950">{category.name}</h1>
+
+        {
+          category.description && (
+            <p class="mt-4 text-sm leading-relaxed text-neutral-600">{category.description}</p>
+          )
+        }
+
+        {
+          representativePost && (
+            <div class="mt-8 w-full rounded-2xl bg-brand-50 p-6 sm:p-8">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-700 shadow-sm">
+                  ★ まず読むべき代表記事
+                </span>
+                <span class="text-xs font-medium text-neutral-400">{category.name}のロードマップ</span>
+              </div>
+              <a href={`/blog/${representativePost.slug}`}
+                class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="text-lg font-bold leading-snug text-ink-950 sm:text-xl">{representativePost.title}</p>
+                  {representativePost.description && (
+                    <p class="mt-2 line-clamp-2 text-sm text-brand-800/80">{representativePost.description}</p>
+                  )}
+                  <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full border-[1.5px] border-brand-600 bg-white px-5 py-2 text-sm font-bold text-brand-700">
+                    この記事を読む →
+                  </span>
+                </div>
+                {representativePost.thumbnail && (
+                  <div class="aspect-video w-full overflow-hidden rounded-xl shadow-md sm:w-72 sm:shrink-0">
+                    <img src={representativePost.thumbnail} alt="" class="h-full w-full object-cover" />
+                  </div>
+                )}
+              </a>
+            </div>
+          )
+        }
+        <div class="mt-10">
+          <LibraryFilterTabs active="post" counts={counts} hrefs={tabHrefs} />
+        </div>
+
+        {
+          page.data.length > 0 ? (
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {page.data.map((item) => (
+                <LibraryCard item={item} />
+              ))}
+            </div>
+          ) : (
+            <p class="mt-10 text-neutral-400">このカテゴリにはまだ記事がありません。</p>
+          )
+        }
+
+        <Pagination page={page} basePath={`${categoryBasePath}/blog`} />
+
+        <MoreExplore categories={allCategories} excludeCategory={category.name} popularPosts={sitePopularPosts} />
+      </div>
+
+      <aside class="lg:sticky lg:top-24 lg:self-start">
+        <BlogSidebar categories={allCategories} popularPosts={sidebarPopularPosts} tags={sidebarTags} />
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
