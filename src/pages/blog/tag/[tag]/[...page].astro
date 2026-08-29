@@ -29,7 +29,8 @@ const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: `タグ: ${tag}`, href: `/blog/tag/${tag}` },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: tag, href: `/blog/tag/${tag}` },
 ];
 ---
 
