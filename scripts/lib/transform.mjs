@@ -3,6 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { resolveDataSourceId, queryAllPages } from "./notion-client.mjs";
 
 const execFileAsync = promisify(execFile);
 
