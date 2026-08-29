@@ -1,0 +1,109 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getLibraryItems } from "@/lib/library";
+import { SITE_URL } from "@/consts";
+
+// 記事・資料の「タイトル→公開URL」一覧ページ。
+// Notionの本文で記事間リンクを貼るとき、スラッグを覚えていなくてもタイトルで探して
+// URLをコピーできるようにするための社内向けページ（検索エンジンには表示しない）。
+const items = getLibraryItems("all").map((item) => ({
+  title: item.title,
+  kind: item.kind,
+  url: new URL(item.href, SITE_URL).toString(),
+}));
+---
+
+<BaseLayout
+  title="内部リンク一覧（社内用）"
+  description="記事・資料のタイトルとURLの一覧です。"
+  noindex
+  pagefindIgnore
+>
+  <section class="mx-auto max-w-4xl px-5 py-12">
+    <h1 class="text-2xl font-bold tracking-tight text-ink-950">内部リンク一覧（社内用）</h1>
+    <p class="mt-2 text-sm text-neutral-500">
+      記事・資料のタイトルで検索して、URLをコピーできます。Notionで記事間リンクを貼るときにお使いください。このページは検索エンジンには表示されません。
+    </p>
+
+    <input
+      type="text"
+      id="link-search"
+      placeholder="タイトルで検索..."
+      class="mt-6 w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:border-brand-400 focus:outline-none"
+    />
+
+    <p class="mt-2 text-xs text-neutral-400">全{items.length}件</p>
+
+    <ul id="link-list" class="mt-4 divide-y divide-neutral-100 rounded-2xl border border-neutral-100">
+      {
+        items.map((item) => (
+          <li class="link-item flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between" data-title={item.title}>
+            <div class="min-w-0">
+              <span
+                class={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${
+                  item.kind === "post" ? "bg-brand-50 text-brand-700" : "bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {item.kind === "post" ? "ブログ" : "資料"}
+              </span>
+              <p class="mt-1 truncate font-bold text-ink-950">{item.title}</p>
+              <p class="link-url truncate text-xs text-neutral-400">{item.url}</p>
+            </div>
+            <button
+              type="button"
+              class="copy-btn shrink-0 rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-ink-950 hover:border-brand-300"
+              data-url={item.url}
+            >
+              URLをコピー
+            </button>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p id="no-results" class="mt-6 hidden text-neutral-400">該当するタイトルが見つかりません。</p>
+  </section>
+</BaseLayout>
+
+<script>
+  const searchInput = document.getElementById("link-search") as HTMLInputElement | null;
+  const items = Array.from(document.querySelectorAll<HTMLElement>(".link-item"));
+  const noResults = document.getElementById("no-results");
+
+  searchInput?.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+    items.forEach((item) => {
+      const title = (item.dataset.title || "").toLowerCase();
+      const match = title.includes(query);
+      item.classList.toggle("hidden", !match);
+      if (match) visibleCount++;
+    });
+    noResults?.classList.toggle("hidden", visibleCount > 0);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const url = btn.dataset.url || "";
+      const original = btn.textContent;
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = "コピーしました";
+      } catch {
+        // クリップボードAPIが使えない環境向けのフォールバック：URL文字列を選択状態にする
+        const urlEl = btn.parentElement?.querySelector<HTMLElement>(".link-url");
+        if (urlEl) {
+          const range = document.createRange();
+          range.selectNodeContents(urlEl);
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
+        btn.textContent = "選択しました";
+      }
+      setTimeout(() => {
+        btn.textContent = original;
+      }, 1500);
+    });
+  });
+</script>
