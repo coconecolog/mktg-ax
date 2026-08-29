@@ -129,7 +129,7 @@ const snsLinks = [
       </form>
     </div>
 
-    <div class="mt-12">
+    <!--div class="mt-12">
       <h2 class="text-lg font-bold text-ink-950">その他の連絡方法</h2>
       <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="rounded-2xl border border-neutral-100 bg-white p-6">
@@ -158,6 +158,22 @@ const snsLinks = [
           </div>
         </div>
       </div>
-    </div>
+    </div-->
+<div class="mx-auto mt-12 max-w-2xl">
+ <h3 class="font-bold text-ink-950">SNS</h3>
+          <p class="mt-1 text-xs leading-relaxed text-neutral-500">各種SNSアカウントは現在準備中です。開設まで今しばらくお待ちください。</p>
+          <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
+            {
+              snsLinks.map((sns) => (
+                <div class="flex flex-col gap-2 rounded-xl border border-neutral-100 p-3 opacity-60">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-sm">{sns.icon}</span>
+                  <span class="text-xs font-bold text-ink-950">{sns.name}</span>
+                  <span class="w-fit rounded-full border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+                    準備中
+                  </span>
+                </div>
+              ))
+            }
+</div>
   </section>
 </BaseLayout>
