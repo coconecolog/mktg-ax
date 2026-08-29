@@ -100,7 +100,7 @@ const breadcrumbItems = [
             </div>
           )
         }
-        <h2 class="mt-10 text-lg font-bold text-ink-950">このカテゴリの記事</h2>
+        <h2 class="mt-10 text-lg font-bold text-ink-950">{category.name}に関する記事</h2>
         {
           page.data.length > 0 ? (
             <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -109,11 +109,11 @@ const breadcrumbItems = [
               ))}
             </div>
           ) : (
-            <p class="mt-10 text-neutral-400">このカテゴリにはまだ記事がありません。</p>
+            <p class="mt-10 text-neutral-400">{category.name}に関する記事はまだ記事がありません。</p>
           )
         }
 
-        <h2 class="mt-12 text-lg font-bold text-ink-950">このカテゴリの資料</h2>
+        <h2 class="mt-12 text-lg font-bold text-ink-950">{category.name}に関する資料</h2>
         {
           categoryResources.length > 0 ? (
             <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -133,7 +133,7 @@ const breadcrumbItems = [
               ))}
             </div>
           ) : (
-            <p class="mt-4 text-neutral-400">このカテゴリの資料はまだありません。</p>
+            <p class="mt-4 text-neutral-400">{category.name}に関する資料はまだありません。</p>
           )
         }
 
