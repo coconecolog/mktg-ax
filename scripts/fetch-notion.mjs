@@ -31,6 +31,7 @@ import {
   generateFallbackThumbnail,
   resolveCategoryBackgroundDataUri,
   extractExcerpt,
+  buildNotionLinkMap,
 } from "./lib/transform.mjs";
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
@@ -126,6 +127,11 @@ async function main() {
     categoryBackgroundMap.set(c.name, { dataUri, colorKey: c.themeColor });
   }
 
+  // 本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための
+  // NotionページID → サイト内URL のマップ。ブロック変換より先に作っておく必要がある。
+  console.log("[fetch-notion] 記事間リンク用のマップを作成中…");
+  const linkMap = await buildNotionLinkMap(token);
+
   const posts = [];
   for (const page of rawPages) {
     const title = getTitleText(page, PROP.title) || "(無題)";
@@ -154,7 +160,7 @@ async function main() {
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
-    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id);
+    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
 
     const description = getRichTextPlain(page, PROP.description).trim() || extractExcerpt(blocks);
 
