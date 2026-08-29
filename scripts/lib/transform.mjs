@@ -481,17 +481,19 @@ export function extractExcerpt(blocks, maxLen = 110) {
 /**
  * Notionの生ブロック配列を、Astro側で扱いやすいシンプルな形に変換する。
  * makeAnchor はページ内で一意な見出しアンカーIDを発行する関数（makeAnchorFactory()の返り値）。
+ * linkMap は「@メンションでページを選んで貼ったリンク」をサイト内URLに変換するための
+ * Map<NotionページID, サイト内URL>（buildNotionLinkMap()の返り値）。未指定なら単にリンクなしになる。
  */
-export async function transformBlocks(rawBlocks, makeAnchor, idHint) {
+export async function transformBlocks(rawBlocks, makeAnchor, idHint, linkMap) {
   const out = [];
   for (const block of rawBlocks) {
-    const node = await transformBlock(block, makeAnchor, idHint);
+    const node = await transformBlock(block, makeAnchor, idHint, linkMap);
     if (node) out.push(node);
   }
   return out;
 }
 
-async function transformBlock(block, makeAnchor, idHint) {
+async function transformBlock(block, makeAnchor, idHint, linkMap) {
   const type = block.type;
   const children = block._children || [];
   const base = { id: block.id, type };
@@ -502,7 +504,7 @@ async function transformBlock(block, makeAnchor, idHint) {
     case "heading_3":
     case "heading_4": {
       const level = Number(type.split("_")[1]);
-      const text = transformRichText(block[type].rich_text);
+      const text = transformRichText(block[type].rich_text, linkMap);
       const plain = richTextToPlain(block[type].rich_text);
       return {
         ...base,
@@ -510,55 +512,55 @@ async function transformBlock(block, makeAnchor, idHint) {
         richText: text,
         anchor: makeAnchor(plain),
         toggleable: !!block[type].is_toggleable,
-        children: await transformBlocks(children, makeAnchor, idHint),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
     }
 
     case "paragraph":
       return {
         ...base,
-        richText: transformRichText(block.paragraph.rich_text),
-        children: await transformBlocks(children, makeAnchor, idHint),
+        richText: transformRichText(block.paragraph.rich_text, linkMap),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
 
     case "bulleted_list_item":
     case "numbered_list_item":
       return {
         ...base,
-        richText: transformRichText(block[type].rich_text),
-        children: await transformBlocks(children, makeAnchor, idHint),
+        richText: transformRichText(block[type].rich_text, linkMap),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
 
     case "to_do":
       return {
         ...base,
-        richText: transformRichText(block.to_do.rich_text),
+        richText: transformRichText(block.to_do.rich_text, linkMap),
         checked: !!block.to_do.checked,
-        children: await transformBlocks(children, makeAnchor, idHint),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
 
     case "toggle":
       return {
         ...base,
-        richText: transformRichText(block.toggle.rich_text),
-        children: await transformBlocks(children, makeAnchor, idHint),
+        richText: transformRichText(block.toggle.rich_text, linkMap),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
 
     case "callout": {
       const icon = block.callout.icon;
       return {
         ...base,
-        richText: transformRichText(block.callout.rich_text),
+        richText: transformRichText(block.callout.rich_text, linkMap),
         emoji: icon?.type === "emoji" ? icon.emoji : null,
-        children: await transformBlocks(children, makeAnchor, idHint),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
     }
 
     case "quote":
       return {
         ...base,
-        richText: transformRichText(block.quote.rich_text),
-        children: await transformBlocks(children, makeAnchor, idHint),
+        richText: transformRichText(block.quote.rich_text, linkMap),
+        children: await transformBlocks(children, makeAnchor, idHint, linkMap),
       };
 
     case "divider":
@@ -567,7 +569,7 @@ async function transformBlock(block, makeAnchor, idHint) {
     case "code":
       return {
         ...base,
-        richText: transformRichText(block.code.rich_text),
+        richText: transformRichText(block.code.rich_text, linkMap),
         language: block.code.language || "plain text",
         caption: richTextToPlain(block.code.caption),
       };
@@ -584,7 +586,7 @@ async function transformBlock(block, makeAnchor, idHint) {
       const rows = children
         .filter((c) => c.type === "table_row")
         .map((row) => ({
-          cells: (row.table_row.cells || []).map((cell) => transformRichText(cell)),
+          cells: (row.table_row.cells || []).map((cell) => transformRichText(cell, linkMap)),
         }));
       return {
         ...base,
@@ -620,10 +622,10 @@ async function transformBlock(block, makeAnchor, idHint) {
       return { ...base, expression: block.equation.expression };
 
     case "column_list":
-      return { ...base, children: await transformBlocks(children, makeAnchor, idHint) };
+      return { ...base, children: await transformBlocks(children, makeAnchor, idHint, linkMap) };
 
     case "column":
-      return { ...base, children: await transformBlocks(children, makeAnchor, idHint) };
+      return { ...base, children: await transformBlocks(children, makeAnchor, idHint, linkMap) };
 
     case "table_of_contents":
       // 独自の目次コンポーネントを別途表示するため、インライン展開はしない
@@ -638,6 +640,57 @@ async function transformBlock(block, makeAnchor, idHint) {
       console.warn(`  [notion] 未対応のブロックタイプ "${type}" をスキップしました (id=${block.id})`);
       return null;
   }
+}
+
+// ------------------------------------------------------------
+// Notionの「@」メンションでページを選んで貼ったリンクを、サイト内の実URLに変換するための
+// NotionページID → サイト内URL のマップ作り。
+// ------------------------------------------------------------
+
+/**
+ * 記事DB・資料DBの「公開」がオンのページを軽くリスト取得し、
+ * NotionページID → サイト内URL（/blog/xxx, /resources/xxx）のマップを作る。
+ * サムネイル生成や本文取得はせず、スラッグ解決に必要な最小限のプロパティだけを見るため高速。
+ * 記事本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための下準備。
+ */
+export async function buildNotionLinkMap(token) {
+  const linkMap = new Map();
+
+  const postsDbId = process.env.NOTION_DATABASE_ID;
+  if (postsDbId) {
+    try {
+      const dataSourceId = await resolveDataSourceId(token, postsDbId);
+      const pages = await queryAllPages(token, dataSourceId, {
+        filter: { property: PROP.published, checkbox: { equals: true } },
+      });
+      for (const page of pages) {
+        const title = getTitleText(page, PROP.title) || "";
+        const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
+        linkMap.set(page.id, `/blog/${slug}`);
+      }
+    } catch (err) {
+      console.warn(`  [notion] 記事間リンク用の一覧取得に失敗しました（記事DB）: ${err.message}`);
+    }
+  }
+
+  const resourcesDbId = process.env.NOTION_RESOURCES_DATABASE_ID;
+  if (resourcesDbId) {
+    try {
+      const dataSourceId = await resolveDataSourceId(token, resourcesDbId);
+      const pages = await queryAllPages(token, dataSourceId, {
+        filter: { property: RESOURCE_PROP.published, checkbox: { equals: true } },
+      });
+      for (const page of pages) {
+        const title = getTitleText(page, RESOURCE_PROP.title) || "";
+        const slug = resolveSlug(getRichTextPlain(page, RESOURCE_PROP.slug), page.id, title);
+        linkMap.set(page.id, `/resources/${slug}`);
+      }
+    } catch (err) {
+      console.warn(`  [notion] 記事間リンク用の一覧取得に失敗しました（資料DB）: ${err.message}`);
+    }
+  }
+
+  return linkMap;
 }
 
 // ============================================================
