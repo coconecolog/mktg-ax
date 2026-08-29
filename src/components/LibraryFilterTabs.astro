@@ -1,16 +1,22 @@
 ---
-// ライブラリページの「すべて / ブログ記事 / 無料資料・eBook」絞り込みタブ。
+// ライブラリページ・カテゴリページ共通の「すべて / ブログ記事 / 無料資料・eBook」絞り込みタブ。
+// hrefsを渡さない場合はライブラリページ（/library配下）のリンクになる。
+// カテゴリページ等、別の場所で使う場合は hrefs で行き先を上書きする。
 interface Props {
   active: "all" | "post" | "resource";
   counts: { all: number; post: number; resource: number };
+  hrefs?: { all: string; post: string; resource: string };
 }
 
-const { active, counts } = Astro.props;
+const { active, counts, hrefs } = Astro.props;
+
+const defaultHrefs = { all: "/library", post: "/library/blog", resource: "/library/resources" };
+const resolvedHrefs = hrefs || defaultHrefs;
 
 const tabs = [
-  { key: "all" as const, label: "すべて", href: "/library" },
-  { key: "post" as const, label: "ブログ記事", href: "/library/blog" },
-  { key: "resource" as const, label: "無料資料・eBook", href: "/library/resources" },
+  { key: "all" as const, label: "すべて", href: resolvedHrefs.all },
+  { key: "post" as const, label: "ブログ記事", href: resolvedHrefs.post },
+  { key: "resource" as const, label: "無料資料・eBook", href: resolvedHrefs.resource },
 ];
 ---
 
