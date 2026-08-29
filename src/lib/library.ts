@@ -31,12 +31,12 @@ function countChars(blocks: BlockNode[]): number {
   return total;
 }
 
-// 本文の文字数から読了時間を概算する(1分あたり約500文字の日本語読解速度を想定した簡易推定値)。
+// 本文の文字数から読了時間を概算する（1分あたり約500文字の日本語読解速度を想定した簡易推定値）。
 function estimateReadMinutes(post: Post): number {
   return Math.max(1, Math.round(countChars(post.blocks) / 500));
 }
 
-// 資料ファイルのURLから拡張子を推測してバッジ表示に使う(取得できない場合はnull)。
+// 資料ファイルのURLから拡張子を推測してバッジ表示に使う（取得できない場合はnull）。
 function guessFileExt(fileUrl: string | null): string | null {
   if (!fileUrl) return null;
   const match = fileUrl.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
@@ -90,5 +90,25 @@ export function getLibraryItems(filter: LibraryFilter = "all"): LibraryItem[] {
 export function getLibraryCounts() {
   const postCount = getAllPosts().length;
   const resourceCount = getAllResources().length;
+  return { all: postCount + resourceCount, post: postCount, resource: resourceCount };
+}
+
+/** 指定カテゴリに絞り込んだ、公開日の新しい順の記事・資料の混合リスト。カテゴリページ用。 */
+export function getLibraryItemsByCategory(
+  categoryName: string,
+  filter: LibraryFilter = "all",
+): LibraryItem[] {
+  const posts =
+    filter === "resource" ? [] : getAllPosts().filter((p) => p.category === categoryName).map(postToItem);
+  const resources =
+    filter === "post" ? [] : getAllResources().filter((r) => r.category === categoryName).map(resourceToItem);
+  return [...posts, ...resources].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+}
+
+export function getLibraryCountsByCategory(categoryName: string) {
+  const postCount = getAllPosts().filter((p) => p.category === categoryName).length;
+  const resourceCount = getAllResources().filter((r) => r.category === categoryName).length;
   return { all: postCount + resourceCount, post: postCount, resource: resourceCount };
 }
