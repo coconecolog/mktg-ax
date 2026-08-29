@@ -154,13 +154,17 @@ export function makeAnchorFactory() {
 // リッチテキスト → シンプルな構造に変換
 // ------------------------------------------------------------
 
-export function transformRichText(richText) {
+export function transformRichText(richText, linkMap) {
   if (!Array.isArray(richText)) return [];
   return richText.map((t) => {
     const a = t.annotations || {};
+    let href = t.href || t.text?.link?.url || null;
+    if (t.type === "mention" && t.mention?.type === "page" && t.mention.page?.id) {
+      href = linkMap?.get(t.mention.page.id) || null;
+    }
     return {
       text: t.plain_text || "",
-      href: t.href || t.text?.link?.url || null,
+      href,
       bold: !!a.bold,
       italic: !!a.italic,
       strikethrough: !!a.strikethrough,
