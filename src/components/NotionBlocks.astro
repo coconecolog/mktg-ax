@@ -4,12 +4,24 @@
 import type { BlockNode } from "@/lib/types";
 import RichText from "./RichText.astro";
 import NotionBlocksSelf from "./NotionBlocks.astro";
+import { SITE_URL } from "@/consts";
 
 interface Props {
   blocks: BlockNode[] | undefined;
 }
 
 const { blocks = [] } = Astro.props;
+
+// サイト内（自ドメイン）へのリンクかどうかを判定。ブックマーク埋め込みが自サイトの記事/資料を指している場合、
+// 新規タブではなく画面遷移にする（RichText.astroの同名関数と同じロジック）。
+function isInternalHref(href: string): boolean {
+  if (href.startsWith("/") || href.startsWith("#")) return true;
+  try {
+    return new URL(href, SITE_URL).origin === new URL(SITE_URL).origin;
+  } catch {
+    return false;
+  }
+}
 
 type ListKind = "bulleted" | "numbered" | "todo";
 type Group = { kind: "list"; listType: ListKind; items: BlockNode[] } | { kind: "single"; block: BlockNode };
@@ -224,13 +236,15 @@ const groups = groupBlocks(blocks);
       }
 
       case "bookmark":
-      case "link_preview":
+      case "link_preview": {
+        const externalAttrs = isInternalHref(block.url) ? {} : { target: "_blank", rel: "noopener noreferrer" };
         return (
-          <a href={block.url} target="_blank" rel="noopener noreferrer" class="block rounded-xl border border-neutral-200 p-4 no-underline hover:border-brand-300">
+          <a href={block.url} class="block rounded-xl border border-neutral-200 p-4 no-underline hover:border-brand-300" {...externalAttrs}>
             <span class="block truncate text-sm text-neutral-500">{block.url}</span>
             {block.caption && <span class="mt-1 block font-medium text-ink-950">{block.caption}</span>}
           </a>
         );
+      }
 
       case "embed":
         return (
