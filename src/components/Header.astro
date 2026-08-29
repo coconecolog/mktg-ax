@@ -85,3 +85,52 @@ function isActive(href: string) {
     </details>
   </div>
 </header>
+<script>
+  // ヘッダーの「便利ツール」等、子メニューを持つナビ項目のドロップダウン制御。
+  // ラベル部分（<a>）はクリックでそのページへ遷移し、右側の矢印ボタンのみが開閉を担当する。
+  const dropdowns = Array.from(document.querySelectorAll<HTMLElement>(".nav-dropdown"));
+
+  function closeDropdown(dropdown: HTMLElement) {
+    const panel = dropdown.querySelector<HTMLElement>(".nav-dropdown-panel");
+    const toggle = dropdown.querySelector<HTMLButtonElement>(".nav-dropdown-toggle");
+    const chevron = dropdown.querySelector<SVGElement>(".nav-dropdown-chevron");
+    panel?.classList.add("hidden");
+    toggle?.setAttribute("aria-expanded", "false");
+    chevron?.classList.remove("rotate-180");
+  }
+
+  function closeAll(except?: HTMLElement) {
+    dropdowns.forEach((dropdown) => {
+      if (dropdown !== except) closeDropdown(dropdown);
+    });
+  }
+
+  dropdowns.forEach((dropdown) => {
+    const toggle = dropdown.querySelector<HTMLButtonElement>(".nav-dropdown-toggle");
+    const panel = dropdown.querySelector<HTMLElement>(".nav-dropdown-panel");
+    const chevron = dropdown.querySelector<SVGElement>(".nav-dropdown-chevron");
+
+    toggle?.addEventListener("click", () => {
+      const isOpen = !panel?.classList.contains("hidden");
+      closeAll(dropdown);
+      if (isOpen) {
+        closeDropdown(dropdown);
+      } else {
+        panel?.classList.remove("hidden");
+        toggle.setAttribute("aria-expanded", "true");
+        chevron?.classList.add("rotate-180");
+      }
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    const target = e.target as Node;
+    dropdowns.forEach((dropdown) => {
+      if (!dropdown.contains(target)) closeDropdown(dropdown);
+    });
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAll();
+  });
+</script>
