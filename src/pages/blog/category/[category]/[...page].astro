@@ -1,27 +1,21 @@
 ---
 import type { GetStaticPaths, Page } from "astro";
-import type { Category, Post } from "@/lib/types";
+import type { Category } from "@/lib/types";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import PostCard from "@/components/PostCard.astro";
+import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import MoreExplore from "@/components/MoreExplore.astro";
-import {
-  getAllCategories,
-  getAllTags,
-  getCategoryTags,
-  getPopularPosts,
-  getPostBySlug,
-  getPostsByCategory,
-} from "@/lib/posts";
-import { getResourcesByCategory } from "@/lib/resources";
-import { CATEGORY_TAG_PAGE_SIZE, DEFAULT_OG_IMAGE } from "@/consts";
+import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
+import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
+import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const categories = getAllCategories();
   return categories.flatMap((category) =>
-    paginate(getPostsByCategory(category.name), {
+    paginate(getLibraryItemsByCategory(category.name, "all"), {
       params: { category: category.name },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { category },
@@ -29,12 +23,13 @@ export const getStaticPaths = (async ({ paginate }) => {
   );
 }) satisfies GetStaticPaths;
 
-const { category, page } = Astro.props as { category: Category; page: Page<Post> };
+const { category, page } = Astro.props as { category: Category; page: Page<LibraryItem> };
 
 const allCategories = getAllCategories();
-const categoryTags = getCategoryTags(category.name);
 const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
-const categoryResources = getResourcesByCategory(category.name);
+const counts = getLibraryCountsByCategory(category.name);
+const categoryBasePath = `/blog/category/${encodeURIComponent(category.name)}`;
+const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, resource: `${categoryBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
@@ -58,17 +53,16 @@ const breadcrumbItems = [
   <div class="mx-auto max-w-6xl px-5 py-12">
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
       <div class="min-w-0">
-        <p class="text-xs font-bold text-brand-600">カテゴリ　全{page.total}件の記事</p>
+        <p class="text-xs font-bold text-brand-600">カテゴリ　全{counts.all}件</p>
         <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-950">{category.name}</h1>
 
         {
           category.description && (
-                       <p class="mt-4 text-sm leading-relaxed text-neutral-600">
+            <p class="mt-4 text-sm leading-relaxed text-neutral-600">
               {category.description}
             </p>
           )
         }
-
 
         {
           representativePost && (
@@ -100,44 +94,23 @@ const breadcrumbItems = [
             </div>
           )
         }
-        <h2 class="mt-10 text-lg font-bold text-ink-950">{category.name}に関する記事</h2>
+        <div class="mt-10">
+          <LibraryFilterTabs active="all" counts={counts} hrefs={tabHrefs} />
+        </div>
+
         {
           page.data.length > 0 ? (
-            <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {page.data.map((post) => (
-                <PostCard post={post} />
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {page.data.map((item) => (
+                <LibraryCard item={item} />
               ))}
             </div>
           ) : (
-            <p class="mt-10 text-neutral-400">{category.name}に関する記事はまだ記事がありません。</p>
+            <p class="mt-10 text-neutral-400">このカテゴリにはまだコンテンツがありません。</p>
           )
         }
 
-        <h2 class="mt-12 text-lg font-bold text-ink-950">{category.name}に関する資料</h2>
-        {
-          categoryResources.length > 0 ? (
-            <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {categoryResources.map((resource) => (
-                <a href={`/resources/${resource.slug}`}
-                  class="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg"
-                >
-                  <div class="aspect-video w-full overflow-hidden bg-neutral-50">
-                    <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                  </div>
-                  <div class="p-5">
-                    {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
-                    <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{resource.title}</h3>
-                    <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{resource.description}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p class="mt-4 text-neutral-400">{category.name}に関する資料はまだありません。</p>
-          )
-        }
-
-        <Pagination page={page} basePath={`/blog/category/${encodeURIComponent(category.name)}`} />
+        <Pagination page={page} basePath={categoryBasePath} />
 
         <MoreExplore categories={allCategories} excludeCategory={category.name} popularPosts={sitePopularPosts} />
       </div>
