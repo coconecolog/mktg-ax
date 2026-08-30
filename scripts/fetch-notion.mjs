@@ -70,11 +70,7 @@ async function fetchCategories(token, linkMap) {
 
   console.log("[fetch-notion] カテゴリ一覧を取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
-  // 並び順プロパティが無いため、Notion側のテーブル表示順に近い「作成日時の昇順」で取得する。
-  // （フィルター/ソートなしのAPI取得は表示順と一致しないことがあるため、明示的に指定する）
-  const rawPages = await queryAllPages(token, dataSourceId, {
-    sorts: [{ timestamp: "created_time", direction: "ascending" }],
-  });
+  const rawPages = await queryAllPages(token, dataSourceId, {});
 
   const categories = [];
   for (const page of rawPages) {
@@ -99,7 +95,16 @@ async function fetchCategories(token, linkMap) {
       blocks,
     });
   }
-  return categories;
+
+  // マスターカテゴリDBには並び順専用のプロパティが無く、Notion APIはテーブル表示上の手動並び順を
+  // 取得する手段を提供していない。そのため「代表記事（Slug）」（kiji1, kiji2, …のように記事の
+  // 作成順と揃えて命名する運用になっている）を並び順の代わりに使い、自然順（数値部分を数値として比較）で
+  // ソートする。代表記事Slugが無いカテゴリは末尾にまとめ、Notion側の取得順を保つ。
+  const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+  const withSlug = categories.filter((c) => c.representativeSlug);
+  const withoutSlug = categories.filter((c) => !c.representativeSlug);
+  withSlug.sort((a, b) => collator.compare(a.representativeSlug, b.representativeSlug));
+  return [...withSlug, ...withoutSlug];
 }
 
 async function main() {
