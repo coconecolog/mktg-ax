@@ -63,8 +63,6 @@ export interface Category {
   themeColor: string | null;
   /** 自動生成サムネイルの背景画像ファイル名（public/images/category-backgrounds/ 配下）。未設定なら空文字 */
   backgroundImageFilename: string;
-  /** カテゴリページ本文（記事と同じ仕組み）。カテゴリのNotionページに書いた本文がここに入る。未記入なら空配列 */
-  blocks: BlockNode[];
 }
 
 export interface PostsCache {
