@@ -7,7 +7,6 @@ import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
@@ -36,7 +35,6 @@ const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, reso
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
-const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -113,8 +111,6 @@ const breadcrumbItems = [
         }
 
         <Pagination page={page} basePath={`${categoryBasePath}/blog`} />
-
-        <MoreExplore categories={allCategories} excludeCategory={category.name} popularPosts={sitePopularPosts} />
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
