@@ -8,8 +8,11 @@ function loadCache(): PostsCache {
   try {
     const raw = fs.readFileSync(CACHE_PATH, "utf-8");
     const parsed = JSON.parse(raw) as PostsCache;
-    // categories は後から追加したフィールドなので、古いキャッシュ（categories未生成）にも耐えるようにする
-    return { ...parsed, categories: parsed.categories || [] };
+    // categories・categories[].blocks は後から追加したフィールドなので、古いキャッシュにも耐えるようにする
+    return {
+      ...parsed,
+      categories: (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] })),
+    };
   } catch {
     console.warn(
       "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
