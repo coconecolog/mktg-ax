@@ -98,8 +98,9 @@ export function getLibraryItemsByCategory(
   categoryName: string,
   filter: LibraryFilter = "all",
 ): LibraryItem[] {
+  // 記事の「カテゴリ」は複数選択可のため、いずれか1つでも一致すれば対象にする。資料は単一カテゴリのまま。
   const posts =
-    filter === "resource" ? [] : getAllPosts().filter((p) => p.category === categoryName).map(postToItem);
+    filter === "resource" ? [] : getAllPosts().filter((p) => p.categories.includes(categoryName)).map(postToItem);
   const resources =
     filter === "post" ? [] : getAllResources().filter((r) => r.category === categoryName).map(resourceToItem);
   return [...posts, ...resources].sort(
@@ -108,7 +109,7 @@ export function getLibraryItemsByCategory(
 }
 
 export function getLibraryCountsByCategory(categoryName: string) {
-  const postCount = getAllPosts().filter((p) => p.category === categoryName).length;
+  const postCount = getAllPosts().filter((p) => p.categories.includes(categoryName)).length;
   const resourceCount = getAllResources().filter((r) => r.category === categoryName).length;
   return { all: postCount + resourceCount, post: postCount, resource: resourceCount };
 }
