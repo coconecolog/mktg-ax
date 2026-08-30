@@ -29,12 +29,13 @@ const faqItems = [
   },
   {
     question: "新しいツールや書いてほしい記事テーマのリクエストはできますか？",
-    answer: "カテゴリで「機能提案・要望」をお選びのうえご意見をお寄せください。いただいたご要望はすべて拝読し、今後のコンテンツ・ツール開発の参考にさせていただきます。",
+    answer:
+      "カテゴリで「機能提案・要望」をお選びのうえご意見をお寄せください。いただいたご要望はすべて拝読し、今後のコンテンツ・ツール開発の参考にさせていただきます。",
   },
 ];
 
 const snsLinks = [
-  { icon: "𝕏", name: "X" },
+  { icon: "X", name: "X" },
   { icon: "🧵", name: "Threads" },
   { icon: "📷", name: "Instagram" },
   { icon: "💼", name: "LinkedIn" },
@@ -59,7 +60,7 @@ const snsLinks = [
 
     <FaqAccordion items={faqItems} heading="よくあるご質問" />
 
-        <div class="mx-auto mt-12 max-w-2xl">
+    <div class="mx-auto mt-12 max-w-2xl">
       <div class="text-center">
         <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
         <p class="mt-2 text-sm text-neutral-500">現在準備中です。フォームが整うまでは、下記のメールアドレスまで直接ご連絡ください。</p>
@@ -129,8 +130,8 @@ const snsLinks = [
       </form>
     </div>
 
-    <!--div class="mt-12">
-      <h2 class="text-lg font-bold text-ink-950">その他の連絡方法</h2>
+    <div class="mt-12">
+      <h2 class="mt-12 text-lg font-bold text-ink-950">その他の連絡方法</h2>
       <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="rounded-2xl border border-neutral-100 bg-white p-6">
           <h3 class="font-bold text-ink-950">メールでのお問い合わせ</h3>
@@ -158,23 +159,6 @@ const snsLinks = [
           </div>
         </div>
       </div>
-    </div-->
-<div class="mt-12">
- <h2 class="font-bold text-ink-950">SNS</h3>
-          <p class="mt-1 text-xs leading-relaxed text-neutral-500">各種SNSアカウントは現在準備中です。開設まで今しばらくお待ちください。</p>
-          <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
-            {
-              snsLinks.map((sns) => (
-                <div class="flex flex-col gap-2 rounded-xl border border-neutral-100 p-3 opacity-60">
-                  <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-sm">{sns.icon}</span>
-                  <span class="text-xs font-bold text-ink-950">{sns.name}</span>
-                  <span class="w-fit rounded-full border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-                    準備中
-                  </span>
-                </div>
-              ))
-            }
-</div>
- </div>
+    </div>
   </section>
 </BaseLayout>
