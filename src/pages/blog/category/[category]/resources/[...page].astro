@@ -8,14 +8,18 @@ import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import MoreExplore from "@/components/MoreExplore.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 
+// カテゴリページの「ブログ記事」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
+// 一覧の中身だけ記事のみに絞っている。
+
 export const getStaticPaths = (async ({ paginate }) => {
   const categories = getAllCategories();
   return categories.flatMap((category) =>
-    paginate(getLibraryItemsByCategory(category.name, "resource"), {
+    paginate(getLibraryItemsByCategory(category.name, "post"), {
       params: { category: category.name },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { category },
@@ -39,13 +43,13 @@ const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
   { name: category.name, href: categoryBasePath },
-  { name: "無料資料・eBook", href: `${categoryBasePath}/resources` },
+  { name: "ブログ記事", href: `${categoryBasePath}/blog` },
 ];
 ---
 
 <BaseLayout
-  title={`${category.name}の無料資料・eBook一覧｜カテゴリ`}
-  description={category.description || `${category.name}に関する資料の一覧です。`}
+  title={`${category.name}のブログ記事一覧｜カテゴリ`}
+  description={category.description || `${category.name}に関する記事の一覧です。`}
   ogImage="/open-graph/default.png"
   pagefindIgnore
 >
@@ -60,6 +64,14 @@ const breadcrumbItems = [
         {
           category.description && (
             <p class="mt-4 text-sm leading-relaxed text-neutral-600">{category.description}</p>
+          )
+        }
+
+        {
+          category.blocks && category.blocks.length > 0 && (
+            <div class="prose-notion mt-6 w-full">
+              <NotionBlocks blocks={category.blocks} />
+            </div>
           )
         }
 
@@ -94,7 +106,7 @@ const breadcrumbItems = [
           )
         }
         <div class="mt-10">
-          <LibraryFilterTabs active="resource" counts={counts} hrefs={tabHrefs} />
+          <LibraryFilterTabs active="post" counts={counts} hrefs={tabHrefs} />
         </div>
 
         {
@@ -105,11 +117,11 @@ const breadcrumbItems = [
               ))}
             </div>
           ) : (
-            <p class="mt-10 text-neutral-400">このカテゴリにはまだ資料がありません。</p>
+            <p class="mt-10 text-neutral-400">このカテゴリにはまだ記事がありません。</p>
           )
         }
 
-        <Pagination page={page} basePath={`${categoryBasePath}/resources`} />
+        <Pagination page={page} basePath={`${categoryBasePath}/blog`} />
 
         <MoreExplore categories={allCategories} excludeCategory={category.name} popularPosts={sitePopularPosts} />
       </div>
