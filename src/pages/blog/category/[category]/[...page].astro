@@ -7,6 +7,7 @@ import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
@@ -110,6 +111,14 @@ const breadcrumbItems = [
         }
 
         <Pagination page={page} basePath={categoryBasePath} />
+
+        {
+          category.blocks && category.blocks.length > 0 && (
+            <div class="prose-notion mt-12 w-full">
+              <NotionBlocks blocks={category.blocks} />
+            </div>
+          )
+        }
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
