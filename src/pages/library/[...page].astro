@@ -6,6 +6,7 @@ import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
+import ContactCta from "@/components/ContactCta.astro";
 import { getLibraryItems, getLibraryCounts } from "@/lib/library";
 import { getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
 import { LIBRARY_PAGE_SIZE } from "@/consts";
@@ -65,4 +66,6 @@ const breadcrumbItems = [
       </aside>
     </div>
   </div>
+
+  <ContactCta heading="ご質問・ご要望がございましたら" description="お気軽にお問合せください。" />
 </BaseLayout>
