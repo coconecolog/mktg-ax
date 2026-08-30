@@ -8,8 +8,13 @@ function loadCache(): PostsCache {
   try {
     const raw = fs.readFileSync(CACHE_PATH, "utf-8");
     const parsed = JSON.parse(raw) as PostsCache;
-    // categories は後から追加したフィールドなので、古いキャッシュ（categories未生成）にも耐えるようにする
-    return { ...parsed, categories: parsed.categories || [] };
+    // categories(記事の複数カテゴリ配列)・カテゴリ一覧は後から追加したフィールドなので、
+    // 古いキャッシュ（未生成のもの）にも耐えるようにする
+    const posts = (parsed.posts || []).map((p) => ({
+      ...p,
+      categories: p.categories || (p.category ? [p.category] : []),
+    }));
+    return { ...parsed, posts, categories: parsed.categories || [] };
   } catch {
     console.warn(
       "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
@@ -56,9 +61,9 @@ export function getCategoryByName(name: string): Category | undefined {
   return cache.categories.find((c) => c.name === name);
 }
 
-/** 指定カテゴリに属する記事（記事側の「カテゴリ」リレーションから解決した名前で判定）。 */
+/** 指定カテゴリに属する記事（記事側の「カテゴリ」リレーションは複数選択可なので、いずれか1つでも一致すれば対象）。 */
 export function getPostsByCategory(name: string): Post[] {
-  return getAllPosts().filter((p) => p.category === name);
+  return getAllPosts().filter((p) => p.categories.includes(name));
 }
 
 /** カテゴリページの「関連するテーマ・キーワード」用に、そのカテゴリの記事に付いているタグだけを集計する。 */
