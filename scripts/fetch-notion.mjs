@@ -70,7 +70,11 @@ async function fetchCategories(token, linkMap) {
 
   console.log("[fetch-notion] カテゴリ一覧を取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
-  const rawPages = await queryAllPages(token, dataSourceId, {});
+  // 並び順プロパティが無いため、Notion側のテーブル表示順に近い「作成日時の昇順」で取得する。
+  // （フィルター/ソートなしのAPI取得は表示順と一致しないことがあるため、明示的に指定する）
+  const rawPages = await queryAllPages(token, dataSourceId, {
+    sorts: [{ timestamp: "created_time", direction: "ascending" }],
+  });
 
   const categories = [];
   for (const page of rawPages) {
