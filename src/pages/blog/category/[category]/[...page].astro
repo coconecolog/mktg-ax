@@ -8,6 +8,7 @@ import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import MoreExplore from "@/components/MoreExplore.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
@@ -58,9 +59,17 @@ const breadcrumbItems = [
 
         {
           category.description && (
-            <p class="mt-4 text-sm leading-relaxed text-neutral-600">
+                       <p class="mt-4 text-sm leading-relaxed text-neutral-600">
               {category.description}
             </p>
+          )
+        }
+
+        {
+          category.blocks && category.blocks.length > 0 && (
+            <div class="prose-notion mt-6 w-full">
+              <NotionBlocks blocks={category.blocks} />
+            </div>
           )
         }
 
