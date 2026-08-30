@@ -55,8 +55,11 @@ async function writeEmptyCache(reason) {
  * マスターカテゴリDB（記事DBの「カテゴリ」リレーション先）を取得する。
  * NOTION_CATEGORIES_DATABASE_ID が未設定の場合は、カテゴリページ機能を使っていないとみなし、
  * 記事の取得は止めずに空配列を返す（カテゴリナビ・カテゴリページが空で表示されるだけで、サイト自体は壊れない）。
+ *
+ * 各カテゴリページ本文（「説明文」プロパティより下に書かれている記事本文）もブロックとして取得し、
+ * カテゴリページ下部にそのカテゴリの解説記事として表示できるようにする。
  */
-async function fetchCategories(token) {
+async function fetchCategories(token, linkMap) {
   const databaseId = process.env.NOTION_CATEGORIES_DATABASE_ID;
   if (!databaseId) {
     console.warn(
@@ -69,7 +72,8 @@ async function fetchCategories(token) {
   const dataSourceId = await resolveDataSourceId(token, databaseId);
   const rawPages = await queryAllPages(token, dataSourceId, {});
 
-  return rawPages.map((page) => {
+  const categories = [];
+  for (const page of rawPages) {
     const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
     const description = getRichTextPlain(page, CATEGORY_PROP.description);
     const representativeSlugRaw = getRichTextPlain(page, CATEGORY_PROP.representativeSlug).trim();
@@ -77,14 +81,21 @@ async function fetchCategories(token) {
     // 無ければ「テーマカラー」セレクトプロパティの色でグラデーションにフォールバックする。
     const backgroundImageFilename = getRichTextPlain(page, CATEGORY_PROP.backgroundImage).trim();
     const themeColor = getSelectColor(page, CATEGORY_PROP.themeColor);
-    return {
+
+    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const makeAnchor = makeAnchorFactory();
+    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
+
+    categories.push({
       name,
       description,
       representativeSlug: representativeSlugRaw || null,
       themeColor,
       backgroundImageFilename,
-    };
-  });
+      blocks,
+    });
+  }
+  return categories;
 }
 
 async function main() {
@@ -119,18 +130,18 @@ async function main() {
 
   console.log(`[fetch-notion] ${rawPages.length}件の公開記事を処理します。`);
 
+  // 本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための
+  // NotionページID → サイト内URL のマップ。カテゴリ・記事のブロック変換より先に作っておく必要がある。
+  console.log("[fetch-notion] 記事間リンク用のマップを作成中…");
+  const linkMap = await buildNotionLinkMap(token);
+
   // 自動生成サムネイルの背景をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
-  const categories = await fetchCategories(token);
+  const categories = await fetchCategories(token, linkMap);
   const categoryBackgroundMap = new Map();
   for (const c of categories) {
     const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
     categoryBackgroundMap.set(c.name, { dataUri, colorKey: c.themeColor });
   }
-
-  // 本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための
-  // NotionページID → サイト内URL のマップ。ブロック変換より先に作っておく必要がある。
-  console.log("[fetch-notion] 記事間リンク用のマップを作成中…");
-  const linkMap = await buildNotionLinkMap(token);
 
   const posts = [];
   for (const page of rawPages) {
