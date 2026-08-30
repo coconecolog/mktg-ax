@@ -14,7 +14,7 @@ const {
   categories,
   excludeCategory,
   popularPosts,
-  categoryHeading = "他のカテゴリから探す",
+  categoryHeading = "カテゴリから探す",
   popularHeading = "🏆 ブログ全体で特に読まれている決定版記事",
 } = Astro.props;
 const otherCategories = categories.filter((c) => c.name !== excludeCategory);
