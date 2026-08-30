@@ -142,7 +142,10 @@ async function main() {
     // 値には関連ページのIDしか入っていないため、関連ページを取得して名前に解決する。
     const tags = await getRelationNames(token, page, PROP.tags);
     const mainTag = await getFirstRelationName(token, page, PROP.mainTag);
-    const category = await getFirstRelationName(token, page, PROP.category);
+    // カテゴリは複数選択可のリレーション。全件を categories に保持しつつ、
+    // 単一バッジ表示用に先頭1件を category としても残す。
+    const categories = await getRelationNames(token, page, PROP.category);
+    const category = categories[0] || null;
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, PROP.updatedAt) || page.last_edited_time;
 
@@ -172,6 +175,7 @@ async function main() {
       tags,
       mainTag,
       category,
+      categories,
       publishedAt,
       updatedAt,
       thumbnail,
