@@ -1,124 +1,123 @@
----
-import BaseLayout from "./BaseLayout.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
-import TableOfContents from "@/components/TableOfContents.astro";
-import NotionBlocks from "@/components/NotionBlocks.astro";
-import BlogSidebar from "@/components/BlogSidebar.astro";
-import ContactCta from "@/components/ContactCta.astro";
-import { buildArticleSchema } from "@/lib/schema";
-import { buildToc, getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
-import type { Post } from "@/lib/types";
+// .notion-cache/posts.json （scripts/fetch-notion.mjs が生成）の型定義。
+// スクリプト側（JS）とAstro側（TS）で二重管理になっているので、
+// 片方の形を変えたらもう片方も忘れずに直してください。
 
-interface Props {
-  post: Post;
+export interface RichTextItem {
+  text: string;
+  href: string | null;
+  bold: boolean;
+  italic: boolean;
+  strikethrough: boolean;
+  underline: boolean;
+  code: boolean;
+  color: string | null;
 }
 
-const { post } = Astro.props;
-const toc = buildToc(post.blocks);
-const articleSchema = buildArticleSchema(post);
+export interface BlockNode {
+  id: string;
+  type: string;
+  level?: number;
+  richText?: RichTextItem[];
+  anchor?: string;
+  toggleable?: boolean;
+  children?: BlockNode[];
+  checked?: boolean;
+  emoji?: string | null;
+  language?: string;
+  caption?: string;
+  src?: string;
+  alt?: string;
+  visibleCaption?: string | null;
+  hasColumnHeader?: boolean;
+  hasRowHeader?: boolean;
+  rows?: { cells: RichTextItem[][] }[];
+  url?: string;
+  name?: string;
+  expression?: string;
+}
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
-const tags = getAllTags();
+export interface Post {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  tags: string[];
+  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名の先頭1件（未設定ならnull）。カード等の単一バッジ表示用。 */
+  category: string | null;
+  /** 「マスターカテゴリ」DBとのリレーションから解決した全カテゴリ名（複数選択可）。カテゴリページの絞り込みはこちらを使う。 */
+  categories: string[];
+  /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
+  keyPoints: string[];
+  publishedAt: string;
+  updatedAt: string;
+  thumbnail: string | null;
+  blocks: BlockNode[];
+}
 
-const breadcrumbItems = [
-  { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: "ブログ記事", href: "/library/blog" },
-  { name: post.title, href: `/blog/${post.slug}` },
-];
+// マスターカテゴリDB（Notion）1件分。記事DBの「カテゴリ」リレーション先そのもの。
+// representativeSlug は「代表記事Slug」プロパティの値で、
+// 対応する記事が見つからない場合は null として扱う。
+export interface Category {
+  name: string;
+  description: string;
+  representativeSlug: string | null;
+  /** 自動生成サムネイルの背景色（画像未設定時のフォールバック）。「テーマカラー」セレクトプロパティの値。未設定ならnull */
+  themeColor: string | null;
+  /** 自動生成サムネイルの背景画像ファイル名（public/images/category-backgrounds/ 配下）。未設定なら空文字 */
+  backgroundImageFilename: string;
+  /** カテゴリページ本文（Notion側で「説明文」より下に書かれた解説記事）のブロック。カテゴリページ下部に表示する。 */
+  blocks: BlockNode[];
+}
 
-const dateLabel = (iso: string) =>
-  new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
----
+export interface PostsCache {
+  generatedAt: string;
+  posts: Post[];
+  categories: Category[];
+  error?: string;
+}
 
-<BaseLayout
-  title={post.title}
-  description={post.description}
-  ogImage={`/open-graph/blog/${post.slug}.png`}
-  jsonLd={articleSchema}
->
-  <Breadcrumb items={breadcrumbItems} />
+export interface TocItem {
+  anchor: string;
+  text: string;
+  level: number;
+  children: TocItem[];
+}
 
-  <article class="mx-auto max-w-6xl px-5 py-10">
-    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
-      <div class="min-w-0">
-        <header>
-          {
-            (post.category || post.tags.length > 0) && (
-              <div class="mb-4 flex flex-wrap items-center gap-1.5">
-                {post.category && (
-                  <a href={`/blog/category/${encodeURIComponent(post.category)}`}
-                    class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
-                  >
-                    {post.category}
-                  </a>
-                )}
-                {post.tags.map((tag) => (
-                  <a href={`/blog/tag/${encodeURIComponent(tag)}`}
-                    class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100"
-                  >
-                    {tag}
-                  </a>
-                ))}
-              </div>
-            )
-          }
-          <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
-            {post.title}
-          </h1>
-          <p class="mt-4 text-sm text-neutral-400">
-            公開日: <time datetime={post.publishedAt}>{dateLabel(post.publishedAt)}</time>
-            {post.updatedAt !== post.publishedAt && (
-              <>
-                {" "}／ 更新日: <time datetime={post.updatedAt}>{dateLabel(post.updatedAt)}</time>
-              </>
-            )}
-          </p>
-        </header>
+// ------------------------------------------------------------
+// .notion-cache/resources.json （scripts/fetch-notion-resources.mjs が生成）の型定義。
+// こちらもスクリプト側（JS）と二重管理なので、片方を変えたらもう片方も直すこと。
+// ------------------------------------------------------------
 
-        {
-          post.keyPoints.length > 0 && (
-            <div class="mt-6 rounded-2xl border border-neutral-100 bg-neutral-50 px-5 py-4">
-              <p class="text-sm font-bold text-ink-950">👉 この記事でわかること</p>
-              <ul class="mt-2 space-y-1">
-                {post.keyPoints.map((point) => (
-                  <li class="text-sm text-neutral-600">•{point}</li>
-                ))}
-              </ul>
-            </div>
-          )
-        }
+export interface Resource {
+  id: string;
+  slug: string;
+  title: string;
+  /** 資料説明（本文に表示する説明文） */
+  description: string;
+  /** ディスクリプション（SEO用メタディスクリプション。未入力ならdescriptionを流用） */
+  metaDescription: string;
+  tags: string[];
+  /** 「マスタータグ」DBとのリレーションから解決した単一の主タグ（未設定ならnull） */
+  mainTag: string | null;
+  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
+  category: string | null;
+  /** 「ターゲット・目次」を1行ずつに分割した配列。1行目を見出し、2行目以降を箇条書きとして表示する。 */
+  targetToc: string[];
+  publishedAt: string;
+  updatedAt: string;
+  thumbnail: string | null;
+  /** 資料本体ファイルの配信パス。Notion側に「資料ファイル」プロパティが無い間はnull */
+  fileUrl: string | null;
+  /** 資料ファイル（PDF）の1ページ目を自動キャプチャした表紙画像。PDF以外やキャプチャ失敗時はnull */
+  coverImage: string | null;
+  /** 「抜粋ページ」で指定したページ番号を自動キャプチャした画像（指定順）。未指定なら空配列 */
+  excerptImages: string[];
+  /** 資料DBページ本文のブロック（記事と同じ形式）。見出し・リストなど自由に構成できる可変セクション用。 */
+  blocks: BlockNode[];
+}
 
-        {
-          post.thumbnail && (
-            <div class="mt-8 aspect-video w-full overflow-hidden rounded-2xl bg-neutral-100">
-              <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
-            </div>
-          )
-        }
-
-        {
-          toc.length > 0 && (
-            <details class="mt-8 rounded-2xl border border-neutral-100 bg-neutral-50 open:pb-2">
-              <summary class="cursor-pointer px-5 py-4 text-sm font-bold text-ink-950 marker:text-brand-500">目次</summary>
-              <div class="px-5 pb-4">
-                <TableOfContents items={toc} showHeading={false} wrapped={false} />
-              </div>
-            </details>
-          )
-        }
-
-        <div class="prose-notion mt-10 w-full">
-          <NotionBlocks blocks={post.blocks} />
-        </div>
-      </div>
-
-      <aside class="lg:sticky lg:top-24 lg:self-start">
-        <BlogSidebar categories={categories} popularPosts={popularPosts} tags={tags} />
-      </aside>
-    </div>
-  </article>
-
-  <ContactCta />
-</BaseLayout>
+export interface ResourcesCache {
+  generatedAt: string;
+  resources: Resource[];
+  error?: string;
+}
