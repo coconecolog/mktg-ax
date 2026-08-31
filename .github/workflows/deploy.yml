@@ -30,6 +30,14 @@ jobs:
       - name: PDFプレビュー画像生成用のツールをインストール
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
+      - name: 「公開後の編集中」記事用スナップショットを復元
+        uses: actions/cache/restore@v4
+        with:
+          path: .notion-cache/posts-status-snapshot.json
+          key: notion-posts-status-snapshot-${{ github.run_id }}
+          restore-keys: |
+            notion-posts-status-snapshot-
+
       - name: Notionから記事・資料データを取得してビルド
         run: npm run build
         env:
@@ -42,6 +50,12 @@ jobs:
           PUBLIC_CLARITY_ID: ${{ secrets.MKTG_AX_PUBLIC_CLARITY_ID }}
           PUBLIC_GSC_VERIFICATION: ${{ secrets.MKTG_AX_PUBLIC_GSC_VERIFICATION }}
           PUBLIC_GTM_ID: ${{ secrets.MKTG_AX_PUBLIC_GTM_ID }}
+
+      - name: 「公開後の編集中」記事用スナップショットを保存（次回のビルドが復元する）
+        uses: actions/cache/save@v4
+        with:
+          path: .notion-cache/posts-status-snapshot.json
+          key: notion-posts-status-snapshot-${{ github.run_id }}
 
       - name: Cloudflare Pagesへデプロイ（direct upload / 無料枠のビルド回数を消費しない）
         uses: cloudflare/wrangler-action@v3
