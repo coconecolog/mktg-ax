@@ -13,6 +13,7 @@ function loadCache(): PostsCache {
     const posts = (parsed.posts || []).map((p) => ({
       ...p,
       categories: p.categories || (p.category ? [p.category] : []),
+      keyPoints: p.keyPoints || [],
     }));
     const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
     return { ...parsed, posts, categories };
