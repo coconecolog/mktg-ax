@@ -48,6 +48,8 @@ export interface Post {
   category: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決した全カテゴリ名（複数選択可）。カテゴリページの絞り込みはこちらを使う。 */
   categories: string[];
+  /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
+  keyPoints: string[];
   publishedAt: string;
   updatedAt: string;
   thumbnail: string | null;
