@@ -23,7 +23,9 @@ export const PROP = {
   // 通常は未入力のままでOK。ここに画像をアップロードした記事だけ、その画像がサムネイルとして
   // 優先的に使われる（未入力の記事は generateFallbackThumbnail() が自動生成した画像になる）。
   thumbnail: "サムネイル画像",
-  published: "公開",
+  // 旧「公開」チェックボックス（boolean）から、3値の「ステータス」セレクトプロパティに移行。
+  // 選択肢は POST_STATUS を参照。値はNotion側で完全一致させること。
+  status: "ステータス",
   slug: "Slug",
   description: "ディスクリプション",
   // サムネイル画像が未設定の記事で、自動生成サムネイルに乗せる文言。「テキスト」プロパティ。
@@ -34,6 +36,14 @@ export const PROP = {
   // 記事冒頭に表示する「この記事でわかること」ボックスの箇条書き。「テキスト」プロパティ（複数行）。
   // 1行につき1項目。未入力ならボックス自体を表示しない。
   keyPoints: "記事の要点",
+};
+
+// 記事DBの「ステータス」セレクトプロパティの選択肢名。Notion側もこの文字列と完全一致させる。
+// 運用イメージ: 未公開 → 公開（新規公開／編集完了のタイミング） → 公開後の編集中（編集中はサイトを更新しない） → 公開 → …
+export const POST_STATUS = {
+  unpublished: "未公開",
+  published: "公開",
+  editing: "公開後の編集中",
 };
 
 // 「マスターカテゴリ」DB（記事DB・資料DBの「カテゴリ」リレーション先）自体のプロパティ名。
@@ -674,7 +684,7 @@ export async function buildNotionLinkMap(token) {
     try {
       const dataSourceId = await resolveDataSourceId(token, postsDbId);
       const pages = await queryAllPages(token, dataSourceId, {
-        filter: { property: PROP.published, checkbox: { equals: true } },
+        filter: { property: PROP.status, select: { does_not_equal: POST_STATUS.unpublished } },
       });
       for (const page of pages) {
         const title = getTitleText(page, PROP.title) || "";
