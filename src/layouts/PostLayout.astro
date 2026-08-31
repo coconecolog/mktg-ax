@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
+import ContactCta from "@/components/ContactCta.astro";
 import { buildArticleSchema } from "@/lib/schema";
 import { buildToc, getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
 import type { Post } from "@/lib/types";
@@ -105,4 +106,6 @@ const dateLabel = (iso: string) =>
       </aside>
     </div>
   </article>
+
+  <ContactCta />
 </BaseLayout>
