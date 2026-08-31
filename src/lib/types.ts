@@ -42,8 +42,6 @@ export interface Post {
   title: string;
   description: string;
   tags: string[];
-  /** 「マスタータグ」DBとのリレーションから解決した単一の主タグ（未設定ならnull） */
-  mainTag: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名の先頭1件（未設定ならnull）。カード等の単一バッジ表示用。 */
   category: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決した全カテゴリ名（複数選択可）。カテゴリページの絞り込みはこちらを使う。 */
