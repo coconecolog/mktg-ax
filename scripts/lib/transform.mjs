@@ -31,6 +31,9 @@ export const PROP = {
   thumbnailTitle: "サムネ用タイトル",
   // 自動生成サムネイルの補足文言（1行）。「テキスト」プロパティ。未入力なら表示しない。
   thumbnailSubtitle: "サムネ用サブタイトル",
+  // 記事冒頭に表示する「この記事でわかること」ボックスの箇条書き。「テキスト」プロパティ（複数行）。
+  // 1行につき1項目。未入力ならボックス自体を表示しない。
+  keyPoints: "記事の要点",
 };
 
 // 「マスターカテゴリ」DB（記事DB・資料DBの「カテゴリ」リレーション先）自体のプロパティ名。
@@ -154,6 +157,12 @@ export function makeAnchorFactory() {
 // リッチテキスト → シンプルな構造に変換
 // ------------------------------------------------------------
 
+/**
+ * linkMap を渡すと、Notionの「@」メンションでページを選んで貼ったリンクを、
+ * Notion内部のURLではなくサイト内の実URL（/blog/xxx, /resources/xxx）に変換する
+ * （buildNotionLinkMap() の返り値である Map<NotionページID, サイト内URL> を渡す）。
+ * メンション先がマップに無い（未公開・対象外のページ等）場合はリンクなしの単なるテキストにする。
+ */
 export function transformRichText(richText, linkMap) {
   if (!Array.isArray(richText)) return [];
   return richText.map((t) => {
@@ -842,9 +851,12 @@ export async function resolveLocalRepoFile(relativeDir, filename) {
 const RESOURCE_PREVIEW_OUT_DIR = path.resolve(process.cwd(), "public/images/resources");
 
 /**
- * 資料ファイル（PDF）の表紙（1ページ目）と、指定した抜粋ページを画像化して
- * public/images/resources/ に保存し、サイト内から参照できる絶対パスを返す。
- * 変換にはpoppler-utils（pdftoppmコマンド）を使う。新しいnpmパッケージは追加しない。
+ * 資料ファイル（PDF）の指定ページを画像化して public/images/resources/ に保存し、
+ * サイト内から参照できる絶対パスを返す。変換にはpoppler-utils（pdftoppmコマンド）を使う。
+ * 新しいnpmパッケージは追加しない。
+ *
+ * 「抜粋ページ」の指定があるときはそのページだけを画像化する（表紙は出さない）。
+ * 指定が無いときだけ、表紙（1ページ目）をフォールバックとして自動生成する。
  *
  * PDF以外のファイル形式（zip/doc/pptなど）の場合は何もせず null / 空配列を返す。
  * ページ番号が存在しない等で個別のページの変換に失敗した場合は、そのページだけスキップし
