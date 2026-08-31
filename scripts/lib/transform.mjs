@@ -683,10 +683,13 @@ export async function buildNotionLinkMap(token) {
   if (postsDbId) {
     try {
       const dataSourceId = await resolveDataSourceId(token, postsDbId);
-      const pages = await queryAllPages(token, dataSourceId, {
-        filter: { property: PROP.status, select: { does_not_equal: POST_STATUS.unpublished } },
-      });
+      // 「公開」プロパティは元がチェックボックスで、型変換の選び方次第で「セレクト」「ステータス」
+      // どちらの型にもなりうる。Notion側のフィルター指定でどちらの型キーを使うべきか確定できないため、
+      // 全件取得してJS側で判定する（記事数が少ないサイト規模なので負荷は問題にならない）。
+      const pages = await queryAllPages(token, dataSourceId, {});
       for (const page of pages) {
+        const status = getStatusOrSelectName(page, PROP.status);
+        if (status !== POST_STATUS.published && status !== POST_STATUS.editing) continue;
         const title = getTitleText(page, PROP.title) || "";
         const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
         linkMap.set(page.id, `/blog/${slug}`);
@@ -753,6 +756,20 @@ export function getSelectName(page, name) {
   const prop = getProperty(page, name);
   if (!prop || prop.type !== "select") return null;
   return prop.select?.name || null;
+}
+
+/**
+ * 「セレクト」プロパティ、またはNotion標準の「ステータス」プロパティ（select/status どちらの型でも）
+ * から選択されている名前を取得する。チェックボックスから型変換すると、選んだ変換先によって
+ * どちらの型になるか変わる（"ステータス"型にすると自動でTo-do/In progress/Complete風の色分けになる）ため、
+ * どちらであっても同じように読めるようにしている。
+ */
+export function getStatusOrSelectName(page, name) {
+  const prop = getProperty(page, name);
+  if (!prop) return null;
+  if (prop.type === "status") return prop.status?.name || null;
+  if (prop.type === "select") return prop.select?.name || null;
+  return null;
 }
 
 /**
