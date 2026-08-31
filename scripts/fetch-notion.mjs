@@ -32,6 +32,7 @@ import {
   resolveCategoryBackgroundDataUri,
   extractExcerpt,
   buildNotionLinkMap,
+  splitBulletLines,
 } from "./lib/transform.mjs";
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
@@ -168,6 +169,8 @@ async function main() {
     const category = categories[0] || null;
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, PROP.updatedAt) || page.last_edited_time;
+    // 「この記事でわかること」ボックス用の箇条書き。1行1項目、未入力ならボックスごと非表示。
+    const keyPoints = splitBulletLines(getRichTextPlain(page, PROP.keyPoints));
 
     // 「サムネイル画像」に実ファイルがアップロードされていればそれを優先。
     // 未設定の場合は、カテゴリのテーマカラー＋「サムネ用タイトル/サブタイトル」から自動生成する。
@@ -196,6 +199,7 @@ async function main() {
       mainTag,
       category,
       categories,
+      keyPoints,
       publishedAt,
       updatedAt,
       thumbnail,
