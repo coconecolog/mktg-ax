@@ -14,9 +14,8 @@ const execFileAsync = promisify(execFile);
 export const PROP = {
   title: "タイトル",
   tags: "タグ",
-  // メインタグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
-  // 値の解決には getRelationNames / getFirstRelationName（notion-client.mjs）を使う。
-  mainTag: "メインタグ",
+  // カテゴリは「マスターカテゴリ」DBとのリレーションプロパティ（複数選択可）。
+  // 値の解決には getRelationNames（notion-client.mjs）を使う。
   category: "カテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
