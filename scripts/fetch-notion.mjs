@@ -18,9 +18,10 @@ import {
 import {
   PROP,
   CATEGORY_PROP,
+  POST_STATUS,
   getTitleText,
   getRichTextPlain,
-  getCheckbox,
+  getSelectName,
   getSelectColor,
   getDateISO,
   getFirstFileUrl,
@@ -37,6 +38,9 @@ import {
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
 const CACHE_FILE = path.join(CACHE_DIR, "posts.json");
+// 「公開後の編集中」記事が、編集中もサイト上は前回公開時点の内容のまま保たれるようにするためのスナップショット。
+// GitHub Actions側でこのファイルだけをビルドをまたいでキャッシュ復元/保存する（.github/workflows/deploy.yml参照）。
+const SNAPSHOT_FILE = path.join(CACHE_DIR, "posts-status-snapshot.json");
 
 async function writeEmptyCache(reason) {
   console.warn(`\n[fetch-notion] ${reason}`);
@@ -126,7 +130,7 @@ async function main() {
   let rawPages;
   try {
     rawPages = await queryAllPages(token, dataSourceId, {
-      filter: { property: PROP.published, checkbox: { equals: true } },
+      filter: { property: PROP.status, select: { does_not_equal: POST_STATUS.unpublished } },
       sorts: [{ property: PROP.publishedAt, direction: "descending" }],
     });
   } catch (err) {
@@ -135,10 +139,23 @@ async function main() {
     );
     console.warn("[fetch-notion] フィルターなしで全件取得し、あとでJS側で絞り込みます…");
     const allPages = await queryAllPages(token, dataSourceId, {});
-    rawPages = allPages.filter((p) => getCheckbox(p, PROP.published));
+    rawPages = allPages.filter((p) => getSelectName(p, PROP.status) === POST_STATUS.published || getSelectName(p, PROP.status) === POST_STATUS.editing);
   }
 
-  console.log(`[fetch-notion] ${rawPages.length}件の公開記事を処理します。`);
+  console.log(`[fetch-notion] ${rawPages.length}件の公開対象記事を処理します。`);
+
+  // 「公開後の編集中」記事は、Notion側の最新の下書きではなく前回公開時点の内容をそのまま使う。
+  // そのための「前回の完成品」スナップショットを読み込む（GitHub Actionsのキャッシュで復元される想定。
+  // 復元されていない場合＝初回や初めて編集中ステータスを使う記事は、公開履歴が無いものとして扱う）。
+  let previousPostsById = new Map();
+  try {
+    const raw = await fs.readFile(SNAPSHOT_FILE, "utf-8");
+    const previous = JSON.parse(raw);
+    previousPostsById = new Map((previous.posts || []).map((p) => [p.id, p]));
+    console.log(`[fetch-notion] 前回公開時点のスナップショットを${previousPostsById.size}件読み込みました。`);
+  } catch {
+    console.log("[fetch-notion] 前回公開時点のスナップショットが見つかりません（初回、または復元されていません）。");
+  }
 
   // 本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための
   // NotionページID → サイト内URL のマップ。カテゴリ・記事のブロック変換より先に作っておく必要がある。
@@ -156,6 +173,30 @@ async function main() {
   const posts = [];
   for (const page of rawPages) {
     const title = getTitleText(page, PROP.title) || "(無題)";
+    const status = getSelectName(page, PROP.status);
+
+    // Notion APIの select.does_not_equal は「ステータス」が未設定のページも通してしまうことがある。
+    // ステータス未設定・不明な値は「未公開」と同じ扱いにして、意図せず公開されないようにする。
+    if (status !== POST_STATUS.published && status !== POST_STATUS.editing) {
+      console.log(`  - ${title}（ステータスが「${status || "未設定"}」のためスキップ）`);
+      continue;
+    }
+
+    // 「公開後の編集中」は、Notionの最新の下書きを一切見ずに前回公開時点のものをそのまま使い回す
+    // （画像ダウンロードやブロック変換もスキップする）。編集中に半端な内容が公開されるのを防ぐため。
+    if (status === POST_STATUS.editing) {
+      const previousPost = previousPostsById.get(page.id);
+      if (previousPost) {
+        console.log(`  - ${title}（編集中のため前回公開時点の内容を維持）`);
+        posts.push(previousPost);
+      } else {
+        console.warn(
+          `  - ${title}（ステータスが「${POST_STATUS.editing}」ですが公開履歴が無いためスキップします。一度「${POST_STATUS.published}」にしてから編集中にしてください）`,
+        );
+      }
+      continue;
+    }
+
     console.log(`  - ${title}`);
 
     const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
@@ -219,10 +260,12 @@ async function main() {
   }
 
   await fs.mkdir(CACHE_DIR, { recursive: true });
-  await fs.writeFile(
-    CACHE_FILE,
-    JSON.stringify({ generatedAt: new Date().toISOString(), posts, categories }, null, 2),
-  );
+  const output = { generatedAt: new Date().toISOString(), posts, categories };
+  await fs.writeFile(CACHE_FILE, JSON.stringify(output, null, 2));
+
+  // 今回の結果を「次回、編集中の記事が参照する前回公開時点のスナップショット」として保存する。
+  // GitHub Actions側がこのファイルをキャッシュに保存し、次回のビルド開始時に復元する。
+  await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(output, null, 2));
 
   console.log(
     `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件を .notion-cache/posts.json に書き出しました。`,
