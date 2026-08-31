@@ -78,6 +78,19 @@ const dateLabel = (iso: string) =>
         </header>
 
         {
+          post.keyPoints.length > 0 && (
+            <div class="mt-6 rounded-2xl border border-neutral-100 bg-neutral-50 px-5 py-4">
+              <p class="text-sm font-bold text-ink-950">👉 この記事でわかること</p>
+              <ul class="mt-2 space-y-1">
+                {post.keyPoints.map((point) => (
+                  <li class="text-sm text-neutral-600">•{point}</li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+
+        {
           post.thumbnail && (
             <div class="mt-8 aspect-video w-full overflow-hidden rounded-2xl bg-neutral-100">
               <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
