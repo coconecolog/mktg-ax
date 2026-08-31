@@ -13,7 +13,6 @@ import {
   queryAllPages,
   fetchBlockChildrenRecursive,
   getRelationNames,
-  getFirstRelationName,
 } from "./lib/notion-client.mjs";
 import {
   PROP,
@@ -21,7 +20,7 @@ import {
   POST_STATUS,
   getTitleText,
   getRichTextPlain,
-  getSelectName,
+  getStatusOrSelectName,
   getSelectColor,
   getDateISO,
   getFirstFileUrl,
@@ -126,23 +125,26 @@ async function main() {
   console.log("[fetch-notion] データソースIDを取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
 
-  console.log("[fetch-notion] 公開記事の一覧を取得中…");
-  let rawPages;
+  console.log("[fetch-notion] 記事の一覧を取得中…");
+  // 「公開」プロパティは元がチェックボックスで、型変換の選び方次第で「セレクト」「ステータス」
+  // どちらの型にもなりうる（Notion側のフィルター指定にどちらの型キーを使うべきか確定できない）。
+  // 記事数が少ないサイト規模なので、全件取得してJS側でステータス判定する方式に統一する。
+  let allPages;
   try {
-    rawPages = await queryAllPages(token, dataSourceId, {
-      filter: { property: PROP.status, select: { does_not_equal: POST_STATUS.unpublished } },
+    allPages = await queryAllPages(token, dataSourceId, {
       sorts: [{ property: PROP.publishedAt, direction: "descending" }],
     });
   } catch (err) {
-    console.warn(
-      `[fetch-notion] フィルター/ソート付きの取得に失敗しました（プロパティ名や型を確認してください）: ${err.message}`,
-    );
-    console.warn("[fetch-notion] フィルターなしで全件取得し、あとでJS側で絞り込みます…");
-    const allPages = await queryAllPages(token, dataSourceId, {});
-    rawPages = allPages.filter((p) => getSelectName(p, PROP.status) === POST_STATUS.published || getSelectName(p, PROP.status) === POST_STATUS.editing);
+    console.warn(`[fetch-notion] ソート付きの取得に失敗しました: ${err.message}`);
+    console.warn("[fetch-notion] ソートなしで全件取得します…");
+    allPages = await queryAllPages(token, dataSourceId, {});
   }
+  const rawPages = allPages.filter((p) => {
+    const status = getStatusOrSelectName(p, PROP.status);
+    return status === POST_STATUS.published || status === POST_STATUS.editing;
+  });
 
-  console.log(`[fetch-notion] ${rawPages.length}件の公開対象記事を処理します。`);
+  console.log(`[fetch-notion] 全${allPages.length}件中${rawPages.length}件が公開対象です。`);
 
   // 「公開後の編集中」記事は、Notion側の最新の下書きではなく前回公開時点の内容をそのまま使う。
   // そのための「前回の完成品」スナップショットを読み込む（GitHub Actionsのキャッシュで復元される想定。
@@ -173,10 +175,10 @@ async function main() {
   const posts = [];
   for (const page of rawPages) {
     const title = getTitleText(page, PROP.title) || "(無題)";
-    const status = getSelectName(page, PROP.status);
+    const status = getStatusOrSelectName(page, PROP.status);
 
-    // Notion APIの select.does_not_equal は「ステータス」が未設定のページも通してしまうことがある。
-    // ステータス未設定・不明な値は「未公開」と同じ扱いにして、意図せず公開されないようにする。
+    // rawPages は既にステータスで絞り込み済みだが、念のための二重チェック
+    // （未設定・想定外の値は「未公開」と同じ扱いにして、意図せず公開されないようにする）。
     if (status !== POST_STATUS.published && status !== POST_STATUS.editing) {
       console.log(`  - ${title}（ステータスが「${status || "未設定"}」のためスキップ）`);
       continue;
@@ -200,10 +202,9 @@ async function main() {
     console.log(`  - ${title}`);
 
     const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
-    // タグ・メインタグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
+    // タグ・カテゴリは「マスタータグ」「マスターカテゴリ」DBとのリレーションプロパティ。
     // 値には関連ページのIDしか入っていないため、関連ページを取得して名前に解決する。
     const tags = await getRelationNames(token, page, PROP.tags);
-    const mainTag = await getFirstRelationName(token, page, PROP.mainTag);
     // カテゴリは複数選択可のリレーション。全件を categories に保持しつつ、
     // 単一バッジ表示用に先頭1件を category としても残す。
     const categories = await getRelationNames(token, page, PROP.category);
@@ -237,7 +238,6 @@ async function main() {
       title,
       description,
       tags,
-      mainTag,
       category,
       categories,
       keyPoints,
