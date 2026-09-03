@@ -147,45 +147,85 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
           <p class="text-xs font-bold text-brand-600">無料ダウンロード</p>
           <h2 class="mt-1 text-lg font-bold text-ink-950">この資料をダウンロードする</h2>
           <p class="mt-2 text-xs leading-relaxed text-neutral-500">
-            以下のフォームにご入力いただくと、資料をお送りします。
+            以下のフォームにご入力いただくと、資料のダウンロードリンクをメールでお送りします。
           </p>
-          <!-- TODO: ダウンロードフォームは未実装（ダミー表示）。実装時はフォームのaction/送信処理・DL計測を差し替える。 -->
-          <form class="mt-5 space-y-3">
-            <div>
-              <label class="text-xs font-medium text-neutral-600">お名前</label>
-              <input
-                type="text"
-                disabled
-                placeholder="山田 太郎"
-                class="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
-              />
-            </div>
-            <div>
-              <label class="text-xs font-medium text-neutral-600">会社名</label>
-              <input
-                type="text"
-                disabled
-                placeholder="株式会社サンプル"
-                class="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
-              />
-            </div>
-            <div>
-              <label class="text-xs font-medium text-neutral-600">メールアドレス</label>
-              <input
-                type="email"
-                disabled
-                placeholder="you@example.com"
-                class="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
-              />
-            </div>
-            <button
-              type="button"
-              disabled
-              class="mt-2 w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white opacity-60"
-            >
-              無料でダウンロードする
-            </button>
-          </form>
+          {
+            resource.fileUrl ? (
+              <form
+                id="resource-download-form"
+                class="mt-5 space-y-3"
+                data-resource-slug={resource.slug}
+                data-resource-title={resource.title}
+                data-download-url={resource.fileUrl}
+              >
+                <div>
+                  <label for="rdf-name" class="text-xs font-medium text-neutral-600">
+                    お名前 <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="rdf-name"
+                    name="name"
+                    type="text"
+                    required
+                    placeholder="山田 太郎"
+                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+                  />
+                </div>
+                <div>
+                  <label for="rdf-company" class="text-xs font-medium text-neutral-600">
+                    会社名
+                  </label>
+                  <input
+                    id="rdf-company"
+                    name="company"
+                    type="text"
+                    placeholder="株式会社サンプル"
+                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+                  />
+                </div>
+                <div>
+                  <label for="rdf-email" class="text-xs font-medium text-neutral-600">
+                    メールアドレス <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="rdf-email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+                  />
+                </div>
+                {/* ハニーポット: 人間には見えない項目。自動投稿botはよく埋めてしまうため、値が入っていたら送信を無視する */}
+                <div class="hidden" aria-hidden="true">
+                  <label for="rdf-website">ウェブサイト</label>
+                  <input id="rdf-website" name="website" type="text" tabindex={-1} autocomplete="off" />
+                </div>
+                <label class="flex items-start gap-2 pt-1">
+                  <input id="rdf-consent" name="consent" type="checkbox" required class="mt-0.5" />
+                  <span class="text-xs leading-relaxed text-neutral-500">
+                    ご入力いただいた情報は、資料の送付およびサービスに関するご案内のために利用します。
+                    <a href="/privacy" class="text-brand-600 underline">
+                      個人情報保護方針
+                    </a>
+                    に同意のうえ送信します。配信停止はいつでも可能です。
+                  </span>
+                </label>
+                <button
+                  id="rdf-submit"
+                  type="submit"
+                  class="mt-2 w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  無料でダウンロードする
+                </button>
+                <p id="rdf-message" class="hidden text-xs leading-relaxed" role="status" />
+              </form>
+            ) : (
+              <p class="mt-5 text-xs leading-relaxed text-neutral-500">
+                現在準備中です。しばらくお待ちください。
+              </p>
+            )
+          }
         </div>
       </aside>
     </div>
@@ -268,5 +308,65 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
   // 画像の外側（背景部分）をクリックしたら閉じる
   modal?.addEventListener("click", (e) => {
     if (e.target === modal) modal.close();
+  });
+</script>
+
+<script>
+  // 資料ダウンロードフォームの送信処理。
+  // 送信先は Cloudflare Pages Functions（functions/api/resource-download.js）。
+  // ページ遷移なしで結果（成功/エラー）をフォーム直下に表示する。
+  const form = document.getElementById("resource-download-form") as HTMLFormElement | null;
+  const messageEl = document.getElementById("rdf-message");
+  const submitBtn = document.getElementById("rdf-submit") as HTMLButtonElement | null;
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!messageEl || !submitBtn) return;
+
+    const formData = new FormData(form);
+    const payload = {
+      name: formData.get("name"),
+      company: formData.get("company"),
+      email: formData.get("email"),
+      consent: formData.get("consent") === "on",
+      website: formData.get("website"), // ハニーポット。人間の入力では常に空のはず
+      resourceSlug: form.dataset.resourceSlug,
+      resourceTitle: form.dataset.resourceTitle,
+      downloadUrl: form.dataset.downloadUrl,
+    };
+
+    submitBtn.disabled = true;
+    messageEl.classList.remove("hidden", "text-red-600", "text-emerald-600");
+    messageEl.classList.add("text-neutral-500");
+    messageEl.textContent = "送信中です…";
+
+    try {
+      const res = await fetch("/api/resource-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({ ok: false, error: null }));
+
+      if (res.ok && data.ok) {
+        form.reset();
+        form.querySelectorAll("input, button").forEach((el) => {
+          (el as HTMLInputElement | HTMLButtonElement).disabled = true;
+        });
+        messageEl.classList.remove("text-neutral-500");
+        messageEl.classList.add("text-emerald-600");
+        messageEl.textContent = "ご入力いただいたメールアドレスに、資料のダウンロードリンクをお送りしました。";
+      } else {
+        submitBtn.disabled = false;
+        messageEl.classList.remove("text-neutral-500");
+        messageEl.classList.add("text-red-600");
+        messageEl.textContent = data.error || "送信に失敗しました。時間をおいて再度お試しください。";
+      }
+    } catch {
+      submitBtn.disabled = false;
+      messageEl.classList.remove("text-neutral-500");
+      messageEl.classList.add("text-red-600");
+      messageEl.textContent = "送信に失敗しました。時間をおいて再度お試しください。";
+    }
   });
 </script>
