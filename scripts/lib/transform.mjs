@@ -732,10 +732,8 @@ export const RESOURCE_PROP = {
   category: "カテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
-  // Notionの容量課金を避けるため、画像・PDFの実ファイルはNotionにアップロードしない。
-  // 「テキスト」プロパティにファイル名だけを入力し、実ファイルはGitHubの
-  // public/images/resources/ フォルダにWeb画面から直接アップロードする運用にする。
-  thumbnail: "資料サムネイル",
+  // 旧「資料サムネイル」プロパティ（手動でPNGをアップロードする運用）は廃止。
+  // サムネイルは資料ファイル（PDF）の1ページ目から自動生成する（generateResourcePreviewImages参照）。
   description: "資料説明",
   targetToc: "ターゲット・目次",
   published: "公開",
@@ -881,8 +879,12 @@ const RESOURCE_PREVIEW_OUT_DIR = path.resolve(process.cwd(), "public/images/reso
  * サイト内から参照できる絶対パスを返す。変換にはpoppler-utils（pdftoppmコマンド）を使う。
  * 新しいnpmパッケージは追加しない。
  *
- * 「抜粋ページ」の指定があるときはそのページだけを画像化する（表紙は出さない）。
- * 指定が無いときだけ、表紙（1ページ目）をフォールバックとして自動生成する。
+ * サムネイル（一覧・詳細ページの見出し画像）は、旧「資料サムネイル」プロパティ（手動アップロード）を
+ * 廃止したため、PDFが存在すれば常に1ページ目を自動キャプチャして充てる。
+ *
+ * 資料詳細ページの「抜粋プレビュー」欄はこれとは別の用途で、「抜粋ページ」の指定があるときは
+ * そのページだけを画像化する（表紙は出さない）。指定が無いときは、上のサムネイルと同じ
+ * 表紙画像をそのままプレビューとしても使い回す（pdftoppmの二重実行を避けるため）。
  *
  * PDF以外のファイル形式（zip/doc/pptなど）の場合は何もせず null / 空配列を返す。
  * ページ番号が存在しない等で個別のページの変換に失敗した場合は、そのページだけスキップし
@@ -893,7 +895,7 @@ const RESOURCE_PREVIEW_OUT_DIR = path.resolve(process.cwd(), "public/images/reso
  * @param {number[]} excerptPageNumbers 抜粋したいページ番号（1始まり）の配列
  */
 export async function generateResourcePreviewImages(fileUrl, idHint, excerptPageNumbers = []) {
-  const result = { coverImage: null, excerptImages: [] };
+  const result = { thumbnail: null, coverImage: null, excerptImages: [] };
   if (!fileUrl || !fileUrl.toLowerCase().endsWith(".pdf")) return result;
 
   const pdfLocalPath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""));
@@ -923,15 +925,18 @@ export async function generateResourcePreviewImages(fileUrl, idHint, excerptPage
     }
   }
 
-  // 「抜粋ページ」の指定があるときは、指定ページだけを表示する（表紙は出さない）。
-  // 指定が無いときだけ、表紙をフォールバックとして自動生成する。
+  // サムネイルは常に1ページ目を自動キャプチャする（「資料サムネイル」プロパティは廃止）。
+  result.thumbnail = await renderPage(1, "cover");
+
+  // 「抜粋ページ」の指定があるときは、指定ページだけを抜粋プレビューとして表示する。
+  // 指定が無いときは、上で生成したサムネイル（表紙）をそのまま抜粋プレビューにも使う。
   if (excerptPageNumbers.length > 0) {
     for (const pageNumber of excerptPageNumbers) {
       const image = await renderPage(pageNumber, `p${pageNumber}`);
       if (image) result.excerptImages.push(image);
     }
   } else {
-    result.coverImage = await renderPage(1, "cover");
+    result.coverImage = result.thumbnail;
   }
 
   return result;
