@@ -94,12 +94,9 @@ async function main() {
     const publishedAt = getDateISO(page, RESOURCE_PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, RESOURCE_PROP.updatedAt) || page.last_edited_time;
 
-    // サムネイル・資料ファイルはNotionにはアップロードせず、GitHubリポジトリの
-    // public/images/resources/ ・ public/files/resources/ に直接アップロードしてもらう運用。
-    // Notion側の各プロパティには、そのファイル名だけを入力してもらう（テキストプロパティ）。
-    const thumbnailFilename = getRichTextPlain(page, RESOURCE_PROP.thumbnail);
-    const thumbnail = await resolveLocalRepoFile("images/resources", thumbnailFilename);
-
+    // 資料ファイル本体はNotionにはアップロードせず、GitHubリポジトリの
+    // public/files/resources/ に直接アップロードしてもらう運用。
+    // Notion側の「資料ファイル」プロパティには、そのファイル名だけを入力してもらう（テキストプロパティ）。
     const fileFilename = getRichTextPlain(page, RESOURCE_PROP.file);
     const fileUrl = await resolveLocalRepoFile("files/resources", fileFilename);
 
@@ -109,8 +106,10 @@ async function main() {
       .map((s) => parseInt(s.trim(), 10))
       .filter((n) => Number.isInteger(n) && n > 0);
 
-    // 資料ファイルがPDFの場合、表紙（1ページ目）と抜粋ページを自動でキャプチャする。
-    const { coverImage, excerptImages } = await generateResourcePreviewImages(
+    // 資料ファイルがPDFの場合、1ページ目を自動キャプチャしてサムネイルに使う
+    // （旧「資料サムネイル」プロパティは廃止。PDFをアップロードするだけで画像が出るようにする）。
+    // あわせて、抜粋ページの指定があればそのページも自動キャプチャする。
+    const { thumbnail, coverImage, excerptImages } = await generateResourcePreviewImages(
       fileUrl,
       `resource-preview-${page.id}`,
       excerptPageNumbers,
