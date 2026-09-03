@@ -113,7 +113,7 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
           )
         }
 
-        <p class="mt-8 leading-relaxed text-neutral-700">{resource.description}</p>
+        <p class="mt-8 whitespace-pre-line leading-relaxed text-neutral-700">{resource.description}</p>
 
         {
           resource.targetToc.length > 0 && (
@@ -208,7 +208,7 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
     cursor: zoom-in;
   }
 
-    .preview-modal {
+  .preview-modal {
     position: fixed;
     top: 50%;
     left: 50%;
