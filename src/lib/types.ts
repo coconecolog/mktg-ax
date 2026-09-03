@@ -105,6 +105,7 @@ export interface Resource {
   targetToc: string[];
   publishedAt: string;
   updatedAt: string;
+  /** 一覧・詳細ページの見出し画像。資料ファイル（PDF）の1ページ目を自動キャプチャしたもの（旧「資料サムネイル」プロパティは廃止）。PDF以外や生成失敗時はnull */
   thumbnail: string | null;
   /** 資料本体ファイルの配信パス。Notion側に「資料ファイル」プロパティが無い間はnull */
   fileUrl: string | null;
