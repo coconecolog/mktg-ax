@@ -860,11 +860,26 @@ export async function resolveLocalRepoFile(relativeDir, filename) {
   const trimmed = (filename || "").trim();
   if (!trimmed) return null;
 
-  const absolutePath = path.resolve(process.cwd(), "public", relativeDir, trimmed);
+  const dirPath = path.resolve(process.cwd(), "public", relativeDir);
+  const absolutePath = path.join(dirPath, trimmed);
   try {
     await fs.access(absolutePath);
     return `/${relativeDir}/${trimmed}`;
   } catch {
+    // 完全一致で見つからない場合、Unicode正規化の違いを疑って再チェックする。
+    // 日本語ファイル名は、Macで作成・アップロードされた場合にNFD（濁点等が分解された形）で
+    // 保存されることがあり、Notionのテキストプロパティ（通常NFC）と見た目は同じでも
+    // バイト列が異なるため、Linux（GitHub Actions）上の単純な完全一致チェックでは
+    // 「ファイルが見つからない」と誤判定してしまう。ディレクトリの実ファイル名側も
+    // NFC正規化した上で突き合わせることで、この見た目上の食い違いを吸収する。
+    try {
+      const entries = await fs.readdir(dirPath);
+      const normalizedTarget = trimmed.normalize("NFC");
+      const match = entries.find((entry) => entry.normalize("NFC") === normalizedTarget);
+      if (match) return `/${relativeDir}/${match}`;
+    } catch {
+      // ディレクトリ自体が存在しない等はここでは無視し、下の警告に落とす。
+    }
     console.warn(
       `  [notion] ファイルが見つかりません: public/${relativeDir}/${trimmed}（GitHubへのアップロード忘れ、またはNotion側のファイル名の入力ミスがないか確認してください）`,
     );
