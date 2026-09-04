@@ -1,8 +1,8 @@
 ---
-// 「お問い合わせ」ページの実装方法（Googleフォーム／外部フォーム埋め込み等）は
-// 依頼者と相談のうえ後日決定する予定です。それまでの仮実装として、
-// フォーム・SNS導線はダミー表示にし、メールでの問い合わせを受け付けるページにしています。
-// CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください。
+// お問い合わせフォームは functions/api/contact.js（Cloudflare Pages Function）経由で
+// Resendから運営者宛に通知メールを送信する。SNS導線は開設まではダミー表示のまま。
+// CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください
+// （フッター等の表示用。フォームの送信先は環境変数 CONTACT_NOTIFY_TO で別途設定）。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import FaqAccordion from "@/components/FaqAccordion.astro";
@@ -63,44 +63,50 @@ const snsLinks = [
     <div class="mx-auto mt-12 max-w-2xl">
       <div class="text-center">
         <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
-        <p class="mt-2 text-sm text-neutral-500">現在準備中です。フォームが整うまでは、下記のメールアドレスまで直接ご連絡ください。</p>
+        <p class="mt-2 text-sm text-neutral-500">下記フォームよりお気軽にご連絡ください。</p>
       </div>
 
-      <!-- TODO: お問い合わせフォームは未実装（ダミー表示）。実装時はフォームのaction/送信処理・入力バリデーションを差し替える。 -->
-      <form class="mt-6 rounded-2xl border border-neutral-100 bg-white px-6 md:px-8">
+      <form id="contact-form" class="mt-6 rounded-2xl border border-neutral-100 bg-white px-6 py-6 md:px-8">
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label class="text-xs font-medium text-neutral-600">お名前<span class="ml-0.5 text-brand-600">*</span></label>
+            <label for="cf-name" class="text-xs font-medium text-neutral-600">お名前<span class="ml-0.5 text-brand-600">*</span></label>
             <input
+              id="cf-name"
+              name="name"
               type="text"
-              disabled
+              required
               placeholder="山田 太郎"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
             />
           </div>
           <div>
-            <label class="text-xs font-medium text-neutral-600">会社名</label>
+            <label for="cf-company" class="text-xs font-medium text-neutral-600">会社名</label>
             <input
+              id="cf-company"
+              name="company"
               type="text"
-              disabled
               placeholder="株式会社サンプル"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
             />
           </div>
           <div>
-            <label class="text-xs font-medium text-neutral-600">メールアドレス<span class="ml-0.5 text-brand-600">*</span></label>
+            <label for="cf-email" class="text-xs font-medium text-neutral-600">メールアドレス<span class="ml-0.5 text-brand-600">*</span></label>
             <input
+              id="cf-email"
+              name="email"
               type="email"
-              disabled
+              required
               placeholder="you@example.com"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
             />
           </div>
           <div>
-            <label class="text-xs font-medium text-neutral-600">お問い合わせ種別<span class="ml-0.5 text-brand-600">*</span></label>
+            <label for="cf-type" class="text-xs font-medium text-neutral-600">お問い合わせ種別<span class="ml-0.5 text-brand-600">*</span></label>
             <select
-              disabled
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400"
+              id="cf-type"
+              name="inquiryType"
+              required
+              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950"
             >
               <option>一般のお問い合わせ</option>
               <option>サービス・ご相談について</option>
@@ -110,22 +116,41 @@ const snsLinks = [
             </select>
           </div>
           <div class="sm:col-span-2">
-            <label class="text-xs font-medium text-neutral-600">お問い合わせ内容<span class="ml-0.5 text-brand-600">*</span></label>
+            <label for="cf-message" class="text-xs font-medium text-neutral-600">お問い合わせ内容<span class="ml-0.5 text-brand-600">*</span></label>
             <textarea
-              disabled
+              id="cf-message"
+              name="message"
+              required
               rows="5"
               placeholder="お問い合わせ内容をご記入ください"
-              class="mt-1.5 w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 placeholder:text-neutral-400"
+              class="mt-1.5 w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
             ></textarea>
           </div>
         </div>
+
+        <!-- ハニーポット: 人間には見えない項目。自動投稿botはよく埋めてしまうため、値が入っていたら送信を無視する -->
+        <div class="hidden" aria-hidden="true">
+          <label for="cf-website">ウェブサイト</label>
+          <input id="cf-website" name="website" type="text" tabindex={-1} autocomplete="off" />
+        </div>
+
+        <label class="mt-5 flex items-start gap-2">
+          <input id="cf-consent" name="consent" type="checkbox" required class="mt-0.5" />
+          <span class="text-xs leading-relaxed text-neutral-500">
+            ご入力いただいた情報は、お問い合わせへの対応のために利用します。
+            <a href="/privacy" class="text-brand-600 underline">個人情報保護方針</a>
+            に同意のうえ送信します。
+          </span>
+        </label>
+
         <button
-          type="button"
-          disabled
-          class="mt-6 rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white opacity-60"
+          id="cf-submit"
+          type="submit"
+          class="mt-6 rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           送信する
         </button>
+        <p id="cf-result" class="mt-3 hidden text-xs leading-relaxed" role="status"></p>
         <p class="mt-3 text-xs text-neutral-400">送信いただいた内容は、お問い合わせへの対応以外の目的では使用いたしません。</p>
       </form>
     </div>
@@ -150,4 +175,60 @@ const snsLinks = [
       </div>
     </div>
   </section>
+
+  <script>
+    const form = document.getElementById("contact-form") as HTMLFormElement | null;
+    const resultEl = document.getElementById("cf-result");
+    const submitBtn = document.getElementById("cf-submit") as HTMLButtonElement | null;
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!resultEl || !submitBtn) return;
+
+      const formData = new FormData(form);
+      const payload = {
+        name: formData.get("name"),
+        company: formData.get("company"),
+        email: formData.get("email"),
+        inquiryType: formData.get("inquiryType"),
+        message: formData.get("message"),
+        consent: formData.get("consent") === "on",
+        website: formData.get("website"),
+      };
+
+      submitBtn.disabled = true;
+      resultEl.classList.remove("hidden", "text-red-600", "text-emerald-600");
+      resultEl.classList.add("text-neutral-500");
+      resultEl.textContent = "送信中です…";
+
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({ ok: false, error: null }));
+
+        if (res.ok && data.ok) {
+          form.reset();
+          form.querySelectorAll("input, select, textarea, button").forEach((el) => {
+            (el as HTMLInputElement | HTMLButtonElement).disabled = true;
+          });
+          resultEl.classList.remove("text-neutral-500");
+          resultEl.classList.add("text-emerald-600");
+          resultEl.textContent = "お問い合わせを受け付けました。担当より折り返しご連絡いたします。";
+        } else {
+          submitBtn.disabled = false;
+          resultEl.classList.remove("text-neutral-500");
+          resultEl.classList.add("text-red-600");
+          resultEl.textContent = data.error || "送信に失敗しました。時間をおいて再度お試しください。";
+        }
+      } catch {
+        submitBtn.disabled = false;
+        resultEl.classList.remove("text-neutral-500");
+        resultEl.classList.add("text-red-600");
+        resultEl.textContent = "送信に失敗しました。時間をおいて再度お試しください。";
+      }
+    });
+  </script>
 </BaseLayout>
