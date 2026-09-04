@@ -4,14 +4,21 @@
 //
 // 処理の流れ:
 //   1. 入力チェック（お名前・メールアドレス・お問い合わせ種別・内容・同意チェックボックスなど）
-//   2. Resend経由で、運営者宛の通知メールを送信（返信先=問い合わせ者のメールアドレス）
+//   2. Supabase（service_roleキー経由）に問い合わせ内容を保存（本体の記録。ここが失敗したらエラーを返す）
+//   3. Resend経由で、運営者宛の通知メールを送信（返信先=問い合わせ者のメールアドレス）
+//      ※ 2で保存済みのため、3が失敗してもユーザーにはエラーを返さない（サーバー側にログのみ残す）
 //
 // 必要な環境変数（Cloudflare Pagesダッシュボード → 対象プロジェクト →
 // Settings → Environment variables で設定する。resource-download.js /
-// unsubscribe.js と共通のものはそのまま流用可能）:
-//   RESEND_API_KEY      Resend → API Keys（既存のものを流用）
-//   RESEND_FROM_ADDRESS 例: MKTG.AX <notify@mktg.ax>（既存のものを流用）
-//   CONTACT_NOTIFY_TO   お問い合わせ通知の送り先。運営者の実際の受信用メールアドレス（新規追加が必要）
+// unsubscribe.js と共通のものはそのまま流用可能。プロジェクト単位の設定なので追加の登録は不要）:
+//   SUPABASE_URL              既存のものを流用
+//   SUPABASE_SERVICE_ROLE_KEY 既存のものを流用
+//   RESEND_API_KEY             既存のものを流用
+//   RESEND_FROM_ADDRESS        既存のものを流用
+//   CONTACT_NOTIFY_TO          お問い合わせ通知の送り先（新規追加が必要）
+//
+// 事前準備: Supabaseの「SQL Editor」で supabase/contact_messages.sql を実行し、
+// contact_messages テーブルを作成しておくこと。
 
 function isValidEmail(value) {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -58,14 +65,48 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ ok: false, error: "入力内容をご確認ください。" }, { status: 400 });
   }
 
-  const { RESEND_API_KEY, RESEND_FROM_ADDRESS, CONTACT_NOTIFY_TO } = env;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_ADDRESS, CONTACT_NOTIFY_TO } = env;
 
-  if (!RESEND_API_KEY || !RESEND_FROM_ADDRESS || !CONTACT_NOTIFY_TO) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !RESEND_API_KEY || !RESEND_FROM_ADDRESS || !CONTACT_NOTIFY_TO) {
     console.error("[contact] 環境変数が設定されていません。Cloudflare Pagesの環境変数設定を確認してください。");
     return Response.json(
       { ok: false, error: "サーバー設定エラーです。しばらくしてから再度お試しください。" },
       { status: 500 },
     );
+  }
+
+  // 1. Supabaseに問い合わせ内容を保存（本体の記録）
+  try {
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/contact_messages`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify([
+        {
+          name,
+          company: company || null,
+          email,
+          inquiry_type: inquiryType,
+          message,
+        },
+      ]),
+    });
+
+    if (!insertRes.ok) {
+      const errText = await insertRes.text();
+      console.error("[contact] Supabaseへの保存に失敗しました:", insertRes.status, errText);
+      return Response.json(
+        { ok: false, error: "送信に失敗しました。時間をおいて再度お試しください。" },
+        { status: 502 },
+      );
+    }
+  } catch (err) {
+    console.error("[contact] Supabaseへの保存中にエラーが発生しました:", err);
+    return Response.json({ ok: false, error: "送信に失敗しました。時間をおいて再度お試しください。" }, { status: 502 });
   }
 
   const safeName = escapeHtml(name);
@@ -86,6 +127,8 @@ export async function onRequestPost({ request, env }) {
     <p>${safeMessage}</p>
   `;
 
+  // 2. Resend経由で運営者に通知メールを送信（あくまで通知。1で保存済みのため、
+  //    ここが失敗してもユーザーには成功を返す。失敗はログにのみ残す）
   try {
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -105,15 +148,10 @@ export async function onRequestPost({ request, env }) {
 
     if (!emailRes.ok) {
       const errText = await emailRes.text();
-      console.error("[contact] Resend経由のメール送信に失敗しました:", emailRes.status, errText);
-      return Response.json(
-        { ok: false, error: "送信に失敗しました。時間をおいて再度お試しください。" },
-        { status: 502 },
-      );
+      console.error("[contact] Resend経由の通知メール送信に失敗しました（問い合わせ自体はSupabaseに保存済み）:", emailRes.status, errText);
     }
   } catch (err) {
-    console.error("[contact] メール送信中にエラーが発生しました:", err);
-    return Response.json({ ok: false, error: "送信に失敗しました。時間をおいて再度お試しください。" }, { status: 502 });
+    console.error("[contact] 通知メール送信中にエラーが発生しました（問い合わせ自体はSupabaseに保存済み）:", err);
   }
 
   return Response.json({ ok: true });
