@@ -13,7 +13,17 @@ import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const categories = getAllCategories();
+  // カテゴリ名に「/」が含まれていると、URLの1セグメントとして扱えずビルドが落ちるため、
+  // そのカテゴリのページ生成だけをスキップする（Notion側でカテゴリ名を直せば自動的に復活する）。
+  const categories = getAllCategories().filter((category) => {
+    if (category.name.includes("/")) {
+      console.warn(
+        `[build] カテゴリ名に "/" が含まれているためカテゴリページの生成をスキップしました: "${category.name}"`,
+      );
+      return false;
+    }
+    return true;
+  });
   return categories.flatMap((category) =>
     paginate(getLibraryItemsByCategory(category.name, "all"), {
       params: { category: category.name },
