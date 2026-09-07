@@ -17,6 +17,7 @@ import {
 import {
   PROP,
   CATEGORY_PROP,
+  TAG_PROP,
   POST_STATUS,
   getTitleText,
   getRichTextPlain,
@@ -48,7 +49,7 @@ async function writeEmptyCache(reason) {
   await fs.writeFile(
     CACHE_FILE,
     JSON.stringify(
-      { generatedAt: new Date().toISOString(), posts: [], categories: [], error: reason },
+      { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], error: reason },
       null,
       2,
     ),
@@ -111,6 +112,48 @@ async function fetchCategories(token, linkMap) {
   return [...withSlug, ...withoutSlug];
 }
 
+/**
+ * マスタータグDB（記事DB・資料DBの「タグ」リレーション先）を取得する。
+ * マスターカテゴリと同じ構成・同じ理由で、NOTION_TAGS_DATABASE_ID が未設定の場合は
+ * タグページの解説文機能を使っていないとみなし、空配列を返す（タグ一覧・記事の取得は止めない）。
+ *
+ * 各タグページ本文（「説明文」プロパティより下に書かれている解説文）もブロックとして取得し、
+ * タグページ下部にそのタグの解説として表示できるようにする。
+ */
+async function fetchTags(token, linkMap) {
+  const databaseId = process.env.NOTION_TAGS_DATABASE_ID;
+  if (!databaseId) {
+    console.warn(
+      "[fetch-notion] NOTION_TAGS_DATABASE_ID が未設定のため、タグ解説は空のまま続行します。",
+    );
+    return [];
+  }
+
+  console.log("[fetch-notion] タグ一覧を取得中…");
+  const dataSourceId = await resolveDataSourceId(token, databaseId);
+  const rawPages = await queryAllPages(token, dataSourceId, {});
+
+  const tags = [];
+  for (const page of rawPages) {
+    const name = getTitleText(page, TAG_PROP.name) || "(無題タグ)";
+    const description = getRichTextPlain(page, TAG_PROP.description);
+    const representativeSlugRaw = getRichTextPlain(page, TAG_PROP.representativeSlug).trim();
+
+    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const makeAnchor = makeAnchorFactory();
+    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
+
+    tags.push({
+      name,
+      description,
+      representativeSlug: representativeSlugRaw || null,
+      blocks,
+    });
+  }
+
+  return tags;
+}
+
 async function main() {
   const token = process.env.NOTION_TOKEN;
   const databaseId = process.env.NOTION_DATABASE_ID;
@@ -166,6 +209,7 @@ async function main() {
 
   // 自動生成サムネイルの背景をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
   const categories = await fetchCategories(token, linkMap);
+  const tags = await fetchTags(token, linkMap);
   const categoryBackgroundMap = new Map();
   for (const c of categories) {
     const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
@@ -260,7 +304,7 @@ async function main() {
   }
 
   await fs.mkdir(CACHE_DIR, { recursive: true });
-  const output = { generatedAt: new Date().toISOString(), posts, categories };
+  const output = { generatedAt: new Date().toISOString(), posts, categories, tags };
   await fs.writeFile(CACHE_FILE, JSON.stringify(output, null, 2));
 
   // 今回の結果を「次回、編集中の記事が参照する前回公開時点のスナップショット」として保存する。
@@ -268,7 +312,7 @@ async function main() {
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(output, null, 2));
 
   console.log(
-    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件を .notion-cache/posts.json に書き出しました。`,
+    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件・タグ${tags.length}件を .notion-cache/posts.json に書き出しました。`,
   );
 }
 
