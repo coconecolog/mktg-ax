@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { BlockNode, Category, Post, PostsCache, TocItem } from "./types";
+import type { BlockNode, Category, Post, PostsCache, Tag, TocItem } from "./types";
 
 const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/posts.json");
 
@@ -16,12 +16,14 @@ function loadCache(): PostsCache {
       keyPoints: p.keyPoints || [],
     }));
     const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
-    return { ...parsed, posts, categories };
+    // タグ一覧(マスタータグDBの解説文・本文)も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
+    const tags = (parsed.tags || []).map((t) => ({ ...t, blocks: t.blocks || [] }));
+    return { ...parsed, posts, categories, tags };
   } catch {
     console.warn(
       "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
     );
-    return { generatedAt: new Date().toISOString(), posts: [], categories: [] };
+    return { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [] };
   }
 }
 
@@ -52,6 +54,11 @@ export function getAllTags(): { name: string; count: number }[] {
 
 export function getPostsByTag(tag: string): Post[] {
   return getAllPosts().filter((p) => p.tags.includes(tag));
+}
+
+/** マスタータグDBに登録されているタグ1件分（説明文・本文ブロック）。未登録のタグ名ならundefined。 */
+export function getTagByName(name: string): Tag | undefined {
+  return cache.tags.find((t) => t.name === name);
 }
 
 /** マスターカテゴリDBの全カテゴリ（Notion側の並び順のまま）。 */

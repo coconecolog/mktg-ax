@@ -69,10 +69,21 @@ export interface Category {
   blocks: BlockNode[];
 }
 
+// マスタータグDB（Notion）1件分。記事DB・資料DBの「タグ」リレーション先そのもの。
+// マスターカテゴリと同じ構成（自動生成サムネイル用のテーマカラー・背景画像プロパティは無い）。
+export interface Tag {
+  name: string;
+  description: string;
+  representativeSlug: string | null;
+  /** タグページ本文（Notion側で「説明文」より下に書かれた解説文）のブロック。タグページ下部に表示する。 */
+  blocks: BlockNode[];
+}
+
 export interface PostsCache {
   generatedAt: string;
   posts: Post[];
   categories: Category[];
+  tags: Tag[];
   error?: string;
 }
 
