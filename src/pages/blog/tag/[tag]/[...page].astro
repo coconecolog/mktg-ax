@@ -12,7 +12,15 @@ import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag, getTagByN
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const tags = getAllTags();
+  // タグ名に「/」が含まれていると、URLの1セグメントとして扱えずビルドが落ちるため、
+  // そのタグのページ生成だけをスキップする（カテゴリページ側と同じ対策）。
+  const tags = getAllTags().filter(({ name }) => {
+    if (name.includes("/")) {
+      console.warn(`[build] タグ名に "/" が含まれているためタグページの生成をスキップしました: "${name}"`);
+      return false;
+    }
+    return true;
+  });
   return tags.flatMap(({ name }) =>
     paginate(getPostsByTag(name), {
       params: { tag: name },
