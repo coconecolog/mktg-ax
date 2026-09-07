@@ -15,7 +15,7 @@ const {
   excludeCategory,
   popularPosts,
   categoryHeading = "カテゴリから探す",
-  popularHeading = "🏆 ブログ全体で特に読まれている決定版記事",
+  popularHeading = "📝 新着記事",
 } = Astro.props;
 const otherCategories = categories.filter((c) => c.name !== excludeCategory);
 ---
@@ -23,7 +23,7 @@ const otherCategories = categories.filter((c) => c.name !== excludeCategory);
 <div class="mt-16 space-y-10">
   <div class="rounded-2xl border border-neutral-100 bg-neutral-50 p-8 text-center">
     <p class="text-base font-bold text-ink-950">お探しの情報が見つかりませんか？</p>
-    <p class="mt-2 text-sm text-neutral-500">キーワードで検索するか、別のテーマや人気記事から探してみましょう。</p>
+    <p class="mt-2 text-sm text-neutral-500">キーワードで検索するか、別のテーマや新着記事から探してみましょう。</p>
     <form action="/search" method="get" class="mx-auto mt-5 flex max-w-md gap-2">
       <input
         type="text"
