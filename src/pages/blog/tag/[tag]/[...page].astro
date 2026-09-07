@@ -7,7 +7,8 @@ import PostCard from "@/components/PostCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import MoreExplore from "@/components/MoreExplore.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag } from "@/lib/posts";
+import NotionBlocks from "@/components/NotionBlocks.astro";
+import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag, getTagByName } from "@/lib/posts";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -24,6 +25,8 @@ const { tag } = Astro.params;
 const { page } = Astro.props;
 const tags = getAllTags();
 const categories = getAllCategories();
+// 「マスタータグ」DBに登録されていれば、カテゴリページと同じく説明文・本文（Notion側の解説文）を表示する。
+const tagInfo = tag ? getTagByName(tag) : undefined;
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
 
@@ -52,6 +55,12 @@ const breadcrumbItems = [
         <div class="mt-6"><TagFilter tags={tags} activeTag={tag} /></div>
 
         {
+          tagInfo?.description && (
+            <p class="mt-4 text-sm leading-relaxed text-neutral-600">{tagInfo.description}</p>
+          )
+        }
+
+        {
           page.data.length > 0 ? (
             <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {page.data.map((post) => (
@@ -64,6 +73,14 @@ const breadcrumbItems = [
         }
 
         <Pagination page={page} basePath={`/blog/tag/${tag}`} />
+
+        {
+          tagInfo?.blocks && tagInfo.blocks.length > 0 && (
+            <div class="prose-notion mt-12 w-full">
+              <NotionBlocks blocks={tagInfo.blocks} />
+            </div>
+          )
+        }
 
         <MoreExplore categories={categories} popularPosts={sitePopularPosts} />
       </div>
