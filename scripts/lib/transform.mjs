@@ -59,6 +59,9 @@ export const CATEGORY_PROP = {
   // Notion標準の色から選ぶ（選択肢名は何でもよい。実際に使うのは getSelectColor() で取れる色そのもの）。
   // どちらも未設定のカテゴリ・該当カテゴリが無い記事はグレー系の既定色になる。
   themeColor: "テーマカラー",
+  // カテゴリ一覧・サイドバー等での表示順（数値、小さい順）。マスターカテゴリDBのこの数値を
+  // 変更するだけで、サイト側の並び順がそのまま追従する（2026-09-08追加。経緯はrunbook参照）。
+  order: "並び順",
 };
 
 // 「マスタータグ」DB（記事DB・資料DBの「タグ」リレーション先）自体のプロパティ名。
@@ -93,6 +96,13 @@ export function getCheckbox(page, name) {
   const prop = getProperty(page, name);
   if (!prop || prop.type !== "checkbox") return false;
   return !!prop.checkbox;
+}
+
+/** 数値プロパティを取得する。未入力・プロパティ自体が無い場合は null を返す。 */
+export function getNumber(page, name) {
+  const prop = getProperty(page, name);
+  if (!prop || prop.type !== "number") return null;
+  return typeof prop.number === "number" ? prop.number : null;
 }
 
 export function getMultiSelectNames(page, name) {
