@@ -91,6 +91,8 @@ async function main() {
     const tags = await getRelationNames(token, page, RESOURCE_PROP.tags);
     const mainTag = await getFirstRelationName(token, page, RESOURCE_PROP.mainTag);
     const category = await getFirstRelationName(token, page, RESOURCE_PROP.category);
+    // 執筆者は「執筆者リスト」DBとのリレーション（単一選択想定）。記事DBと同じ考え方。
+    const author = await getFirstRelationName(token, page, RESOURCE_PROP.author);
     const publishedAt = getDateISO(page, RESOURCE_PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, RESOURCE_PROP.updatedAt) || page.last_edited_time;
 
@@ -134,6 +136,7 @@ async function main() {
       tags,
       mainTag,
       category,
+      author,
       targetToc,
       publishedAt,
       updatedAt,
