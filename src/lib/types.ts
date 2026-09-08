@@ -65,6 +65,8 @@ export interface Category {
   themeColor: string | null;
   /** 自動生成サムネイルの背景画像ファイル名（public/images/category-backgrounds/ 配下）。未設定なら空文字 */
   backgroundImageFilename: string;
+  /** 表示順（「並び順」プロパティ、小さい順）。未設定ならnull（末尾に表示される） */
+  order: number | null;
   /** カテゴリページ本文（Notion側で「説明文」より下に書かれた解説記事）のブロック。カテゴリページ下部に表示する。 */
   blocks: BlockNode[];
 }
