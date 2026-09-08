@@ -5,7 +5,7 @@
 //   名前の下の一文       → 執筆者リストDBの「主な経験分野」プロパティをそのまま表示（改行も保持）
 //   画像の下の説明文     → 執筆者リストDBの「執筆者紹介文」プロパティ。画像の左端に揃えて全幅で表示する
 //                         （名前・肩書・一文の列には入れ子にしない）
-//   丸型アイコン         → 執筆者リストDBの「執筆者画像」（files & media）。1:1の小さいアイコンとして表示
+//   丸型アイコン         → 執筆者リストDBの「執筆者画像」（files & media）。1:1のアイコンとして表示
 import type { Author } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
 
@@ -23,7 +23,7 @@ const authorHref = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
   <div class="mt-4 flex items-center gap-4">
     {
       author.image && (
-        <img src={author.image} alt={author.name} class="aspect-square h-12 w-12 shrink-0 rounded-full object-cover" />
+        <img src={author.image} alt={author.name} class="aspect-square h-20 w-20 shrink-0 rounded-full object-cover" />
       )
     }
     <div class="min-w-0">
