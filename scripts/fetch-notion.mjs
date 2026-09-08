@@ -197,14 +197,21 @@ async function fetchAuthors(token) {
     // 「主な経験分野」は複数行入力を想定し、改行はそのまま保持する（表示側でwhitespace-pre-line）。
     const expertise = getRichTextPlain(page, AUTHOR_PROP.expertise);
     const bio = getRichTextPlain(page, AUTHOR_PROP.bio);
+    const order = getNumber(page, AUTHOR_PROP.order);
 
     const imageSourceUrl = getFirstFileUrl(page, AUTHOR_PROP.image);
     const image = imageSourceUrl ? await downloadImage(imageSourceUrl, `author-${page.id}`) : null;
 
-    authors.push({ name, title, expertise, bio, image });
+    authors.push({ name, title, expertise, bio, image, order });
   }
 
-  return authors;
+  // 表示順は「並び順」プロパティ（数値、小さい順）を正としてソートする。マスターカテゴリDBと同じ理由
+  // （Notion APIには手動並び順を取得する手段が無いため）。未設定の執筆者はNotion取得順のまま末尾に回す。
+  const withOrder = authors.filter((a) => a.order != null);
+  const withoutOrder = authors.filter((a) => a.order == null);
+  withOrder.sort((a, b) => a.order - b.order);
+
+  return [...withOrder, ...withoutOrder];
 }
 
 async function main() {
