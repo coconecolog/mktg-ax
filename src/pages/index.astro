@@ -5,12 +5,14 @@ import ContactCta from "@/components/ContactCta.astro";
 import { getAllPosts } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, DEFAULT_OG_IMAGE, TOOLS_NAV_ITEMS } from "@/consts";
+import { buildOrganizationSchema } from "@/lib/schema";
 
 const latestPosts = getAllPosts().slice(0, 3);
+const organizationSchema = buildOrganizationSchema();
 const latestResources = getAllResources().slice(0, 3);
 ---
 
-<BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore>
+<BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore jsonLd={organizationSchema}>
   <section class="mx-auto max-w-6xl px-5 pb-20 pt-16 md:pt-24">
     <div class="max-w-2xl">
       <h1 class="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-5xl">
