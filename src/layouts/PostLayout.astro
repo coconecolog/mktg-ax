@@ -7,14 +7,7 @@ import BlogSidebar from "@/components/BlogSidebar.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
-import {
-  buildToc,
-  getAllCategories,
-  getAllTags,
-  getAuthorByName,
-  getAuthorRecentTags,
-  getPopularPosts,
-} from "@/lib/posts";
+import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts } from "@/lib/posts";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
 
@@ -31,7 +24,6 @@ const categories = getAllCategories();
 const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const tags = getAllTags();
 const author = post.author ? getAuthorByName(post.author) : undefined;
-const authorRecentTags = author ? getAuthorRecentTags(author.name, 3) : [];
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -125,7 +117,7 @@ const dateLabel = (iso: string) =>
           <NotionBlocks blocks={post.blocks} />
         </div>
 
-        {author && <AuthorCard author={author} recentTags={authorRecentTags} />}
+        {author && <AuthorCard author={author} />}
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
