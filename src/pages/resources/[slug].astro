@@ -7,6 +7,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllResources } from "@/lib/resources";
 import { DEFAULT_OG_IMAGE } from "@/consts";
+import { toRouteSlug } from "@/lib/routeSlug";
 
 export const getStaticPaths = (async () => {
   return getAllResources().map((resource) => ({
@@ -40,14 +41,14 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
         (resource.category || resource.tags.length > 0) && (
           <div class="mb-4 flex flex-wrap items-center gap-1.5">
             {resource.category && (
-              <a href={`/blog/category/${encodeURIComponent(resource.category)}`}
+              <a href={`/blog/category/${encodeURIComponent(toRouteSlug(resource.category))}`}
                 class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
               >
                 {resource.category}
               </a>
             )}
             {resource.tags.map((tag) => (
-              <a href={`/blog/tag/${encodeURIComponent(tag)}`}
+              <a href={`/blog/tag/${encodeURIComponent(toRouteSlug(tag))}`}
                 class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100"
               >
                 {tag}
