@@ -8,6 +8,7 @@ import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllResources } from "@/lib/resources";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
+import { buildFaqSchema } from "@/lib/schema";
 
 export const getStaticPaths = (async () => {
   return getAllResources().map((resource) => ({
@@ -17,6 +18,8 @@ export const getStaticPaths = (async () => {
 }) satisfies GetStaticPaths;
 
 const { resource } = Astro.props as { resource: Resource };
+
+const faqSchema = buildFaqSchema(resource.blocks);
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -32,7 +35,7 @@ const dateLabel = (iso: string) =>
 const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 ---
 
-<BaseLayout title={resource.title} description={resource.metaDescription || resource.description}>
+<BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={faqSchema}>
   <Breadcrumb items={breadcrumbItems} />
 
   <article class="mx-auto max-w-6xl px-5 py-10">
