@@ -58,45 +58,47 @@ const breadcrumbItems = [
   <div class="mx-auto max-w-6xl px-5 py-12">
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
       <div class="min-w-0">
-        <p class="text-xs font-bold text-brand-600">執筆者　全{counts.all}件</p>
+         <div class="rounded-2xl border border-neutral-100 bg-neutral-50 p-6 sm:p-8">
+          <p class="text-xs font-bold text-brand-600">執筆者　全{counts.all}件</p>
 
-        <div class="mt-4 flex items-center gap-4">
-          {
-            author.image && (
-              <img
-                src={author.image}
-                alt={author.name}
-                class="aspect-square h-14 w-14 shrink-0 rounded-full object-cover shadow-sm"
-              />
-            )
-          }
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <h1 class="text-2xl font-extrabold tracking-tight text-ink-950 sm:text-3xl">{author.name}</h1>
-              {author.title && (
-                <span class="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700">
-                  {author.title}
-                </span>
-              )}
-            </div>
-
+          <div class="mt-4 flex items-center gap-4">
             {
-              author.expertise && (
-                <p class="mt-2 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">
-                  {author.expertise}
-                </p>
+              author.image && (
+                <img
+                  src={author.image}
+                  alt={author.name}
+                  class="aspect-square h-20 w-20 shrink-0 rounded-full object-cover"
+                />
               )
             }
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-lg font-bold text-ink-950">{author.name}</h1>
+                {author.title && (
+                  <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-bold text-brand-700 shadow-sm">
+                    {author.title}
+                  </span>
+                )}
+              </div>
+
+              {
+                author.expertise && (
+                  <p class="mt-1 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">
+                    {author.expertise}
+                  </p>
+                )
+              }
+            </div>
           </div>
+
+          {
+            author.bio && (
+              <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-600">{author.bio}</p>
+            )
+          }
         </div>
 
-        {
-          author.bio && (
-            <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-600">{author.bio}</p>
-          )
-        }
-
-        <div class="mt-10">
+        <div class="mt-16">
           <LibraryFilterTabs active="all" counts={counts} hrefs={tabHrefs} />
         </div>
 
