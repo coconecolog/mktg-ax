@@ -1,50 +1,63 @@
 ---
-import type { GetStaticPaths } from "astro";
+import type { GetStaticPaths, Page } from "astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import TagFilter from "@/components/TagFilter.astro";
-import PostCard from "@/components/PostCard.astro";
+import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag, getTagByName } from "@/lib/posts";
+import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug, getTagByName } from "@/lib/posts";
+import {
+  getAllLibraryTagNames,
+  getLibraryItemsByTag,
+  getLibraryCountsByTag,
+  type LibraryItem,
+} from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
-import { toRouteSlug, fromRouteSlug } from "@/lib/routeSlug";
+import { toRouteSlug } from "@/lib/routeSlug";
+
+// タグページ。カテゴリページ（/blog/category/[category]/[...page].astro）とデザイン・構成を揃えている
+// （代表記事カード → すべて/ブログ記事/無料資料タブ → 記事・資料混合カード → ページネーション → マスタータグDBの本文）。
+// 以前あった「すべて／B2B／KPI…」のようなタグ切り替え（TagFilter）は、種類別タブに置き換える形で廃止した。
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const tags = getAllTags();
+  const tagNames = getAllLibraryTagNames();
   // カテゴリページ側と同じ理由・同じ対策。パラメータ値はtoRouteSlug()したものを使い、
   // 「/」を含むタグ名でもビルドが落ちず、常にリンクが機能するようにする（詳細はrouteSlug.ts参照）。
-  return tags.flatMap(({ name }) =>
-    paginate(getPostsByTag(name), {
+  return tagNames.flatMap((name) =>
+    paginate(getLibraryItemsByTag(name, "all"), {
       params: { tag: toRouteSlug(name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
+      props: { tagName: name },
     }),
   );
 }) satisfies GetStaticPaths;
 
-// params.tag はtoRouteSlug()されたスラッグなので、表示・検索用に元のタグ名へ戻す。
-const tagParam = Astro.params.tag;
-const tag = tagParam ? fromRouteSlug(tagParam) : undefined;
-const tagUrlSlug = tag ? encodeURIComponent(toRouteSlug(tag)) : "";
-const { page } = Astro.props;
-const tags = getAllTags();
-const categories = getAllCategories();
-// 「マスタータグ」DBに登録されていれば、カテゴリページと同じく説明文・本文（Notion側の解説文）を表示する。
-const tagInfo = tag ? getTagByName(tag) : undefined;
+const { tagName, page } = Astro.props as { tagName: string; page: Page<LibraryItem> };
+
+const allCategories = getAllCategories();
+// マスタータグDBに登録されていれば、カテゴリページと同じく説明文・代表記事・本文（Notion側の解説文）を表示する。
+const tagInfo = getTagByName(tagName);
+const representativePost = tagInfo?.representativeSlug ? getPostBySlug(tagInfo.representativeSlug) : undefined;
+const counts = getLibraryCountsByTag(tagName);
+const tagBasePath = `/blog/tag/${encodeURIComponent(toRouteSlug(tagName))}`;
+const tabHrefs = { all: tagBasePath, post: `${tagBasePath}/blog`, resource: `${tagBasePath}/resources` };
+
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
+const sidebarTags = getAllTags();
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: tag ?? "", href: `/blog/tag/${tagUrlSlug}` },
+  { name: tagName, href: tagBasePath },
 ];
 ---
 
 <BaseLayout
-  title={`タグ「${tag}」の記事一覧`}
-  description={`「${tag}」タグが付いた記事の一覧です。`}
+  title={`${tagName}｜タグ一覧`}
+  description={tagInfo?.description || `「${tagName}」タグが付いた記事・資料の一覧です。`}
   ogImage="/open-graph/default.png"
   pagefindIgnore
 >
@@ -53,11 +66,8 @@ const breadcrumbItems = [
   <div class="mx-auto max-w-6xl px-5 py-12">
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
       <div class="min-w-0">
-        <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">
-          タグ: <span class="text-brand-600">{tag}</span>
-        </h1>
-
-        <div class="mt-6"><TagFilter tags={tags} activeTag={tag} /></div>
+        <p class="text-xs font-bold text-brand-600">タグ　全{counts.all}件</p>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-950">{tagName}</h1>
 
         {
           tagInfo?.description && (
@@ -66,18 +76,52 @@ const breadcrumbItems = [
         }
 
         {
+          representativePost && (
+            <div class="mt-8 w-full rounded-2xl bg-brand-50 p-6 sm:p-8">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-700 shadow-sm">
+                  ★ まず読むべき代表記事
+                </span>
+                <span class="text-xs font-medium text-neutral-400">{tagName}のロードマップ</span>
+              </div>
+              <a href={`/blog/${representativePost.slug}`}
+                class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="text-lg font-bold leading-snug text-ink-950 sm:text-xl">{representativePost.title}</p>
+                  {representativePost.description && (
+                    <p class="mt-2 line-clamp-2 text-sm text-brand-800/80">{representativePost.description}</p>
+                  )}
+                  <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full border-[1.5px] border-brand-600 bg-white px-5 py-2 text-sm font-bold text-brand-700">
+                    この記事を読む →
+                  </span>
+                </div>
+                {representativePost.thumbnail && (
+                  <div class="aspect-video w-full overflow-hidden rounded-xl shadow-md sm:w-72 sm:shrink-0">
+                    <img src={representativePost.thumbnail} alt="" class="h-full w-full object-cover" />
+                  </div>
+                )}
+              </a>
+            </div>
+          )
+        }
+        <div class="mt-10">
+          <LibraryFilterTabs active="all" counts={counts} hrefs={tabHrefs} />
+        </div>
+
+        {
           page.data.length > 0 ? (
-            <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {page.data.map((post) => (
-                <PostCard post={post} />
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {page.data.map((item) => (
+                <LibraryCard item={item} />
               ))}
             </div>
           ) : (
-            <p class="mt-10 text-neutral-400">このタグの記事はまだありません。</p>
+            <p class="mt-10 text-neutral-400">このタグにはまだコンテンツがありません。</p>
           )
         }
 
-        <Pagination page={page} basePath={`/blog/tag/${tagUrlSlug}`} />
+        <Pagination page={page} basePath={tagBasePath} />
 
         {
           tagInfo?.blocks && tagInfo.blocks.length > 0 && (
@@ -89,7 +133,7 @@ const breadcrumbItems = [
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
-        <BlogSidebar categories={categories} popularPosts={sidebarPopularPosts} tags={tags} />
+        <BlogSidebar categories={allCategories} popularPosts={sidebarPopularPosts} tags={sidebarTags} />
       </aside>
     </div>
   </div>
