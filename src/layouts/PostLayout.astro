@@ -4,9 +4,17 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
+import AuthorCard from "@/components/AuthorCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
-import { buildToc, getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
+import {
+  buildToc,
+  getAllCategories,
+  getAllTags,
+  getAuthorByName,
+  getAuthorRecentTags,
+  getPopularPosts,
+} from "@/lib/posts";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
 
@@ -22,6 +30,8 @@ const faqSchema = buildFaqSchema(post.blocks);
 const categories = getAllCategories();
 const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const tags = getAllTags();
+const author = post.author ? getAuthorByName(post.author) : undefined;
+const authorRecentTags = author ? getAuthorRecentTags(author.name, 3) : [];
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -114,6 +124,8 @@ const dateLabel = (iso: string) =>
         <div class="prose-notion mt-10 w-full">
           <NotionBlocks blocks={post.blocks} />
         </div>
+
+        {author && <AuthorCard author={author} recentTags={authorRecentTags} />}
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
