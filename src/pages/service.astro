@@ -3,6 +3,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { SITE_NAME } from "@/consts";
+import { getAllAuthors } from "@/lib/posts";
+import { toRouteSlug } from "@/lib/routeSlug";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -85,19 +87,10 @@ const values = [
   },
 ];
 
-// 「運営について」。氏名は未定のため役割名の仮表記。確定次第このファイルを直接更新してください。
-const members = [
-  {
-    role: "主な経験分野：大手企業のデータ分析から中小企業DXまで幅広く牽引",
-    tag: "MKTG.AX",
-    description: "マーケティングコンサルタントとして、専門分野はデジタルマーケティング領域を中心に担当。中小企業向けのマーケティングDXコンサルティングほか、大手電力会社・郵便会社などのデータ分析業務を中心に業務に携わりつつ、宣伝会議などでセミナー講師なども行う。",
-  },
-  {
-    role: "主な経験分野：デジタルマーケティング立ち上げ・運用設計責任者",
-    tag: "coconeco",
-    description: "メーカーのWeb責任者や、Webプログラマーや Webプロデューサーを経て、スタートアップや大手代理店子会社にてマーケティング立ち上げの現場責任者を歴任。予算管理やチームビルディング、ツールの導入・運用設計まで、主導してきた実践者。",
-  },
-];
+// 「運営について」。以前は氏名未定のため仮のテキストを直書きしていたが、
+// 執筆者リストDB（記事・資料の執筆者カードと同じデータソース）から取得するように変更。
+// 表示するメンバーを増減・変更したい場合は、Notion側の執筆者リストDBを編集してください。
+const members = getAllAuthors();
 ---
 
 <BaseLayout
@@ -210,15 +203,45 @@ const members = [
       <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
         {
           members.map((member) => (
-            <div class="flex gap-4 rounded-2xl border border-neutral-100 p-6">
-              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xl">👤</span>
-              <div>
-                <h3 class="font-bold text-ink-950">{member.role}</h3>
-                <span class="mt-1 inline-block rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-                  {member.tag}
-                </span>
-                <p class="mt-2 text-sm leading-relaxed text-neutral-500">{member.description}</p>
+            <div class="rounded-2xl border border-neutral-100 p-6">
+              <div class="flex items-center gap-4">
+                {member.image ? (
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    class="aspect-square h-20 w-20 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xl">
+                    👤
+                  </span>
+                )}
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-ink-950">{member.name}</span>
+                    {member.title && (
+                      <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                        {member.title}
+                      </span>
+                    )}
+                  </div>
+                  {member.expertise && (
+                    <p class="mt-1 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">
+                      {member.expertise}
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {member.bio && (
+                <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-500">{member.bio}</p>
+              )}
+
+              <a href={`/authors/${encodeURIComponent(toRouteSlug(member.name))}`}
+                class="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-700"
+              >
+                この執筆者の記事・資料一覧を見る →
+              </a>
             </div>
           ))
         }
