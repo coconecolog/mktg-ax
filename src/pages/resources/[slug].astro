@@ -7,7 +7,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
 import { getAllResources } from "@/lib/resources";
-import { getAuthorByName, getAuthorRecentTags } from "@/lib/posts";
+import { getAuthorByName } from "@/lib/posts";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 import { buildFaqSchema } from "@/lib/schema";
@@ -37,7 +37,6 @@ const dateLabel = (iso: string) =>
 const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 
 const author = resource.author ? getAuthorByName(resource.author) : undefined;
-const authorRecentTags = author ? getAuthorRecentTags(author.name, 3) : [];
 ---
 
 <BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={faqSchema}>
@@ -150,7 +149,7 @@ const authorRecentTags = author ? getAuthorRecentTags(author.name, 3) : [];
           )
         }
 
-        {author && <AuthorCard author={author} recentTags={authorRecentTags} />}
+        {author && <AuthorCard author={author} />}
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
