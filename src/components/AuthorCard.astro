@@ -3,31 +3,30 @@
 // 表示内容の対応（ユーザーへのヒアリング結果に基づく）:
 //   名前の右のバッジ     → 執筆者リストDBの「肩書」プロパティをそのまま表示
 //   名前の下の一文       → 執筆者リストDBの「主な経験分野」プロパティをそのまま表示（改行も保持）
-//   一文の下のピル       → この執筆者が書いた最新記事のタグを、新しい記事から重複なく最大3つ表示
-//   その下の説明文       → 執筆者リストDBの「執筆者紹介文」プロパティ（画像のワイヤーには無いが、
-//                         項目が用意されているため紹介文として表示している。不要であれば削除してください）
-//   丸型アイコン         → 執筆者リストDBの「執筆者画像」（files & media）
+//   画像の下の説明文     → 執筆者リストDBの「執筆者紹介文」プロパティ。画像の左端に揃えて全幅で表示する
+//                         （名前・肩書・一文の列には入れ子にしない）
+//   丸型アイコン         → 執筆者リストDBの「執筆者画像」（files & media）。1:1の小さいアイコンとして表示
 import type { Author } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
 
 interface Props {
   author: Author;
-  recentTags: string[];
 }
 
-const { author, recentTags } = Astro.props;
+const { author } = Astro.props;
 const authorHref = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
 ---
 
 <div class="mt-12 rounded-2xl border border-neutral-100 bg-neutral-50 p-6 sm:p-8">
   <p class="text-xs font-bold text-brand-600">この記事の執筆者</p>
-  <div class="mt-4 flex flex-col gap-5 sm:flex-row sm:items-start">
+
+  <div class="mt-4 flex items-center gap-4">
     {
       author.image && (
-        <img src={author.image} alt={author.name} class="h-20 w-20 shrink-0 rounded-full object-cover" />
+        <img src={author.image} alt={author.name} class="aspect-square h-12 w-12 shrink-0 rounded-full object-cover" />
       )
     }
-    <div class="min-w-0 flex-1">
+    <div class="min-w-0">
       <div class="flex flex-wrap items-center gap-2">
         <a href={authorHref} class="text-lg font-bold text-ink-950 hover:text-brand-700">
           {author.name}
@@ -41,31 +40,21 @@ const authorHref = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
 
       {
         author.expertise && (
-          <p class="mt-2 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">{author.expertise}</p>
+          <p class="mt-1 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">{author.expertise}</p>
         )
       }
-
-      {
-        recentTags.length > 0 && (
-          <div class="mt-3 flex flex-wrap gap-1.5">
-            {recentTags.map((tag) => (
-              <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-brand-700">{tag}</span>
-            ))}
-          </div>
-        )
-      }
-
-      {
-        author.bio && (
-          <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-600">{author.bio}</p>
-        )
-      }
-
-      <a href={authorHref}
-        class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-700"
-      >
-        この執筆者の記事・資料一覧を見る →
-      </a>
     </div>
   </div>
+
+  {
+    author.bio && (
+      <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-600">{author.bio}</p>
+    )
+  }
+
+  <a href={authorHref}
+    class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-700"
+  >
+    この執筆者の記事・資料一覧を見る →
+  </a>
 </div>
