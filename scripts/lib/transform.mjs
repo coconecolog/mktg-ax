@@ -35,6 +35,9 @@ export const PROP = {
   // 記事冒頭に表示する「この記事でわかること」ボックスの箇条書き。「テキスト」プロパティ（複数行）。
   // 1行につき1項目。未入力ならボックス自体を表示しない。
   keyPoints: "記事の要点",
+  // 「執筆者リスト」DBとのリレーションプロパティ（単一選択想定）。値の解決には
+  // getFirstRelationName（notion-client.mjs）を使う。複数選択されていても先頭1件だけを使う。
+  author: "執筆者",
 };
 
 // 記事DBの「ステータス」セレクトプロパティの選択肢名。Notion側もこの文字列と完全一致させる。
@@ -50,7 +53,8 @@ export const POST_STATUS = {
 export const CATEGORY_PROP = {
   name: "カテゴリ",
   description: "説明文",
-  representativeSlug: "代表記事（Slug）",
+  // 2026-09-08にNotion側のプロパティ名を「代表記事（Slug）」から「代表記事」に変更したため追従。
+  representativeSlug: "代表記事",
   // 自動生成サムネイルの背景画像。「テキスト」プロパティとして追加し、GitHubリポジトリの
   // public/images/category-backgrounds/ にアップロードした画像のファイル名を入力する運用にする
   // （資料ファイル・資料サムネイルと同じ方式。差し替えたい時は同じファイル名で再アップロードするだけでよい）。
@@ -69,7 +73,17 @@ export const CATEGORY_PROP = {
 export const TAG_PROP = {
   name: "タグ",
   description: "説明文",
-  representativeSlug: "代表記事（Slug）",
+  // 2026-09-08にNotion側のプロパティ名を「代表記事（Slug）」から「代表記事」に変更したため追従。
+  representativeSlug: "代表記事",
+};
+
+// 「執筆者リスト」DB（記事DB・資料DBの「執筆者」リレーション先）自体のプロパティ名。
+export const AUTHOR_PROP = {
+  name: "名前",
+  title: "肩書",
+  expertise: "主な経験分野",
+  bio: "執筆者紹介文",
+  image: "執筆者画像",
 };
 
 // ------------------------------------------------------------
@@ -748,6 +762,8 @@ export const RESOURCE_PROP = {
   // 値の解決には getRelationNames / getFirstRelationName（notion-client.mjs）を使う。
   mainTag: "メインタグ",
   category: "カテゴリ",
+  // 「執筆者リスト」DBとのリレーションプロパティ（単一選択想定）。記事DBのPROP.authorと同じ考え方。
+  author: "執筆者",
   publishedAt: "公開日",
   updatedAt: "更新日",
   // 旧「資料サムネイル」プロパティ（手動でPNGをアップロードする運用）は廃止。
