@@ -10,26 +10,24 @@ import MoreExplore from "@/components/MoreExplore.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag, getTagByName } from "@/lib/posts";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+import { toRouteSlug, fromRouteSlug } from "@/lib/routeSlug";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  // タグ名に「/」が含まれていると、URLの1セグメントとして扱えずビルドが落ちるため、
-  // そのタグのページ生成だけをスキップする（カテゴリページ側と同じ対策）。
-  const tags = getAllTags().filter(({ name }) => {
-    if (name.includes("/")) {
-      console.warn(`[build] タグ名に "/" が含まれているためタグページの生成をスキップしました: "${name}"`);
-      return false;
-    }
-    return true;
-  });
+  const tags = getAllTags();
+  // カテゴリページ側と同じ理由・同じ対策。パラメータ値はtoRouteSlug()したものを使い、
+  // 「/」を含むタグ名でもビルドが落ちず、常にリンクが機能するようにする（詳細はrouteSlug.ts参照）。
   return tags.flatMap(({ name }) =>
     paginate(getPostsByTag(name), {
-      params: { tag: name },
+      params: { tag: toRouteSlug(name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
     }),
   );
 }) satisfies GetStaticPaths;
 
-const { tag } = Astro.params;
+// params.tag はtoRouteSlug()されたスラッグなので、表示・検索用に元のタグ名へ戻す。
+const tagParam = Astro.params.tag;
+const tag = tagParam ? fromRouteSlug(tagParam) : undefined;
+const tagUrlSlug = tag ? encodeURIComponent(toRouteSlug(tag)) : "";
 const { page } = Astro.props;
 const tags = getAllTags();
 const categories = getAllCategories();
@@ -41,7 +39,7 @@ const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: tag, href: `/blog/tag/${tag}` },
+  { name: tag ?? "", href: `/blog/tag/${tagUrlSlug}` },
 ];
 ---
 
@@ -80,7 +78,7 @@ const breadcrumbItems = [
           )
         }
 
-        <Pagination page={page} basePath={`/blog/tag/${tag}`} />
+        <Pagination page={page} basePath={`/blog/tag/${tagUrlSlug}`} />
 
         {
           tagInfo?.blocks && tagInfo.blocks.length > 0 && (
