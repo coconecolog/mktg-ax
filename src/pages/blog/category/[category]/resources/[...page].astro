@@ -11,25 +11,18 @@ import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+import { toRouteSlug } from "@/lib/routeSlug";
 
 // カテゴリページの「無料資料・eBook」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
 // 一覧の中身だけ資料のみに絞っている。
 
 export const getStaticPaths = (async ({ paginate }) => {
-  // カテゴリ名に「/」が含まれていると、URLの1セグメントとして扱えずビルドが落ちるため、
-  // そのカテゴリのページ生成だけをスキップする（Notion側でカテゴリ名を直せば自動的に復活する）。
-  const categories = getAllCategories().filter((category) => {
-    if (category.name.includes("/")) {
-      console.warn(
-        `[build] カテゴリ名に "/" が含まれているためカテゴリページの生成をスキップしました: "${category.name}"`,
-      );
-      return false;
-    }
-    return true;
-  });
+  const categories = getAllCategories();
+  // 親の[...page].astroと同じ理由・同じ対策。パラメータ値はtoRouteSlug()したものを使い、
+  // 「/」を含むカテゴリ名でもビルドが落ちず、常にリンクが機能するようにする（詳細は親を参照）。
   return categories.flatMap((category) =>
     paginate(getLibraryItemsByCategory(category.name, "resource"), {
-      params: { category: category.name },
+      params: { category: toRouteSlug(category.name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { category },
     }),
@@ -41,7 +34,7 @@ const { category, page } = Astro.props as { category: Category; page: Page<Libra
 const allCategories = getAllCategories();
 const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
 const counts = getLibraryCountsByCategory(category.name);
-const categoryBasePath = `/blog/category/${encodeURIComponent(category.name)}`;
+const categoryBasePath = `/blog/category/${encodeURIComponent(toRouteSlug(category.name))}`;
 const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, resource: `${categoryBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
