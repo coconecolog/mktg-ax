@@ -8,6 +8,7 @@ import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
+import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
@@ -130,4 +131,6 @@ const breadcrumbItems = [
       </aside>
     </div>
   </div>
+
+  <ContactCta />
 </BaseLayout>
