@@ -18,13 +18,16 @@ import {
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 
-// タグページの「ブログ記事」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
-// 一覧の中身だけ記事のみに絞っている（カテゴリページ側の同名ファイルと同じ考え方）。
+// タグページ。カテゴリページ（/blog/category/[category]/[...page].astro）とデザイン・構成を揃えている
+// （代表記事カード → すべて/ブログ記事/無料資料タブ → 記事・資料混合カード → ページネーション → マスタータグDBの本文）。
+// 以前あった「すべて／B2B／KPI…」のようなタグ切り替え（TagFilter）は、種類別タブに置き換える形で廃止した。
 
 export const getStaticPaths = (async ({ paginate }) => {
   const tagNames = getAllLibraryTagNames();
+  // カテゴリページ側と同じ理由・同じ対策。パラメータ値はtoRouteSlug()したものを使い、
+  // 「/」を含むタグ名でもビルドが落ちず、常にリンクが機能するようにする（詳細はrouteSlug.ts参照）。
   return tagNames.flatMap((name) =>
-    paginate(getLibraryItemsByTag(name, "post"), {
+    paginate(getLibraryItemsByTag(name, "all"), {
       params: { tag: toRouteSlug(name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { tagName: name },
@@ -35,6 +38,7 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { tagName, page } = Astro.props as { tagName: string; page: Page<LibraryItem> };
 
 const allCategories = getAllCategories();
+// マスタータグDBに登録されていれば、カテゴリページと同じく説明文・代表記事・本文（Notion側の解説文）を表示する。
 const tagInfo = getTagByName(tagName);
 const representativePost = tagInfo?.representativeSlug ? getPostBySlug(tagInfo.representativeSlug) : undefined;
 const counts = getLibraryCountsByTag(tagName);
@@ -48,13 +52,12 @@ const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
   { name: tagName, href: tagBasePath },
-  { name: "ブログ記事", href: `${tagBasePath}/blog` },
 ];
 ---
 
 <BaseLayout
-  title={`${tagName}のブログ記事一覧｜タグ`}
-  description={tagInfo?.description || `「${tagName}」タグが付いた記事の一覧です。`}
+  title={`${tagName}｜タグ一覧`}
+  description={tagInfo?.description || `「${tagName}」タグが付いた記事・資料の一覧です。`}
   ogImage="/open-graph/default.png"
   pagefindIgnore
 >
@@ -103,7 +106,7 @@ const breadcrumbItems = [
           )
         }
         <div class="mt-10">
-          <LibraryFilterTabs active="post" counts={counts} hrefs={tabHrefs} />
+          <LibraryFilterTabs active="all" counts={counts} hrefs={tabHrefs} />
         </div>
 
         {
@@ -114,11 +117,11 @@ const breadcrumbItems = [
               ))}
             </div>
           ) : (
-            <p class="mt-10 text-neutral-400">このタグの記事はまだありません。</p>
+            <p class="mt-10 text-neutral-400">このタグにはまだコンテンツがありません。</p>
           )
         }
 
-        <Pagination page={page} basePath={`${tagBasePath}/blog`} />
+        <Pagination page={page} basePath={tagBasePath} />
 
         {
           tagInfo?.blocks && tagInfo.blocks.length > 0 && (
