@@ -11,22 +11,19 @@ import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+import { toRouteSlug } from "@/lib/routeSlug";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  // カテゴリ名に「/」が含まれていると、URLの1セグメントとして扱えずビルドが落ちるため、
-  // そのカテゴリのページ生成だけをスキップする（Notion側でカテゴリ名を直せば自動的に復活する）。
-  const categories = getAllCategories().filter((category) => {
-    if (category.name.includes("/")) {
-      console.warn(
-        `[build] カテゴリ名に "/" が含まれているためカテゴリページの生成をスキップしました: "${category.name}"`,
-      );
-      return false;
-    }
-    return true;
-  });
+  const categories = getAllCategories();
+  // ルートパラメータには「/」を含む可能性のある生のカテゴリ名をそのまま渡さない。
+  // Astroの静的ビルドは1つの動的セグメント（[category]）の値に「/」が入っていると、
+  // 追加のパス区切りとして解釈してしまいビルド全体が落ちる（実例: 「目標管理・KPI/KGI設計」）。
+  // toRouteSlug()で「/」だけを別の文字に置き換えた文字列をパラメータ値として使い、
+  // リンク側（categoryBasePath等）も同じ関数で生成することで、どんなカテゴリ名でも
+  // コード側の変更なしに常にリンクが機能するようにしている（詳細はrouteSlug.tsのコメント参照）。
   return categories.flatMap((category) =>
     paginate(getLibraryItemsByCategory(category.name, "all"), {
-      params: { category: category.name },
+      params: { category: toRouteSlug(category.name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { category },
     }),
@@ -38,7 +35,7 @@ const { category, page } = Astro.props as { category: Category; page: Page<Libra
 const allCategories = getAllCategories();
 const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
 const counts = getLibraryCountsByCategory(category.name);
-const categoryBasePath = `/blog/category/${encodeURIComponent(category.name)}`;
+const categoryBasePath = `/blog/category/${encodeURIComponent(toRouteSlug(category.name))}`;
 const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, resource: `${categoryBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
@@ -47,7 +44,7 @@ const sidebarTags = getAllTags();
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: category.name, href: `/blog/category/${encodeURIComponent(category.name)}` },
+  { name: category.name, href: categoryBasePath },
 ];
 ---
 
