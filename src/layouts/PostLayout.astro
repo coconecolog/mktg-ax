@@ -5,7 +5,7 @@ import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { buildArticleSchema } from "@/lib/schema";
+import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
 import { buildToc, getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
@@ -17,6 +17,7 @@ interface Props {
 const { post } = Astro.props;
 const toc = buildToc(post.blocks);
 const articleSchema = buildArticleSchema(post);
+const faqSchema = buildFaqSchema(post.blocks);
 
 const categories = getAllCategories();
 const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
@@ -37,7 +38,7 @@ const dateLabel = (iso: string) =>
   title={post.title}
   description={post.description}
   ogImage={`/open-graph/blog/${post.slug}.png`}
-  jsonLd={articleSchema}
+  jsonLd={faqSchema ? [articleSchema, faqSchema] : articleSchema}
 >
   <Breadcrumb items={breadcrumbItems} />
 
