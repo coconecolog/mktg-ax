@@ -6,7 +6,6 @@ import TagFilter from "@/components/TagFilter.astro";
 import PostCard from "@/components/PostCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getPostsByTag, getTagByName } from "@/lib/posts";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
@@ -34,7 +33,6 @@ const categories = getAllCategories();
 // 「マスタータグ」DBに登録されていれば、カテゴリページと同じく説明文・本文（Notion側の解説文）を表示する。
 const tagInfo = tag ? getTagByName(tag) : undefined;
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
-const sitePopularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -87,8 +85,6 @@ const breadcrumbItems = [
             </div>
           )
         }
-
-        <MoreExplore categories={categories} popularPosts={sitePopularPosts} />
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
