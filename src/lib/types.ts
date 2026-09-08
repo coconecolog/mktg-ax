@@ -94,6 +94,8 @@ export interface Author {
   bio: string;
   /** 「執筆者画像」（files & media）をダウンロードしたローカル配信パス。未設定・未アップロードならnull */
   image: string | null;
+  /** 表示順（「並び順」プロパティ、小さい順）。未設定ならnull（末尾に表示される）。取得時点で既にソート済みのため、通常はこの値を直接参照する必要はない */
+  order: number | null;
 }
 
 export interface PostsCache {
