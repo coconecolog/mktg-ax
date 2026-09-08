@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { BlockNode, Category, Post, PostsCache, Tag, TocItem } from "./types";
+import type { Author, BlockNode, Category, Post, PostsCache, Tag, TocItem } from "./types";
 
 const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/posts.json");
 
@@ -13,17 +13,20 @@ function loadCache(): PostsCache {
     const posts = (parsed.posts || []).map((p) => ({
       ...p,
       categories: p.categories || (p.category ? [p.category] : []),
+      author: p.author ?? null,
       keyPoints: p.keyPoints || [],
     }));
     const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
     // タグ一覧(マスタータグDBの解説文・本文)も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
     const tags = (parsed.tags || []).map((t) => ({ ...t, blocks: t.blocks || [] }));
-    return { ...parsed, posts, categories, tags };
+    // 執筆者一覧（執筆者リストDB）も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
+    const authors = parsed.authors || [];
+    return { ...parsed, posts, categories, tags, authors };
   } catch {
     console.warn(
       "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
     );
-    return { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [] };
+    return { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], authors: [] };
   }
 }
 
@@ -86,6 +89,32 @@ export function getCategoryTags(name: string): { name: string; count: number }[]
   return [...counts.entries()]
     .map(([tagName, count]) => ({ name: tagName, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+/** 執筆者リストDBの全執筆者（Notion側の並び順のまま）。 */
+export function getAllAuthors(): Author[] {
+  return cache.authors;
+}
+
+export function getAuthorByName(name: string): Author | undefined {
+  return cache.authors.find((a) => a.name === name);
+}
+
+/** 指定執筆者が書いた記事（公開日の新しい順）。 */
+export function getPostsByAuthor(name: string): Post[] {
+  return getAllPosts().filter((p) => p.author === name);
+}
+
+/** 執筆者ページのプロフィールカードに出すピル用。その執筆者の最新記事から、タグを重複なく最大limit件集める。 */
+export function getAuthorRecentTags(name: string, limit: number): string[] {
+  const tags: string[] = [];
+  for (const post of getPostsByAuthor(name)) {
+    for (const tag of post.tags) {
+      if (!tags.includes(tag)) tags.push(tag);
+      if (tags.length >= limit) return tags;
+    }
+  }
+  return tags;
 }
 
 /**
