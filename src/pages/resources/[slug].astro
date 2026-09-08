@@ -5,7 +5,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
+import AuthorCard from "@/components/AuthorCard.astro";
 import { getAllResources } from "@/lib/resources";
+import { getAuthorByName, getAuthorRecentTags } from "@/lib/posts";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 import { buildFaqSchema } from "@/lib/schema";
@@ -33,6 +35,9 @@ const dateLabel = (iso: string) =>
 // 「ターゲット・目次」プロパティは1行目を見出し、2行目以降を箇条書きとして扱う。
 // 見出し名も箇条書きの内容も資料ごとにNotion側で自由に変えられる。
 const [targetTocHeading, ...targetTocItems] = resource.targetToc;
+
+const author = resource.author ? getAuthorByName(resource.author) : undefined;
+const authorRecentTags = author ? getAuthorRecentTags(author.name, 3) : [];
 ---
 
 <BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={faqSchema}>
@@ -144,6 +149,8 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
             </div>
           )
         }
+
+        {author && <AuthorCard author={author} recentTags={authorRecentTags} />}
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
