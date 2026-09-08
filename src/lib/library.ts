@@ -113,3 +113,53 @@ export function getLibraryCountsByCategory(categoryName: string) {
   const resourceCount = getAllResources().filter((r) => r.category === categoryName).length;
   return { all: postCount + resourceCount, post: postCount, resource: resourceCount };
 }
+
+/** 指定タグに絞り込んだ、公開日の新しい順の記事・資料の混合リスト。タグページ用。 */
+export function getLibraryItemsByTag(tagName: string, filter: LibraryFilter = "all"): LibraryItem[] {
+  // 記事・資料とも「タグ」は複数選択可のため、いずれか1つでも一致すれば対象にする。
+  const posts =
+    filter === "resource" ? [] : getAllPosts().filter((p) => p.tags.includes(tagName)).map(postToItem);
+  const resources =
+    filter === "post" ? [] : getAllResources().filter((r) => r.tags.includes(tagName)).map(resourceToItem);
+  return [...posts, ...resources].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+}
+
+/**
+ * 記事・資料に実際に使われている全タグ名（重複除去、出現順）。
+ * マスタータグDB（NOTION_TAGS_DATABASE_ID）が未設定の環境でもタグページ自体は生成できるように、
+ * マスターDBではなく記事・資料の実データから集計している（説明文・本文は getTagByName() で別途マスターDBから補う）。
+ */
+export function getAllLibraryTagNames(): string[] {
+  const names = new Set<string>();
+  for (const post of getAllPosts()) {
+    for (const tag of post.tags) names.add(tag);
+  }
+  for (const resource of getAllResources()) {
+    for (const tag of resource.tags) names.add(tag);
+  }
+  return [...names];
+}
+
+export function getLibraryCountsByTag(tagName: string) {
+  const postCount = getAllPosts().filter((p) => p.tags.includes(tagName)).length;
+  const resourceCount = getAllResources().filter((r) => r.tags.includes(tagName)).length;
+  return { all: postCount + resourceCount, post: postCount, resource: resourceCount };
+}
+
+/** 指定執筆者が書いた、公開日の新しい順の記事・資料の混合リスト。執筆者ページ用。 */
+export function getLibraryItemsByAuthor(authorName: string, filter: LibraryFilter = "all"): LibraryItem[] {
+  const posts = filter === "resource" ? [] : getAllPosts().filter((p) => p.author === authorName).map(postToItem);
+  const resources =
+    filter === "post" ? [] : getAllResources().filter((r) => r.author === authorName).map(resourceToItem);
+  return [...posts, ...resources].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+}
+
+export function getLibraryCountsByAuthor(authorName: string) {
+  const postCount = getAllPosts().filter((p) => p.author === authorName).length;
+  const resourceCount = getAllResources().filter((r) => r.author === authorName).length;
+  return { all: postCount + resourceCount, post: postCount, resource: resourceCount };
+}
