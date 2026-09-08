@@ -23,6 +23,7 @@ import {
   getRichTextPlain,
   getStatusOrSelectName,
   getSelectColor,
+  getNumber,
   getDateISO,
   getFirstFileUrl,
   resolveSlug,
@@ -86,6 +87,7 @@ async function fetchCategories(token, linkMap) {
     // 無ければ「テーマカラー」セレクトプロパティの色でグラデーションにフォールバックする。
     const backgroundImageFilename = getRichTextPlain(page, CATEGORY_PROP.backgroundImage).trim();
     const themeColor = getSelectColor(page, CATEGORY_PROP.themeColor);
+    const order = getNumber(page, CATEGORY_PROP.order);
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
@@ -97,19 +99,32 @@ async function fetchCategories(token, linkMap) {
       representativeSlug: representativeSlugRaw || null,
       themeColor,
       backgroundImageFilename,
+      order,
       blocks,
     });
   }
 
-  // マスターカテゴリDBには並び順専用のプロパティが無く、Notion APIはテーブル表示上の手動並び順を
-  // 取得する手段を提供していない。そのため「代表記事（Slug）」（kiji1, kiji2, …のように記事の
-  // 作成順と揃えて命名する運用になっている）を並び順の代わりに使い、自然順（数値部分を数値として比較）で
-  // ソートする。代表記事Slugが無いカテゴリは末尾にまとめ、Notion側の取得順を保つ。
+  // 並び順は「並び順」プロパティ（数値、小さい順）を正としてソートする。マスターカテゴリDBで
+  // この数値を変更するだけで、サイト側の表示順がそのまま追従する。
+  //
+  // 過去の経緯（2026-09-08時点）: マスターカテゴリDBには当初この専用プロパティが無く、Notion
+  // APIにはテーブル表示上の手動並び順を取得する手段も無いため、代わりに「代表記事（Slug）」
+  // （kiji1, kiji2, …のように記事の作成順と揃えて命名する運用だった）を並び順の代用にしていた。
+  // その後カテゴリ名を一括リネームした際に「代表記事（Slug）」の大半が空欄・別形式（記事ページへの
+  // メンション）に変わり、この代用ロジックが機能しなくなって表示順が崩れる不具合が発生した。
+  // 「並び順」を追加したことで、以後はカテゴリ側のデータ内容（代表記事欄の書き方等）に一切左右され
+  // ない。「並び順」が未設定のカテゴリ（今後の新規追加時など）は、後方互換のフォールバックとして
+  // 代表記事Slugの自然順 → それも無ければNotion取得順、の順に末尾へ並べる。
+  const withOrder = categories.filter((c) => c.order != null);
+  const withoutOrder = categories.filter((c) => c.order == null);
+  withOrder.sort((a, b) => a.order - b.order);
+
   const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
-  const withSlug = categories.filter((c) => c.representativeSlug);
-  const withoutSlug = categories.filter((c) => !c.representativeSlug);
+  const withSlug = withoutOrder.filter((c) => c.representativeSlug);
+  const withoutSlug = withoutOrder.filter((c) => !c.representativeSlug);
   withSlug.sort((a, b) => collator.compare(a.representativeSlug, b.representativeSlug));
-  return [...withSlug, ...withoutSlug];
+
+  return [...withOrder, ...withSlug, ...withoutSlug];
 }
 
 /**
