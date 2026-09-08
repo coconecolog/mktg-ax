@@ -100,7 +100,7 @@ function getProperty(page, name) {
 export function getTitleText(page, name) {
   const prop = getProperty(page, name);
   if (!prop || prop.type !== "title") return "";
-  return (prop.title || []).map((t) => t.plain_text).join("");
+  return (prop.title || []).map((t) => t.plain_text).join("").trim();
 }
 
 export function getRichTextPlain(page, name) {
