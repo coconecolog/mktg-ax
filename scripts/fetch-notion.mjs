@@ -4,7 +4,8 @@
 //
 // 実行方法: npm run fetch-notion （npm run build の中で自動的に呼ばれます）
 // 必要な環境変数: NOTION_TOKEN, NOTION_DATABASE_ID
-// 任意の環境変数: NOTION_CATEGORIES_DATABASE_ID（未設定でもビルドは止まらず、カテゴリ機能が空になるだけ）
+// 任意の環境変数: NOTION_CATEGORIES_DATABASE_ID・NOTION_TAGS_DATABASE_ID・NOTION_AUTHORS_DATABASE_ID
+//   （いずれも未設定でもビルドは止まらず、対応する機能が空になるだけ）
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -13,11 +14,13 @@ import {
   queryAllPages,
   fetchBlockChildrenRecursive,
   getRelationNames,
+  getFirstRelationName,
 } from "./lib/notion-client.mjs";
 import {
   PROP,
   CATEGORY_PROP,
   TAG_PROP,
+  AUTHOR_PROP,
   POST_STATUS,
   getTitleText,
   getRichTextPlain,
@@ -50,7 +53,7 @@ async function writeEmptyCache(reason) {
   await fs.writeFile(
     CACHE_FILE,
     JSON.stringify(
-      { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], error: reason },
+      { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], authors: [], error: reason },
       null,
       2,
     ),
@@ -169,6 +172,41 @@ async function fetchTags(token, linkMap) {
   return tags;
 }
 
+/**
+ * 執筆者リストDB（記事DB・資料DBの「執筆者」リレーション先）を取得する。
+ * マスターカテゴリ・マスタータグと同じ理由で、NOTION_AUTHORS_DATABASE_ID が未設定の場合は
+ * 執筆者プロフィール機能を使っていないとみなし、空配列を返す（記事・資料の取得は止めない）。
+ */
+async function fetchAuthors(token) {
+  const databaseId = process.env.NOTION_AUTHORS_DATABASE_ID;
+  if (!databaseId) {
+    console.warn(
+      "[fetch-notion] NOTION_AUTHORS_DATABASE_ID が未設定のため、執筆者一覧は空のまま続行します。",
+    );
+    return [];
+  }
+
+  console.log("[fetch-notion] 執筆者一覧を取得中…");
+  const dataSourceId = await resolveDataSourceId(token, databaseId);
+  const rawPages = await queryAllPages(token, dataSourceId, {});
+
+  const authors = [];
+  for (const page of rawPages) {
+    const name = getTitleText(page, AUTHOR_PROP.name) || "(無題)";
+    const title = getRichTextPlain(page, AUTHOR_PROP.title).trim();
+    // 「主な経験分野」は複数行入力を想定し、改行はそのまま保持する（表示側でwhitespace-pre-line）。
+    const expertise = getRichTextPlain(page, AUTHOR_PROP.expertise);
+    const bio = getRichTextPlain(page, AUTHOR_PROP.bio);
+
+    const imageSourceUrl = getFirstFileUrl(page, AUTHOR_PROP.image);
+    const image = imageSourceUrl ? await downloadImage(imageSourceUrl, `author-${page.id}`) : null;
+
+    authors.push({ name, title, expertise, bio, image });
+  }
+
+  return authors;
+}
+
 async function main() {
   const token = process.env.NOTION_TOKEN;
   const databaseId = process.env.NOTION_DATABASE_ID;
@@ -225,6 +263,7 @@ async function main() {
   // 自動生成サムネイルの背景をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
   const categories = await fetchCategories(token, linkMap);
   const tags = await fetchTags(token, linkMap);
+  const authors = await fetchAuthors(token);
   const categoryBackgroundMap = new Map();
   for (const c of categories) {
     const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
@@ -268,6 +307,8 @@ async function main() {
     // 単一バッジ表示用に先頭1件を category としても残す。
     const categories = await getRelationNames(token, page, PROP.category);
     const category = categories[0] || null;
+    // 執筆者は「執筆者リスト」DBとのリレーション（単一選択想定）。複数選択されていても先頭1件だけを使う。
+    const author = await getFirstRelationName(token, page, PROP.author);
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, PROP.updatedAt) || page.last_edited_time;
     // 「この記事でわかること」ボックス用の箇条書き。1行1項目、未入力ならボックスごと非表示。
@@ -299,6 +340,7 @@ async function main() {
       tags,
       category,
       categories,
+      author,
       keyPoints,
       publishedAt,
       updatedAt,
@@ -319,7 +361,7 @@ async function main() {
   }
 
   await fs.mkdir(CACHE_DIR, { recursive: true });
-  const output = { generatedAt: new Date().toISOString(), posts, categories, tags };
+  const output = { generatedAt: new Date().toISOString(), posts, categories, tags, authors };
   await fs.writeFile(CACHE_FILE, JSON.stringify(output, null, 2));
 
   // 今回の結果を「次回、編集中の記事が参照する前回公開時点のスナップショット」として保存する。
@@ -327,7 +369,7 @@ async function main() {
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(output, null, 2));
 
   console.log(
-    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件・タグ${tags.length}件を .notion-cache/posts.json に書き出しました。`,
+    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件・タグ${tags.length}件・執筆者${authors.length}件を .notion-cache/posts.json に書き出しました。`,
   );
 }
 
