@@ -8,6 +8,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import { buildArticleSchema } from "@/lib/schema";
 import { buildToc, getAllCategories, getAllTags, getPopularPosts } from "@/lib/posts";
 import type { Post } from "@/lib/types";
+import { toRouteSlug } from "@/lib/routeSlug";
 
 interface Props {
   post: Post;
@@ -48,14 +49,14 @@ const dateLabel = (iso: string) =>
             (post.categories.length > 0 || post.tags.length > 0) && (
               <div class="mb-4 flex flex-wrap items-center gap-1.5">
                 {post.categories.map((cat) => (
-                  <a href={`/blog/category/${encodeURIComponent(cat)}`}
+                  <a href={`/blog/category/${encodeURIComponent(toRouteSlug(cat))}`}
                     class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
                   >
                     {cat}
                   </a>
                 ))}
                 {post.tags.map((tag) => (
-                  <a href={`/blog/tag/${encodeURIComponent(tag)}`}
+                  <a href={`/blog/tag/${encodeURIComponent(toRouteSlug(tag))}`}
                     class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100"
                   >
                     {tag}
