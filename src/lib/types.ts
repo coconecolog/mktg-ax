@@ -46,6 +46,8 @@ export interface Post {
   category: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決した全カテゴリ名（複数選択可）。カテゴリページの絞り込みはこちらを使う。 */
   categories: string[];
+  /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
+  author: string | null;
   /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
   keyPoints: string[];
   publishedAt: string;
@@ -81,11 +83,25 @@ export interface Tag {
   blocks: BlockNode[];
 }
 
+// 執筆者リストDB（Notion）1件分。記事DB・資料DBの「執筆者」リレーション先そのもの。
+export interface Author {
+  name: string;
+  /** 「肩書」プロパティ（例: Consultant）。未設定なら空文字 */
+  title: string;
+  /** 「主な経験分野」プロパティ（複数行テキスト）。改行を含んだまま保持し、表示側で white-space: pre-line 的に扱う。未設定なら空文字 */
+  expertise: string;
+  /** 「執筆者紹介文」プロパティ。未設定なら空文字 */
+  bio: string;
+  /** 「執筆者画像」（files & media）をダウンロードしたローカル配信パス。未設定・未アップロードならnull */
+  image: string | null;
+}
+
 export interface PostsCache {
   generatedAt: string;
   posts: Post[];
   categories: Category[];
   tags: Tag[];
+  authors: Author[];
   error?: string;
 }
 
@@ -114,6 +130,8 @@ export interface Resource {
   mainTag: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
   category: string | null;
+  /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
+  author: string | null;
   /** 「ターゲット・目次」を1行ずつに分割した配列。1行目を見出し、2行目以降を箇条書きとして表示する。 */
   targetToc: string[];
   publishedAt: string;
