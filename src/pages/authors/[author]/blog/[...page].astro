@@ -1,0 +1,136 @@
+---
+import type { GetStaticPaths, Page } from "astro";
+import type { Author } from "@/lib/types";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
+import Pagination from "@/components/Pagination.astro";
+import BlogSidebar from "@/components/BlogSidebar.astro";
+import ContactCta from "@/components/ContactCta.astro";
+import { getAllAuthors, getAllCategories, getAllTags, getAuthorRecentTags, getPopularPosts } from "@/lib/posts";
+import { getLibraryItemsByAuthor, getLibraryCountsByAuthor, type LibraryItem } from "@/lib/library";
+import { AUTHOR_PAGE_SIZE } from "@/consts";
+import { toRouteSlug } from "@/lib/routeSlug";
+
+// 執筆者ページの「ブログ記事」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
+// 一覧の中身だけ記事のみに絞っている（カテゴリ/タグページ側の同名ファイルと同じ考え方）。
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const authors = getAllAuthors();
+  return authors.flatMap((author) =>
+    paginate(getLibraryItemsByAuthor(author.name, "post"), {
+      params: { author: toRouteSlug(author.name) },
+      pageSize: AUTHOR_PAGE_SIZE,
+      props: { author },
+    }),
+  );
+}) satisfies GetStaticPaths;
+
+const { author, page } = Astro.props as { author: Author; page: Page<LibraryItem> };
+
+const allCategories = getAllCategories();
+const counts = getLibraryCountsByAuthor(author.name);
+const authorBasePath = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
+const tabHrefs = { all: authorBasePath, post: `${authorBasePath}/blog`, resource: `${authorBasePath}/resources` };
+const recentTags = getAuthorRecentTags(author.name, 3);
+
+const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
+const sidebarTags = getAllTags();
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: author.name, href: authorBasePath },
+  { name: "ブログ記事", href: `${authorBasePath}/blog` },
+];
+---
+
+<BaseLayout
+  title={`${author.name}のブログ記事一覧｜執筆者`}
+  description={author.expertise || author.bio || `${author.name}が執筆した記事の一覧です。`}
+  ogImage="/open-graph/default.png"
+  pagefindIgnore
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-brand-600">執筆者　全{counts.all}件</p>
+
+        <div class="mt-4 flex flex-col gap-6 sm:flex-row sm:items-start">
+          {
+            author.image && (
+              <img
+                src={author.image}
+                alt={author.name}
+                class="h-24 w-24 shrink-0 rounded-full object-cover shadow-sm"
+              />
+            )
+          }
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-extrabold tracking-tight text-ink-950 sm:text-3xl">{author.name}</h1>
+              {author.title && (
+                <span class="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700">
+                  {author.title}
+                </span>
+              )}
+            </div>
+
+            {
+              author.expertise && (
+                <p class="mt-3 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">
+                  {author.expertise}
+                </p>
+              )
+            }
+
+            {
+              recentTags.length > 0 && (
+                <div class="mt-3 flex flex-wrap gap-1.5">
+                  {recentTags.map((tag) => (
+                    <span class="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )
+            }
+
+            {
+              author.bio && (
+                <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-600">{author.bio}</p>
+              )
+            }
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <LibraryFilterTabs active="post" counts={counts} hrefs={tabHrefs} />
+        </div>
+
+        {
+          page.data.length > 0 ? (
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {page.data.map((item) => (
+                <LibraryCard item={item} />
+              ))}
+            </div>
+          ) : (
+            <p class="mt-10 text-neutral-400">この執筆者の記事はまだありません。</p>
+          )
+        }
+
+        <Pagination page={page} basePath={`${authorBasePath}/blog`} />
+      </div>
+
+      <aside class="lg:sticky lg:top-24 lg:self-start">
+        <BlogSidebar categories={allCategories} popularPosts={sidebarPopularPosts} tags={sidebarTags} />
+      </aside>
+    </div>
+  </div>
+
+  <ContactCta />
+</BaseLayout>
