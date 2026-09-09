@@ -74,16 +74,9 @@ const dateLabel = (iso: string) =>
           <div class="mt-4 flex flex-wrap items-center gap-3">
             {
               author && (
-                
-                  href={`/authors/${encodeURIComponent(toRouteSlug(author.name))}`}
-                  class="flex items-center gap-2.5 no-underline"
-                >
+                <a href={`/authors/${encodeURIComponent(toRouteSlug(author.name))}`} class="flex items-center gap-2.5 no-underline">
                   {author.image && (
-                    <img
-                      src={author.image}
-                      alt={author.name}
-                      class="aspect-square h-10 w-10 shrink-0 rounded-full object-cover"
-                    />
+                    <img src={author.image} alt={author.name} class="aspect-square h-10 w-10 shrink-0 rounded-full object-cover" />
                   )}
                   <span class="flex flex-wrap items-center gap-2">
                     <span class="text-sm font-bold text-ink-950">{author.name}</span>
