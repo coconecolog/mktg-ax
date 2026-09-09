@@ -16,8 +16,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-integrations: [
-  sitemap({
-    filter: (page) => !page.includes("/internal-links"),
-  }),
-],
+  integrations: [
+    sitemap({
+      filter: (page) => !page.includes("/internal-links"),
+    }),
+  ],
+});
