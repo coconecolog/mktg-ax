@@ -448,10 +448,13 @@ export async function generateFallbackThumbnail(idHint, background, title, subti
     // サブタイトルを上・小さめ、メインタイトルを下・大きめに表示する。
     const titleFontSize = 66;
     const titleLineHeight = 82;
-    const titleWrapWidth = 10;
+    // キャンバス幅1200px・左右余白72pxずつを踏まえた「行が使い切れる最大幅」を文字数換算で算出。
+    // （以前は10/16という固定値で、フォントサイズに対して余白を広く取りすぎ、
+    //   本来まだ入るはずの1〜2文字だけが次の行に落ちる不自然な改行になっていた）
+    const titleWrapWidth = 15;
     const subtitleFontSize = 42;
     const subtitleLineHeight = 56;
-    const subtitleWrapWidth = 16;
+    const subtitleWrapWidth = 24;
     const blockGap = 20;
 
     const titleLines = wrapText(title, titleWrapWidth, 3);
