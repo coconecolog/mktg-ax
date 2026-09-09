@@ -5,9 +5,11 @@ import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
 import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts } from "@/lib/posts";
+import { getLibraryItemsByCategory } from "@/lib/library";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
 
@@ -24,6 +26,11 @@ const categories = getAllCategories();
 const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const tags = getAllTags();
 const author = post.author ? getAuthorByName(post.author) : undefined;
+
+// 同じカテゴリの他記事（自分自身を除く、最大3件）。ブログ記事ページのみで表示するため PostLayout.astro 側に置く。
+const relatedItems = post.category
+  ? getLibraryItemsByCategory(post.category, "post").filter((item) => item.slug !== post.slug).slice(0, 3)
+  : [];
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -137,6 +144,24 @@ const dateLabel = (iso: string) =>
         </div>
 
         {author && <AuthorCard author={author} />}
+
+        {
+          relatedItems.length > 0 && (
+            <div class="mt-12 border-t border-neutral-100 pt-10">
+              <h2 class="text-xl font-extrabold tracking-tight text-ink-950">{post.category}の記事</h2>
+              <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {relatedItems.map((item) => (
+                  <LibraryCard item={item} />
+                ))}
+              </div>
+              <p class="mt-6 text-center">
+                <a href="/library" class="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline">
+                  ライブラリ（記事・資料）一覧へ
+                </a>
+              </p>
+            </div>
+          )
+        }
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
