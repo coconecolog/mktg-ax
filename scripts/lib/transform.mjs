@@ -338,6 +338,18 @@ const downloadCache = new Map();
  * 画像をダウンロードして public/images/notion/ に保存し、
  * サイト内から参照できる絶対パス（例: /images/notion/xxxx.jpg）を返す。
  * 失敗した場合は null を返し、呼び出し側でフォールバック表示にする。
+ *
+ * ファイル名は idHint（ページID・ブロックIDなど、画像ごとに一意で安定した値）だけから決める。
+ * 以前はここにURL全体のsha1ハッシュも含めていたが、Notionが発行する署名付きURLはクエリ文字列
+ * （署名・有効期限）がビルドのたびに変わるため、同じ画像でもビルドごとに毎回別のファイル名に
+ * なってしまっていた。「公開後の編集中」記事はNotionへの再アクセス・再ダウンロードを一切行わず
+ * 前回ビルド時点のファイル名（JSONスナップショット内の古いパス文字列）をそのまま使い回す設計の
+ * ため、GitHub Actionsが毎回まっさらな状態からチェックアウトする仕組みと組み合わさると、編集中の
+ * 記事が参照する画像の実体ファイルがそのビルドのpublic/images/notion/に一つも存在せず、
+ * デプロイのたびに画像が消える不具合になっていた（2026-09-10発覚）。ファイル名を安定させたことで、
+ * .github/workflows/deploy.ymlでpublic/images/notion/自体をビルドをまたいでキャッシュ復元/保存
+ * するようにした変更と合わせて、編集中の記事の画像も前回ダウンロード済みの実体ファイルがそのまま
+ * 存在し続けるようになる。
  */
 export async function downloadImage(url, idHint) {
   if (!url) return null;
@@ -349,8 +361,7 @@ export async function downloadImage(url, idHint) {
     const contentType = res.headers.get("content-type")?.split(";")[0]?.trim();
     const ext = CONTENT_TYPE_EXT[contentType] || guessExtFromUrl(url) || "jpg";
 
-    const hash = crypto.createHash("sha1").update(url).digest("hex").slice(0, 16);
-    const filename = `${idHint}-${hash}.${ext}`;
+    const filename = `${idHint}.${ext}`;
     const outPath = path.join(IMAGE_OUT_DIR, filename);
 
     await fs.mkdir(IMAGE_OUT_DIR, { recursive: true });
