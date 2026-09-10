@@ -30,13 +30,24 @@ jobs:
       - name: PDFプレビュー画像生成用のツールをインストール
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
-      - name: 「公開後の編集中」記事用スナップショットを復元
+      - name: 「公開後の編集中」記事用スナップショット・ダウンロード済み画像を復元
+        # posts-status-snapshot.json だけでなく、Notionからダウンロードした画像の実体ファイル
+        # （public/images/notion/）・サムネイル自動生成SVG（public/images/generated/）も
+        # ビルドをまたいでキャッシュする。「公開後の編集中」記事はこのビルドで画像の再ダウンロード・
+        # 再生成を一切行わず、スナップショットに記録された前回ビルド時点のファイルパスをそのまま
+        # 使い回すため、GitHub Actionsの毎回まっさらなチェックアウトのままだと実体ファイルが
+        # 存在せず画像が消えてしまう（2026-09-10修正）。scripts/lib/transform.mjsの
+        # downloadImage()を安定したファイル名（URLの署名部分に依存しない）に変更したことと
+        # 合わせて、この3パスをキャッシュすることで編集中の記事の画像も保持され続けるようになる。
         uses: actions/cache/restore@v4
         with:
-          path: .notion-cache/posts-status-snapshot.json
-          key: notion-posts-status-snapshot-${{ github.run_id }}
+          path: |
+            .notion-cache/posts-status-snapshot.json
+            public/images/notion/
+            public/images/generated/
+          key: notion-build-assets-${{ github.run_id }}
           restore-keys: |
-            notion-posts-status-snapshot-
+            notion-build-assets-
 
       - name: Notionから記事・資料データを取得してビルド
         run: npm run build
@@ -53,11 +64,14 @@ jobs:
           PUBLIC_GSC_VERIFICATION: ${{ secrets.MKTG_AX_PUBLIC_GSC_VERIFICATION }}
           PUBLIC_GTM_ID: ${{ secrets.MKTG_AX_PUBLIC_GTM_ID }}
 
-      - name: 「公開後の編集中」記事用スナップショットを保存（次回のビルドが復元する）
+      - name: 「公開後の編集中」記事用スナップショット・ダウンロード済み画像を保存（次回のビルドが復元する）
         uses: actions/cache/save@v4
         with:
-          path: .notion-cache/posts-status-snapshot.json
-          key: notion-posts-status-snapshot-${{ github.run_id }}
+          path: |
+            .notion-cache/posts-status-snapshot.json
+            public/images/notion/
+            public/images/generated/
+          key: notion-build-assets-${{ github.run_id }}
 
       - name: Cloudflare Pagesへデプロイ（direct upload / 無料枠のビルド回数を消費しない）
         uses: cloudflare/wrangler-action@v3
