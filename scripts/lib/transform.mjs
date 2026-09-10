@@ -108,7 +108,38 @@ export function getRichTextPlain(page, name) {
   if (!prop || prop.type !== "rich_text") return "";
   return (prop.rich_text || []).map((t) => t.plain_text).join("");
 }
+/**
+ * マスターカテゴリDB・マスタータグDBの「代表記事」プロパティを解決する。
+ *
+ * このプロパティは (a) 記事の「Slug」をそのまま手入力したテキスト、(b) Notionの「@」で
+ * 記事ページを直接選んでメンションとして貼り付けたもの、のどちらの書き方でも運用されうる。
+ * (b)の場合、getRichTextPlain() 相当の単純な plain_text 抽出では「メンションされた記事の
+ * タイトル」が返ってしまい、記事の「Slug」プロパティ値とは一致しないため getPostBySlug() が
+ * 常にヒットせず、代表記事ブロックが表示されない不具合になっていた（2026-09-10発覚）。
+ *
+ * ここでは rich_text 内にページメンションが含まれる場合、そのメンション先ページIDを
+ * buildNotionLinkMap() の結果（NotionページID → サイト内URL）で引き、"/blog/xxxx" 形式の
+ * URLからスラッグ部分を取り出す。メンション先が記事DBの公開記事でない場合（linkMapに無い場合）
+ * や、メンションが無い場合は、従来通りプレーンテキストとして扱う（後方互換）。
+ */
+export function resolveRepresentativeSlug(page, name, linkMap) {
+  const prop = getProperty(page, name);
+  if (!prop || prop.type !== "rich_text") return "";
+  const richText = prop.rich_text || [];
 
+  const mention = richText.find(
+    (t) => t.type === "mention" && t.mention?.type === "page" && t.mention.page?.id,
+  );
+  if (mention) {
+    const url = linkMap?.get(mention.mention.page.id);
+    const prefix = "/blog/";
+    if (url && url.startsWith(prefix)) {
+      return url.slice(prefix.length);
+    }
+  }
+
+  return richText.map((t) => t.plain_text).join("");
+}
 export function getCheckbox(page, name) {
   const prop = getProperty(page, name);
   if (!prop || prop.type !== "checkbox") return false;
