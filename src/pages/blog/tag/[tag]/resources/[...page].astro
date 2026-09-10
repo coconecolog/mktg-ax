@@ -6,9 +6,8 @@ import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
-import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug, getTagByName } from "@/lib/posts";
+import { getAllCategories, getAllTags, getPopularPosts, getTagByName } from "@/lib/posts";
 import {
   getAllLibraryTagNames,
   getLibraryItemsByTag,
@@ -20,6 +19,7 @@ import { toRouteSlug } from "@/lib/routeSlug";
 
 // タグページの「無料資料・eBook」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
 // 一覧の中身だけ資料のみに絞っている（カテゴリページ側の同名ファイルと同じ考え方）。
+// 説明文・代表記事カード・マスタータグDB本文は表示しない（2026-09-10、親[...page].astro参照）。
 
 export const getStaticPaths = (async ({ paginate }) => {
   const tagNames = getAllLibraryTagNames();
@@ -35,8 +35,8 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { tagName, page } = Astro.props as { tagName: string; page: Page<LibraryItem> };
 
 const allCategories = getAllCategories();
+// マスタータグDBの情報はSEO用のmeta descriptionにのみ使う（見た目には表示しない）。
 const tagInfo = getTagByName(tagName);
-const representativePost = tagInfo?.representativeSlug ? getPostBySlug(tagInfo.representativeSlug) : undefined;
 const counts = getLibraryCountsByTag(tagName);
 const tagBasePath = `/blog/tag/${encodeURIComponent(toRouteSlug(tagName))}`;
 const tabHrefs = { all: tagBasePath, post: `${tagBasePath}/blog`, resource: `${tagBasePath}/resources` };
@@ -66,42 +66,6 @@ const breadcrumbItems = [
         <p class="text-xs font-bold text-brand-600">タグ　全{counts.all}件</p>
         <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-950">{tagName}</h1>
 
-        {
-          tagInfo?.description && (
-            <p class="mt-4 text-sm leading-relaxed text-neutral-600 whitespace-pre-line">{tagInfo.description}</p>
-          )
-        }
-
-        {
-          representativePost && (
-            <div class="mt-8 w-full rounded-2xl bg-brand-50 p-6 sm:p-8">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-700 shadow-sm">
-                  ★ まず読むべき代表記事
-                </span>
-                <span class="text-xs font-medium text-neutral-400">{tagName}のロードマップ</span>
-              </div>
-              <a href={`/blog/${representativePost.slug}`}
-                class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center"
-              >
-                <div class="min-w-0 flex-1">
-                  <p class="text-lg font-bold leading-snug text-ink-950 sm:text-xl">{representativePost.title}</p>
-                  {representativePost.description && (
-                    <p class="mt-2 line-clamp-2 text-sm text-brand-800/80">{representativePost.description}</p>
-                  )}
-                  <span class="mt-5 inline-flex w-fit items-center gap-1 rounded-full border-[1.5px] border-brand-600 bg-white px-5 py-2 text-sm font-bold text-brand-700">
-                    この記事を読む →
-                  </span>
-                </div>
-                {representativePost.thumbnail && (
-                  <div class="aspect-video w-full overflow-hidden rounded-xl shadow-md sm:w-72 sm:shrink-0">
-                    <img src={representativePost.thumbnail} alt="" class="h-full w-full object-cover" />
-                  </div>
-                )}
-              </a>
-            </div>
-          )
-        }
         <div class="mt-10">
           <LibraryFilterTabs active="resource" counts={counts} hrefs={tabHrefs} />
         </div>
@@ -119,14 +83,6 @@ const breadcrumbItems = [
         }
 
         <Pagination page={page} basePath={`${tagBasePath}/resources`} />
-
-        {
-          tagInfo?.blocks && tagInfo.blocks.length > 0 && (
-            <div class="prose-notion mt-12 w-full">
-              <NotionBlocks blocks={tagInfo.blocks} />
-            </div>
-          )
-        }
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
