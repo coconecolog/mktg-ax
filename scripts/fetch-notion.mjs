@@ -24,6 +24,7 @@ import {
   POST_STATUS,
   getTitleText,
   getRichTextPlain,
+  resolveRepresentativeSlug,
   getStatusOrSelectName,
   getSelectColor,
   getNumber,
@@ -85,7 +86,11 @@ async function fetchCategories(token, linkMap) {
   for (const page of rawPages) {
     const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
     const description = getRichTextPlain(page, CATEGORY_PROP.description);
-    const representativeSlugRaw = getRichTextPlain(page, CATEGORY_PROP.representativeSlug).trim();
+        const representativeSlugRaw = resolveRepresentativeSlug(
+      page,
+      CATEGORY_PROP.representativeSlug,
+      linkMap,
+    ).trim();
     // サムネイル自動生成の背景として使う。「背景画像ファイル名」が実在すればそれを優先し、
     // 無ければ「テーマカラー」セレクトプロパティの色でグラデーションにフォールバックする。
     const backgroundImageFilename = getRichTextPlain(page, CATEGORY_PROP.backgroundImage).trim();
@@ -155,7 +160,11 @@ async function fetchTags(token, linkMap) {
   for (const page of rawPages) {
     const name = getTitleText(page, TAG_PROP.name) || "(無題タグ)";
     const description = getRichTextPlain(page, TAG_PROP.description);
-    const representativeSlugRaw = getRichTextPlain(page, TAG_PROP.representativeSlug).trim();
+    const representativeSlugRaw = resolveRepresentativeSlug(
+      page,
+      TAG_PROP.representativeSlug,
+      linkMap,
+    ).trim();
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
