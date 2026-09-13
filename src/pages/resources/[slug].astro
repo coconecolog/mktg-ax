@@ -1,239 +1,396 @@
 ---
-// お問い合わせフォームは functions/api/contact.js（Cloudflare Pages Function）経由で
-// Resendから運営者宛に通知メールを送信する。SNS導線は開設まではダミー表示のまま。
-// CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください
-// （フッター等の表示用。フォームの送信先は環境変数 CONTACT_NOTIFY_TO で別途設定）。
+import type { GetStaticPaths } from "astro";
+import type { Resource } from "@/lib/types";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FaqAccordion from "@/components/FaqAccordion.astro";
-import { SITE_NAME } from "@/consts";
+import ContactCta from "@/components/ContactCta.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
+import AuthorCard from "@/components/AuthorCard.astro";
+import { getAllResources } from "@/lib/resources";
+import { getAuthorByName } from "@/lib/posts";
+import { DEFAULT_OG_IMAGE } from "@/consts";
+import { toRouteSlug } from "@/lib/routeSlug";
+import { buildFaqSchema } from "@/lib/schema";
+
+export const getStaticPaths = (async () => {
+  return getAllResources().map((resource) => ({
+    params: { slug: resource.slug },
+    props: { resource },
+  }));
+}) satisfies GetStaticPaths;
+
+const { resource } = Astro.props as { resource: Resource };
+
+const faqSchema = buildFaqSchema(resource.blocks);
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "お問い合わせ", href: "/contact" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "無料資料・eBook", href: "/library/resources" },
+  { name: resource.title, href: `/resources/${resource.slug}` },
 ];
 
-const faqItems = [
-  {
-    question: "回答までにどのくらいかかりますか？",
-    answer: "通常2〜3営業日以内にご返信いたします。内容によりお時間をいただく場合がございます。",
-  },
-  {
-    question: "提供されているツールやテンプレートの使い方が分からない時は質問できますか？",
-    answer:
-      "カテゴリで「使い方・サポート」をお選びいただき、該当ページや具体的な状況をお知らせください。なお、個別環境への設定代行や独自のカスタマイズ対応は対象外となります。",
-  },
-  {
-    question: "記事の誤脱字やツールの不具合（動作不良）を見つけた場合はどこから連絡すればよいですか？",
-    answer: "カテゴリで「バグ報告」をお選びのうえ、該当ページのURLと不具合の内容をお送りください。確認のうえ速やかに修正・改善を行います。",
-  },
-  {
-    question: "新しいツールや書いてほしい記事テーマのリクエストはできますか？",
-    answer:
-      "カテゴリで「機能提案・要望」をお選びのうえご意見をお寄せください。いただいたご要望はすべて拝読し、今後のコンテンツ・ツール開発の参考にさせていただきます。",
-  },
-];
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
+// 「ターゲット・目次」プロパティは1行目を見出し、2行目以降を箇条書きとして扱う。
+// 見出し名も箇条書きの内容も資料ごとにNotion側で自由に変えられる。
+const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 
-const snsLinks = [
-  { icon: "X", name: "X" },
-  { icon: "🧵", name: "Threads" },
-  { icon: "📷", name: "Instagram" },
-  { icon: "💼", name: "LinkedIn" },
-  { icon: "▶️", name: "YouTube" },
-];
+const author = resource.author ? getAuthorByName(resource.author) : undefined;
 ---
 
-<BaseLayout
-  title="お問い合わせ"
-  description={`${SITE_NAME}へのお問い合わせはこちらから。サービスに関するご相談、資料の掲載、記事・取材のご依頼などお気軽にご連絡ください。`}
-  ogImage="/open-graph/contact.png"
-  pagefindIgnore
->
+<BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={faqSchema}>
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-5xl px-5 py-12">
-    <p class="text-sm font-bold uppercase tracking-wider text-brand-600">Contact</p>
-    <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-950">お問い合わせ</h1>
-    <p class="mt-4 leading-relaxed text-neutral-500">
-      サービスに関するご相談、資料の掲載、記事・取材のご依頼など、お気軽にご連絡ください。内容を確認のうえ、担当より折り返しご連絡いたします。
-    </p>
-
-    <FaqAccordion items={faqItems} heading="よくあるご質問" />
-
-    <div class="mx-auto mt-12 max-w-2xl">
-      <div class="text-center">
-        <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
-        <p class="mt-2 text-sm text-neutral-500">下記フォームよりお気軽にご連絡ください。</p>
-      </div>
-
-      <form id="contact-form" class="mt-6 rounded-2xl border border-neutral-100 bg-white px-6 py-6 md:px-8">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div>
-            <label for="cf-name" class="text-xs font-medium text-neutral-600">お名前<span class="ml-0.5 text-brand-600">*</span></label>
-            <input
-              id="cf-name"
-              name="name"
-              type="text"
-              required
-              placeholder="山田 太郎"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            />
+  <article class="mx-auto max-w-6xl px-5 py-10">
+    <header>
+      {
+        (resource.category || resource.tags.length > 0) && (
+          <div class="mb-4 flex flex-wrap items-center gap-1.5">
+            {resource.category && (
+              <a href={`/blog/category/${encodeURIComponent(toRouteSlug(resource.category))}`}
+                class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
+              >
+                {resource.category}
+              </a>
+            )}
+            {resource.tags.map((tag) => (
+              <a href={`/blog/tag/${encodeURIComponent(toRouteSlug(tag))}`}
+                class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100"
+              >
+                {tag}
+              </a>
+            ))}
           </div>
-          <div>
-            <label for="cf-company" class="text-xs font-medium text-neutral-600">会社名</label>
-            <input
-              id="cf-company"
-              name="company"
-              type="text"
-              placeholder="株式会社サンプル"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            />
-          </div>
-          <div>
-            <label for="cf-email" class="text-xs font-medium text-neutral-600">メールアドレス<span class="ml-0.5 text-brand-600">*</span></label>
-            <input
-              id="cf-email"
-              name="email"
-              type="email"
-              required
-              placeholder="you@example.com"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            />
-          </div>
-          <div>
-            <label for="cf-type" class="text-xs font-medium text-neutral-600">お問い合わせ種別<span class="ml-0.5 text-brand-600">*</span></label>
-            <select
-              id="cf-type"
-              name="inquiryType"
-              required
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950"
-            >
-              <option>一般のお問い合わせ</option>
-              <option>サービス・ご相談について</option>
-              <option>資料掲載について</option>
-              <option>記事・取材について</option>
-              <option>その他</option>
-            </select>
-          </div>
-          <div class="sm:col-span-2">
-            <label for="cf-message" class="text-xs font-medium text-neutral-600">お問い合わせ内容<span class="ml-0.5 text-brand-600">*</span></label>
-            <textarea
-              id="cf-message"
-              name="message"
-              required
-              rows="5"
-              placeholder="お問い合わせ内容をご記入ください"
-              class="mt-1.5 w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- ハニーポット: 人間には見えない項目。自動投稿botはよく埋めてしまうため、値が入っていたら送信を無視する -->
-        <div class="hidden" aria-hidden="true">
-          <label for="cf-website">ウェブサイト</label>
-          <input id="cf-website" name="website" type="text" tabindex={-1} autocomplete="off" />
-        </div>
-
-        <label class="mt-5 flex items-start gap-2">
-          <input id="cf-consent" name="consent" type="checkbox" required class="mt-0.5" />
-          <span class="text-xs leading-relaxed text-neutral-500">
-            ご入力いただいた情報は、お問い合わせへの対応のために利用します。
-            <a href="/privacy" class="text-brand-600 underline">個人情報保護方針</a>
-            に同意のうえ送信します。
-          </span>
-        </label>
-
-        <button
-          id="cf-submit"
-          type="submit"
-          class="mt-6 rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          送信する
-        </button>
-        <p id="cf-result" class="mt-3 hidden text-xs leading-relaxed" role="status"></p>
-        <p class="mt-3 text-xs text-neutral-400">送信いただいた内容は、お問い合わせへの対応以外の目的では使用いたしません。</p>
-      </form>
-    </div>
-
-    <div class="mt-12">
-      <h2 class="text-lg font-bold text-ink-950">SNS</h2>
-      <div class="mt-6 rounded-2xl border border-neutral-100 bg-white p-6">
-        <p class="text-xs leading-relaxed text-neutral-500">各種SNSアカウントは現在準備中です。開設まで今しばらくお待ちください。</p>
-        <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
-          {
-            snsLinks.map((sns) => (
-              <div class="flex flex-col gap-2 rounded-xl border border-neutral-100 p-3 opacity-60">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-sm">{sns.icon}</span>
-                <span class="text-xs font-bold text-ink-950">{sns.name}</span>
-                <span class="w-fit rounded-full border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-                  準備中
-                </span>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <script>
-    const form = document.getElementById("contact-form") as HTMLFormElement | null;
-    const resultEl = document.getElementById("cf-result");
-    const submitBtn = document.getElementById("cf-submit") as HTMLButtonElement | null;
-
-    form?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (!resultEl || !submitBtn) return;
-
-      const formData = new FormData(form);
-      const payload = {
-        name: formData.get("name"),
-        company: formData.get("company"),
-        email: formData.get("email"),
-        inquiryType: formData.get("inquiryType"),
-        message: formData.get("message"),
-        consent: formData.get("consent") === "on",
-        website: formData.get("website"),
-      };
-
-      submitBtn.disabled = true;
-      resultEl.classList.remove("hidden", "text-red-600", "text-emerald-600");
-      resultEl.classList.add("text-neutral-500");
-      resultEl.textContent = "送信中です…";
-
-      try {
-        const res = await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => ({ ok: false, error: null }));
-
-        if (res.ok && data.ok) {
-          if (typeof (window as any).gtag === "function") {
-            (window as any).gtag("event", "generate_lead", { lead_type: "contact" });
-          } else if ((window as any).dataLayer) {
-            (window as any).dataLayer.push({ event: "generate_lead", lead_type: "contact" });
-          }
-          form.reset();
-          form.querySelectorAll("input, select, textarea, button").forEach((el) => {
-            (el as HTMLInputElement | HTMLButtonElement).disabled = true;
-          });
-          resultEl.classList.remove("text-neutral-500");
-          resultEl.classList.add("text-emerald-600");
-          resultEl.textContent = "お問い合わせを受け付けました。担当より折り返しご連絡いたします。";
-        } else {
-          submitBtn.disabled = false;
-          resultEl.classList.remove("text-neutral-500");
-          resultEl.classList.add("text-red-600");
-          resultEl.textContent = data.error || "送信に失敗しました。時間をおいて再度お試しください。";
-        }
-      } catch {
-        submitBtn.disabled = false;
-        resultEl.classList.remove("text-neutral-500");
-        resultEl.classList.add("text-red-600");
-        resultEl.textContent = "送信に失敗しました。時間をおいて再度お試しください。";
+        )
       }
-    });
-  </script>
+      <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+        {resource.title}
+      </h1>
+      <p class="mt-4 text-sm text-neutral-400">
+        公開日: <time datetime={resource.publishedAt}>{dateLabel(resource.publishedAt)}</time>
+        {resource.updatedAt !== resource.publishedAt && (
+          <>
+            {" "}／ 更新日: <time datetime={resource.updatedAt}>{dateLabel(resource.updatedAt)}</time>
+          </>
+        )}
+      </p>
+    </header>
+
+    <div class="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div class="min-w-0">
+        <div class="aspect-video w-full overflow-hidden rounded-2xl bg-neutral-50">
+          <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" />
+        </div>
+
+        {
+          (resource.coverImage || resource.excerptImages.length > 0) && (
+            <div class="mt-6">
+              <p class="text-sm font-bold text-ink-950">資料プレビュー</p>
+              <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {resource.coverImage && (
+                  <button
+                    type="button"
+                    class="preview-thumb group overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50"
+                    data-preview-src={resource.coverImage}
+                    data-preview-alt={`${resource.title}の表紙`}
+                  >
+                    <img
+                      src={resource.coverImage}
+                      alt={`${resource.title}の表紙`}
+                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
+                    />
+                  </button>
+                )}
+                {resource.excerptImages.map((src, i) => (
+                  <button
+                    type="button"
+                    class="preview-thumb group overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50"
+                    data-preview-src={src}
+                    data-preview-alt={`${resource.title}のプレビュー${i + 1}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`${resource.title}のプレビュー${i + 1}`}
+                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        }
+
+        <p class="mt-8 whitespace-pre-line leading-relaxed text-neutral-700">{resource.description}</p>
+
+        {
+          resource.targetToc.length > 0 && (
+            <div class="mt-8 rounded-2xl border border-neutral-100 bg-neutral-50 p-6">
+              {targetTocHeading && <p class="text-base font-bold text-ink-950">{targetTocHeading}</p>}
+              {targetTocItems.length > 0 && (
+                <ul class="mt-4 space-y-2">
+                  {targetTocItems.map((line) => (
+                    <li class="flex gap-2 text-sm leading-relaxed text-neutral-600">
+                      <span class="mt-0.5 shrink-0 text-brand-500">✓</span>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
+        }
+
+        {
+          resource.blocks.length > 0 && (
+            <div class="prose-notion mt-10 w-full">
+              <NotionBlocks blocks={resource.blocks} />
+            </div>
+          )
+        }
+
+        {author && <AuthorCard author={author} />}
+      </div>
+
+      <aside class="lg:sticky lg:top-24 lg:self-start">
+        <div class="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
+          <p class="text-xs font-bold text-brand-600">無料ダウンロード</p>
+          <h2 class="mt-1 text-lg font-bold text-ink-950">この資料をダウンロードする</h2>
+          <p class="mt-2 text-xs leading-relaxed text-neutral-500">
+            以下のフォームにご入力いただくと、資料のダウンロードリンクをメールでお送りします。
+          </p>
+          {
+            resource.fileUrl ? (
+              <form
+                id="resource-download-form"
+                class="mt-5 space-y-3"
+                data-resource-slug={resource.slug}
+                data-resource-title={resource.title}
+                data-download-url={resource.fileUrl}
+              >
+                <div>
+                  <label for="rdf-name" class="text-xs font-medium text-neutral-600">
+                    お名前 <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="rdf-name"
+                    name="name"
+                    type="text"
+                    required
+                    placeholder="山田 太郎"
+                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+                  />
+                </div>
+                <div>
+                  <label for="rdf-company" class="text-xs font-medium text-neutral-600">
+                    会社名
+                  </label>
+                  <input
+                    id="rdf-company"
+                    name="company"
+                    type="text"
+                    placeholder="株式会社サンプル"
+                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+                  />
+                </div>
+                <div>
+                  <label for="rdf-email" class="text-xs font-medium text-neutral-600">
+                    メールアドレス <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="rdf-email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+                  />
+                </div>
+                {/* ハニーポット: 人間には見えない項目。自動投稿botはよく埋めてしまうため、値が入っていたら送信を無視する */}
+                <div class="hidden" aria-hidden="true">
+                  <label for="rdf-website">ウェブサイト</label>
+                  <input id="rdf-website" name="website" type="text" tabindex={-1} autocomplete="off" />
+                </div>
+                <label class="flex items-start gap-2 pt-1">
+                  <input id="rdf-consent" name="consent" type="checkbox" required class="mt-0.5" />
+                  <span class="text-xs leading-relaxed text-neutral-500">
+                    ご入力いただいた情報は、資料の送付およびサービスに関するご案内のために利用します。
+                    <a href="/privacy" class="text-brand-600 underline">
+                      個人情報保護方針
+                    </a>
+                    に同意のうえ送信します。配信停止はいつでも可能です。
+                  </span>
+                </label>
+                <button
+                  id="rdf-submit"
+                  type="submit"
+                  class="mt-2 w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  無料でダウンロードする
+                </button>
+                <p id="rdf-message" class="hidden text-xs leading-relaxed" role="status" />
+              </form>
+            ) : (
+              <p class="mt-5 text-xs leading-relaxed text-neutral-500">
+                現在準備中です。しばらくお待ちください。
+              </p>
+            )
+          }
+        </div>
+      </aside>
+    </div>
+  </article>
+
+  <ContactCta />
+
+  <dialog id="preview-modal" class="preview-modal">
+    <button type="button" class="preview-modal-close" aria-label="閉じる">✕</button>
+    <img id="preview-modal-img" src="" alt="" />
+  </dialog>
 </BaseLayout>
+
+<style>
+  .preview-thumb {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    cursor: zoom-in;
+  }
+
+  .preview-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    max-width: min(92vw, 1200px);
+    max-height: 92vh;
+    padding: 0;
+    border: none;
+    border-radius: 1rem;
+    background: transparent;
+  }
+
+  .preview-modal::backdrop {
+    background: rgba(15, 15, 25, 0.75);
+  }
+
+  .preview-modal img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 1rem;
+  }
+
+  .preview-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.92);
+    color: #111827;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  const modal = document.getElementById("preview-modal") as HTMLDialogElement | null;
+  const modalImg = document.getElementById("preview-modal-img") as HTMLImageElement | null;
+  const closeBtn = modal?.querySelector<HTMLButtonElement>(".preview-modal-close");
+
+  document.querySelectorAll<HTMLButtonElement>(".preview-thumb").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!modal || !modalImg) return;
+      modalImg.src = btn.dataset.previewSrc || "";
+      modalImg.alt = btn.dataset.previewAlt || "";
+      modal.showModal();
+    });
+  });
+
+  closeBtn?.addEventListener("click", () => modal?.close());
+
+  // 画像の外側（背景部分）をクリックしたら閉じる
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) modal.close();
+  });
+</script>
+
+<script>
+  // 資料ダウンロードフォームの送信処理。
+  // 送信先は Cloudflare Pages Functions（functions/api/resource-download.js）。
+  // ページ遷移なしで結果（成功/エラー）をフォーム直下に表示する。
+  const form = document.getElementById("resource-download-form") as HTMLFormElement | null;
+  const messageEl = document.getElementById("rdf-message");
+  const submitBtn = document.getElementById("rdf-submit") as HTMLButtonElement | null;
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!messageEl || !submitBtn) return;
+
+    const formData = new FormData(form);
+    const payload = {
+      name: formData.get("name"),
+      company: formData.get("company"),
+      email: formData.get("email"),
+      consent: formData.get("consent") === "on",
+      website: formData.get("website"), // ハニーポット。人間の入力では常に空のはず
+      resourceSlug: form.dataset.resourceSlug,
+      resourceTitle: form.dataset.resourceTitle,
+      downloadUrl: form.dataset.downloadUrl,
+    };
+
+    submitBtn.disabled = true;
+    messageEl.classList.remove("hidden", "text-red-600", "text-emerald-600");
+    messageEl.classList.add("text-neutral-500");
+    messageEl.textContent = "送信中です…";
+
+    try {
+      const res = await fetch("/api/resource-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({ ok: false, error: null }));
+
+      if (res.ok && data.ok) {
+        if (typeof (window as any).gtag === "function") {
+          (window as any).gtag("event", "generate_lead", {
+            lead_type: "resource_download",
+            resource_slug: form.dataset.resourceSlug,
+            resource_title: form.dataset.resourceTitle,
+          });
+        } else if ((window as any).dataLayer) {
+          (window as any).dataLayer.push({
+            event: "generate_lead",
+            lead_type: "resource_download",
+            resource_slug: form.dataset.resourceSlug,
+            resource_title: form.dataset.resourceTitle,
+          });
+        }
+        form.reset();
+        form.querySelectorAll("input, button").forEach((el) => {
+          (el as HTMLInputElement | HTMLButtonElement).disabled = true;
+        });
+        messageEl.classList.remove("text-neutral-500");
+        messageEl.classList.add("text-emerald-600");
+        messageEl.textContent = "ご入力いただいたメールアドレスに、資料のダウンロードリンクをお送りしました。";
+      } else {
+        submitBtn.disabled = false;
+        messageEl.classList.remove("text-neutral-500");
+        messageEl.classList.add("text-red-600");
+        messageEl.textContent = data.error || "送信に失敗しました。時間をおいて再度お試しください。";
+      }
+    } catch {
+      submitBtn.disabled = false;
+      messageEl.classList.remove("text-neutral-500");
+      messageEl.classList.add("text-red-600");
+      messageEl.textContent = "送信に失敗しました。時間をおいて再度お試しください。";
+    }
+  });
+</script>
