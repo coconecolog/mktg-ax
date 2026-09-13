@@ -360,15 +360,13 @@ const author = resource.author ? getAuthorByName(resource.author) : undefined;
 
       if (res.ok && data.ok) {
         if (typeof (window as any).gtag === "function") {
-          (window as any).gtag("event", "generate_lead", {
-            lead_type: "resource_download",
+          (window as any).gtag("event", "resource_download", {
             resource_slug: form.dataset.resourceSlug,
             resource_title: form.dataset.resourceTitle,
           });
         } else if ((window as any).dataLayer) {
           (window as any).dataLayer.push({
-            event: "generate_lead",
-            lead_type: "resource_download",
+            event: "resource_download",
             resource_slug: form.dataset.resourceSlug,
             resource_title: form.dataset.resourceTitle,
           });
