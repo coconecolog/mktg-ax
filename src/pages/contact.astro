@@ -210,6 +210,11 @@ const snsLinks = [
         const data = await res.json().catch(() => ({ ok: false, error: null }));
 
         if (res.ok && data.ok) {
+          if (typeof (window as any).gtag === "function") {
+            (window as any).gtag("event", "generate_lead", { lead_type: "contact" });
+          } else if ((window as any).dataLayer) {
+            (window as any).dataLayer.push({ event: "generate_lead", lead_type: "contact" });
+          }
           form.reset();
           form.querySelectorAll("input, select, textarea, button").forEach((el) => {
             (el as HTMLInputElement | HTMLButtonElement).disabled = true;
