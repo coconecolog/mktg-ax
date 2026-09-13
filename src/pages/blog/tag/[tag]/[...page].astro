@@ -26,10 +26,12 @@ import { toRouteSlug } from "@/lib/routeSlug";
 // タグページのどこにも表示されなくなっていることが「デグレ」として報告された。ユーザー確認の結果、
 // 説明文・代表記事カードは引き続き非表示のままでよいが、本文ブロックのみページネーション直下・
 // フッター手前（旧MoreExplore・カテゴリページと同じ位置）に復活させる方針に確定。
-// タグページの構成: パンくず→タグ名→すべて/ブログ記事/無料資料タブ→記事・資料混合カード→
-// ページネーション→マスタータグDB本文ブロック。説明文・代表記事カードは表示しない（マスタータグDBに
-// 登録しても、タグページの見た目には反映されない。マスタータグDBの「説明文」はSEO用のmeta descriptionと
-// してのみ使う。カテゴリページ側は説明文・代表記事カードも従来通り表示するので、混同しないこと）。
+// 2026-09-13追記: 続けて、マスタータグDBの「説明文」もタグ名見出しの直下（カテゴリページと同じ位置・
+// 同じスタイル）に表示してほしいとの依頼があり復活。代表記事カードのみ非表示のまま維持。
+// タグページの構成: パンくず→タグ名→説明文→すべて/ブログ記事/無料資料タブ→記事・資料混合カード→
+// ページネーション→マスタータグDB本文ブロック。代表記事カードは表示しない（マスタータグDBに登録しても、
+// タグページの見た目には反映されない）。カテゴリページ側は代表記事カードも従来通り表示するので、
+// 混同しないこと。
 // 以前あった「すべて／B2B／KPI…」のようなタグ切り替え（TagFilter）は、種類別タブに置き換える形で廃止済み。
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -48,9 +50,9 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { tagName, page } = Astro.props as { tagName: string; page: Page<LibraryItem> };
 
 const allCategories = getAllCategories();
-// マスタータグDBの説明文はSEO用のmeta description（BaseLayoutのdescription props）にのみ使う。
-// 代表記事カードはタグページの見た目には表示しない（上部コメント参照）。本文ブロック（tagInfo.blocks）は
-// ページ下部に表示する（2026-09-12復活）。
+// マスタータグDBの説明文はタグ名見出しの直下に表示する（2026-09-13復活）。BaseLayoutのdescription props
+// （SEO用meta description）にも引き続き使う。代表記事カードはタグページの見た目には表示しない
+// （上部コメント参照）。本文ブロック（tagInfo.blocks）はページ下部に表示する（2026-09-12復活）。
 const tagInfo = getTagByName(tagName);
 const counts = getLibraryCountsByTag(tagName);
 const tagBasePath = `/blog/tag/${encodeURIComponent(toRouteSlug(tagName))}`;
@@ -79,6 +81,14 @@ const breadcrumbItems = [
       <div class="min-w-0">
         <p class="text-xs font-bold text-brand-600">タグ　全{counts.all}件</p>
         <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-950">{tagName}</h1>
+
+        {
+          tagInfo?.description && (
+            <p class="mt-4 text-sm leading-relaxed text-neutral-600 whitespace-pre-line">
+              {tagInfo.description}
+            </p>
+          )
+        }
 
         <div class="mt-10">
           <LibraryFilterTabs active="all" counts={counts} hrefs={tabHrefs} />
