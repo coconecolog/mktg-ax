@@ -6,6 +6,7 @@ import LibraryFilterTabs from "@/components/LibraryFilterTabs.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getAllTags, getPopularPosts, getTagByName } from "@/lib/posts";
 import {
@@ -21,10 +22,14 @@ import { toRouteSlug } from "@/lib/routeSlug";
 // （2026-09-10、ユーザー指示により方針転換。以前は「カテゴリページとデザイン・構成を揃える」方針で、
 // 説明文・代表記事カード・マスタータグDB本文まで表示していたが、タグページとカテゴリページの見た目が
 // 見分けられなくなってしまうとの指摘を受け、タグページ側からはそれらを削除した）。
-// タグページの構成: パンくず→タグ名→すべて/ブログ記事/無料資料タブ→記事・資料混合カード→ページネーション。
-// 説明文・代表記事・本文ブロックは表示しない（マスタータグDBにこれらを登録しても、タグページの見た目には
-// 反映されない。マスタータグDBの「説明文」はSEO用のmeta descriptionとしてのみ使う。カテゴリページ側は
-// 従来通り表示するので、混同しないこと）。
+// 2026-09-12追記: 上記の削除後、マスタータグDBに登録した本文（Notionページ本文のブロック）が
+// タグページのどこにも表示されなくなっていることが「デグレ」として報告された。ユーザー確認の結果、
+// 説明文・代表記事カードは引き続き非表示のままでよいが、本文ブロックのみページネーション直下・
+// フッター手前（旧MoreExplore・カテゴリページと同じ位置）に復活させる方針に確定。
+// タグページの構成: パンくず→タグ名→すべて/ブログ記事/無料資料タブ→記事・資料混合カード→
+// ページネーション→マスタータグDB本文ブロック。説明文・代表記事カードは表示しない（マスタータグDBに
+// 登録しても、タグページの見た目には反映されない。マスタータグDBの「説明文」はSEO用のmeta descriptionと
+// してのみ使う。カテゴリページ側は説明文・代表記事カードも従来通り表示するので、混同しないこと）。
 // 以前あった「すべて／B2B／KPI…」のようなタグ切り替え（TagFilter）は、種類別タブに置き換える形で廃止済み。
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -43,8 +48,9 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { tagName, page } = Astro.props as { tagName: string; page: Page<LibraryItem> };
 
 const allCategories = getAllCategories();
-// マスタータグDBの情報はSEO用のmeta description（BaseLayoutのdescription props）にのみ使う。
-// 代表記事カード・本文ブロックはタグページの見た目には表示しない（上部コメント参照）。
+// マスタータグDBの説明文はSEO用のmeta description（BaseLayoutのdescription props）にのみ使う。
+// 代表記事カードはタグページの見た目には表示しない（上部コメント参照）。本文ブロック（tagInfo.blocks）は
+// ページ下部に表示する（2026-09-12復活）。
 const tagInfo = getTagByName(tagName);
 const counts = getLibraryCountsByTag(tagName);
 const tagBasePath = `/blog/tag/${encodeURIComponent(toRouteSlug(tagName))}`;
@@ -91,6 +97,14 @@ const breadcrumbItems = [
         }
 
         <Pagination page={page} basePath={tagBasePath} />
+
+        {
+          tagInfo?.blocks && tagInfo.blocks.length > 0 && (
+            <div class="prose-notion mt-12 w-full">
+              <NotionBlocks blocks={tagInfo.blocks} />
+            </div>
+          )
+        }
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
