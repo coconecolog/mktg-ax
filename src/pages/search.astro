@@ -59,6 +59,17 @@ const breadcrumbItems = [
     return (title || "").replace(new RegExp(`\\s*\\|\\s*${SITE_NAME}$`), "");
   }
 
+  // GA4への計測: 直接gtag.jsを使っている場合はgtag()、GTM経由の場合はdataLayer.pushで
+  // イベント名"search"・パラメータ"search_term"（GA4推奨イベント）を送信する。
+  // どちらも読み込まれていない（PUBLIC_GA4_ID/PUBLIC_GTM_ID未設定）場合は何もしない。
+  function trackSearch(q, resultsCount) {
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "search", { search_term: q, results_count: resultsCount });
+    } else if (window.dataLayer) {
+      window.dataLayer.push({ event: "search", search_term: q, results_count: resultsCount });
+    }
+  }
+
   async function runSearch(q) {
     if (!resultsEl || !statusEl) return;
 
@@ -78,11 +89,13 @@ const breadcrumbItems = [
 
       if (search.results.length === 0) {
         statusEl.textContent = `「${q}」に一致する記事・資料は見つかりませんでした。`;
+        trackSearch(q, 0);
         return;
       }
 
       const items = await Promise.all(search.results.map((r) => r.data()));
       statusEl.textContent = `「${q}」の検索結果：${items.length}件`;
+      trackSearch(q, items.length);
       resultsEl.innerHTML = items
         .map(
           (item) => `
