@@ -19,6 +19,18 @@ export function buildBreadcrumbList(entries: BreadcrumbEntry[]) {
   };
 }
 
+// 日付文字列をタイムゾーン付きのISO8601形式に正規化する。
+// Notionの「日付」プロパティは時刻を指定しない場合 "2026-09-05" のような日付のみの文字列になり、
+// これをそのままJSON-LDのdatePublished/dateModifiedに渡すとGoogleのリッチリザルトテストで
+// 「日時値が無効」「タイムゾーンがない」という警告になるため、ここで補正する。
+function toIsoDateTime(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  // 既に時刻を含む場合はそのまま使う(例: 2026-09-12T12:02:00Z)
+  if (/T\d{2}:\d{2}/.test(value)) return value;
+  // 日付のみの場合は日本時間の 00:00:00 として扱う
+  return `${value}T00:00:00+09:00`;
+}
+
 export function buildArticleSchema(post: Post) {
   const url = new URL(`/blog/${post.slug}`, SITE_URL).toString();
   const imageUrl = post.thumbnail ? new URL(post.thumbnail, SITE_URL).toString() : undefined;
@@ -29,15 +41,17 @@ return {
   headline: post.title,
   description: post.description,
   ...(imageUrl ? { image: [imageUrl] } : {}),
-  datePublished: post.publishedAt,
-  dateModified: post.updatedAt,
+  datePublished: toIsoDateTime(post.publishedAt),
+  dateModified: toIsoDateTime(post.updatedAt),
   author: {
     "@type": "Organization",
     name: SITE_NAME,
+    url: SITE_URL,
   },
   publisher: {
     "@type": "Organization",
     name: SITE_NAME,
+    url: SITE_URL,
   },
   mainEntityOfPage: {
     "@type": "WebPage",
