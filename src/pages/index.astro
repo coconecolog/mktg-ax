@@ -4,7 +4,7 @@ import PostCard from "@/components/PostCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getAllPosts } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, DEFAULT_OG_IMAGE, TOOLS_NAV_ITEMS } from "@/consts";
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, DEFAULT_OG_IMAGE, HOME_TOOLS_ITEMS } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
 
 const latestPosts = getAllPosts().slice(0, 3);
@@ -40,7 +40,7 @@ const latestResources = getAllResources().slice(0, 3);
       </div>
       <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {
-          TOOLS_NAV_ITEMS.map((tool) => (
+          HOME_TOOLS_ITEMS.map((tool) => (
             <a href={tool.href} class="block rounded-2xl border border-neutral-100 bg-white p-6 transition-shadow hover:shadow-lg">
               <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-2xl">
                 {tool.icon}
