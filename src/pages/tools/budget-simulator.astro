@@ -20,14 +20,14 @@ const industries = benchmarkData.industries;
 ---
 
 <BaseLayout
-  title="マーケティング予算詳細シミュレーター｜MKTG.AX"
+  title="来期マーケティング予算詳細シミュレーター｜MKTG.AX"
   description="今期実績と来期施策（人件費・ツール費・広告費等）を入力し、根拠ある予算計画書を作成します。"
   ogImage="/open-graph/default.png"
 >
   <main class="budget-tool" data-industries={JSON.stringify(industries)}>
     <header class="tool-header">
-            <p class="eyebrow"><a href="/tools/">便利ツール</a></p>
-            <h1>マーケティング予算詳細シミュレーター</h1>
+      <p class="eyebrow">無料診断ツール ／ マーケティングマネージャー用</p>
+      <h1>来期マーケティング予算詳細シミュレーター</h1>
       <p class="lead">
         今期実績と来期施策（人件費・ツール費・広告費等）を入力し、逆算パイプライン・費用内訳・ROI試算まで含めた
         役員提出用の1ページ計画書を作成します。
@@ -54,21 +54,24 @@ const industries = benchmarkData.industries;
         </div>
       </div>
 
+      <p class="required-legend"><span class="req-mark">※</span>は必須入力項目です（それ以外は任意項目です）</p>
+
       <fieldset class="field-group">
         <legend>1. 全社目標・売上パイプライン前提（来期）</legend>
         <p class="field-note">※過去実績から算出した期待歩留まりを入力</p>
         <div class="form-grid">
-          <label>来期 全社売上目標（億円）<input type="number" id="in-targetSales" min="0" step="0.1" /></label>
-          <label>マーケ貢献売上割合（％）<input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
-          <label>平均客単価（万円／件）<input type="number" id="in-unitPrice" min="0" step="10" /></label>
-          <label>商談 → 成約率（％）<input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
-          <label>リード → 商談化率（％）<input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
+          <label>来期 全社売上目標（億円）<span class="req-mark">※</span><input type="number" id="in-targetSales" min="0" step="0.1" /></label>
+          <label>マーケ貢献売上割合（％）<span class="req-mark">※</span><input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
+          <label>平均客単価（万円／件）<span class="req-mark">※</span><input type="number" id="in-unitPrice" min="0" step="10" /></label>
+          <label>商談 → 成約率（％）<span class="req-mark">※</span><input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
+          <label>リード → 商談化率（％）<span class="req-mark">※</span><input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
           <label>目標平均CPL（万円／件）<input type="number" id="in-cpl" min="0" step="0.1" /></label>
         </div>
       </fieldset>
 
       <fieldset class="field-group">
         <legend>2. 施策チャネル・コスト詳細内訳（今期実績 vs 来期計画）</legend>
+        <p class="field-note">※すべて任意項目です。空欄の場合は0として扱われ、該当する実績比較・グラフの表示のみが参考値になります。</p>
         <div class="form-grid">
           <label>今期 売上着地実績（億円）<input type="number" id="in-currentSales" min="0" step="0.1" /></label>
           <label>今期 マーケ貢献売上着地（億円）<input type="number" id="in-currentMktSales" min="0" step="0.1" /></label>
@@ -87,7 +90,7 @@ const industries = benchmarkData.industries;
           <tbody id="cost-table-body"></tbody>
           <tfoot>
             <tr class="reserve-row">
-              <td colspan="2">予備費・バッファ（施策小計の5%）</td>
+              <td colspan="2">予備費・バッファ（施策小計の<input type="number" id="in-reserveRate" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</td>
               <td id="setup-reserve-current" class="col-num"></td>
               <td id="setup-reserve-next" class="col-num"></td>
             </tr>
@@ -134,6 +137,21 @@ const industries = benchmarkData.industries;
             <button id="print-btn" type="button">1ページ印刷／PDF出力</button>
           </div>
         </div>
+        <details class="control-help">
+          <summary>用語・計算式の説明</summary>
+          <dl>
+            <dt>マーケ貢献売上割合（％）</dt>
+            <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
+            <dt>平均客単価（万円／件）</dt>
+            <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
+            <dt>商談 → 成約率（％）</dt>
+            <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
+            <dt>リード → 商談化率（％）</dt>
+            <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
+            <dt>目標平均CPL（万円／件）</dt>
+            <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
+          </dl>
+        </details>
         <p class="control-sublabel">① 全社目標 &amp; コンバージョン歩留まり</p>
         <div class="slider-list" id="target-sliders"></div>
         <p class="control-sublabel control-sublabel--second">② 施策・費目別予算微調整（来期）</p>
@@ -146,7 +164,7 @@ const industries = benchmarkData.industries;
           <span class="tag-plain">マーケティング部マネージャー作成</span>
           <span class="report-date" id="report-date"></span>
         </div>
-        <h2 class="report-title">マーケティング予算策定・投資計画書（案）</h2>
+        <h2 class="report-title">来期 マーケティング予算策定・投資計画書（案）</h2>
         <p class="report-subnote">※今期実績比較・歩留まり逆算モデル適用</p>
 
         <div class="kpi-cards">
@@ -318,7 +336,7 @@ const industries = benchmarkData.industries;
   const PRESETS = {
     standard: {
       targetSales: 10.0, mktRatio: 40, unitPrice: 500, winRate: 20, oppRate: 10, cpl: 1.5,
-      currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250,
+      currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250, reserveRate: 5,
       costs: {
         ad: { current: 2000, next: 2400 }, event: { current: 0, next: 0 },
         seo: { current: 800, next: 1000 }, tools: { current: 600, next: 900 },
@@ -327,7 +345,7 @@ const industries = benchmarkData.industries;
     },
     event: {
       targetSales: 12.0, mktRatio: 35, unitPrice: 900, winRate: 25, oppRate: 12, cpl: 3.0,
-      currentSales: 9.5, currentMktSales: 3.0, currentLeads: 1200,
+      currentSales: 9.5, currentMktSales: 3.0, currentLeads: 1200, reserveRate: 5,
       costs: {
         ad: { current: 900, next: 1100 }, event: { current: 1200, next: 1800 },
         seo: { current: 400, next: 500 }, tools: { current: 400, next: 500 },
@@ -336,7 +354,7 @@ const industries = benchmarkData.industries;
     },
     lean: {
       targetSales: 8.0, mktRatio: 40, unitPrice: 350, winRate: 18, oppRate: 8, cpl: 1.2,
-      currentSales: 6.5, currentMktSales: 2.4, currentLeads: 2600,
+      currentSales: 6.5, currentMktSales: 2.4, currentLeads: 2600, reserveRate: 5,
       costs: {
         ad: { current: 1400, next: 1700 }, event: { current: 0, next: 0 },
         seo: { current: 300, next: 350 }, tools: { current: 300, next: 400 },
@@ -345,6 +363,12 @@ const industries = benchmarkData.industries;
     },
   };
 
+  // 2-4：初期値のまま未編集の入力欄を薄いグレー（プレースホルダー的な見た目）にするための対象ID
+  const DEFAULT_VALUE_INPUT_IDS = [
+    'in-targetSales', 'in-mktRatio', 'in-unitPrice', 'in-winRate', 'in-oppRate', 'in-cpl',
+    'in-currentSales', 'in-currentMktSales', 'in-currentLeads', 'in-reserveRate',
+  ];
+
   const TARGET_SLIDERS = [
     { key: 'targetSales', label: '全社売上目標', unit: '億円', min: 1, max: 50, step: 0.5, decimals: 1 },
     { key: 'mktRatio', label: 'マーケ貢献割合', unit: '%', min: 0, max: 100, step: 1, decimals: 0 },
@@ -352,7 +376,7 @@ const industries = benchmarkData.industries;
     { key: 'winRate', label: '商談→成約率', unit: '%', min: 1, max: 100, step: 1, decimals: 0 },
     { key: 'oppRate', label: 'リード→商談率', unit: '%', min: 1, max: 100, step: 1, decimals: 0 },
     { key: 'cpl', label: '目標CPL', unit: '万円', min: 0.1, max: 30, step: 0.1, decimals: 1 },
-    { key: 'budget', label: '来期総マーケ予算（予備費5%込）', unit: '万円', min: 100, max: 50000, step: 50, decimals: 0 },
+    { key: 'budget', label: '来期総マーケ予算（予備費込）', unit: '万円', min: 100, max: 50000, step: 50, decimals: 0 },
   ];
 
   let state = JSON.parse(JSON.stringify(PRESETS.standard));
@@ -391,12 +415,14 @@ const industries = benchmarkData.industries;
   }
 
   function computeCostTotals(s) {
-    // 仕様書 4.2：Buffer = Math.round(Subtotal * 0.05) を先に丸めてから TotalBudget に加算する
+    // 仕様書 4.2：Buffer = Math.round(Subtotal * rate) を先に丸めてから TotalBudget に加算する
+    // rate（予備費率）は既定5%だが、STEP1の入力欄で変更可能（2-5対応）。0%も許容する。
+    const rate = (isFinite(s.reserveRate) && s.reserveRate >= 0 ? s.reserveRate : 5) / 100;
     const subtotal = sumCosts(s.costs, 'next');
-    const reserve = Math.round(subtotal * 0.05);
+    const reserve = Math.round(subtotal * rate);
     const budget = subtotal + reserve;
     const subtotalCurrent = sumCosts(s.costs, 'current');
-    const reserveCurrent = Math.round(subtotalCurrent * 0.05);
+    const reserveCurrent = Math.round(subtotalCurrent * rate);
     const budgetCurrent = subtotalCurrent + reserveCurrent;
     return { subtotal, reserve, budget, subtotalCurrent, reserveCurrent, budgetCurrent };
   }
@@ -420,21 +446,23 @@ const industries = benchmarkData.industries;
   }
 
   // ---------- STEP1：コストテーブル描画 ----------
-  function renderCostTable() {
+  function renderCostTable(markDefaults) {
     const body = document.getElementById('cost-table-body');
     if (!body) return;
+    const defaultClass = markDefaults ? ' is-default-value' : '';
     body.innerHTML = COST_KEYS.map((c) => `
       <tr>
         <td class="col-name">${COST_KEYS.indexOf(c) + 1}. ${c.name}</td>
         <td class="col-desc">${c.desc}</td>
-        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" value="${state.costs[c.key].current}" /></td>
-        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" value="${state.costs[c.key].next}" /></td>
+        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" value="${state.costs[c.key].current}" class="${defaultClass}" /></td>
+        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" value="${state.costs[c.key].next}" class="${defaultClass}" /></td>
       </tr>
     `).join('');
 
     body.querySelectorAll('input[data-cost-key]').forEach((input) => {
       input.addEventListener('input', (e) => {
         const target = e.target;
+        target.classList.remove('is-default-value');
         const key = target.dataset.costKey;
         const field = target.dataset.costField;
         state.costs[key][field] = parseFloat(target.value) || 0;
@@ -453,7 +481,7 @@ const industries = benchmarkData.industries;
     document.getElementById('setup-total-next').textContent = fmtManNoUnit(totals.budget);
   }
 
-  function fillSetupForm() {
+  function fillSetupForm(markDefaults = true) {
     document.getElementById('in-targetSales').value = String(state.targetSales);
     document.getElementById('in-mktRatio').value = String(state.mktRatio);
     document.getElementById('in-unitPrice').value = String(state.unitPrice);
@@ -463,8 +491,22 @@ const industries = benchmarkData.industries;
     document.getElementById('in-currentSales').value = String(state.currentSales);
     document.getElementById('in-currentMktSales').value = String(state.currentMktSales);
     document.getElementById('in-currentLeads').value = String(state.currentLeads);
-    renderCostTable();
+    document.getElementById('in-reserveRate').value = String(isFinite(state.reserveRate) ? state.reserveRate : 5);
+
+    // 2-4：初期値のまま（未編集）の項目は薄いグレーで表示し、プレースホルダーだと分かるようにする
+    DEFAULT_VALUE_INPUT_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('is-default-value', markDefaults);
+    });
+
+    renderCostTable(markDefaults);
   }
+
+  // 未編集（初期値）のグレー表示を、ユーザーが実際に入力した時点で解除する
+  DEFAULT_VALUE_INPUT_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    el?.addEventListener('input', () => el.classList.remove('is-default-value'));
+  });
 
   function readSetupForm() {
     state.targetSales = parseFloat(document.getElementById('in-targetSales').value) || 0;
@@ -476,6 +518,8 @@ const industries = benchmarkData.industries;
     state.currentSales = parseFloat(document.getElementById('in-currentSales').value) || 0;
     state.currentMktSales = parseFloat(document.getElementById('in-currentMktSales').value) || 0;
     state.currentLeads = parseFloat(document.getElementById('in-currentLeads').value) || 0;
+    const reserveRateInput = parseFloat(document.getElementById('in-reserveRate').value);
+    state.reserveRate = isFinite(reserveRateInput) && reserveRateInput >= 0 ? reserveRateInput : 5;
     selectedIndustryName = document.getElementById('in-industry').value;
     // costs はテーブルの入力欄がすでに state.costs を直接更新している
   }
@@ -760,7 +804,7 @@ const industries = benchmarkData.industries;
     document.getElementById('footer-policy').textContent =
       `${COST_KEYS[0].name}と${COST_KEYS[3].name}の強化により、${fmtCount(pipeline.requiredLeads)}のリード獲得と商談化率の維持・改善を図る。予算配分は今期実績をベースに、施策ごとの費用対効果を見ながら四半期ごとに見直す想定。`;
     document.getElementById('footer-risk').textContent =
-      `申請予算の5%（${fmtMan(totals.reserve)}）を予備費として確保。市況変化や新チャネルの検証、CPA高騰時の緊急補填策へ機動的に充当する。`;
+      `申請予算の${isFinite(state.reserveRate) ? state.reserveRate : 5}%（${fmtMan(totals.reserve)}）を予備費として確保。市況変化や新チャネルの検証、CPA高騰時の緊急補填策へ機動的に充当する。`;
     document.getElementById('footer-request').textContent =
       `本申請枠（${fmtMan(totals.budget)}）のご承認を依頼する。期中は月次でROI・CACをモニタリングし、四半期終了時点で予実差が大きい場合はチャネル間の再配分を行う。`;
 
@@ -809,7 +853,7 @@ const industries = benchmarkData.industries;
   document.getElementById('reconfig-btn')?.addEventListener('click', () => {
     document.getElementById('step-dashboard').setAttribute('hidden', 'true');
     document.getElementById('step-setup').removeAttribute('hidden');
-    fillSetupForm();
+    fillSetupForm(false);
     document.getElementById('step-setup').scrollIntoView({ behavior: 'smooth' });
   });
 
@@ -833,13 +877,6 @@ const industries = benchmarkData.industries;
     font-size: 0.85rem;
     letter-spacing: 0.05em;
   }
-.tool-header .eyebrow a {
-  color: inherit;
-  text-decoration: none;
-}
-.tool-header .eyebrow a:hover {
-  text-decoration: underline;
-}
   .tool-header h1 {
     margin: 0.25rem 0 0.6rem;
     font-size: 1.7rem;
@@ -913,6 +950,8 @@ const industries = benchmarkData.industries;
     padding: 0 0.4rem;
   }
   .field-note { font-size: 0.78rem; color: #888; margin: 0.2rem 0 1rem; }
+  .required-legend { font-size: 0.78rem; color: #b91c1c; margin: 0 0 0.9rem; font-weight: 600; }
+  .req-mark { color: #dc2626; font-weight: 700; margin-left: 0.15rem; }
   .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -946,17 +985,41 @@ const industries = benchmarkData.industries;
     text-align: left;
   }
   .cost-table thead th { color: #666; font-weight: 600; font-size: 0.78rem; }
-  .cost-table .col-num { text-align: right; white-space: nowrap; }
+  .cost-table th.col-num, .cost-table td.col-num { text-align: right; white-space: nowrap; }
   .cost-table .col-desc { color: #888; font-size: 0.78rem; }
+  .cost-table .col-num { width: 130px; }
   .cost-table input {
-    width: 90px;
-    padding: 0.35rem 0.5rem;
+    width: 100%;
+    max-width: 130px;
+    box-sizing: border-box;
+    padding: 0.6rem 0.7rem;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 1rem;
+    color: #1a1a1a;
     text-align: right;
+  }
+  .cost-table input:focus {
+    outline: none;
+    border-color: var(--color-accent, #2563eb);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  }
+  .cost-table input.is-default-value,
+  .form-grid input.is-default-value {
+    color: #adb2bd;
   }
   .cost-table .reserve-row td { color: #888; font-size: 0.82rem; }
   .cost-table .total-row td { font-weight: 700; color: var(--color-accent, #2563eb); border-top: 2px solid #ddd; border-bottom: none; }
+  .reserve-rate-input {
+    width: 3.2rem !important;
+    max-width: 3.2rem !important;
+    display: inline-block;
+    padding: 0.2rem 0.35rem !important;
+    margin: 0 0.15rem;
+    text-align: center !important;
+    vertical-align: middle;
+  }
 
   #run-btn {
     display: block;
@@ -1014,6 +1077,19 @@ const industries = benchmarkData.industries;
     cursor: pointer;
   }
   #print-btn { background: var(--color-accent, #2563eb); border-color: var(--color-accent, #2563eb); font-weight: 700; }
+  .control-help {
+    margin: 0 0 0.9rem;
+    font-size: 0.72rem;
+    color: #c3c9e0;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+  }
+  .control-help summary { cursor: pointer; font-weight: 700; color: #9aa4c4; font-size: 0.74rem; }
+  .control-help dl { margin: 0.5rem 0 0; }
+  .control-help dt { font-weight: 700; color: #e5e9f5; margin-top: 0.55rem; }
+  .control-help dt:first-child { margin-top: 0; }
+  .control-help dd { margin: 0.15rem 0 0; line-height: 1.55; color: #b7bdd6; }
   .control-sublabel { font-size: 0.74rem; color: #9aa4c4; margin: 0 0 0.4rem; }
   .control-sublabel--second { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.08); }
   .slider-list { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.2rem; }
