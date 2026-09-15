@@ -125,8 +125,8 @@ const industries = benchmarkData.industries;
       <p id="setup-error" class="setup-error" hidden></p>
       <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
 
-      <details class="setup-help">
-        <summary>用語・計算式の説明</summary>
+      <div class="setup-help">
+        <p class="setup-help-title">用語・計算式の説明</p>
         <dl>
           <dt>マーケ貢献売上割合（％）</dt>
           <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
@@ -139,7 +139,7 @@ const industries = benchmarkData.industries;
           <dt>目標平均CPL（万円／件）</dt>
           <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
         </dl>
-      </details>
+      </div>
     </section>
 
     <!-- ============ STEP 2：リアルタイムシミュレーション 兼 役員提出用ダッシュボード ============ -->
@@ -1086,7 +1086,8 @@ const industries = benchmarkData.industries;
   }
   .form-grid input::placeholder,
   :global(.cost-table input::placeholder) {
-    color: #b9bec8;
+    color: #c6cad2;
+    opacity: 1;
   }
   .cost-table .reserve-row td { color: #888; font-size: 0.82rem; }
   .cost-table .total-row td { font-weight: 700; color: var(--color-accent, #2563eb); border-top: 2px solid #ddd; border-bottom: none; }
@@ -1115,16 +1116,17 @@ const industries = benchmarkData.industries;
   #run-btn:hover { opacity: 0.9; }
 
   .setup-help {
-    max-width: 640px;
-    margin: 1.2rem auto 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 1.2rem 0 0;
     font-size: 0.8rem;
     color: #555;
     background: #f4f6fb;
     border: 1px solid #e2e2e2;
     border-radius: 10px;
-    padding: 0.7rem 1rem;
+    padding: 0.9rem 1.1rem;
   }
-  .setup-help summary { cursor: pointer; font-weight: 700; color: var(--color-accent, #2563eb); font-size: 0.85rem; }
+  .setup-help-title { margin: 0; font-weight: 700; color: var(--color-accent, #2563eb); font-size: 0.85rem; }
   .setup-help dl { margin: 0.6rem 0 0; }
   .setup-help dt { font-weight: 700; color: #222; margin-top: 0.6rem; }
   .setup-help dt:first-child { margin-top: 0; }
