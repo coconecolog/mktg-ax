@@ -1,0 +1,1189 @@
+---
+// src/pages/tools/budget-simulator.astro
+//
+// 来期マーケティング予算詳細シミュレーター & 計画書ツール
+//
+// 仕様書（Google Docs）に基づいて実装。デザインは仕様書のスクリーンショット（ダークネイビー×インディゴ）ではなく、
+// サイト全体のトンマナ（ライトブルー系 #2563eb）に合わせて配色のみ調整している。
+// Tailwind CDNは導入せず、他ツール（kpi-benchmark.astro）と同じくプレーンCSSで実装（BaseLayoutの
+// グローバルスタイルとの衝突を避けるため）。
+//
+// 業界ベンチマーク（中小企業実態基本調査の実データ）は、仕様書には無いがこのツールにも
+// 「参考」セクションとして追加している（既存の src/data/benchmark-data.json を再利用）。
+//
+// 既存の /tools/kpi-benchmark（来期予算プランナー）はそのまま残し、本ツールは別ページとして追加。
+//
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import benchmarkData from "@/data/benchmark-data.json";
+
+const industries = benchmarkData.industries;
+---
+
+<BaseLayout
+  title="来期マーケティング予算詳細シミュレーター｜MKTG.AX"
+  description="今期実績と来期施策（人件費・ツール費・広告費等）を入力し、根拠ある予算計画書を作成します。"
+  ogImage="/open-graph/default.png"
+>
+  <main class="budget-tool" data-industries={JSON.stringify(industries)}>
+    <header class="tool-header">
+      <p class="eyebrow">無料診断ツール ／ マーケティングマネージャー用</p>
+      <h1>来期マーケティング予算詳細シミュレーター</h1>
+      <p class="lead">
+        今期実績と来期施策（人件費・ツール費・広告費等）を入力し、逆算パイプライン・費用内訳・ROI試算まで含めた
+        役員提出用の1ページ計画書を作成します。
+      </p>
+    </header>
+
+    <!-- ============ STEP 1：初期条件・コスト内訳入力 ============ -->
+    <section id="step-setup" class="step-setup">
+      <div class="preset-block">
+        <p class="section-label">クイックモデル選択</p>
+        <div class="preset-grid">
+          <button type="button" class="preset-card is-active" data-preset="standard">
+            <span class="preset-name">標準モデル（BtoB SaaS／ツール活用）<span class="preset-badge">推奨</span></span>
+            <span class="preset-desc">展示会なし／Web広告・SEO・MAツール中心／人件費・外注費計上</span>
+          </button>
+          <button type="button" class="preset-card" data-preset="event">
+            <span class="preset-name">展示会・イベント強化モデル</span>
+            <span class="preset-desc">大型展示会出展＋Web施策／高単価商材向け</span>
+          </button>
+          <button type="button" class="preset-card" data-preset="lean">
+            <span class="preset-name">少数精鋭・アウトソーシングモデル</span>
+            <span class="preset-desc">人件費抑制／代理店・外注・Web広告特化</span>
+          </button>
+        </div>
+      </div>
+
+      <fieldset class="field-group">
+        <legend>1. 全社目標・売上パイプライン前提（来期）</legend>
+        <p class="field-note">※過去実績から算出した期待歩留まりを入力</p>
+        <div class="form-grid">
+          <label>来期 全社売上目標（億円）<input type="number" id="in-targetSales" min="0" step="0.1" /></label>
+          <label>マーケ貢献売上割合（％）<input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
+          <label>平均客単価（万円／件）<input type="number" id="in-unitPrice" min="0" step="10" /></label>
+          <label>商談 → 成約率（％）<input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
+          <label>リード → 商談化率（％）<input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
+          <label>目標平均CPL（万円／件）<input type="number" id="in-cpl" min="0" step="0.1" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field-group">
+        <legend>2. 施策チャネル・コスト詳細内訳（今期実績 vs 来期計画）</legend>
+        <div class="form-grid">
+          <label>今期 売上着地実績（億円）<input type="number" id="in-currentSales" min="0" step="0.1" /></label>
+          <label>今期 マーケ貢献売上着地（億円）<input type="number" id="in-currentMktSales" min="0" step="0.1" /></label>
+          <label>今期 獲得リード数（件）<input type="number" id="in-currentLeads" min="0" step="10" /></label>
+        </div>
+
+        <table class="cost-table">
+          <thead>
+            <tr>
+              <th class="col-name">費用項目・施策名</th>
+              <th class="col-desc">具体的な内容例</th>
+              <th class="col-num">今期実績（万円）</th>
+              <th class="col-num">来期計画（万円）</th>
+            </tr>
+          </thead>
+          <tbody id="cost-table-body"></tbody>
+          <tfoot>
+            <tr class="reserve-row">
+              <td colspan="2">予備費・バッファ（施策小計の5%）</td>
+              <td id="setup-reserve-current" class="col-num"></td>
+              <td id="setup-reserve-next" class="col-num"></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="2">合計マーケティング予算（総投資額）</td>
+              <td id="setup-total-current" class="col-num"></td>
+              <td id="setup-total-next" class="col-num"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </fieldset>
+
+      <fieldset class="field-group">
+        <legend>3. 参考：業界データとの比較（任意）</legend>
+        <p class="field-note">
+          計画書の下部に「業界の広告宣伝費水準と比べてどうか」を参考情報として表示します（中小企業実態基本調査）。
+        </p>
+        <div class="form-grid">
+          <label>
+            業種
+            <select id="in-industry">
+              {industries.map((item) => (
+                <option value={item.industry} data-ratio={item.adToSalesRatioPercent}>
+                  {item.industry}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
+    </section>
+
+    <!-- ============ STEP 2：リアルタイムシミュレーション 兼 役員提出用ダッシュボード ============ -->
+    <section id="step-dashboard" class="step-dashboard" hidden>
+      <div class="dashboard-layout">
+      <div class="control-panel no-print">
+        <div class="control-header">
+          <span class="control-title">条件＆施策別予算 リアルタイムシミュレーション</span>
+          <div class="control-actions">
+            <button id="reset-btn" type="button">初期入力値に戻す</button>
+            <button id="reconfig-btn" type="button">条件再設定</button>
+            <button id="print-btn" type="button">1ページ印刷／PDF出力</button>
+          </div>
+        </div>
+        <p class="control-sublabel">① 全社目標 &amp; コンバージョン歩留まり</p>
+        <div class="slider-list" id="target-sliders"></div>
+        <p class="control-sublabel control-sublabel--second">② 施策・費目別予算微調整（来期）</p>
+        <div class="slider-grid" id="cost-sliders"></div>
+      </div>
+      <div class="print-container" id="print-container">
+        <div class="report-tags">
+          <span class="tag">役員会提出資料</span>
+          <span class="tag-sep">・</span>
+          <span class="tag-plain">マーケティング部マネージャー作成</span>
+          <span class="report-date" id="report-date"></span>
+        </div>
+        <h2 class="report-title">来期 マーケティング予算策定・投資計画書（案）</h2>
+        <p class="report-subnote">※今期実績比較・歩留まり逆算モデル適用</p>
+
+        <div class="kpi-cards">
+          <div class="kpi-card">
+            <p class="kpi-label">全社売上目標（来期）</p>
+            <p class="kpi-value"><span id="kpi-targetSales"></span><span class="kpi-unit">億円</span></p>
+            <p class="kpi-sub" id="kpi-growthRate"></p>
+          </div>
+          <div class="kpi-card">
+            <p class="kpi-label">マーケ貢献売上目標</p>
+            <p class="kpi-value"><span id="kpi-mktTarget"></span><span class="kpi-unit">億円</span></p>
+            <p class="kpi-sub" id="kpi-mktRatioLabel"></p>
+          </div>
+          <div class="kpi-card">
+            <p class="kpi-label">申請マーケティング総予算</p>
+            <p class="kpi-value"><span id="kpi-budget"></span><span class="kpi-unit">万円</span></p>
+            <p class="kpi-sub" id="kpi-budgetRatio"></p>
+          </div>
+          <div class="kpi-card kpi-card--accent">
+            <p class="kpi-label">想定投資対効果（ROI／CAC）</p>
+            <p class="kpi-value"><span id="kpi-roi"></span><span class="kpi-unit">%</span></p>
+            <p class="kpi-sub" id="kpi-cac"></p>
+          </div>
+        </div>
+
+        <div class="report-columns">
+          <div class="report-col">
+            <div class="card">
+              <h3><span class="card-icon">▼</span>目標達成のための逆算パイプライン</h3>
+              <div class="pipeline-top">
+                <span class="pipeline-label">マーケ貢献目標売上</span>
+                <span class="pipeline-value" id="pl-mktTarget"></span>
+              </div>
+              <div class="pipeline-rows">
+                <div class="pipeline-row">
+                  <span class="pipeline-row-label" id="pl-deals-label">目標成約件数</span>
+                  <span class="pipeline-row-value" id="pl-deals"></span>
+                </div>
+                <div class="pipeline-sub">└受注率（商談→成約）<span id="pl-winRate"></span></div>
+                <div class="pipeline-row">
+                  <span class="pipeline-row-label">必要商談数</span>
+                  <span class="pipeline-row-value" id="pl-opps"></span>
+                </div>
+                <div class="pipeline-sub">└商談化率（リード→商談）<span id="pl-oppRate"></span></div>
+                <div class="pipeline-row pipeline-row--highlight">
+                  <span class="pipeline-row-label">必要リード数（獲得目標）</span>
+                  <span class="pipeline-row-value" id="pl-leads"></span>
+                </div>
+              </div>
+              <p class="pipeline-check" id="pl-cpl-check"></p>
+            </div>
+
+            <div class="card">
+              <div class="card-title-row">
+                <h3>今期実績（着地）vs 来期計画</h3>
+                <span class="chip">実績比較</span>
+              </div>
+              <table class="compare-table">
+                <thead>
+                  <tr><th>指標</th><th>今期実績</th><th>来期予測</th><th>差分</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>総マーケ予算</td>
+                    <td id="cmp-budget-current"></td>
+                    <td class="cmp-next" id="cmp-budget-next"></td>
+                    <td id="cmp-budget-diff"></td>
+                  </tr>
+                  <tr>
+                    <td>獲得リード数</td>
+                    <td id="cmp-leads-current"></td>
+                    <td class="cmp-next" id="cmp-leads-next"></td>
+                    <td id="cmp-leads-diff"></td>
+                  </tr>
+                  <tr>
+                    <td>平均CPL</td>
+                    <td id="cmp-cpl-current"></td>
+                    <td class="cmp-next" id="cmp-cpl-next"></td>
+                    <td id="cmp-cpl-diff"></td>
+                  </tr>
+                  <tr>
+                    <td>マーケ貢献売上</td>
+                    <td id="cmp-mktsales-current"></td>
+                    <td class="cmp-next" id="cmp-mktsales-next"></td>
+                    <td id="cmp-mktsales-diff"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="report-col">
+            <div class="card">
+              <h3>【費用項目別】今期実績 vs 来期予測 比較<span class="card-unit">単位：万円</span></h3>
+              <div class="chart-box"><canvas id="costCompareChart"></canvas></div>
+            </div>
+            <div class="card">
+              <h3>来期 四半期別 予算投入計画と創出売上推移<span class="card-unit">単位：万円</span></h3>
+              <div class="chart-box"><canvas id="quarterlyChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>申請予算の内訳明細（来期）</h3>
+          <div class="cost-grid" id="cost-breakdown-grid"></div>
+        </div>
+
+        <details class="card reference-card">
+          <summary>参考：業界の広告宣伝費水準と比較する</summary>
+          <p class="field-note">
+            この計画書の主軸はあくまで自社の実績・目標です。以下は「来期のWeb広告費が、業界の広告宣伝費水準から見て
+            極端でないか」を確認するための参考情報です（出典：{benchmarkData.sourceTitle}）。
+          </p>
+          <div class="result-row">
+            <span>来期Web広告費 ／ 来期全社売上目標</span>
+            <span id="ref-own-ratio"></span>
+          </div>
+          <div class="result-row">
+            <span>業界平均の比率</span>
+            <span id="ref-industry-ratio"></span>
+          </div>
+          <div class="result-row result-row--highlight">
+            <span>位置づけ</span>
+            <span id="ref-position"></span>
+          </div>
+          <div id="ranking-chart" class="ranking-chart"></div>
+          <div class="legend-line">
+            <span class="legend-dot rank-avg"></span>業界平均比率
+            <span class="legend-dot rank-own" style="margin-left:0.6rem;"></span>選択した業種
+            <span style="margin-left:0.6rem;">┊</span>来期Web広告費の実績値
+          </div>
+        </details>
+
+        <div class="report-footer">
+          <div class="footer-col">
+            <h4>◎ 重点施策方針</h4>
+            <p id="footer-policy"></p>
+          </div>
+          <div class="footer-col">
+            <h4>◇ リスク管理＆機動的バッファ</h4>
+            <p id="footer-risk"></p>
+          </div>
+          <div class="footer-col">
+            <h4>✓ 経営層へのご決裁依頼</h4>
+            <p id="footer-request"></p>
+          </div>
+        </div>
+      </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // このスクリプトはブラウザ側でのみ動きます（サーバー処理は一切なし）。
+
+  const COST_KEYS = [
+    { key: 'ad', name: 'Web広告費', desc: 'リスティング、SNS広告、記事広告等' },
+    { key: 'event', name: '展示会・イベント費', desc: '展示会ブース出展料、施工費、ノベルティ（実施しない場合は0円）' },
+    { key: 'seo', name: 'SEO・コンテンツ制作', desc: 'オウンドメディア記事、事例取材、動画制作' },
+    { key: 'tools', name: 'ツール・SaaS利用料', desc: 'MA（HubSpot等）、SEO分析、SFA、フォームツール' },
+    { key: 'labor', name: '人件費（マーケ部）', desc: '社内マーケ担当給与、採用費、教育費' },
+    { key: 'outsourcing', name: '外注費・コンサル費', desc: '広告代理店手数料、マーケティング顧問・業務委託' },
+  ];
+
+  const PRESETS = {
+    standard: {
+      targetSales: 10.0, mktRatio: 40, unitPrice: 500, winRate: 20, oppRate: 10, cpl: 1.5,
+      currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250,
+      costs: {
+        ad: { current: 2000, next: 2400 }, event: { current: 0, next: 0 },
+        seo: { current: 800, next: 1000 }, tools: { current: 600, next: 900 },
+        labor: { current: 1200, next: 1200 }, outsourcing: { current: 400, next: 500 },
+      },
+    },
+    event: {
+      targetSales: 12.0, mktRatio: 35, unitPrice: 900, winRate: 25, oppRate: 12, cpl: 3.0,
+      currentSales: 9.5, currentMktSales: 3.0, currentLeads: 1200,
+      costs: {
+        ad: { current: 900, next: 1100 }, event: { current: 1200, next: 1800 },
+        seo: { current: 400, next: 500 }, tools: { current: 400, next: 500 },
+        labor: { current: 1000, next: 1000 }, outsourcing: { current: 500, next: 600 },
+      },
+    },
+    lean: {
+      targetSales: 8.0, mktRatio: 40, unitPrice: 350, winRate: 18, oppRate: 8, cpl: 1.2,
+      currentSales: 6.5, currentMktSales: 2.4, currentLeads: 2600,
+      costs: {
+        ad: { current: 1400, next: 1700 }, event: { current: 0, next: 0 },
+        seo: { current: 300, next: 350 }, tools: { current: 300, next: 400 },
+        labor: { current: 400, next: 400 }, outsourcing: { current: 900, next: 1200 },
+      },
+    },
+  };
+
+  const TARGET_SLIDERS = [
+    { key: 'targetSales', label: '全社売上目標', unit: '億円', min: 1, max: 50, step: 0.5, decimals: 1 },
+    { key: 'mktRatio', label: 'マーケ貢献割合', unit: '%', min: 0, max: 100, step: 1, decimals: 0 },
+    { key: 'unitPrice', label: '平均客単価', unit: '万円', min: 10, max: 3000, step: 10, decimals: 0 },
+    { key: 'winRate', label: '商談→成約率', unit: '%', min: 1, max: 100, step: 1, decimals: 0 },
+    { key: 'oppRate', label: 'リード→商談率', unit: '%', min: 1, max: 100, step: 1, decimals: 0 },
+    { key: 'cpl', label: '目標CPL', unit: '万円', min: 0.1, max: 30, step: 0.1, decimals: 1 },
+    { key: 'budget', label: '来期総マーケ予算（予備費5%込）', unit: '万円', min: 100, max: 50000, step: 50, decimals: 0 },
+  ];
+
+  let state = JSON.parse(JSON.stringify(PRESETS.standard));
+  let initialConfig = JSON.parse(JSON.stringify(state));
+
+  const toolRoot = document.querySelector('.budget-tool');
+  const allIndustries = JSON.parse(toolRoot?.dataset.industries || '[]');
+  let selectedIndustryName = allIndustries[0]?.industry || '';
+
+  let costChart = null;
+  let quarterlyChart = null;
+
+  // ---------- フォーマッタ ----------
+  function fmtMan(n) { return `${Math.round(n).toLocaleString('ja-JP')}万円`; }
+  function fmtManNoUnit(n) { return Math.round(n).toLocaleString('ja-JP'); }
+  function fmtOku(n) { return `${n.toFixed(1)}億円`; }
+  function fmtPercent(n, digits = 1) { return `${n.toFixed(digits)}%`; }
+  function fmtCount(n) { return `${Math.round(n).toLocaleString('ja-JP')}件`; }
+  function clampPositive(n, fallback = 0.0001) { return isFinite(n) && n > 0 ? n : fallback; }
+
+  // ---------- 計算ロジック（仕様書 4章） ----------
+  function computePipeline(s) {
+    const mktTargetOku = s.targetSales * (s.mktRatio / 100);
+    const mktTargetMan = mktTargetOku * 10000;
+    const unitPrice = clampPositive(s.unitPrice);
+    const winRate = clampPositive(s.winRate) / 100;
+    const oppRate = clampPositive(s.oppRate) / 100;
+    const targetDeals = Math.max(0, Math.ceil(mktTargetMan / unitPrice));
+    const requiredOpps = Math.max(0, Math.ceil(targetDeals / winRate));
+    const requiredLeads = Math.max(0, Math.ceil(requiredOpps / oppRate));
+    return { mktTargetOku, mktTargetMan, targetDeals, requiredOpps, requiredLeads };
+  }
+
+  function sumCosts(costs, field) {
+    return COST_KEYS.reduce((sum, c) => sum + (costs[c.key]?.[field] || 0), 0);
+  }
+
+  function computeCostTotals(s) {
+    // 仕様書 4.2：Buffer = Math.round(Subtotal * 0.05) を先に丸めてから TotalBudget に加算する
+    const subtotal = sumCosts(s.costs, 'next');
+    const reserve = Math.round(subtotal * 0.05);
+    const budget = subtotal + reserve;
+    const subtotalCurrent = sumCosts(s.costs, 'current');
+    const reserveCurrent = Math.round(subtotalCurrent * 0.05);
+    const budgetCurrent = subtotalCurrent + reserveCurrent;
+    return { subtotal, reserve, budget, subtotalCurrent, reserveCurrent, budgetCurrent };
+  }
+
+  function computeKpis(s, pipeline, totals) {
+    const roi = totals.budget > 0 ? (pipeline.mktTargetMan / totals.budget) * 100 : 0;
+    const cac = pipeline.targetDeals > 0 ? totals.budget / pipeline.targetDeals : 0;
+    const budgetRatioToSales = s.targetSales > 0 ? (totals.budget / (s.targetSales * 10000)) * 100 : 0;
+    const growthRate = s.currentSales > 0 ? ((s.targetSales - s.currentSales) / s.currentSales) * 100 : 0;
+    return { roi, cac, budgetRatioToSales, growthRate };
+  }
+
+  function computePosition(ratio, industryRatio) {
+    if (!isFinite(ratio) || industryRatio <= 0) {
+      return { multiple: NaN, text: '判定不可（入力値をご確認ください）' };
+    }
+    const multiple = ratio / industryRatio;
+    if (multiple >= 1.2) return { multiple, text: `積極水準（業界平均の${multiple.toFixed(2)}倍）` };
+    if (multiple <= 0.8) return { multiple, text: `消極水準（業界平均の${multiple.toFixed(2)}倍）` };
+    return { multiple, text: `標準水準（業界平均の${multiple.toFixed(2)}倍）` };
+  }
+
+  // ---------- STEP1：コストテーブル描画 ----------
+  function renderCostTable() {
+    const body = document.getElementById('cost-table-body');
+    if (!body) return;
+    body.innerHTML = COST_KEYS.map((c) => `
+      <tr>
+        <td class="col-name">${COST_KEYS.indexOf(c) + 1}. ${c.name}</td>
+        <td class="col-desc">${c.desc}</td>
+        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" value="${state.costs[c.key].current}" /></td>
+        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" value="${state.costs[c.key].next}" /></td>
+      </tr>
+    `).join('');
+
+    body.querySelectorAll('input[data-cost-key]').forEach((input) => {
+      input.addEventListener('input', (e) => {
+        const target = e.target;
+        const key = target.dataset.costKey;
+        const field = target.dataset.costField;
+        state.costs[key][field] = parseFloat(target.value) || 0;
+        renderSetupTotals();
+      });
+    });
+
+    renderSetupTotals();
+  }
+
+  function renderSetupTotals() {
+    const totals = computeCostTotals(state);
+    document.getElementById('setup-reserve-current').textContent = fmtManNoUnit(totals.reserveCurrent);
+    document.getElementById('setup-reserve-next').textContent = fmtManNoUnit(totals.reserve);
+    document.getElementById('setup-total-current').textContent = fmtManNoUnit(totals.subtotalCurrent + totals.reserveCurrent);
+    document.getElementById('setup-total-next').textContent = fmtManNoUnit(totals.budget);
+  }
+
+  function fillSetupForm() {
+    document.getElementById('in-targetSales').value = String(state.targetSales);
+    document.getElementById('in-mktRatio').value = String(state.mktRatio);
+    document.getElementById('in-unitPrice').value = String(state.unitPrice);
+    document.getElementById('in-winRate').value = String(state.winRate);
+    document.getElementById('in-oppRate').value = String(state.oppRate);
+    document.getElementById('in-cpl').value = String(state.cpl);
+    document.getElementById('in-currentSales').value = String(state.currentSales);
+    document.getElementById('in-currentMktSales').value = String(state.currentMktSales);
+    document.getElementById('in-currentLeads').value = String(state.currentLeads);
+    renderCostTable();
+  }
+
+  function readSetupForm() {
+    state.targetSales = parseFloat(document.getElementById('in-targetSales').value) || 0;
+    state.mktRatio = parseFloat(document.getElementById('in-mktRatio').value) || 0;
+    state.unitPrice = parseFloat(document.getElementById('in-unitPrice').value) || 0;
+    state.winRate = parseFloat(document.getElementById('in-winRate').value) || 0;
+    state.oppRate = parseFloat(document.getElementById('in-oppRate').value) || 0;
+    state.cpl = parseFloat(document.getElementById('in-cpl').value) || 0;
+    state.currentSales = parseFloat(document.getElementById('in-currentSales').value) || 0;
+    state.currentMktSales = parseFloat(document.getElementById('in-currentMktSales').value) || 0;
+    state.currentLeads = parseFloat(document.getElementById('in-currentLeads').value) || 0;
+    selectedIndustryName = document.getElementById('in-industry').value;
+    // costs はテーブルの入力欄がすでに state.costs を直接更新している
+  }
+
+  // ---------- プリセット適用 ----------
+  document.querySelectorAll('.preset-card').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const presetKey = btn.dataset.preset;
+      const preset = PRESETS[presetKey];
+      if (!preset) return;
+      state = JSON.parse(JSON.stringify(preset));
+      document.querySelectorAll('.preset-card').forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      fillSetupForm();
+    });
+  });
+
+  // ---------- スライダー生成 ----------
+  function createSliderRow(config, currentValue, initialValue, containerId) {
+    const wrap = document.createElement('div');
+    wrap.className = 'slider-item' + (config.wide ? ' slider-item--wide' : '');
+    wrap.innerHTML = `
+      <div class="slider-top">
+        <span class="slider-label">${config.label}</span>
+        <span class="slider-value" id="${containerId}-value">${formatSliderValue(config, currentValue)}</span>
+      </div>
+      <input type="range" id="${containerId}" min="${config.min}" max="${config.max}" step="${config.step}" value="${currentValue}" />
+      <p class="slider-initial">初期値: ${formatSliderValue(config, initialValue)}</p>
+    `;
+    return wrap;
+  }
+
+  function formatSliderValue(config, value) {
+    const num = Number(value).toFixed(config.decimals);
+    return `${Number(num).toLocaleString('ja-JP')} ${config.unit}`;
+  }
+
+  function buildSliders() {
+    const targetContainer = document.getElementById('target-sliders');
+    const costContainer = document.getElementById('cost-sliders');
+    targetContainer.innerHTML = '';
+    costContainer.innerHTML = '';
+
+    TARGET_SLIDERS.forEach((config) => {
+      const id = `slider-${config.key}`;
+      const currentValue = config.key === 'budget' ? computeCostTotals(state).budget : state[config.key];
+      const initialValue = config.key === 'budget' ? computeCostTotals(initialConfig).budget : initialConfig[config.key];
+      const row = createSliderRow(config, currentValue, initialValue, id);
+      targetContainer.appendChild(row);
+      const rangeInput = document.getElementById(id);
+      rangeInput.addEventListener('input', () => {
+        const val = parseFloat(rangeInput.value);
+        document.getElementById(`${id}-value`).textContent = formatSliderValue(config, val);
+        if (config.key === 'budget') {
+          redistributeBudget(val);
+          syncCostSliders();
+        } else {
+          state[config.key] = val;
+        }
+        render();
+      });
+    });
+
+    COST_KEYS.forEach((c) => {
+      const config = { key: `cost-${c.key}`, label: c.name, unit: '万円', min: 0, max: 8000, step: 50, decimals: 0 };
+      const id = `slider-${config.key}`;
+      const row = createSliderRow(config, state.costs[c.key].next, initialConfig.costs[c.key].next, id);
+      costContainer.appendChild(row);
+      const rangeInput = document.getElementById(id);
+      rangeInput.addEventListener('input', () => {
+        const val = parseFloat(rangeInput.value);
+        document.getElementById(`${id}-value`).textContent = formatSliderValue(config, val);
+        state.costs[c.key].next = val;
+        syncBudgetSlider();
+        render();
+      });
+    });
+  }
+
+  function redistributeBudget(newBudget) {
+    const newSubtotal = newBudget / 1.05;
+    const oldSubtotal = sumCosts(state.costs, 'next');
+    if (oldSubtotal <= 0) {
+      COST_KEYS.forEach((c) => {
+        state.costs[c.key].next = c.key === 'ad' ? Math.round(newSubtotal) : 0;
+      });
+      return;
+    }
+    const ratio = newSubtotal / oldSubtotal;
+    COST_KEYS.forEach((c) => {
+      state.costs[c.key].next = Math.round(state.costs[c.key].next * ratio);
+    });
+  }
+
+  function syncCostSliders() {
+    COST_KEYS.forEach((c) => {
+      const id = `slider-cost-${c.key}`;
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = String(state.costs[c.key].next);
+        const config = { unit: '万円', decimals: 0 };
+        document.getElementById(`${id}-value`).textContent = formatSliderValue(config, state.costs[c.key].next);
+      }
+    });
+  }
+
+  function syncBudgetSlider() {
+    const el = document.getElementById('slider-budget');
+    if (!el) return;
+    const budget = computeCostTotals(state).budget;
+    el.value = String(Math.round(budget));
+    const config = { unit: '万円', decimals: 0 };
+    document.getElementById('slider-budget-value').textContent = formatSliderValue(config, budget);
+  }
+
+  // ---------- Chart.js ----------
+  function initCharts() {
+    // @ts-ignore CDN経由のグローバル変数
+    const ChartLib = window.Chart;
+    if (!ChartLib) {
+      ['costCompareChart', 'quarterlyChart'].forEach((id) => {
+        const canvas = document.getElementById(id);
+        const wrap = canvas ? canvas.parentElement : null;
+        if (wrap) {
+          wrap.innerHTML = '<p style="font-size:0.8rem;color:#c2410c;text-align:center;padding:1.5rem 0;">グラフライブラリ（Chart.js）の読み込みに失敗しました。ネットワーク接続を確認し、ページを再読み込みしてください。</p>';
+        }
+      });
+      return;
+    }
+
+    const costCtx = document.getElementById('costCompareChart');
+    costChart = new ChartLib(costCtx, {
+      type: 'bar',
+      data: {
+        labels: COST_KEYS.map((c) => c.name.replace('（マーケ部）', '').replace('・コンサル費', '').replace('・コンテンツ制作', '').replace('・イベント費', '').replace('・SaaS利用料', '')),
+        datasets: [
+          { label: '今期実績（万円）', backgroundColor: '#c9cdd6', data: [] },
+          { label: '来期予測計画（万円）', backgroundColor: '#2563eb', data: [] },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+
+    const quarterlyCtx = document.getElementById('quarterlyChart');
+    quarterlyChart = new ChartLib(quarterlyCtx, {
+      data: {
+        labels: ['Q1（4-6月）', 'Q2（7-9月）', 'Q3（10-12月）', 'Q4（1-3月）'],
+        datasets: [
+          { type: 'bar', label: '来期 投入予算（万円）', backgroundColor: '#93b4f5', data: [], yAxisID: 'y' },
+          { type: 'line', label: '来期 創出売上（万円）', borderColor: '#eb6834', backgroundColor: '#eb6834', data: [], yAxisID: 'y1', tension: 0.3 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: {
+          y: { type: 'linear', position: 'left', beginAtZero: true },
+          y1: { type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
+        },
+      },
+    });
+  }
+
+  function updateCharts(totals, pipeline) {
+    if (costChart) {
+      costChart.data.datasets[0].data = COST_KEYS.map((c) => state.costs[c.key].current);
+      costChart.data.datasets[1].data = COST_KEYS.map((c) => state.costs[c.key].next);
+      costChart.update();
+    }
+    if (quarterlyChart) {
+      const budgetShare = [0.2, 0.3, 0.3, 0.2];
+      const revenueShare = [0.2, 0.28, 0.28, 0.24];
+      quarterlyChart.data.datasets[0].data = budgetShare.map((r) => Math.round(totals.budget * r));
+      quarterlyChart.data.datasets[1].data = revenueShare.map((r) => Math.round(pipeline.mktTargetMan * r));
+      quarterlyChart.update();
+    }
+  }
+
+  // ---------- 参考：業界比較 ----------
+  function renderRankingChart(container, ownIndustryName, ownActualRatio) {
+    const rows = [...allIndustries].sort((a, b) => b.adToSalesRatioPercent - a.adToSalesRatioPercent);
+    const max = Math.max(...rows.map((d) => d.adToSalesRatioPercent), ownActualRatio) * 1.08;
+    container.innerHTML = '';
+    rows.forEach((d) => {
+      const isOwn = d.industry === ownIndustryName;
+      const row = document.createElement('div');
+      row.className = 'rank-row' + (isOwn ? ' own' : '');
+      const widthPct = (d.adToSalesRatioPercent / max) * 100;
+      const refPct = isOwn ? (ownActualRatio / max) * 100 : null;
+      row.innerHTML = `
+        <div class="name">${d.industry}</div>
+        <div class="rank-track">
+          <div class="rank-fill" style="width:${widthPct}%;"></div>
+          ${refPct !== null ? `<div class="rank-refline" style="left:${refPct}%;"></div>` : ''}
+        </div>
+        <div class="val">${fmtPercent(d.adToSalesRatioPercent, 2)}</div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function renderReference(totals) {
+    const industryEntry = allIndustries.find((i) => i.industry === selectedIndustryName) || allIndustries[0];
+    const industryRatio = industryEntry ? industryEntry.adToSalesRatioPercent : 0;
+    const ownRatio = state.targetSales > 0 ? (state.costs.ad.next / (state.targetSales * 10000)) * 100 : 0;
+    const position = computePosition(ownRatio, industryRatio);
+
+    document.getElementById('ref-own-ratio').textContent = fmtPercent(ownRatio, 2);
+    document.getElementById('ref-industry-ratio').textContent = fmtPercent(industryRatio, 2);
+    document.getElementById('ref-position').textContent = position.text;
+
+    const rankingContainer = document.getElementById('ranking-chart');
+    if (rankingContainer && industryEntry) {
+      renderRankingChart(rankingContainer, industryEntry.industry, ownRatio);
+    }
+  }
+
+  // ---------- STEP2：ダッシュボード描画 ----------
+  function render() {
+    const pipeline = computePipeline(state);
+    const totals = computeCostTotals(state);
+    const kpis = computeKpis(state, pipeline, totals);
+
+    // KPIカード
+    document.getElementById('kpi-targetSales').textContent = state.targetSales.toFixed(1);
+    document.getElementById('kpi-growthRate').textContent = `今期実績比 ${kpis.growthRate >= 0 ? '+' : ''}${kpis.growthRate.toFixed(0)}% 成長計画`;
+    document.getElementById('kpi-mktTarget').textContent = pipeline.mktTargetOku.toFixed(1);
+    document.getElementById('kpi-mktRatioLabel').textContent = `全社目標の${state.mktRatio.toFixed(0)}%を創出`;
+    document.getElementById('kpi-budget').textContent = fmtManNoUnit(totals.budget);
+    document.getElementById('kpi-budgetRatio').textContent = `売上目標比 ${kpis.budgetRatioToSales.toFixed(1)}%`;
+    document.getElementById('kpi-roi').textContent = kpis.roi.toFixed(0);
+    document.getElementById('kpi-cac').textContent = `想定CAC：${kpis.cac.toFixed(1)}万円／件`;
+
+    // 逆算パイプライン
+    document.getElementById('pl-mktTarget').textContent = fmtOku(pipeline.mktTargetOku);
+    document.getElementById('pl-deals-label').textContent = `目標成約件数（単価：${Math.round(state.unitPrice).toLocaleString('ja-JP')}万円）`;
+    document.getElementById('pl-deals').textContent = fmtCount(pipeline.targetDeals);
+    document.getElementById('pl-winRate').textContent = fmtPercent(state.winRate, 1);
+    document.getElementById('pl-opps').textContent = fmtCount(pipeline.requiredOpps);
+    document.getElementById('pl-oppRate').textContent = fmtPercent(state.oppRate, 1);
+    document.getElementById('pl-leads').textContent = fmtCount(pipeline.requiredLeads);
+    // 今期 vs 来期 比較テーブル（来期CPLは「目標CPL」の入力値をそのまま採用）
+    const currentCpl = state.currentLeads > 0 ? (totals.subtotalCurrent + totals.reserveCurrent) / state.currentLeads : 0;
+    setCompareRow('budget', totals.subtotalCurrent + totals.reserveCurrent, totals.budget, fmtMan);
+    setCompareRow('leads', state.currentLeads, pipeline.requiredLeads, fmtCount);
+    setCompareRow('cpl', currentCpl, state.cpl, (n) => `${n.toFixed(2)}万円`);
+    setCompareRow('mktsales', state.currentMktSales, pipeline.mktTargetOku, (n) => fmtOku(n));
+
+    // 目標CPLと、申請予算・必要リード数から逆算した実質CPLとの整合性チェック
+    const impliedCpl = pipeline.requiredLeads > 0 ? totals.budget / pipeline.requiredLeads : 0;
+    const cplCheckEl = document.getElementById('pl-cpl-check');
+    if (state.cpl > 0 && cplCheckEl) {
+      const withinTarget = impliedCpl <= state.cpl;
+      const badge = `<span class="cpl-badge ${withinTarget ? 'cpl-badge--ok' : 'cpl-badge--warn'}">${withinTarget ? '目標CPL内' : '目標CPL超過'}</span>`;
+      cplCheckEl.innerHTML = withinTarget
+        ? `${badge} 目標CPL(${state.cpl.toFixed(1)}万円)に対し、申請予算・必要リード数から逆算した実質CPLは${impliedCpl.toFixed(2)}万円で目標内に収まっています。`
+        : `${badge} 目標CPL(${state.cpl.toFixed(1)}万円)に対し、申請予算・必要リード数から逆算した実質CPLは${impliedCpl.toFixed(2)}万円で目標を超過しています。単価・成約率・商談化率の前提、または予算配分の見直しを検討してください。`;
+      cplCheckEl.className = `pipeline-check ${withinTarget ? '' : 'pipeline-check--warn'}`;
+    }
+
+    // 費用明細グリッド
+    const grid = document.getElementById('cost-breakdown-grid');
+    grid.innerHTML = COST_KEYS.map((c) => `
+      <div class="cost-grid-item">
+        <p class="cost-grid-name">${c.name}</p>
+        <p class="cost-grid-value">${fmtManNoUnit(state.costs[c.key].next)}<span class="cost-grid-unit">万円</span></p>
+      </div>
+    `).join('') + `
+      <div class="cost-grid-item cost-grid-item--reserve">
+        <p class="cost-grid-name">予備費（バッファ）</p>
+        <p class="cost-grid-value">${fmtManNoUnit(totals.reserve)}<span class="cost-grid-unit">万円</span></p>
+      </div>
+    `;
+
+    // フッター文言
+    document.getElementById('footer-policy').textContent =
+      `${COST_KEYS[0].name}と${COST_KEYS[3].name}の強化により、${fmtCount(pipeline.requiredLeads)}のリード獲得と商談化率の維持・改善を図る。予算配分は今期実績をベースに、施策ごとの費用対効果を見ながら四半期ごとに見直す想定。`;
+    document.getElementById('footer-risk').textContent =
+      `申請予算の5%（${fmtMan(totals.reserve)}）を予備費として確保。市況変化や新チャネルの検証、CPA高騰時の緊急補填策へ機動的に充当する。`;
+    document.getElementById('footer-request').textContent =
+      `本申請枠（${fmtMan(totals.budget)}）のご承認を依頼する。期中は月次でROI・CACをモニタリングし、四半期終了時点で予実差が大きい場合はチャネル間の再配分を行う。`;
+
+    updateCharts(totals, pipeline);
+    renderReference(totals);
+  }
+
+  function setCompareRow(key, currentVal, nextVal, formatter) {
+    document.getElementById(`cmp-${key}-current`).textContent = formatter(currentVal);
+    document.getElementById(`cmp-${key}-next`).textContent = formatter(nextVal);
+    const diff = nextVal - currentVal;
+    const diffEl = document.getElementById(`cmp-${key}-diff`);
+    diffEl.textContent = diff === 0 ? '±0' : `${diff > 0 ? '+' : '▲'}${formatter(Math.abs(diff))}`;
+    diffEl.className = diff > 0 ? 'diff-up' : diff < 0 ? 'diff-down' : '';
+  }
+
+  // ---------- イベント：実行／リセット／再設定／印刷 ----------
+  document.getElementById('run-btn')?.addEventListener('click', () => {
+    readSetupForm();
+    initialConfig = JSON.parse(JSON.stringify(state));
+
+    document.getElementById('step-setup').setAttribute('hidden', 'true');
+    const dashboard = document.getElementById('step-dashboard');
+    dashboard.removeAttribute('hidden');
+
+    const reportDate = document.getElementById('report-date');
+    if (reportDate) {
+      const now = new Date();
+      reportDate.textContent = `作成日：${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+    }
+
+    buildSliders();
+    if (!costChart) {
+      initCharts();
+    }
+    render();
+    dashboard.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  document.getElementById('reset-btn')?.addEventListener('click', () => {
+    state = JSON.parse(JSON.stringify(initialConfig));
+    buildSliders();
+    render();
+  });
+
+  document.getElementById('reconfig-btn')?.addEventListener('click', () => {
+    document.getElementById('step-dashboard').setAttribute('hidden', 'true');
+    document.getElementById('step-setup').removeAttribute('hidden');
+    fillSetupForm();
+    document.getElementById('step-setup').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  document.getElementById('print-btn')?.addEventListener('click', () => {
+    window.print();
+  });
+
+  // ---------- 初期表示 ----------
+  fillSetupForm();
+</script>
+
+<style>
+  .budget-tool {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+  }
+  .tool-header .eyebrow {
+    color: var(--color-accent, #2563eb);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+  .tool-header h1 {
+    margin: 0.25rem 0 0.6rem;
+    font-size: 1.7rem;
+  }
+  .tool-header .lead {
+    color: #444;
+    line-height: 1.6;
+    max-width: 760px;
+  }
+
+  /* ===== STEP1 ===== */
+  .step-setup {
+    margin-top: 1.3rem;
+  }
+  .section-label {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #222;
+    margin: 0 0 0.5rem;
+  }
+  .preset-block { margin-bottom: 1.4rem; }
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+  }
+  .preset-card {
+    text-align: left;
+    border: 2px solid #e2e2e2;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .preset-card.is-active {
+    border-color: var(--color-accent, #2563eb);
+    background: #eef4ff;
+  }
+  .preset-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #222;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .preset-badge {
+    font-size: 0.68rem;
+    background: var(--color-accent, #2563eb);
+    color: #fff;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .preset-desc { font-size: 0.78rem; color: #666; line-height: 1.5; }
+
+  .field-group {
+    border: 1px solid #e2e2e2;
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+    margin: 0 0 1.1rem;
+    background: #fafafa;
+  }
+  .field-group legend {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #222;
+    padding: 0 0.4rem;
+  }
+  .field-note { font-size: 0.78rem; color: #888; margin: 0.2rem 0 1rem; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: #333;
+  }
+  .form-grid input,
+  .form-grid select {
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #fff;
+  }
+
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.3rem;
+    font-size: 0.85rem;
+  }
+  .cost-table th, .cost-table td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+  }
+  .cost-table thead th { color: #666; font-weight: 600; font-size: 0.78rem; }
+  .cost-table .col-num { text-align: right; white-space: nowrap; }
+  .cost-table .col-desc { color: #888; font-size: 0.78rem; }
+  .cost-table input {
+    width: 90px;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-align: right;
+  }
+  .cost-table .reserve-row td { color: #888; font-size: 0.82rem; }
+  .cost-table .total-row td { font-weight: 700; color: var(--color-accent, #2563eb); border-top: 2px solid #ddd; border-bottom: none; }
+
+  #run-btn {
+    display: block;
+    margin: 0.5rem auto 0;
+    padding: 0.9rem 2rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--color-accent, #2563eb);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    cursor: pointer;
+  }
+  #run-btn:hover { opacity: 0.9; }
+
+  /* ===== STEP2：左右2カラム（左＝レポート／右＝シミュレーター） ===== */
+  .step-dashboard { margin-top: 1.2rem; }
+  .dashboard-layout {
+    display: grid;
+    grid-template-columns: minmax(230px, 300px) minmax(420px, 1fr);
+    gap: 1.2rem;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .dashboard-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ===== STEP2：コントロールパネル（シミュレーター／左カラム） ===== */
+  .control-panel {
+    background: #10162b;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    color: #e5e9f5;
+    position: sticky;
+    top: 1rem;
+  }
+  @media (max-width: 900px) { .control-panel { position: static; margin-bottom: 1.1rem; } }
+  .control-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+  }
+  .control-title { font-weight: 700; font-size: 0.9rem; color: #fff; }
+  .control-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .control-actions button {
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 0.76rem;
+    cursor: pointer;
+  }
+  #print-btn { background: var(--color-accent, #2563eb); border-color: var(--color-accent, #2563eb); font-weight: 700; }
+  .control-sublabel { font-size: 0.74rem; color: #9aa4c4; margin: 0 0 0.4rem; }
+  .control-sublabel--second { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.08); }
+  .slider-list { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.2rem; }
+  .slider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.55rem;
+  }
+  .slider-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem;
+  }
+  .slider-item--wide { grid-column: span 2; }
+  .slider-top { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 0.3rem; }
+  .slider-label { color: #c3c9e0; }
+  .slider-value { color: #fff; font-weight: 700; }
+  .slider-item input[type="range"] { width: 100%; accent-color: var(--color-accent, #2563eb); }
+  .slider-initial { font-size: 0.65rem; color: #7c85a8; margin: 0.2rem 0 0; }
+
+  /* ===== STEP2：印刷レポート本体 ===== */
+  .print-container {
+    background: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 14px;
+    padding: 1.3rem 1.4rem 1.6rem;
+  }
+  .report-tags { display: flex; align-items: center; gap: 0.4rem; font-size: 0.76rem; flex-wrap: wrap; }
+  .tag {
+    background: #eef4ff;
+    color: var(--color-accent, #2563eb);
+    font-weight: 700;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+  }
+  .tag-sep { color: #bbb; }
+  .tag-plain { color: #888; }
+  .report-date { margin-left: auto; color: #999; font-size: 0.72rem; }
+  .report-title { margin: 0.45rem 0 0.15rem; font-size: 1.35rem; }
+  .report-subnote { font-size: 0.75rem; color: #999; margin: 0 0 1rem; }
+
+  .kpi-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.7rem;
+    margin-bottom: 1.1rem;
+  }
+  .kpi-card {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    background: #fafafa;
+  }
+  .kpi-card--accent { background: #eef4ff; border-color: #dbe6fd; }
+  .kpi-label { font-size: 0.72rem; color: #777; margin: 0 0 0.25rem; }
+  .kpi-value { font-size: 1.35rem; font-weight: 800; color: #1a1a1a; margin: 0; }
+  .kpi-card--accent .kpi-value { color: var(--color-accent, #2563eb); }
+  .kpi-unit { font-size: 0.78rem; font-weight: 600; margin-left: 0.2rem; color: #888; }
+  .kpi-sub { font-size: 0.7rem; color: #999; margin: 0.25rem 0 0; }
+
+  .report-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 0.9rem;
+    align-items: start;
+  }
+  .report-col { display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .card {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    margin-top: 0.9rem;
+  }
+  .report-col .card:first-child,
+  .print-container > .card:first-of-type { margin-top: 0; }
+  .card h3 { margin: 0 0 0.6rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
+  .card-icon { color: var(--color-accent, #2563eb); }
+  .card-unit { margin-left: auto; font-size: 0.68rem; color: #999; font-weight: 400; }
+  .chart-box { position: relative; height: 160px; width: 100%; }
+  @media (max-width: 640px) { .chart-box { height: 140px; } }
+  .card-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+  .card-title-row h3 { margin: 0; }
+  .chip { font-size: 0.66rem; background: #eee; color: #666; padding: 0.15rem 0.5rem; border-radius: 999px; }
+
+  .pipeline-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: #eef4ff;
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  .pipeline-label { font-size: 0.8rem; color: #555; }
+  .pipeline-value { font-size: 1.1rem; font-weight: 800; color: var(--color-accent, #2563eb); }
+  .pipeline-row { display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.85rem; }
+  .pipeline-row--highlight { font-weight: 700; color: var(--color-accent, #2563eb); border-top: 1px dashed #ddd; margin-top: 0.15rem; padding-top: 0.45rem; }
+  .pipeline-sub { font-size: 0.7rem; color: #999; padding-left: 0.6rem; margin-bottom: 0.15rem; }
+  .pipeline-sub span { margin-left: 0.4rem; color: #777; }
+  .pipeline-check { font-size: 0.7rem; color: #999; margin: 0.55rem 0 0; line-height: 1.5; }
+  .pipeline-check--warn { color: #c2410c; font-weight: 600; }
+
+  .cpl-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    margin-left: 0.35rem;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .cpl-badge--ok { background: #dcfce7; color: #15803d; }
+  .cpl-badge--warn { background: #ffedd5; color: #c2410c; }
+
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .compare-table th, .compare-table td { padding: 0.4rem 0.35rem; border-bottom: 1px solid #f0f0f0; text-align: right; }
+  .compare-table th:first-child, .compare-table td:first-child { text-align: left; color: #666; }
+  .compare-table thead th { color: #999; font-weight: 600; font-size: 0.7rem; }
+  .cmp-next { font-weight: 700; color: var(--color-accent, #2563eb); }
+  .diff-up { color: #1a7f37; }
+  .diff-down { color: #c9531f; }
+
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.6rem;
+  }
+  .cost-grid-item { border: 1px solid #eee; border-radius: 8px; padding: 0.55rem 0.65rem; }
+  .cost-grid-item--reserve { background: #fafafa; }
+  .cost-grid-name { font-size: 0.7rem; color: #888; margin: 0 0 0.25rem; }
+  .cost-grid-value { font-size: 0.98rem; font-weight: 700; margin: 0; }
+  .cost-grid-unit { font-size: 0.66rem; color: #999; margin-left: 0.2rem; font-weight: 400; }
+
+  .reference-card summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--color-accent, #2563eb); }
+  .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f4f4f4; font-size: 0.85rem; }
+  .result-row--highlight { font-weight: 700; color: var(--color-accent, #2563eb); }
+  .ranking-chart { margin-top: 0.7rem; }
+  .rank-row { display: grid; grid-template-columns: 130px 1fr 52px; align-items: center; gap: 0.6rem; padding: 0.22rem 0; font-size: 0.74rem; }
+  .rank-row .name { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-row.own .name { color: #222; font-weight: 700; }
+  .rank-track { position: relative; height: 13px; background: #eee; border-radius: 3px; }
+  .rank-fill { height: 100%; border-radius: 3px; background: #c9cdd6; }
+  .rank-row.own .rank-fill { background: var(--color-accent, #2563eb); }
+  .rank-row .val { text-align: right; color: #666; font-variant-numeric: tabular-nums; }
+  .rank-row.own .val { color: var(--color-accent, #2563eb); font-weight: 700; }
+  .rank-refline { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--color-accent, #2563eb); opacity: 0.6; }
+  .legend-line { font-size: 0.7rem; color: #999; margin-top: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend-dot.rank-avg { background: #c9cdd6; }
+  .legend-dot.rank-own { background: var(--color-accent, #2563eb); }
+
+  .report-footer {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #eee;
+  }
+  .footer-col h4 { font-size: 0.8rem; margin: 0 0 0.3rem; color: #333; }
+  .footer-col p { font-size: 0.74rem; color: #777; line-height: 1.55; margin: 0; }
+
+  /* ===== 印刷 ===== */
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .tool-header, .step-setup, .preset-block { display: none !important; }
+    .dashboard-layout { display: block; }
+    .print-container {
+      border: none;
+      border-radius: 0;
+      padding: 0;
+    }
+    .card { border: 1px solid #ccc; box-shadow: none; }
+  }
+</style>
