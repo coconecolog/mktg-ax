@@ -1,0 +1,324 @@
+---
+// src/pages/tools/kpi-benchmark.astro
+//
+// 業界ベンチマーク診断＋稟議資料自動生成ツール
+//
+// ✅ 調整済み：mktg.axのブログ一覧ページ（src/pages/blog/[...page].astro）が
+//   使っている import に合わせて、BaseLayoutを@/エイリアスで読み込むようにしてあります。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import benchmarkData from "@/data/benchmark-data.json";
+
+const industries = benchmarkData.industries;
+---
+
+<BaseLayout
+  title="業界ベンチマーク診断｜MKTG.AX"
+  description="自社の広告宣伝費が業界水準に対して多いか少ないかを診断し、社内稟議・経営会議にそのまま使える資料をPDFで出力します。"
+  ogImage="/open-graph/default.png"
+>
+  <main class="benchmark-tool">
+    <header class="tool-header">
+      <p class="eyebrow">無料診断ツール</p>
+      <h1>業界ベンチマーク診断</h1>
+      <p class="lead">
+        あなたの会社の広告宣伝費が、同業種の実データと比べて多いのか少ないのかを診断します。
+        結果はそのまま社内稟議・経営会議の資料としてPDF出力できます。
+      </p>
+      <p class="source-note">
+        データ出典：{benchmarkData.sourceTitle}
+      </p>
+    </header>
+
+    <section class="tool-form" aria-label="診断入力フォーム">
+      <div class="form-grid">
+        <label>
+          業種
+          <select id="industry-select">
+            {industries.map((item) => (
+              <option value={item.industry} data-ratio={item.adToSalesRatioPercent}>
+                {item.industry}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          年間売上高（万円）
+          <input type="number" id="input-sales" placeholder="例：50000" min="0" />
+        </label>
+
+        <label>
+          年間広告宣伝費（万円）
+          <input type="number" id="input-adspend" placeholder="例：500" min="0" />
+        </label>
+      </div>
+
+      <details class="advanced-section">
+        <summary>予算の逆算もする（任意）</summary>
+        <div class="form-grid">
+          <label>
+            目標受注件数（件／年）
+            <input type="number" id="input-target-deals" placeholder="例：20" min="0" />
+          </label>
+          <label>
+            平均受注単価（万円）
+            <input type="number" id="input-deal-value" placeholder="例：300" min="0" />
+          </label>
+          <label>
+            リード→受注 転換率（％）
+            <input type="number" id="input-cvr" placeholder="例：5" min="0" max="100" step="0.1" />
+          </label>
+          <label>
+            リード1件あたり想定獲得コスト（円）
+            <input type="number" id="input-cpl" placeholder="例：15000" min="0" />
+          </label>
+        </div>
+      </details>
+
+      <button id="diagnose-btn" type="button">診断する</button>
+    </section>
+
+    <section id="result-section" class="result-section" hidden>
+      <div id="result-card" class="result-card">
+        <h2>診断結果</h2>
+
+        <div class="result-row">
+          <span class="result-label">業種</span>
+          <span id="result-industry" class="result-value"></span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">自社の広告宣伝費 ／ 売上高比率</span>
+          <span id="result-own-ratio" class="result-value"></span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">業界平均の比率（中小企業実態基本調査）</span>
+          <span id="result-industry-ratio" class="result-value"></span>
+        </div>
+        <div class="result-row result-row--highlight">
+          <span class="result-label">位置づけ</span>
+          <span id="result-position" class="result-value"></span>
+        </div>
+
+        <div id="reverse-calc-block" hidden>
+          <h3>予算の逆算</h3>
+          <div class="result-row">
+            <span class="result-label">必要リード数</span>
+            <span id="result-required-leads" class="result-value"></span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">必要予算（概算）</span>
+            <span id="result-required-budget" class="result-value"></span>
+          </div>
+        </div>
+
+        <p class="result-footnote">
+          ※本診断は中小企業実態基本調査に基づく業種平均との比較であり、個社の戦略判断を保証するものではありません。
+          社内資料としてご利用の際は、必要に応じて自社の詳細な状況を踏まえてご判断ください。
+        </p>
+      </div>
+
+      <button id="download-pdf-btn" type="button">この結果を稟議用PDFでダウンロード</button>
+    </section>
+  </main>
+</BaseLayout>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+  // このスクリプトはブラウザ側でのみ動きます（サーバー処理は一切なし）。
+  const industrySelect = document.getElementById('industry-select') as HTMLSelectElement;
+  const inputSales = document.getElementById('input-sales') as HTMLInputElement;
+  const inputAdspend = document.getElementById('input-adspend') as HTMLInputElement;
+  const inputTargetDeals = document.getElementById('input-target-deals') as HTMLInputElement;
+  const inputDealValue = document.getElementById('input-deal-value') as HTMLInputElement;
+  const inputCvr = document.getElementById('input-cvr') as HTMLInputElement;
+  const inputCpl = document.getElementById('input-cpl') as HTMLInputElement;
+  const diagnoseBtn = document.getElementById('diagnose-btn');
+  const resultSection = document.getElementById('result-section');
+  const downloadBtn = document.getElementById('download-pdf-btn');
+
+  function formatPercent(n: number) {
+    return `${n.toFixed(2)}%`;
+  }
+
+  function formatYen10k(n: number) {
+    return `${Math.round(n).toLocaleString('ja-JP')}万円`;
+  }
+
+  function judgePosition(ownRatio: number, industryRatio: number) {
+    if (!isFinite(ownRatio) || industryRatio <= 0) return '判定不可（入力値をご確認ください）';
+    const multiple = ownRatio / industryRatio;
+    if (multiple >= 1.2) return `積極水準（業界平均の${multiple.toFixed(2)}倍）`;
+    if (multiple <= 0.8) return `消極水準（業界平均の${multiple.toFixed(2)}倍）`;
+    return `標準水準（業界平均の${multiple.toFixed(2)}倍）`;
+  }
+
+  diagnoseBtn?.addEventListener('click', () => {
+    const selectedOption = industrySelect.selectedOptions[0];
+    const industryName = selectedOption.value;
+    const industryRatio = parseFloat(selectedOption.dataset.ratio || '0');
+
+    const sales = parseFloat(inputSales.value);
+    const adspend = parseFloat(inputAdspend.value);
+
+    if (!sales || !adspend) {
+      alert('年間売上高と年間広告宣伝費を入力してください。');
+      return;
+    }
+
+    const ownRatio = (adspend / sales) * 100;
+
+    document.getElementById('result-industry')!.textContent = industryName;
+    document.getElementById('result-own-ratio')!.textContent = formatPercent(ownRatio);
+    document.getElementById('result-industry-ratio')!.textContent = formatPercent(industryRatio);
+    document.getElementById('result-position')!.textContent = judgePosition(ownRatio, industryRatio);
+
+    // 逆算セクション（入力があるときだけ表示）
+    const targetDeals = parseFloat(inputTargetDeals.value);
+    const dealValue = parseFloat(inputDealValue.value);
+    const cvr = parseFloat(inputCvr.value);
+    const cpl = parseFloat(inputCpl.value);
+    const reverseBlock = document.getElementById('reverse-calc-block');
+
+    if (targetDeals && cvr && cpl) {
+      const requiredLeads = Math.ceil(targetDeals / (cvr / 100));
+      const requiredBudgetYen = requiredLeads * cpl;
+      const requiredBudget10k = requiredBudgetYen / 10000;
+
+      document.getElementById('result-required-leads')!.textContent = `${requiredLeads.toLocaleString('ja-JP')}件`;
+      document.getElementById('result-required-budget')!.textContent = formatYen10k(requiredBudget10k);
+      reverseBlock?.removeAttribute('hidden');
+    } else {
+      reverseBlock?.setAttribute('hidden', 'true');
+    }
+
+    resultSection?.removeAttribute('hidden');
+    resultSection?.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  downloadBtn?.addEventListener('click', async () => {
+    const target = document.getElementById('result-card');
+    if (!target) return;
+
+    // @ts-ignore（CDN経由で読み込むグローバル変数のため型定義なし）
+    const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/png');
+
+    // @ts-ignore
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.setFontSize(10);
+    pdf.text('業界ベンチマーク診断結果（MKTG.AX）', 10, 12);
+    pdf.addImage(imgData, 'PNG', 10, 18, imgWidth, imgHeight);
+    pdf.save('mktg-ax_kpi-benchmark_result.pdf');
+  });
+</script>
+
+<style>
+  .benchmark-tool {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+  .tool-header .eyebrow {
+    color: var(--color-accent, #2563eb);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+  .tool-header h1 {
+    margin: 0.25rem 0 0.75rem;
+    font-size: 1.9rem;
+  }
+  .tool-header .lead {
+    color: #444;
+    line-height: 1.7;
+  }
+  .source-note {
+    font-size: 0.8rem;
+    color: #888;
+  }
+  .tool-form {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #e2e2e2;
+    border-radius: 12px;
+    background: #fafafa;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    color: #333;
+  }
+  .form-grid input,
+  .form-grid select {
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+  .advanced-section {
+    margin-top: 1.25rem;
+    border-top: 1px dashed #ddd;
+    padding-top: 1rem;
+  }
+  .advanced-section summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-accent, #2563eb);
+  }
+  #diagnose-btn,
+  #download-pdf-btn {
+    margin-top: 1.5rem;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--color-accent, #2563eb);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  #diagnose-btn:hover,
+  #download-pdf-btn:hover {
+    opacity: 0.9;
+  }
+  .result-section {
+    margin-top: 2.5rem;
+  }
+  .result-card {
+    padding: 1.5rem;
+    border: 1px solid #e2e2e2;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95rem;
+  }
+  .result-row--highlight {
+    font-weight: 700;
+    color: var(--color-accent, #2563eb);
+  }
+  .result-footnote {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #999;
+    line-height: 1.6;
+  }
+</style>

@@ -1,0 +1,78 @@
+{
+  "sourceTitle": "中小企業実態基本調査 確報｜統計表 ３．売上高及び営業費用　産業中分類別表（法人企業）",
+  "statsDataId": "0003317768",
+  "surveyYearCode": "2016100000",
+  "note": "中小企業庁「中小企業実態基本調査」（e-Stat経由）に基づく業種別ベンチマーク。数値は原則法人企業ベース。単位は百万円。",
+  "generatedFields": [
+    "industry",
+    "adToSalesRatioPercent"
+  ],
+  "industries": [
+    {
+      "industry": "建設業",
+      "salesRaw": "62022932",
+      "adSpendRaw": "158378",
+      "adToSalesRatioPercent": 0.255
+    },
+    {
+      "industry": "製造業",
+      "salesRaw": "130115182",
+      "adSpendRaw": "313396",
+      "adToSalesRatioPercent": 0.241
+    },
+    {
+      "industry": "情報通信業",
+      "salesRaw": "9239058",
+      "adSpendRaw": "119935",
+      "adToSalesRatioPercent": 1.298
+    },
+    {
+      "industry": "運輸業，郵便業",
+      "salesRaw": "24762690",
+      "adSpendRaw": "23373",
+      "adToSalesRatioPercent": 0.094
+    },
+    {
+      "industry": "卸売業",
+      "salesRaw": "107601527",
+      "adSpendRaw": "221596",
+      "adToSalesRatioPercent": 0.206
+    },
+    {
+      "industry": "小売業",
+      "salesRaw": "64877835",
+      "adSpendRaw": "797819",
+      "adToSalesRatioPercent": 1.23
+    },
+    {
+      "industry": "不動産業，物品賃貸業",
+      "salesRaw": "17405387",
+      "adSpendRaw": "125189",
+      "adToSalesRatioPercent": 0.719
+    },
+    {
+      "industry": "学術研究，専門・技術サービス業",
+      "salesRaw": "7845916",
+      "adSpendRaw": "23341",
+      "adToSalesRatioPercent": 0.297
+    },
+    {
+      "industry": "宿泊業，飲食サービス業",
+      "salesRaw": "8859940",
+      "adSpendRaw": "99545",
+      "adToSalesRatioPercent": 1.124
+    },
+    {
+      "industry": "生活関連サービス業，娯楽業",
+      "salesRaw": "19149668",
+      "adSpendRaw": "163824",
+      "adToSalesRatioPercent": 0.855
+    },
+    {
+      "industry": "サービス業（他に分類されないもの）",
+      "salesRaw": "17488190",
+      "adSpendRaw": "47665",
+      "adToSalesRatioPercent": 0.273
+    }
+  ]
+}
