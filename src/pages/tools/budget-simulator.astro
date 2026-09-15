@@ -124,6 +124,22 @@ const industries = benchmarkData.industries;
 
       <p id="setup-error" class="setup-error" hidden></p>
       <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
+
+      <details class="setup-help">
+        <summary>用語・計算式の説明</summary>
+        <dl>
+          <dt>マーケ貢献売上割合（％）</dt>
+          <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
+          <dt>平均客単価（万円／件）</dt>
+          <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
+          <dt>商談 → 成約率（％）</dt>
+          <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
+          <dt>リード → 商談化率（％）</dt>
+          <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
+          <dt>目標平均CPL（万円／件）</dt>
+          <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
+        </dl>
+      </details>
     </section>
 
     <!-- ============ STEP 2：リアルタイムシミュレーション 兼 役員提出用ダッシュボード ============ -->
@@ -138,21 +154,6 @@ const industries = benchmarkData.industries;
             <button id="print-btn" type="button">1ページ印刷／PDF出力</button>
           </div>
         </div>
-        <details class="control-help">
-          <summary>用語・計算式の説明</summary>
-          <dl>
-            <dt>マーケ貢献売上割合（％）</dt>
-            <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
-            <dt>平均客単価（万円／件）</dt>
-            <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
-            <dt>商談 → 成約率（％）</dt>
-            <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
-            <dt>リード → 商談化率（％）</dt>
-            <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
-            <dt>目標平均CPL（万円／件）</dt>
-            <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
-          </dl>
-        </details>
         <p class="control-sublabel">① 全社目標 &amp; コンバージョン歩留まり</p>
         <div class="slider-list" id="target-sliders"></div>
         <p class="control-sublabel control-sublabel--second">② 施策・費目別予算微調整（来期）</p>
@@ -1044,23 +1045,29 @@ const industries = benchmarkData.industries;
     margin: 0.8rem 0 0;
   }
 
+  /*
+    注意：.cost-table-body の行（<input>を含む）はJSでinnerHTMLとして描画しており、
+    Astroのスコープ付きCSS（data-astro-cid-*属性）は実行時に生成された要素には付与されない。
+    そのため、テーブル本体にかかるルールは :global() で明示的にスコープを外している。
+    （これが「入力欄が枠で囲まれない」不具合の直接の原因だった）
+  */
   .cost-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1.3rem;
     font-size: 0.85rem;
   }
-  .cost-table th, .cost-table td {
+  :global(.cost-table th), :global(.cost-table td) {
     padding: 0.55rem 0.6rem;
     border-bottom: 1px solid #eee;
     text-align: left;
   }
   .cost-table thead th { color: #666; font-weight: 600; font-size: 0.78rem; }
-  .cost-table th.col-num { text-align: left; white-space: nowrap; }
-  .cost-table td.col-num { text-align: right; white-space: nowrap; }
-  .cost-table .col-desc { color: #888; font-size: 0.78rem; }
-  .cost-table .col-num { width: 130px; }
-  .cost-table input {
+  :global(.cost-table th.col-num) { text-align: left; white-space: nowrap; }
+  :global(.cost-table td.col-num) { text-align: right; white-space: nowrap; }
+  :global(.cost-table .col-desc) { color: #888; font-size: 0.78rem; }
+  :global(.cost-table .col-num) { width: 130px; }
+  :global(.cost-table input) {
     width: 100%;
     max-width: 130px;
     box-sizing: border-box;
@@ -1072,13 +1079,13 @@ const industries = benchmarkData.industries;
     color: #1a1a1a;
     text-align: right;
   }
-  .cost-table input:focus {
+  :global(.cost-table input:focus) {
     outline: none;
     border-color: var(--color-accent, #2563eb);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
   }
   .form-grid input::placeholder,
-  .cost-table input::placeholder {
+  :global(.cost-table input::placeholder) {
     color: #b9bec8;
   }
   .cost-table .reserve-row td { color: #888; font-size: 0.82rem; }
@@ -1106,6 +1113,22 @@ const industries = benchmarkData.industries;
     cursor: pointer;
   }
   #run-btn:hover { opacity: 0.9; }
+
+  .setup-help {
+    max-width: 640px;
+    margin: 1.2rem auto 0;
+    font-size: 0.8rem;
+    color: #555;
+    background: #f4f6fb;
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+  }
+  .setup-help summary { cursor: pointer; font-weight: 700; color: var(--color-accent, #2563eb); font-size: 0.85rem; }
+  .setup-help dl { margin: 0.6rem 0 0; }
+  .setup-help dt { font-weight: 700; color: #222; margin-top: 0.6rem; }
+  .setup-help dt:first-child { margin-top: 0; }
+  .setup-help dd { margin: 0.2rem 0 0; line-height: 1.6; color: #555; }
 
   /* ===== STEP2：左右2カラム（左＝レポート／右＝シミュレーター） ===== */
   .step-dashboard { margin-top: 1.2rem; }
@@ -1149,19 +1172,6 @@ const industries = benchmarkData.industries;
     cursor: pointer;
   }
   #print-btn { background: var(--color-accent, #2563eb); border-color: var(--color-accent, #2563eb); font-weight: 700; }
-  .control-help {
-    margin: 0 0 0.9rem;
-    font-size: 0.72rem;
-    color: #c3c9e0;
-    background: rgba(255,255,255,0.04);
-    border-radius: 8px;
-    padding: 0.5rem 0.7rem;
-  }
-  .control-help summary { cursor: pointer; font-weight: 700; color: #9aa4c4; font-size: 0.74rem; }
-  .control-help dl { margin: 0.5rem 0 0; }
-  .control-help dt { font-weight: 700; color: #e5e9f5; margin-top: 0.55rem; }
-  .control-help dt:first-child { margin-top: 0; }
-  .control-help dd { margin: 0.15rem 0 0; line-height: 1.55; color: #b7bdd6; }
   .control-sublabel { font-size: 0.74rem; color: #9aa4c4; margin: 0 0 0.4rem; }
   .control-sublabel--second { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.08); }
   .slider-list { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.2rem; }
@@ -1170,17 +1180,18 @@ const industries = benchmarkData.industries;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.55rem;
   }
-  .slider-item {
+  /* スライダー項目もJSで動的生成されるため :global() が必要 */
+  :global(.slider-item) {
     background: rgba(255,255,255,0.05);
     border-radius: 8px;
     padding: 0.5rem 0.6rem;
   }
-  .slider-item--wide { grid-column: span 2; }
-  .slider-top { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 0.3rem; }
-  .slider-label { color: #c3c9e0; }
-  .slider-value { color: #fff; font-weight: 700; }
-  .slider-item input[type="range"] { width: 100%; accent-color: var(--color-accent, #2563eb); }
-  .slider-initial { font-size: 0.65rem; color: #7c85a8; margin: 0.2rem 0 0; }
+  :global(.slider-item--wide) { grid-column: span 2; }
+  :global(.slider-top) { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 0.3rem; }
+  :global(.slider-label) { color: #c3c9e0; }
+  :global(.slider-value) { color: #fff; font-weight: 700; }
+  :global(.slider-item input[type="range"]) { width: 100%; accent-color: var(--color-accent, #2563eb); }
+  :global(.slider-initial) { font-size: 0.65rem; color: #7c85a8; margin: 0.2rem 0 0; }
 
   /* ===== STEP2：印刷レポート本体 ===== */
   .print-container {
@@ -1267,7 +1278,8 @@ const industries = benchmarkData.industries;
   .pipeline-check { font-size: 0.7rem; color: #999; margin: 0.55rem 0 0; line-height: 1.5; }
   .pipeline-check--warn { color: #c2410c; font-weight: 600; }
 
-  .cpl-badge {
+  /* pl-cpl-check の中にJSでinnerHTML挿入されるバッジなので :global() が必要 */
+  :global(.cpl-badge) {
     display: inline-block;
     font-size: 0.65rem;
     font-weight: 700;
@@ -1277,8 +1289,8 @@ const industries = benchmarkData.industries;
     white-space: nowrap;
     vertical-align: middle;
   }
-  .cpl-badge--ok { background: #dcfce7; color: #15803d; }
-  .cpl-badge--warn { background: #ffedd5; color: #c2410c; }
+  :global(.cpl-badge--ok) { background: #dcfce7; color: #15803d; }
+  :global(.cpl-badge--warn) { background: #ffedd5; color: #c2410c; }
 
   .compare-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   .compare-table th, .compare-table td { padding: 0.4rem 0.35rem; border-bottom: 1px solid #f0f0f0; text-align: right; }
@@ -1293,25 +1305,26 @@ const industries = benchmarkData.industries;
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 0.6rem;
   }
-  .cost-grid-item { border: 1px solid #eee; border-radius: 8px; padding: 0.55rem 0.65rem; }
-  .cost-grid-item--reserve { background: #fafafa; }
-  .cost-grid-name { font-size: 0.7rem; color: #888; margin: 0 0 0.25rem; }
-  .cost-grid-value { font-size: 0.98rem; font-weight: 700; margin: 0; }
-  .cost-grid-unit { font-size: 0.66rem; color: #999; margin-left: 0.2rem; font-weight: 400; }
+  /* cost-grid-item / rank-row 系はJSで動的生成されるため :global() が必要 */
+  :global(.cost-grid-item) { border: 1px solid #eee; border-radius: 8px; padding: 0.55rem 0.65rem; }
+  :global(.cost-grid-item--reserve) { background: #fafafa; }
+  :global(.cost-grid-name) { font-size: 0.7rem; color: #888; margin: 0 0 0.25rem; }
+  :global(.cost-grid-value) { font-size: 0.98rem; font-weight: 700; margin: 0; }
+  :global(.cost-grid-unit) { font-size: 0.66rem; color: #999; margin-left: 0.2rem; font-weight: 400; }
 
   .reference-card summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--color-accent, #2563eb); }
   .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f4f4f4; font-size: 0.85rem; }
   .result-row--highlight { font-weight: 700; color: var(--color-accent, #2563eb); }
   .ranking-chart { margin-top: 0.7rem; }
-  .rank-row { display: grid; grid-template-columns: 130px 1fr 52px; align-items: center; gap: 0.6rem; padding: 0.22rem 0; font-size: 0.74rem; }
-  .rank-row .name { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rank-row.own .name { color: #222; font-weight: 700; }
-  .rank-track { position: relative; height: 13px; background: #eee; border-radius: 3px; }
-  .rank-fill { height: 100%; border-radius: 3px; background: #c9cdd6; }
-  .rank-row.own .rank-fill { background: var(--color-accent, #2563eb); }
-  .rank-row .val { text-align: right; color: #666; font-variant-numeric: tabular-nums; }
-  .rank-row.own .val { color: var(--color-accent, #2563eb); font-weight: 700; }
-  .rank-refline { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--color-accent, #2563eb); opacity: 0.6; }
+  :global(.rank-row) { display: grid; grid-template-columns: 130px 1fr 52px; align-items: center; gap: 0.6rem; padding: 0.22rem 0; font-size: 0.74rem; }
+  :global(.rank-row .name) { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  :global(.rank-row.own .name) { color: #222; font-weight: 700; }
+  :global(.rank-track) { position: relative; height: 13px; background: #eee; border-radius: 3px; }
+  :global(.rank-fill) { height: 100%; border-radius: 3px; background: #c9cdd6; }
+  :global(.rank-row.own .rank-fill) { background: var(--color-accent, #2563eb); }
+  :global(.rank-row .val) { text-align: right; color: #666; font-variant-numeric: tabular-nums; }
+  :global(.rank-row.own .val) { color: var(--color-accent, #2563eb); font-weight: 700; }
+  :global(.rank-refline) { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--color-accent, #2563eb); opacity: 0.6; }
   .legend-line { font-size: 0.7rem; color: #999; margin-top: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
   .legend-dot.rank-avg { background: #c9cdd6; }
