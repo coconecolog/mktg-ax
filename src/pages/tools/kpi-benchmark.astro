@@ -9,11 +9,15 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import benchmarkData from "@/data/benchmark-data.json";
 
 const industries = benchmarkData.industries;
+
+// PDFダウンロード機能の表示切り替え。
+// 一時的に非表示にしたいだけなら、このtrue/falseを書き換えるだけでOK（コードの削除は不要）。
+const SHOW_PDF_EXPORT = false;
 ---
 
 <BaseLayout
   title="業界ベンチマーク診断｜MKTG.AX"
-  description="自社の広告宣伝費が業界水準に対して多いか少ないかを診断し、社内稟議・経営会議にそのまま使える資料をPDFで出力します。"
+  description="自社の広告宣伝費が業界水準に対して多いか少ないかを診断します。"
   ogImage="/open-graph/default.png"
 >
   <main class="benchmark-tool">
@@ -22,7 +26,6 @@ const industries = benchmarkData.industries;
       <h1>業界ベンチマーク診断</h1>
       <p class="lead">
         あなたの会社の広告宣伝費が、同業種の実データと比べて多いのか少ないのかを診断します。
-        結果はそのまま社内稟議・経営会議の資料としてPDF出力できます。
       </p>
       <p class="source-note">
         データ出典：{benchmarkData.sourceTitle}
@@ -117,7 +120,9 @@ const industries = benchmarkData.industries;
         </p>
       </div>
 
-      <button id="download-pdf-btn" type="button">この結果を稟議用PDFでダウンロード</button>
+      {SHOW_PDF_EXPORT && (
+        <button id="download-pdf-btn" type="button">この結果を稟議用PDFでダウンロード</button>
+      )}
     </section>
   </main>
 </BaseLayout>
