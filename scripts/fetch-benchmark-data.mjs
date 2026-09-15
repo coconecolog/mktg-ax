@@ -31,8 +31,14 @@ import path from "node:path";
 const APP_ID = (process.env.ESTAT_APP_ID || "").trim();
 const BASE_URL = "https://api.e-stat.go.jp/rest/3.0/app/json";
 
-// 前回は複数キーワードのAND検索で該当ゼロだったため、
-// まず単語ひとつだけの広い検索に変更し、見つかった候補を全部表示するようにした。
+// 2026-09-15時点でe-Statのファイル検索から確認した最新版。
+// 「中小企業実態基本調査 令和6年確報（令和5年度決算実績）
+//   統計表3．売上高及び営業費用 (2)産業中分類別表 1)法人企業」
+// 公開日: 2025-07-30 （旧データは2016年度分だったため、7年分新しくなる）
+// まずこのIDを直接試し、失敗したときだけ検索にフォールバックする。
+const KNOWN_LATEST_STATS_DATA_ID = "000040303383";
+
+// 直接IDがうまくいかなかった場合のフォールバック検索キーワード
 const SEARCH_CANDIDATES = ["中小企業実態基本調査"];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -99,7 +105,40 @@ async function findStatsDataId() {
 
 async function fetchStatsData(statsDataId) {
   const data = await apiGet("getStatsData", { statsDataId });
+
+  const status = data?.GET_STATS_DATA?.RESULT?.STATUS;
+  const errorMsg = data?.GET_STATS_DATA?.RESULT?.ERROR_MSG;
+  if (status !== undefined && status !== 0) {
+    throw new Error(`getStatsDataがエラーを返しました STATUS=${status} ERROR_MSG=${errorMsg}`);
+  }
+
   return data?.GET_STATS_DATA?.STATISTICAL_DATA ?? {};
+}
+
+function extractTitleFromStatsData(statData) {
+  const tableInf = statData?.TABLE_INF ?? {};
+  const statName = typeof tableInf.STATISTICS_NAME === "string" ? tableInf.STATISTICS_NAME : (tableInf.STATISTICS_NAME?.$ || "");
+  const title = tableInf.TITLE?.$ ?? (typeof tableInf.TITLE === "string" ? tableInf.TITLE : "");
+  return statName || title ? `${statName}｜${title}` : null;
+}
+
+// 既知の最新統計表IDをまず直接試す。CLASS_INF・DATA_INFが取れれば成功とみなす。
+async function tryKnownTable() {
+  try {
+    const statData = await fetchStatsData(KNOWN_LATEST_STATS_DATA_ID);
+    const hasClass = (statData?.CLASS_INF?.CLASS_OBJ?.length ?? 0) > 0 || !!statData?.CLASS_INF?.CLASS_OBJ;
+    const hasValues = !!statData?.DATA_INF?.VALUE;
+    if (!hasClass || !hasValues) {
+      console.warn("[情報] 既知の最新統計表IDではデータが取得できませんでした。検索にフォールバックします。");
+      return null;
+    }
+    const title = extractTitleFromStatsData(statData) || "中小企業実態基本調査 令和6年確報（令和5年度決算実績） 産業中分類別表（法人企業）";
+    console.log(`[OK] 既知の最新統計表を使用: ${KNOWN_LATEST_STATS_DATA_ID} / ${title}`);
+    return { statData, title, statsDataId: KNOWN_LATEST_STATS_DATA_ID };
+  } catch (err) {
+    console.warn(`[情報] 既知の最新統計表IDの取得に失敗しました（${err.message}）。検索にフォールバックします。`);
+    return null;
+  }
 }
 
 function buildBenchmarkJson(statData, sourceTitle, statsDataId) {
@@ -200,14 +239,24 @@ async function main() {
     process.exit(1);
   }
 
-  const { statsDataId, title } = await findStatsDataId();
-  if (!statsDataId) {
-    console.error("エラー: 該当する統計表が見つかりませんでした。");
-    console.error("手動確認用URL: https://www.e-stat.go.jp/stat-search/files?toukei=00553010&tstat=000001019842");
-    process.exit(1);
+  // まず既知の最新統計表（令和6年確報＝令和5年度決算実績）を直接試す
+  let statsDataId, title, statData;
+  const known = await tryKnownTable();
+
+  if (known) {
+    ({ statsDataId, title, statData } = known);
+  } else {
+    const found = await findStatsDataId();
+    if (!found.statsDataId) {
+      console.error("エラー: 該当する統計表が見つかりませんでした。");
+      console.error("手動確認用URL: https://www.e-stat.go.jp/stat-search/files?toukei=00553010&tstat=000001019842");
+      process.exit(1);
+    }
+    statsDataId = found.statsDataId;
+    title = found.title;
+    statData = await fetchStatsData(statsDataId);
   }
 
-  const statData = await fetchStatsData(statsDataId);
   const result = buildBenchmarkJson(statData, title, statsDataId);
 
   await mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
