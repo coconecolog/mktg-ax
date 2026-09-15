@@ -14,6 +14,12 @@ export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 // ここに追加すればヘッダーのプルダウン・モバイルメニューの両方に自動で反映される。
 export const TOOLS_NAV_ITEMS = [
   {
+    href: "/tools/budget-simulator",
+    icon: "🧮",
+    label: "マーケティング予算策定・投資計画書",
+    description: "来期予算を逆算し、役員提出用の計画書を自動作成",
+  },
+  {
     href: "/tools/roas-cac-simulator",
     icon: "📊",
     label: "ROAS/CACシミュレーター",
@@ -35,14 +41,8 @@ export const TOOLS_NAV_ITEMS = [
 
 // トップページ「便利ツール」セクションに表示するツール（最大3つ）。
 // TOOLS_NAV_ITEMS（ヘッダーのプルダウン・モバイルメニュー用、全ツール掲載）とは別に管理する。
-// 先頭に広告宣伝費 業界ベンチマーク診断を追加し、ROAS/CACシミュレーターは表示から外している。
+// TOOLS_NAV_ITEMSの先頭（マーケティング予算策定・投資計画書）を活かしつつ、ROAS/CACシミュレーターだけを表示から外している。
 export const HOME_TOOLS_ITEMS = [
-  {
-    href: "/tools/kpi-benchmark",
-    icon: "📈",
-    label: "広告宣伝費 業界ベンチマーク診断",
-    description: "自社の広告宣伝費が業界水準に対して多いか少ないかを診断",
-  },
   ...TOOLS_NAV_ITEMS.filter((tool) => tool.href !== "/tools/roas-cac-simulator"),
 ] as const;
 
