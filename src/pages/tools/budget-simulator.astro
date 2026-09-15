@@ -20,14 +20,14 @@ const industries = benchmarkData.industries;
 ---
 
 <BaseLayout
-  title="来期マーケティング予算詳細シミュレーター｜MKTG.AX"
+  title="マーケティング予算詳細シミュレーター｜MKTG.AX"
   description="今期実績と来期施策（人件費・ツール費・広告費等）を入力し、根拠ある予算計画書を作成します。"
   ogImage="/open-graph/default.png"
 >
   <main class="budget-tool" data-industries={JSON.stringify(industries)}>
     <header class="tool-header">
-      <p class="eyebrow">無料診断ツール ／ マーケティングマネージャー用</p>
-      <h1>来期マーケティング予算詳細シミュレーター</h1>
+            <p class="eyebrow"><a href="/tools/">便利ツール</a></p>
+            <h1>マーケティング予算詳細シミュレーター</h1>
       <p class="lead">
         今期実績と来期施策（人件費・ツール費・広告費等）を入力し、逆算パイプライン・費用内訳・ROI試算まで含めた
         役員提出用の1ページ計画書を作成します。
@@ -833,6 +833,13 @@ const industries = benchmarkData.industries;
     font-size: 0.85rem;
     letter-spacing: 0.05em;
   }
+.tool-header .eyebrow a {
+  color: inherit;
+  text-decoration: none;
+}
+.tool-header .eyebrow a:hover {
+  text-decoration: underline;
+}
   .tool-header h1 {
     margin: 0.25rem 0 0.6rem;
     font-size: 1.7rem;
