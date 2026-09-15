@@ -33,6 +33,19 @@ export const TOOLS_NAV_ITEMS = [
   },
 ] as const;
 
+// トップページ「便利ツール」セクションに表示するツール（最大3つ）。
+// TOOLS_NAV_ITEMS（ヘッダーのプルダウン・モバイルメニュー用、全ツール掲載）とは別に管理する。
+// 先頭に広告宣伝費 業界ベンチマーク診断を追加し、ROAS/CACシミュレーターは表示から外している。
+export const HOME_TOOLS_ITEMS = [
+  {
+    href: "/tools/kpi-benchmark",
+    icon: "📈",
+    label: "広告宣伝費 業界ベンチマーク診断",
+    description: "自社の広告宣伝費が業界水準に対して多いか少ないかを診断",
+  },
+  ...TOOLS_NAV_ITEMS.filter((tool) => tool.href !== "/tools/roas-cac-simulator"),
+] as const;
+
 // グローバルナビゲーション。children を持つ項目はヘッダーでプルダウンとして表示される
 // （Footer.astroは独自の3カラム構成のため、この配列は参照していません。フッターのリンクを変えたい場合はFooter.astroを直接編集してください）。
 export const NAV_LINKS = [
