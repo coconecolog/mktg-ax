@@ -39,7 +39,7 @@ const industries = benchmarkData.industries;
       <div class="preset-block">
         <p class="section-label">クイックモデル選択</p>
         <div class="preset-grid">
-          <button type="button" class="preset-card is-active" data-preset="standard">
+          <button type="button" class="preset-card" data-preset="standard">
             <span class="preset-name">標準モデル（BtoB SaaS／ツール活用）<span class="preset-badge">推奨</span></span>
             <span class="preset-desc">展示会なし／Web広告・SEO・MAツール中心／人件費・外注費計上</span>
           </button>
@@ -122,6 +122,7 @@ const industries = benchmarkData.industries;
         </div>
       </fieldset>
 
+      <p id="setup-error" class="setup-error" hidden></p>
       <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
     </section>
 
@@ -363,11 +364,15 @@ const industries = benchmarkData.industries;
     },
   };
 
-  // 2-4：初期値のまま未編集の入力欄を薄いグレー（プレースホルダー的な見た目）にするための対象ID
-  const DEFAULT_VALUE_INPUT_IDS = [
-    'in-targetSales', 'in-mktRatio', 'in-unitPrice', 'in-winRate', 'in-oppRate', 'in-cpl',
-    'in-currentSales', 'in-currentMktSales', 'in-currentLeads', 'in-reserveRate',
+  // 2-1：必須入力項目（この5つが空欄のままシミュレーター実行を押すとエラーにする）
+  const REQUIRED_FIELDS = [
+    { id: 'in-targetSales', label: '来期 全社売上目標' },
+    { id: 'in-mktRatio', label: 'マーケ貢献売上割合' },
+    { id: 'in-unitPrice', label: '平均客単価' },
+    { id: 'in-winRate', label: '商談→成約率' },
+    { id: 'in-oppRate', label: 'リード→商談化率' },
   ];
+
 
   const TARGET_SLIDERS = [
     { key: 'targetSales', label: '全社売上目標', unit: '億円', min: 1, max: 50, step: 0.5, decimals: 1 },
@@ -446,23 +451,32 @@ const industries = benchmarkData.industries;
   }
 
   // ---------- STEP1：コストテーブル描画 ----------
-  function renderCostTable(markDefaults) {
+  // asPlaceholder=true の場合、実際の値（value）は入れず、demoCosts の数字を
+  // プレースホルダー（薄いグレーの見本表示）としてのみ表示する＝計算には使われない。
+  function renderCostTable(asPlaceholder, demoCosts) {
     const body = document.getElementById('cost-table-body');
     if (!body) return;
-    const defaultClass = markDefaults ? ' is-default-value' : '';
-    body.innerHTML = COST_KEYS.map((c) => `
+    body.innerHTML = COST_KEYS.map((c) => {
+      const demo = demoCosts ? demoCosts[c.key] : { current: 0, next: 0 };
+      const currentAttr = asPlaceholder
+        ? `placeholder="${demo.current}" value=""`
+        : `value="${state.costs[c.key].current}"`;
+      const nextAttr = asPlaceholder
+        ? `placeholder="${demo.next}" value=""`
+        : `value="${state.costs[c.key].next}"`;
+      return `
       <tr>
         <td class="col-name">${COST_KEYS.indexOf(c) + 1}. ${c.name}</td>
         <td class="col-desc">${c.desc}</td>
-        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" value="${state.costs[c.key].current}" class="${defaultClass}" /></td>
-        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" value="${state.costs[c.key].next}" class="${defaultClass}" /></td>
+        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" ${currentAttr} /></td>
+        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" ${nextAttr} /></td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     body.querySelectorAll('input[data-cost-key]').forEach((input) => {
       input.addEventListener('input', (e) => {
         const target = e.target;
-        target.classList.remove('is-default-value');
         const key = target.dataset.costKey;
         const field = target.dataset.costField;
         state.costs[key][field] = parseFloat(target.value) || 0;
@@ -481,32 +495,73 @@ const industries = benchmarkData.industries;
     document.getElementById('setup-total-next').textContent = fmtManNoUnit(totals.budget);
   }
 
-  function fillSetupForm(markDefaults = true) {
-    document.getElementById('in-targetSales').value = String(state.targetSales);
-    document.getElementById('in-mktRatio').value = String(state.mktRatio);
-    document.getElementById('in-unitPrice').value = String(state.unitPrice);
-    document.getElementById('in-winRate').value = String(state.winRate);
-    document.getElementById('in-oppRate').value = String(state.oppRate);
-    document.getElementById('in-cpl').value = String(state.cpl);
-    document.getElementById('in-currentSales').value = String(state.currentSales);
-    document.getElementById('in-currentMktSales').value = String(state.currentMktSales);
-    document.getElementById('in-currentLeads').value = String(state.currentLeads);
+  // asPlaceholder=true：初期表示専用。見本の数字はプレースホルダーとしてのみ表示し、
+  // 実際の入力値（value）は空にする＝この状態でシミュレーターを実行しても計算には使われない。
+  // asPlaceholder=false：プリセット選択時・条件再設定時。実際の値として入力欄に反映する。
+  function fillSetupForm(asPlaceholder = false) {
+    const fields = [
+      ['in-targetSales', state.targetSales],
+      ['in-mktRatio', state.mktRatio],
+      ['in-unitPrice', state.unitPrice],
+      ['in-winRate', state.winRate],
+      ['in-oppRate', state.oppRate],
+      ['in-cpl', state.cpl],
+      ['in-currentSales', state.currentSales],
+      ['in-currentMktSales', state.currentMktSales],
+      ['in-currentLeads', state.currentLeads],
+    ];
+    const demoCosts = asPlaceholder ? JSON.parse(JSON.stringify(state.costs)) : null;
+
+    fields.forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (asPlaceholder) {
+        el.placeholder = String(val);
+        el.value = '';
+      } else {
+        el.value = String(val);
+      }
+    });
     document.getElementById('in-reserveRate').value = String(isFinite(state.reserveRate) ? state.reserveRate : 5);
 
-    // 2-4：初期値のまま（未編集）の項目は薄いグレーで表示し、プレースホルダーだと分かるようにする
-    DEFAULT_VALUE_INPUT_IDS.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.classList.toggle('is-default-value', markDefaults);
-    });
+    if (asPlaceholder) {
+      // 見本表示のみ＝計算対象外にする（実行時に0扱いになる。必須項目はエラー扱いになる）
+      state.targetSales = 0; state.mktRatio = 0; state.unitPrice = 0;
+      state.winRate = 0; state.oppRate = 0; state.cpl = 0;
+      state.currentSales = 0; state.currentMktSales = 0; state.currentLeads = 0;
+      COST_KEYS.forEach((c) => { state.costs[c.key].current = 0; state.costs[c.key].next = 0; });
+    }
 
-    renderCostTable(markDefaults);
+    clearSetupError();
+    renderCostTable(asPlaceholder, demoCosts);
   }
 
-  // 未編集（初期値）のグレー表示を、ユーザーが実際に入力した時点で解除する
-  DEFAULT_VALUE_INPUT_IDS.forEach((id) => {
-    const el = document.getElementById(id);
-    el?.addEventListener('input', () => el.classList.remove('is-default-value'));
-  });
+  function validateRequiredFields() {
+    const missing = [];
+    REQUIRED_FIELDS.forEach(({ id, label }) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('input-error');
+      if (el.value.trim() === '') {
+        missing.push(label);
+        el.classList.add('input-error');
+      }
+    });
+    return missing;
+  }
+
+  function showSetupError(missing) {
+    const el = document.getElementById('setup-error');
+    if (!el) return;
+    el.textContent = `必須項目（※）が未入力です：${missing.join('、')}`;
+    el.hidden = false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearSetupError() {
+    const el = document.getElementById('setup-error');
+    if (el) el.hidden = true;
+  }
 
   function readSetupForm() {
     state.targetSales = parseFloat(document.getElementById('in-targetSales').value) || 0;
@@ -533,7 +588,7 @@ const industries = benchmarkData.industries;
       state = JSON.parse(JSON.stringify(preset));
       document.querySelectorAll('.preset-card').forEach((b) => b.classList.remove('is-active'));
       btn.classList.add('is-active');
-      fillSetupForm();
+      fillSetupForm(false);
     });
   });
 
@@ -823,6 +878,11 @@ const industries = benchmarkData.industries;
 
   // ---------- イベント：実行／リセット／再設定／印刷 ----------
   document.getElementById('run-btn')?.addEventListener('click', () => {
+    const missing = validateRequiredFields();
+    if (missing.length > 0) {
+      showSetupError(missing);
+      return;
+    }
     readSetupForm();
     initialConfig = JSON.parse(JSON.stringify(state));
 
@@ -861,8 +921,8 @@ const industries = benchmarkData.industries;
     window.print();
   });
 
-  // ---------- 初期表示 ----------
-  fillSetupForm();
+  // ---------- 初期表示（見本の数字はプレースホルダーとしてのみ表示。計算には使わない） ----------
+  fillSetupForm(true);
 </script>
 
 <style>
@@ -972,6 +1032,17 @@ const industries = benchmarkData.industries;
     font-size: 1rem;
     background: #fff;
   }
+  .form-grid input.input-error {
+    border-color: #dc2626;
+    background: #fff5f5;
+  }
+  .setup-error {
+    color: #b91c1c;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-align: center;
+    margin: 0.8rem 0 0;
+  }
 
   .cost-table {
     width: 100%;
@@ -985,7 +1056,8 @@ const industries = benchmarkData.industries;
     text-align: left;
   }
   .cost-table thead th { color: #666; font-weight: 600; font-size: 0.78rem; }
-  .cost-table th.col-num, .cost-table td.col-num { text-align: right; white-space: nowrap; }
+  .cost-table th.col-num { text-align: left; white-space: nowrap; }
+  .cost-table td.col-num { text-align: right; white-space: nowrap; }
   .cost-table .col-desc { color: #888; font-size: 0.78rem; }
   .cost-table .col-num { width: 130px; }
   .cost-table input {
@@ -1005,9 +1077,9 @@ const industries = benchmarkData.industries;
     border-color: var(--color-accent, #2563eb);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
   }
-  .cost-table input.is-default-value,
-  .form-grid input.is-default-value {
-    color: #adb2bd;
+  .form-grid input::placeholder,
+  .cost-table input::placeholder {
+    color: #b9bec8;
   }
   .cost-table .reserve-row td { color: #888; font-size: 0.82rem; }
   .cost-table .total-row td { font-weight: 700; color: var(--color-accent, #2563eb); border-top: 2px solid #ddd; border-bottom: none; }
