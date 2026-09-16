@@ -44,20 +44,18 @@ const industries = benchmarkData.industries;
 
         <fieldset class="field-group">
           <legend>1. 全社目標・売上パイプライン前提（来期）</legend>
-          <p class="field-note">※過去実績から算出した期待歩留まりを入力</p>
           <div class="form-grid">
-            <label>来期 全社売上目標（億円）<span class="req-mark">※</span><input type="number" id="in-targetSales" min="0" step="0.1" /></label>
-            <label>マーケ貢献売上割合（％）<span class="req-mark">※</span><input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
-            <label>平均客単価（万円／件）<span class="req-mark">※</span><input type="number" id="in-unitPrice" min="0" step="10" /></label>
-            <label>商談 → 成約率（％）<span class="req-mark">※</span><input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
-            <label>リード → 商談化率（％）<span class="req-mark">※</span><input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
+            <label><span class="field-label-text">来期 全社売上目標（億円）<span class="req-mark">※</span></span><input type="number" id="in-targetSales" min="0" step="0.1" /></label>
+            <label><span class="field-label-text">マーケ貢献売上割合（％）<span class="req-mark">※</span></span><input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
+            <label><span class="field-label-text">平均客単価（万円／件）<span class="req-mark">※</span></span><input type="number" id="in-unitPrice" min="0" step="10" /></label>
+            <label><span class="field-label-text">商談 → 成約率（％）<span class="req-mark">※</span></span><input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
+            <label><span class="field-label-text">リード → 商談化率（％）<span class="req-mark">※</span></span><input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
             <label>目標平均CPL（万円／件）<input type="number" id="in-cpl" min="0" step="0.1" /></label>
           </div>
         </fieldset>
 
         <fieldset class="field-group">
           <legend>2. 施策チャネル・コスト詳細内訳（今期実績 vs 来期計画）</legend>
-          <p class="field-note">※すべて任意項目です。空欄の場合は0として扱われ、該当する実績比較・グラフの表示のみが参考値になります。各項目の内容例はページ下部「用語・計算式の説明」をご覧ください。</p>
           <div class="form-grid">
             <label>今期 売上着地実績（億円）<input type="number" id="in-currentSales" min="0" step="0.1" /></label>
             <label>今期 マーケ貢献売上着地（億円）<input type="number" id="in-currentMktSales" min="0" step="0.1" /></label>
@@ -874,7 +872,9 @@ const industries = benchmarkData.industries;
   }
   .field-note { font-size: 0.78rem; color: #888; margin: 0.2rem 0 1rem; }
   .required-legend { font-size: 0.78rem; color: #b91c1c; margin: 0 0 0.9rem; font-weight: 600; }
-  .req-mark { color: #dc2626; font-weight: 700; margin-left: 0.15rem; }
+  .req-mark { color: #dc2626; font-weight: 700; margin-left: 0.15rem; white-space: nowrap; }
+  /* ラベル文言と※を1つの行として1つのflexアイテムにまとめ、改行で※だけ次行に落ちないようにする */
+  .field-label-text { display: inline-flex; align-items: baseline; white-space: nowrap; }
   .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
