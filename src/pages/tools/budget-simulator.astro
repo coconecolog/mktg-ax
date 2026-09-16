@@ -64,17 +64,28 @@ const industries = benchmarkData.industries;
             <label>今期 獲得リード数（件）<input type="number" id="in-currentLeads" min="0" step="10" /></label>
           </div>
 
-          <div class="cost-cards" id="cost-cards-body"></div>
+          <div class="cost-cards">
+            <div class="cost-cards-dynamic" id="cost-cards-body"></div>
+            <div class="cost-card cost-card--buffer">
+              <p class="cost-card-name">7. 予備費・バッファ</p>
+              <div class="cost-card-inputs">
+                <label>今期実績（％）
+                  <span class="percent-input">
+                    <input type="number" id="in-reserveRateCurrent" min="0" max="100" step="1" value="5" />
+                    <span class="percent-sign">%</span>
+                  </span>
+                </label>
+                <label>来期計画（％）
+                  <span class="percent-input">
+                    <input type="number" id="in-reserveRateNext" min="0" max="100" step="1" value="5" />
+                    <span class="percent-sign">%</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
 
           <div class="cost-summary">
-            <div class="cost-summary-row cost-summary-row--buffer">
-              <span class="cost-summary-label">予備費・バッファ（今期実績<input type="number" id="in-reserveRateCurrent" class="reserve-rate-input" min="0" max="100" step="1" value="5" />% ／ 来期計画<input type="number" id="in-reserveRateNext" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</span>
-              <span class="cost-summary-vals">
-                <span class="cost-summary-item"><span class="cost-summary-tag">今期</span><span id="setup-reserve-current"></span></span>
-                <span class="cost-summary-arrow">→</span>
-                <span class="cost-summary-item"><span class="cost-summary-tag">来期</span><span id="setup-reserve-next"></span></span>
-              </span>
-            </div>
             <div class="cost-summary-row cost-summary-row--total">
               <span class="cost-summary-label">合計マーケティング予算（総投資額）</span>
               <span class="cost-summary-vals">
@@ -229,8 +240,25 @@ const industries = benchmarkData.industries;
           <div class="cost-grid" id="cost-breakdown-grid"></div>
         </div>
 
-        <details class="card reference-card">
-          <summary>参考：業界の広告宣伝費水準と比較する</summary>
+        <div class="card report-footer-card">
+          <div class="report-footer">
+            <div class="footer-col">
+              <h4>◎ 重点施策方針</h4>
+              <p id="footer-policy"></p>
+            </div>
+            <div class="footer-col">
+              <h4>◇ リスク管理＆機動的バッファ</h4>
+              <p id="footer-risk"></p>
+            </div>
+            <div class="footer-col">
+              <h4>✓ 経営層へのご決裁依頼</h4>
+              <p id="footer-request"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card reference-card">
+          <h3><span class="card-icon">▼</span>参考：業界の広告宣伝費水準と比較する</h3>
           <p class="field-note">
             この計画書の主軸はあくまで自社の実績・目標です。以下は「来期のWeb広告費が、業界の広告宣伝費水準から見て
             極端でないか」を確認するための参考情報です（出典：{benchmarkData.sourceTitle}）。
@@ -253,45 +281,29 @@ const industries = benchmarkData.industries;
             <span class="legend-dot rank-own" style="margin-left:0.6rem;"></span>選択した業種
             <span style="margin-left:0.6rem;">┊</span>来期Web広告費の実績値
           </div>
-        </details>
-
-        <div class="report-footer">
-          <div class="footer-col">
-            <h4>◎ 重点施策方針</h4>
-            <p id="footer-policy"></p>
-          </div>
-          <div class="footer-col">
-            <h4>◇ リスク管理＆機動的バッファ</h4>
-            <p id="footer-risk"></p>
-          </div>
-          <div class="footer-col">
-            <h4>✓ 経営層へのご決裁依頼</h4>
-            <p id="footer-request"></p>
-          </div>
         </div>
-        <!-- ↑ report-footer 閉じ -->
         </div>
         <!-- ↑ print-container 閉じ -->
-
-        <div class="setup-help no-print" id="setup-help">
-          <p class="setup-help-title">用語・計算式の説明</p>
-          <dl>
-            <dt>マーケ貢献売上割合（％）</dt>
-            <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
-            <dt>平均客単価（万円／件）</dt>
-            <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
-            <dt>商談 → 成約率（％）</dt>
-            <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
-            <dt>リード → 商談化率（％）</dt>
-            <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
-            <dt>目標平均CPL（万円／件）</dt>
-            <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
-          </dl>
-
-          <p class="setup-help-title setup-help-title--sub">施策チャネル費用の内容例</p>
-          <dl class="setup-help-costs" id="setup-help-costs"></dl>
-        </div>
       </div>
+    </div>
+
+    <div class="setup-help no-print" id="setup-help">
+      <p class="setup-help-title">用語・計算式の説明</p>
+      <dl>
+        <dt>マーケ貢献売上割合（％）</dt>
+        <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
+        <dt>平均客単価（万円／件）</dt>
+        <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
+        <dt>商談 → 成約率（％）</dt>
+        <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
+        <dt>リード → 商談化率（％）</dt>
+        <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
+        <dt>目標平均CPL（万円／件）</dt>
+        <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
+      </dl>
+
+      <p class="setup-help-title setup-help-title--sub">施策チャネル費用の内容例</p>
+      <dl class="setup-help-costs" id="setup-help-costs"></dl>
     </div>
   </main>
 </BaseLayout>
@@ -444,8 +456,6 @@ const industries = benchmarkData.industries;
 
   function renderSetupTotals() {
     const totals = computeCostTotals(state);
-    document.getElementById('setup-reserve-current').textContent = fmtMan(totals.reserveCurrent);
-    document.getElementById('setup-reserve-next').textContent = fmtMan(totals.reserve);
     document.getElementById('setup-total-current').textContent = fmtMan(totals.subtotalCurrent + totals.reserveCurrent);
     document.getElementById('setup-total-next').textContent = fmtMan(totals.budget);
   }
@@ -909,6 +919,13 @@ const industries = benchmarkData.industries;
     gap: 0.7rem;
     margin-top: 1.2rem;
   }
+  /* #cost-cards-body 自体はJSがinnerHTMLで書き換える箱。display:contents にして
+     中の6枚のカードを親 .cost-cards のグリッドに直接並べ、静的な7枚目（予備費カード）と揃える。 */
+  .cost-cards-dynamic { display: contents; }
+  .cost-card--buffer { background: #fafafa; }
+  .percent-input { display: flex; align-items: center; gap: 0.3rem; }
+  .percent-input input { flex: 1; }
+  .percent-sign { font-size: 0.95rem; font-weight: 700; color: #333; }
   :global(.cost-card) {
     border: 1px solid #e2e2e2;
     border-radius: 10px;
@@ -985,15 +1002,6 @@ const industries = benchmarkData.industries;
   .cost-summary-tag { font-size: 0.66rem; color: #aaa; font-weight: 400; }
   .cost-summary-row--total .cost-summary-tag { color: #9db8f0; }
   .cost-summary-arrow { color: #bbb; }
-  .reserve-rate-input {
-    width: 3.2rem !important;
-    max-width: 3.2rem !important;
-    display: inline-block;
-    padding: 0.2rem 0.35rem !important;
-    margin: 0 0.15rem;
-    text-align: center !important;
-    vertical-align: middle;
-  }
 
   #run-btn {
     display: block;
@@ -1165,7 +1173,6 @@ const industries = benchmarkData.industries;
   :global(.cost-grid-value) { font-size: 0.98rem; font-weight: 700; margin: 0; }
   :global(.cost-grid-unit) { font-size: 0.66rem; color: #999; margin-left: 0.2rem; font-weight: 400; }
 
-  .reference-card summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--color-accent, #2563eb); }
   .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f4f4f4; font-size: 0.85rem; }
   .result-row--highlight { font-weight: 700; color: var(--color-accent, #2563eb); }
   .ranking-chart { margin-top: 0.7rem; }
@@ -1183,13 +1190,11 @@ const industries = benchmarkData.industries;
   .legend-dot.rank-avg { background: #c9cdd6; }
   .legend-dot.rank-own { background: var(--color-accent, #2563eb); }
 
+  .report-footer-card { padding-top: 1rem; }
   .report-footer {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 0.9rem;
-    margin-top: 1rem;
-    padding-top: 0.9rem;
-    border-top: 1px solid #eee;
   }
   .footer-col h4 { font-size: 0.8rem; margin: 0 0 0.3rem; color: #333; }
   .footer-col p { font-size: 0.74rem; color: #777; line-height: 1.55; margin: 0; }
