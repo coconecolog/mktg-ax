@@ -69,13 +69,13 @@ const industries = benchmarkData.industries;
               <div class="cost-card-inputs">
                 <label>今期実績（％）
                   <span class="percent-input">
-                    <input type="number" id="in-reserveRateCurrent" min="0" max="100" step="1" value="5" />
+                    <input type="number" id="in-reserveRateCurrent" min="0" max="100" step="1" placeholder="5" />
                     <span class="percent-sign">%</span>
                   </span>
                 </label>
                 <label>来期計画（％）
                   <span class="percent-input">
-                    <input type="number" id="in-reserveRateNext" min="0" max="100" step="1" value="5" />
+                    <input type="number" id="in-reserveRateNext" min="0" max="100" step="1" placeholder="5" />
                     <span class="percent-sign">%</span>
                   </span>
                 </label>
@@ -97,9 +97,6 @@ const industries = benchmarkData.industries;
 
         <fieldset class="field-group">
           <legend>3. 参考：業界データとの比較（任意）</legend>
-          <p class="field-note">
-            計画書の下部に「業界の広告宣伝費水準と比べてどうか」を参考情報として表示します（中小企業実態基本調査）。
-          </p>
           <div class="form-grid">
             <label>
               業種
@@ -258,7 +255,7 @@ const industries = benchmarkData.industries;
         <div class="card reference-card">
           <h3><span class="card-icon">▼</span>参考：業界の広告宣伝費水準と比較する</h3>
           <p class="field-note">
-            この計画書の主軸はあくまで自社の実績・目標です。以下は「来期のWeb広告費が、業界の広告宣伝費水準から見て
+            以下は「来期のWeb広告費が、業界の広告宣伝費水準から見て
             極端でないか」を確認するための参考情報です（出典：{benchmarkData.sourceTitle}）。
           </p>
           <div class="result-row">
@@ -277,7 +274,7 @@ const industries = benchmarkData.industries;
           <div class="legend-line">
             <span class="legend-dot rank-avg"></span>業界平均比率
             <span class="legend-dot rank-own" style="margin-left:0.6rem;"></span>選択した業種
-            <span style="margin-left:0.6rem;">┊</span>来期Web広告費の実績値
+            <span class="legend-refline" style="margin-left:0.6rem;">┊ 来期Web広告費の実績値</span>
           </div>
         </div>
         </div>
@@ -485,8 +482,21 @@ const industries = benchmarkData.industries;
         el.value = String(val);
       }
     });
-    document.getElementById('in-reserveRateCurrent').value = String(isFinite(state.reserveRateCurrent) ? state.reserveRateCurrent : 5);
-    document.getElementById('in-reserveRateNext').value = String(isFinite(state.reserveRateNext) ? state.reserveRateNext : 5);
+    const reserveRateCurrentEl = document.getElementById('in-reserveRateCurrent');
+    const reserveRateNextEl = document.getElementById('in-reserveRateNext');
+    [
+      [reserveRateCurrentEl, state.reserveRateCurrent],
+      [reserveRateNextEl, state.reserveRateNext],
+    ].forEach(([el, val]) => {
+      if (!el) return;
+      const shown = String(isFinite(val) ? val : 5);
+      if (asPlaceholder) {
+        el.placeholder = shown;
+        el.value = '';
+      } else {
+        el.value = shown;
+      }
+    });
 
     if (asPlaceholder) {
       // 見本表示のみ＝計算対象外にする（実行時に0扱いになる。必須項目はエラー扱いになる）
@@ -757,6 +767,7 @@ const industries = benchmarkData.industries;
       showSetupError(missing);
       return;
     }
+    clearSetupError();
     readSetupForm();
 
     const reportDate = document.getElementById('report-date');
@@ -820,16 +831,7 @@ const industries = benchmarkData.industries;
     .tool-layout { grid-template-columns: 1fr; }
   }
   .input-panel { min-width: 0; }
-  /* 右カラム（結果レポート）はスクロールに追従させる */
-  .result-panel {
-    min-width: 0;
-    position: sticky;
-    top: 1rem;
-    align-self: start;
-  }
-  @media (max-width: 900px) {
-    .result-panel { position: static; }
-  }
+  .result-panel { min-width: 0; }
   .result-toolbar {
     display: flex;
     justify-content: flex-end;
@@ -1174,7 +1176,7 @@ const industries = benchmarkData.industries;
   :global(.cost-grid-unit) { font-size: 0.66rem; color: #999; margin-left: 0.2rem; font-weight: 400; }
 
   .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f4f4f4; font-size: 0.85rem; }
-  .result-row--highlight { font-weight: 700; color: var(--color-accent, #2563eb); }
+  .result-row--highlight { font-weight: 700; color: #dc2626; }
   .ranking-chart { margin-top: 0.7rem; }
   :global(.rank-row) { display: grid; grid-template-columns: 130px 1fr 52px; align-items: center; gap: 0.6rem; padding: 0.22rem 0; font-size: 0.74rem; }
   :global(.rank-row .name) { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1184,11 +1186,13 @@ const industries = benchmarkData.industries;
   :global(.rank-row.own .rank-fill) { background: var(--color-accent, #2563eb); }
   :global(.rank-row .val) { text-align: right; color: #666; font-variant-numeric: tabular-nums; }
   :global(.rank-row.own .val) { color: var(--color-accent, #2563eb); font-weight: 700; }
-  :global(.rank-refline) { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--color-accent, #2563eb); opacity: 0.6; }
+  /* 自社の実績値を示す基準線。バー本体（own=青）と重なって見えづらいため、あえて赤で強調する */
+  :global(.rank-refline) { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed #dc2626; opacity: 1; }
   .legend-line { font-size: 0.7rem; color: #999; margin-top: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
   .legend-dot.rank-avg { background: #c9cdd6; }
   .legend-dot.rank-own { background: var(--color-accent, #2563eb); }
+  .legend-refline { color: #dc2626; font-weight: 600; }
 
   .report-footer-card { padding-top: 1rem; }
   .report-footer {
