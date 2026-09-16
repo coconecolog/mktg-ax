@@ -108,20 +108,8 @@ const industries = benchmarkData.industries;
           </div>
         </fieldset>
 
-        <div class="setup-help">
-          <p class="setup-help-title">用語・計算式の説明</p>
-          <dl>
-            <dt>マーケ貢献売上割合（％）</dt>
-            <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
-            <dt>平均客単価（万円／件）</dt>
-            <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
-            <dt>商談 → 成約率（％）</dt>
-            <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
-            <dt>リード → 商談化率（％）</dt>
-            <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
-            <dt>目標平均CPL（万円／件）</dt>
-            <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
-          </dl>
+        <div class="setup-toolbar">
+          <button id="setup-help-link" type="button" class="setup-help-link-btn">用語・計算式の説明を見る</button>
         </div>
 
         <p id="setup-error" class="setup-error" hidden></p>
@@ -290,6 +278,22 @@ const industries = benchmarkData.industries;
         </div>
         </div>
       </div>
+    </div>
+
+    <div class="setup-help" id="setup-help">
+      <p class="setup-help-title">用語・計算式の説明</p>
+      <dl>
+        <dt>マーケ貢献売上割合（％）</dt>
+        <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
+        <dt>平均客単価（万円／件）</dt>
+        <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
+        <dt>商談 → 成約率（％）</dt>
+        <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
+        <dt>リード → 商談化率（％）</dt>
+        <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
+        <dt>目標平均CPL（万円／件）</dt>
+        <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
+      </dl>
     </div>
   </main>
 </BaseLayout>
@@ -528,6 +532,11 @@ const industries = benchmarkData.industries;
     state = JSON.parse(JSON.stringify(DEMO_DATA));
     document.getElementById('in-industry').selectedIndex = 0;
     fillSetupForm(true);
+  });
+
+  // 「用語・計算式の説明」（ページ下部・フッター直上）へスクロール
+  document.getElementById('setup-help-link')?.addEventListener('click', () => {
+    document.getElementById('setup-help')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // 予備費率（%）はSTEP1の合計プレビューにもリアルタイムで反映する
@@ -783,12 +792,12 @@ const industries = benchmarkData.industries;
   /* ===== 固定2カラムレイアウト（左＝入力エリア／右＝結果レポート） ===== */
   .tool-layout {
     display: grid;
-    grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.15fr);
+    grid-template-columns: minmax(300px, 1fr) minmax(480px, 2.5fr);
     gap: 1.5rem;
     align-items: start;
     margin-top: 1.3rem;
   }
-  @media (max-width: 960px) {
+  @media (max-width: 900px) {
     .tool-layout { grid-template-columns: 1fr; }
   }
   .input-panel { min-width: 0; }
@@ -819,6 +828,17 @@ const industries = benchmarkData.industries;
     cursor: pointer;
   }
   .setup-reset-btn:hover { background: #f4f4f4; }
+  .setup-help-link-btn {
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--color-accent, #2563eb);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--color-accent, #2563eb);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .setup-help-link-btn:hover { background: #eef4ff; }
 
   .field-group {
     border: 1px solid #e2e2e2;
@@ -941,13 +961,13 @@ const industries = benchmarkData.industries;
   .setup-help {
     width: 100%;
     box-sizing: border-box;
-    margin: 1.2rem 0 0;
+    margin: 1.8rem 0 0.5rem;
     font-size: 0.8rem;
     color: #555;
     background: #f4f6fb;
     border: 1px solid #e2e2e2;
     border-radius: 10px;
-    padding: 0.9rem 1.1rem;
+    padding: 1rem 1.2rem;
   }
   .setup-help-title { margin: 0; font-weight: 700; color: var(--color-accent, #2563eb); font-size: 0.85rem; }
   .setup-help dl { margin: 0.6rem 0 0; }
