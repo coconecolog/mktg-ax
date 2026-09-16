@@ -307,7 +307,7 @@ const industries = benchmarkData.industries;
   const COST_KEYS = [
     { key: 'ad', name: 'Web広告費', desc: 'リスティング、SNS広告、記事広告等' },
     { key: 'event', name: '展示会・イベント費', desc: '展示会ブース出展料、施工費、ノベルティ（実施しない場合は0円）' },
-    { key: 'seo', name: 'SEO・コンテンツ', desc: 'オウンドメディア記事、事例取材、動画制作' },
+    { key: 'seo', name: 'SEO・コンテンツ制作', desc: 'オウンドメディア記事、事例取材、動画制作' },
     { key: 'tools', name: 'ツール・SaaS利用料', desc: 'MA（HubSpot等）、SEO分析、SFA、フォームツール' },
     { key: 'labor', name: '人件費（マーケ部）', desc: '社内マーケ担当給与、採用費、教育費' },
     { key: 'outsourcing', name: '外注費・コンサル費', desc: '広告代理店手数料、マーケティング顧問・業務委託' },
@@ -688,7 +688,7 @@ const industries = benchmarkData.industries;
     const currentCpl = state.currentLeads > 0 ? (totals.subtotalCurrent + totals.reserveCurrent) / state.currentLeads : 0;
     setCompareRow('budget', totals.subtotalCurrent + totals.reserveCurrent, totals.budget, fmtMan);
     setCompareRow('leads', state.currentLeads, pipeline.requiredLeads, fmtCount);
-    setCompareRow('cpl', currentCpl, state.cpl, (n) => `${n.toFixed(2)}万円`);
+    setCompareRow('cpl', currentCpl, state.cpl, (n) => `${n.toFixed(2)}万円`, true);
     setCompareRow('mktsales', state.currentMktSales, pipeline.mktTargetOku, (n) => fmtOku(n));
 
     // 目標CPLと、申請予算・必要リード数から逆算した実質CPLとの整合性チェック
@@ -737,13 +737,16 @@ const industries = benchmarkData.industries;
     renderReference(totals);
   }
 
-  function setCompareRow(key, currentVal, nextVal, formatter) {
+  function setCompareRow(key, currentVal, nextVal, formatter, lowerIsBetter = false) {
     document.getElementById(`cmp-${key}-current`).textContent = formatter(currentVal);
     document.getElementById(`cmp-${key}-next`).textContent = formatter(nextVal);
     const diff = nextVal - currentVal;
     const diffEl = document.getElementById(`cmp-${key}-diff`);
     diffEl.textContent = diff === 0 ? '±0' : `${diff > 0 ? '+' : '▲'}${formatter(Math.abs(diff))}`;
-    diffEl.className = diff > 0 ? 'diff-up' : diff < 0 ? 'diff-down' : '';
+    // CPL（平均CPL）のように「下がる方が良い」指標は色の向きを反転させる
+    const isGood = lowerIsBetter ? diff < 0 : diff > 0;
+    const isBad = lowerIsBetter ? diff > 0 : diff < 0;
+    diffEl.className = isGood ? 'diff-up' : isBad ? 'diff-down' : '';
   }
 
   // ---------- イベント：実行／印刷 ----------
