@@ -57,36 +57,33 @@ const industries = benchmarkData.industries;
 
         <fieldset class="field-group">
           <legend>2. 施策チャネル・コスト詳細内訳（今期実績 vs 来期計画）</legend>
-          <p class="field-note">※すべて任意項目です。空欄の場合は0として扱われ、該当する実績比較・グラフの表示のみが参考値になります。</p>
+          <p class="field-note">※すべて任意項目です。空欄の場合は0として扱われ、該当する実績比較・グラフの表示のみが参考値になります。各項目の内容例はページ下部「用語・計算式の説明」をご覧ください。</p>
           <div class="form-grid">
             <label>今期 売上着地実績（億円）<input type="number" id="in-currentSales" min="0" step="0.1" /></label>
             <label>今期 マーケ貢献売上着地（億円）<input type="number" id="in-currentMktSales" min="0" step="0.1" /></label>
             <label>今期 獲得リード数（件）<input type="number" id="in-currentLeads" min="0" step="10" /></label>
           </div>
 
-          <table class="cost-table">
-            <thead>
-              <tr>
-                <th class="col-name">費用項目・施策名</th>
-                <th class="col-desc">具体的な内容例</th>
-                <th class="col-num">今期実績（万円）</th>
-                <th class="col-num">来期計画（万円）</th>
-              </tr>
-            </thead>
-            <tbody id="cost-table-body"></tbody>
-            <tfoot>
-              <tr class="reserve-row">
-                <td colspan="2">予備費・バッファ（施策小計の<input type="number" id="in-reserveRate" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</td>
-                <td id="setup-reserve-current" class="col-num"></td>
-                <td id="setup-reserve-next" class="col-num"></td>
-              </tr>
-              <tr class="total-row">
-                <td colspan="2">合計マーケティング予算（総投資額）</td>
-                <td id="setup-total-current" class="col-num"></td>
-                <td id="setup-total-next" class="col-num"></td>
-              </tr>
-            </tfoot>
-          </table>
+          <div class="cost-cards" id="cost-cards-body"></div>
+
+          <div class="cost-summary">
+            <div class="cost-summary-row">
+              <span class="cost-summary-label">予備費・バッファ（施策小計の<input type="number" id="in-reserveRate" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</span>
+              <span class="cost-summary-vals">
+                <span class="cost-summary-item"><span class="cost-summary-tag">今期</span><span id="setup-reserve-current"></span></span>
+                <span class="cost-summary-arrow">→</span>
+                <span class="cost-summary-item"><span class="cost-summary-tag">来期</span><span id="setup-reserve-next"></span></span>
+              </span>
+            </div>
+            <div class="cost-summary-row cost-summary-row--total">
+              <span class="cost-summary-label">合計マーケティング予算（総投資額）</span>
+              <span class="cost-summary-vals">
+                <span class="cost-summary-item"><span class="cost-summary-tag">今期</span><span id="setup-total-current"></span></span>
+                <span class="cost-summary-arrow">→</span>
+                <span class="cost-summary-item"><span class="cost-summary-tag">来期</span><span id="setup-total-next"></span></span>
+              </span>
+            </div>
+          </div>
         </fieldset>
 
         <fieldset class="field-group">
@@ -294,6 +291,9 @@ const industries = benchmarkData.industries;
         <dt>目標平均CPL（万円／件）</dt>
         <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
       </dl>
+
+      <p class="setup-help-title setup-help-title--sub">施策チャネル費用の内容例</p>
+      <dl class="setup-help-costs" id="setup-help-costs"></dl>
     </div>
   </main>
 </BaseLayout>
@@ -402,9 +402,9 @@ const industries = benchmarkData.industries;
   // asPlaceholder=true の場合、実際の値（value）は入れず、demoCosts の数字を
   // プレースホルダー（薄いグレーの見本表示）としてのみ表示する＝計算には使われない。
   function renderCostTable(asPlaceholder, demoCosts) {
-    const body = document.getElementById('cost-table-body');
+    const body = document.getElementById('cost-cards-body');
     if (!body) return;
-    body.innerHTML = COST_KEYS.map((c) => {
+    body.innerHTML = COST_KEYS.map((c, i) => {
       const demo = demoCosts ? demoCosts[c.key] : { current: 0, next: 0 };
       const currentAttr = asPlaceholder
         ? `placeholder="${demo.current}" value=""`
@@ -413,12 +413,13 @@ const industries = benchmarkData.industries;
         ? `placeholder="${demo.next}" value=""`
         : `value="${state.costs[c.key].next}"`;
       return `
-      <tr>
-        <td class="col-name">${COST_KEYS.indexOf(c) + 1}. ${c.name}</td>
-        <td class="col-desc">${c.desc}</td>
-        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" ${currentAttr} /></td>
-        <td class="col-num"><input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" ${nextAttr} /></td>
-      </tr>
+      <div class="cost-card">
+        <p class="cost-card-name">${i + 1}. ${c.name}</p>
+        <div class="cost-card-inputs">
+          <label>今期実績（万円）<input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="current" ${currentAttr} /></label>
+          <label>来期計画（万円）<input type="number" min="0" step="50" data-cost-key="${c.key}" data-cost-field="next" ${nextAttr} /></label>
+        </div>
+      </div>
     `;
     }).join('');
 
@@ -435,12 +436,19 @@ const industries = benchmarkData.industries;
     renderSetupTotals();
   }
 
+  // 「施策チャネル費用の内容例」（用語・計算式の説明の下部）を COST_KEYS から生成
+  function renderCostHelp() {
+    const el = document.getElementById('setup-help-costs');
+    if (!el) return;
+    el.innerHTML = COST_KEYS.map((c, i) => `<dt>${i + 1}. ${c.name}</dt><dd>${c.desc}</dd>`).join('');
+  }
+
   function renderSetupTotals() {
     const totals = computeCostTotals(state);
-    document.getElementById('setup-reserve-current').textContent = fmtManNoUnit(totals.reserveCurrent);
-    document.getElementById('setup-reserve-next').textContent = fmtManNoUnit(totals.reserve);
-    document.getElementById('setup-total-current').textContent = fmtManNoUnit(totals.subtotalCurrent + totals.reserveCurrent);
-    document.getElementById('setup-total-next').textContent = fmtManNoUnit(totals.budget);
+    document.getElementById('setup-reserve-current').textContent = fmtMan(totals.reserveCurrent);
+    document.getElementById('setup-reserve-next').textContent = fmtMan(totals.reserve);
+    document.getElementById('setup-total-current').textContent = fmtMan(totals.subtotalCurrent + totals.reserveCurrent);
+    document.getElementById('setup-total-next').textContent = fmtMan(totals.budget);
   }
 
   // asPlaceholder=true：初期表示専用。見本の数字はプレースホルダーとしてのみ表示し、
@@ -763,6 +771,7 @@ const industries = benchmarkData.industries;
   // 見本の数字はプレースホルダーとしてのみ表示（計算には使わない）。
   // 右側の結果パネルは、実行前は0・グラフは枠のみの状態で表示しておく。
   fillSetupForm(true);
+  renderCostHelp();
   initCharts();
   render();
 </script>
@@ -889,51 +898,93 @@ const industries = benchmarkData.industries;
   }
 
   /*
-    注意：.cost-table-body の行（<input>を含む）はJSでinnerHTMLとして描画しており、
+    注意：.cost-cards / .cost-card（<input>を含む）はJSでinnerHTMLとして描画しており、
     Astroのスコープ付きCSS（data-astro-cid-*属性）は実行時に生成された要素には付与されない。
-    そのため、テーブル本体にかかるルールは :global() で明示的にスコープを外している。
+    そのため、カード本体にかかるルールは :global() で明示的にスコープを外している。
     （これが「入力欄が枠で囲まれない」不具合の直接の原因だった）
   */
-  .cost-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1.3rem;
-    font-size: 0.85rem;
+  .cost-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.7rem;
+    margin-top: 1.2rem;
   }
-  :global(.cost-table th), :global(.cost-table td) {
-    padding: 0.55rem 0.6rem;
-    border-bottom: 1px solid #eee;
-    text-align: left;
+  :global(.cost-card) {
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    background: #fff;
   }
-  .cost-table thead th { color: #666; font-weight: 600; font-size: 0.78rem; }
-  :global(.cost-table th.col-num) { text-align: left; white-space: nowrap; }
-  :global(.cost-table td.col-num) { text-align: right; white-space: nowrap; }
-  :global(.cost-table .col-desc) { color: #888; font-size: 0.78rem; }
-  :global(.cost-table .col-num) { width: 130px; }
-  :global(.cost-table input) {
+  :global(.cost-card-name) {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 0.55rem;
+  }
+  :global(.cost-card-inputs) { display: flex; gap: 0.5rem; }
+  :global(.cost-card-inputs label) {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    color: #888;
+  }
+  :global(.cost-card-inputs input) {
     width: 100%;
-    max-width: 130px;
     box-sizing: border-box;
-    padding: 0.6rem 0.7rem;
+    padding: 0.5rem 0.55rem;
     border: 1px solid #ccc;
     border-radius: 8px;
     background: #fff;
-    font-size: 1rem;
+    font-size: 0.92rem;
     color: #1a1a1a;
     text-align: right;
   }
-  :global(.cost-table input:focus) {
+  :global(.cost-card-inputs input:focus) {
     outline: none;
     border-color: var(--color-accent, #2563eb);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
   }
   .form-grid input::placeholder,
-  :global(.cost-table input::placeholder) {
+  :global(.cost-card-inputs input::placeholder) {
     color: #c6cad2;
     opacity: 1;
   }
-  .cost-table .reserve-row td { color: #888; font-size: 0.82rem; }
-  .cost-table .total-row td { font-weight: 700; color: var(--color-accent, #2563eb); border-top: 2px solid #ddd; border-bottom: none; }
+
+  .cost-summary {
+    margin-top: 1.1rem;
+    border-top: 1px solid #eee;
+    padding-top: 0.7rem;
+  }
+  .cost-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.35rem 0;
+    font-size: 0.82rem;
+    color: #888;
+  }
+  .cost-summary-row--total {
+    font-weight: 700;
+    color: var(--color-accent, #2563eb);
+    border-top: 2px solid #ddd;
+    margin-top: 0.15rem;
+    padding-top: 0.55rem;
+  }
+  .cost-summary-vals {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .cost-summary-item { display: flex; align-items: center; gap: 0.3rem; }
+  .cost-summary-tag { font-size: 0.66rem; color: #aaa; font-weight: 400; }
+  .cost-summary-row--total .cost-summary-tag { color: #9db8f0; }
+  .cost-summary-arrow { color: #bbb; }
   .reserve-rate-input {
     width: 3.2rem !important;
     max-width: 3.2rem !important;
@@ -970,6 +1021,11 @@ const industries = benchmarkData.industries;
     padding: 1rem 1.2rem;
   }
   .setup-help-title { margin: 0; font-weight: 700; color: var(--color-accent, #2563eb); font-size: 0.85rem; }
+  .setup-help-title--sub {
+    margin-top: 1.1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #e2e2e2;
+  }
   .setup-help dl { margin: 0.6rem 0 0; }
   .setup-help dt { font-weight: 700; color: #222; margin-top: 0.6rem; }
   .setup-help dt:first-child { margin-top: 0; }
@@ -1030,11 +1086,14 @@ const industries = benchmarkData.industries;
 
   .report-columns {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 0.9rem;
     align-items: start;
   }
-  .report-col { display: flex; flex-direction: column; gap: 0.9rem; }
+  @media (max-width: 640px) {
+    .report-columns { grid-template-columns: 1fr; }
+  }
+  .report-col { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; }
 
   .card {
     border: 1px solid #eee;
