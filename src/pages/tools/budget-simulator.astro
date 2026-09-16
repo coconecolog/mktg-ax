@@ -29,29 +29,14 @@ const industries = benchmarkData.industries;
       <p class="eyebrow">無料診断ツール ／ マーケティングマネージャー用</p>
       <h1>来期マーケティング予算詳細シミュレーター</h1>
       <p class="lead">
-        今期実績と来期施策（人件費・ツール費・広告費等）を入力し、逆算パイプライン・費用内訳・ROI試算まで含めた
-        役員提出用の1ページ計画書を作成します。
+        今期実績と来期施策（人件費・ツール費・広告費等）を入力し、逆算パイプライン・費用内訳・ROI試算まで含めた計画書を作成します。
       </p>
     </header>
 
     <!-- ============ STEP 1：初期条件・コスト内訳入力 ============ -->
     <section id="step-setup" class="step-setup">
-      <div class="preset-block">
-        <p class="section-label">クイックモデル選択</p>
-        <div class="preset-grid">
-          <button type="button" class="preset-card" data-preset="standard">
-            <span class="preset-name">標準モデル（BtoB SaaS／ツール活用）<span class="preset-badge">推奨</span></span>
-            <span class="preset-desc">展示会なし／Web広告・SEO・MAツール中心／人件費・外注費計上</span>
-          </button>
-          <button type="button" class="preset-card" data-preset="event">
-            <span class="preset-name">展示会・イベント強化モデル</span>
-            <span class="preset-desc">大型展示会出展＋Web施策／高単価商材向け</span>
-          </button>
-          <button type="button" class="preset-card" data-preset="lean">
-            <span class="preset-name">少数精鋭・アウトソーシングモデル</span>
-            <span class="preset-desc">人件費抑制／代理店・外注・Web広告特化</span>
-          </button>
-        </div>
+      <div class="setup-toolbar">
+        <button id="setup-reset-btn" type="button" class="setup-reset-btn">すべてリセット</button>
       </div>
 
       <p class="required-legend"><span class="req-mark">※</span>は必須入力項目です（それ以外は任意項目です）</p>
@@ -335,33 +320,14 @@ const industries = benchmarkData.industries;
     { key: 'outsourcing', name: '外注費・コンサル費', desc: '広告代理店手数料、マーケティング顧問・業務委託' },
   ];
 
-  const PRESETS = {
-    standard: {
-      targetSales: 10.0, mktRatio: 40, unitPrice: 500, winRate: 20, oppRate: 10, cpl: 1.5,
-      currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250, reserveRate: 5,
-      costs: {
-        ad: { current: 2000, next: 2400 }, event: { current: 0, next: 0 },
-        seo: { current: 800, next: 1000 }, tools: { current: 600, next: 900 },
-        labor: { current: 1200, next: 1200 }, outsourcing: { current: 400, next: 500 },
-      },
-    },
-    event: {
-      targetSales: 12.0, mktRatio: 35, unitPrice: 900, winRate: 25, oppRate: 12, cpl: 3.0,
-      currentSales: 9.5, currentMktSales: 3.0, currentLeads: 1200, reserveRate: 5,
-      costs: {
-        ad: { current: 900, next: 1100 }, event: { current: 1200, next: 1800 },
-        seo: { current: 400, next: 500 }, tools: { current: 400, next: 500 },
-        labor: { current: 1000, next: 1000 }, outsourcing: { current: 500, next: 600 },
-      },
-    },
-    lean: {
-      targetSales: 8.0, mktRatio: 40, unitPrice: 350, winRate: 18, oppRate: 8, cpl: 1.2,
-      currentSales: 6.5, currentMktSales: 2.4, currentLeads: 2600, reserveRate: 5,
-      costs: {
-        ad: { current: 1400, next: 1700 }, event: { current: 0, next: 0 },
-        seo: { current: 300, next: 350 }, tools: { current: 300, next: 400 },
-        labor: { current: 400, next: 400 }, outsourcing: { current: 900, next: 1200 },
-      },
+  // 入力欄のプレースホルダー（記入例）としてのみ使う見本データ。実際の計算には使われない。
+  const DEMO_DATA = {
+    targetSales: 10.0, mktRatio: 40, unitPrice: 500, winRate: 20, oppRate: 10, cpl: 1.5,
+    currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250, reserveRate: 5,
+    costs: {
+      ad: { current: 2000, next: 2400 }, event: { current: 0, next: 0 },
+      seo: { current: 800, next: 1000 }, tools: { current: 600, next: 900 },
+      labor: { current: 1200, next: 1200 }, outsourcing: { current: 400, next: 500 },
     },
   };
 
@@ -385,7 +351,7 @@ const industries = benchmarkData.industries;
     { key: 'budget', label: '来期総マーケ予算（予備費込）', unit: '万円', min: 100, max: 50000, step: 50, decimals: 0 },
   ];
 
-  let state = JSON.parse(JSON.stringify(PRESETS.standard));
+  let state = JSON.parse(JSON.stringify(DEMO_DATA));
   let initialConfig = JSON.parse(JSON.stringify(state));
 
   const toolRoot = document.querySelector('.budget-tool');
@@ -580,17 +546,11 @@ const industries = benchmarkData.industries;
     // costs はテーブルの入力欄がすでに state.costs を直接更新している
   }
 
-  // ---------- プリセット適用 ----------
-  document.querySelectorAll('.preset-card').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const presetKey = btn.dataset.preset;
-      const preset = PRESETS[presetKey];
-      if (!preset) return;
-      state = JSON.parse(JSON.stringify(preset));
-      document.querySelectorAll('.preset-card').forEach((b) => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      fillSetupForm(false);
-    });
+  // ---------- 入力エリア上部の「すべてリセット」 ----------
+  document.getElementById('setup-reset-btn')?.addEventListener('click', () => {
+    state = JSON.parse(JSON.stringify(DEMO_DATA));
+    document.getElementById('in-industry').selectedIndex = 0;
+    fillSetupForm(true);
   });
 
   // ---------- スライダー生成 ----------
@@ -958,44 +918,21 @@ const industries = benchmarkData.industries;
     color: #222;
     margin: 0 0 0.5rem;
   }
-  .preset-block { margin-bottom: 1.4rem; }
-  .preset-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0.9rem;
+  .setup-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 0.9rem;
   }
-  .preset-card {
-    text-align: left;
-    border: 2px solid #e2e2e2;
-    border-radius: 12px;
-    padding: 1rem 1.1rem;
+  .setup-reset-btn {
+    padding: 0.45rem 0.9rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
     background: #fff;
+    color: #555;
+    font-size: 0.8rem;
     cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
   }
-  .preset-card.is-active {
-    border-color: var(--color-accent, #2563eb);
-    background: #eef4ff;
-  }
-  .preset-name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #222;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .preset-badge {
-    font-size: 0.68rem;
-    background: var(--color-accent, #2563eb);
-    color: #fff;
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
-    font-weight: 700;
-  }
-  .preset-desc { font-size: 0.78rem; color: #666; line-height: 1.5; }
+  .setup-reset-btn:hover { background: #f4f4f4; }
 
   .field-group {
     border: 1px solid #e2e2e2;
@@ -1347,7 +1284,7 @@ const industries = benchmarkData.industries;
   @media print {
     .no-print { display: none !important; }
     body { background: #fff; }
-    .tool-header, .step-setup, .preset-block { display: none !important; }
+    .tool-header, .step-setup { display: none !important; }
     .dashboard-layout { display: block; }
     .print-container {
       border: none;
