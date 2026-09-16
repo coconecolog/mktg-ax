@@ -439,6 +439,24 @@ const industries = benchmarkData.industries;
     return COST_KEYS.reduce((sum, c) => sum + (c.hasLeads ? (costs[c.key]?.[field] || 0) : 0), 0);
   }
 
+  // 総合平均CPL（実施中の施策のみで算出）＝ 予算・リードともに入力されている（＝実施している）
+  // リード獲得施策の来期予算合計 ÷ 来期目標リード合計。「実施しない（0）」の施策は母数から除外する。
+  // 固定費（ツール・人件費・外注費）はリードを生まないため、もとより対象外。
+  function computeBlendedActiveCpl(costs, budgetField, leadsField) {
+    let budgetSum = 0;
+    let leadsSum = 0;
+    COST_KEYS.forEach((c) => {
+      if (!c.hasLeads) return;
+      const budget = costs[c.key]?.[budgetField] || 0;
+      const leads = costs[c.key]?.[leadsField] || 0;
+      if (budget > 0 && leads > 0) {
+        budgetSum += budget;
+        leadsSum += leads;
+      }
+    });
+    return leadsSum > 0 ? budgetSum / leadsSum : 0;
+  }
+
   function computeCostTotals(s) {
     // 仕様書 4.2：Buffer = Math.round(Subtotal * rate) を先に丸めてから TotalBudget に加算する
     // 予備費率は今期実績・来期計画で別々に持つ（実態が異なるため）。既定5%。0%も許容する。
@@ -542,8 +560,9 @@ const industries = benchmarkData.industries;
       </tr>`;
     }).join('');
 
-    // 合計行（全施策の来期予算・目標リード・創出限界利益を集計。単価系のCPL・1件限界利益は施策間で意味が異なるため「-」表示）
-    const blendedCpl = sumLeadsAll > 0 ? sumBudgetAll / sumLeadsAll : null;
+    // 合計行（全施策の来期予算・目標リード・創出限界利益を集計。CPLは実施中のリード獲得施策のみの実額ベース）
+    const blendedCplValue = computeBlendedActiveCpl(s.costs, 'next', 'nextLeads');
+    const blendedCpl = sumLeadsAll > 0 ? blendedCplValue : null;
     const summaryRowHtml = `
       <tr class="unit-econ-row--summary">
         <td>合計</td>
@@ -926,7 +945,8 @@ const industries = benchmarkData.industries;
     const pipeline = computePipeline(state);
     const totals = computeCostTotals(state);
     const maxCPL = computeMaxCPL(state, pipeline);
-    const impliedCpl = pipeline.requiredLeads > 0 ? totals.budget / pipeline.requiredLeads : 0;
+    // 算定総合CPL（実施中の施策のみの実額ベース。「実施しない（0）」の施策は母数から除外）
+    const impliedCpl = computeBlendedActiveCpl(state.costs, 'next', 'nextLeads');
     const kpis = computeKpis(state, pipeline, totals);
 
     const maxcplEl = document.getElementById('maxcpl-display');
