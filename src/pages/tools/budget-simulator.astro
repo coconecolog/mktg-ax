@@ -190,6 +190,22 @@ const industries = benchmarkData.industries;
 
         <div class="card">
           <div class="card-title-row">
+            <h3><span class="card-icon">▼</span>来期 収益構造・CPL可視化</h3>
+          </div>
+          <div class="chart-cards">
+            <div class="chart-cards-col">
+              <p class="chart-cards-title">来期 マーケ創出売上・粗利・費用構造</p>
+              <div class="chart-box"><canvas id="profitStructureChart"></canvas></div>
+            </div>
+            <div class="chart-cards-col">
+              <p class="chart-cards-title">施策別CPL vs 許容上限CPL 比較（万円）</p>
+              <div class="chart-box"><canvas id="cplComparisonChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row">
             <h3><span class="card-icon">▼</span>施策別 Unit Economics（単位当たり収益性）＆ 投資判定</h3>
           </div>
           <div class="unit-econ-table-wrap">
@@ -209,7 +225,7 @@ const industries = benchmarkData.industries;
             </table>
           </div>
           <p class="field-note">※ 1件あたり限界利益＝（1件LTV × 粗利率 × リード→商談化率 × 商談→成約率）－施策CPL。許容上限CPLを超過している施策は「要改善」または「撤退」判定となります。</p>
-          <p class="field-note field-note--warn">※「リード未入力」と表示される場合は、左側「3. 施策チャネル・コスト詳細内訳」のWeb広告費・展示会・イベント費・SEO・コンテンツ制作の各カードで、「来期計画（万円）」と「来期 目標リード（件）」の両方を入力してください（どちらか一方でも空欄だと算出できません）。ツール・SaaS利用料／人件費／外注費はリードを直接生まない施策のため「固定投資」表示のままで正常です。</p>
+          <p class="field-note field-note--warn">※「-」と表示される施策は、左側「3. 施策チャネル・コスト詳細内訳」で「来期計画（万円）」または「来期 目標リード（件）」が未入力、もしくは「実施しない（0）」として入力されています。ツール・SaaS利用料／人件費／外注費はリードを直接生まない固定費のため、投資判定は常に「-」表示となります。</p>
         </div>
 
         <div class="card">
@@ -314,6 +330,7 @@ const industries = benchmarkData.industries;
   </main>
 </BaseLayout>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   // このスクリプトはブラウザ側でのみ動きます（サーバー処理は一切なし）。
 
@@ -459,8 +476,17 @@ const industries = benchmarkData.industries;
   function renderUnitEconTable(s, maxCPL) {
     const tbody = document.getElementById('unit-econ-body');
     if (!tbody) return;
-    tbody.innerHTML = COST_KEYS.map((c) => {
+
+    // 合計行用の集計値
+    let sumBudgetAll = 0;
+    let sumLeadsAll = 0;
+    let sumTotalProfitOku = 0;
+    let anyComputed = false;
+
+    const rowsHtml = COST_KEYS.map((c) => {
       const budget = s.costs[c.key].next || 0;
+      sumBudgetAll += budget;
+
       if (!c.hasLeads) {
         return `
         <tr>
@@ -470,12 +496,12 @@ const industries = benchmarkData.industries;
           <td class="num text-muted">固定費</td>
           <td class="num text-muted">-</td>
           <td class="num">-</td>
-          <td class="center"><span class="decision-badge decision-badge--fixed">固定投資</span></td>
+          <td class="center">-</td>
         </tr>`;
       }
       const leads = s.costs[c.key].nextLeads || 0;
+      // 予算・リードともに0（＝当該施策は実施しない）、またはどちらか未入力の場合は「-」表示のみとする
       if (leads <= 0 || budget <= 0) {
-        const missing = leads <= 0 && budget <= 0 ? '予算・リード未入力' : leads <= 0 ? 'リード未入力' : '予算未入力';
         return `
         <tr>
           <td>${c.name}</td>
@@ -483,13 +509,16 @@ const industries = benchmarkData.industries;
           <td class="num">${leads > 0 ? fmtCount(leads) : '-'}</td>
           <td class="num text-muted">-</td>
           <td class="num text-muted">-</td>
-          <td class="num">-</td>
-          <td class="center"><span class="decision-badge decision-badge--fixed">${missing}</span></td>
+          <td class="num text-muted">-</td>
+          <td class="center">-</td>
         </tr>`;
       }
+      sumLeadsAll += leads;
       const cpl = budget / leads;
       const unitProfit = maxCPL - cpl;
       const totalProfitOku = (unitProfit * leads) / 10000;
+      sumTotalProfitOku += totalProfitOku;
+      anyComputed = true;
       let badgeClass = 'decision-badge--fixed';
       let badgeText = '判定不可';
       if (maxCPL > 0) {
@@ -505,10 +534,25 @@ const industries = benchmarkData.industries;
         <td class="num">${fmtCount(leads)}</td>
         <td class="num ${maxCPL > 0 && cpl > maxCPL ? 'text-warn' : ''}">${cpl.toFixed(2)} 万</td>
         <td class="num ${unitProfit < 0 ? 'text-warn' : 'text-good'}">${unitProfit >= 0 ? '+' : ''}${unitProfit.toFixed(2)} 万</td>
-        <td class="num">${totalProfitOku >= 0 ? '+' : ''}${totalProfitOku.toFixed(2)} 億</td>
+        <td class="num ${totalProfitOku < 0 ? 'text-warn' : ''}">${totalProfitOku >= 0 ? '+' : ''}${totalProfitOku.toFixed(2)} 億</td>
         <td class="center"><span class="decision-badge ${badgeClass}">${badgeText}</span></td>
       </tr>`;
     }).join('');
+
+    // 合計行（全施策の来期予算・目標リード・創出限界利益を集計。単価系のCPL・1件限界利益は施策間で意味が異なるため「-」表示）
+    const blendedCpl = sumLeadsAll > 0 ? sumBudgetAll / sumLeadsAll : null;
+    const summaryRowHtml = `
+      <tr class="unit-econ-row--summary">
+        <td>合計</td>
+        <td class="num">${fmtManNoUnit(sumBudgetAll)} 万</td>
+        <td class="num">${sumLeadsAll > 0 ? fmtCount(sumLeadsAll) : '-'}</td>
+        <td class="num">${blendedCpl !== null ? `${blendedCpl.toFixed(2)} 万` : '-'}</td>
+        <td class="num text-muted">-</td>
+        <td class="num ${anyComputed && sumTotalProfitOku < 0 ? 'text-warn' : anyComputed ? 'text-good' : ''}">${anyComputed ? `${sumTotalProfitOku >= 0 ? '+' : ''}${sumTotalProfitOku.toFixed(2)} 億` : '-'}</td>
+        <td class="center">-</td>
+      </tr>`;
+
+    tbody.innerHTML = rowsHtml + summaryRowHtml;
   }
 
   function computePosition(ratio, industryRatio) {
@@ -782,6 +826,98 @@ const industries = benchmarkData.industries;
     }
   }
 
+  // ---------- チャート（来期 収益構造・CPL可視化） ----------
+  let profitStructureChartInstance = null;
+  let cplComparisonChartInstance = null;
+
+  function initCharts() {
+    if (typeof Chart === 'undefined') return;
+    const profitCtx = document.getElementById('profitStructureChart');
+    if (profitCtx) {
+      profitStructureChartInstance = new Chart(profitCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['来期 創出限界利益', 'マーケ総費用', '原価・その他コスト'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: ['#0f766e', '#2563eb', '#e2e8f0'],
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}：${Math.round(ctx.parsed).toLocaleString('ja-JP')}万円`,
+              },
+            },
+          },
+        },
+      });
+    }
+    const cplCtx = document.getElementById('cplComparisonChart');
+    if (cplCtx) {
+      cplComparisonChartInstance = new Chart(cplCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Web広告', '展示会', 'SEO', '総合平均CPL'],
+          datasets: [
+            {
+              type: 'bar',
+              label: '来期算定CPL（万円）',
+              data: [0, 0, 0, 0],
+              backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#0f766e'],
+            },
+            {
+              type: 'line',
+              label: '許容上限CPL（自動撤退線）',
+              data: [0, 0, 0, 0],
+              borderColor: '#e11d48',
+              borderDash: [6, 4],
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+            x: { ticks: { font: { size: 10 } } },
+          },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          },
+        },
+      });
+    }
+  }
+
+  function updateCharts(s, pipeline, totals, marginal, maxCPL, impliedCpl) {
+    if (profitStructureChartInstance) {
+      const netProfit = Math.max(0, marginal.marginalProfitMan);
+      const costOfGoods = Math.max(0, pipeline.mktTargetMan - marginal.grossProfitMan);
+      profitStructureChartInstance.data.datasets[0].data = [netProfit, totals.budget, costOfGoods];
+      profitStructureChartInstance.update();
+    }
+    if (cplComparisonChartInstance) {
+      const cplFor = (key) => {
+        const budget = s.costs[key].next || 0;
+        const leads = s.costs[key].nextLeads || 0;
+        return budget > 0 && leads > 0 ? budget / leads : 0;
+      };
+      const bars = [cplFor('ad'), cplFor('event'), cplFor('seo'), impliedCpl];
+      cplComparisonChartInstance.data.datasets[0].data = bars;
+      cplComparisonChartInstance.data.datasets[1].data = bars.map(() => maxCPL);
+      cplComparisonChartInstance.update();
+    }
+  }
+
   // ---------- STEP2：ダッシュボード描画 ----------
   function render() {
     const pipeline = computePipeline(state);
@@ -836,6 +972,7 @@ const industries = benchmarkData.industries;
       }
     }
     renderUnitEconTable(state, maxCPL);
+    updateCharts(state, pipeline, totals, marginal, maxCPL, impliedCpl);
 
     // 施策別（Web広告・展示会・SEO）の来期目標リード合計 vs 全社目標からの必要リード数
     const leadsNextSum = sumLeads(state.costs, 'nextLeads');
@@ -941,6 +1078,7 @@ const industries = benchmarkData.industries;
   fillSetupForm(true);
   renderCostHelp();
   updateMaxCplPreview();
+  initCharts();
   render();
 </script>
 
@@ -1343,6 +1481,19 @@ const industries = benchmarkData.industries;
   .alert-box--danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
   .alert-icon { font-weight: 700; flex-shrink: 0; }
 
+  /* ===== 来期 収益構造・CPL可視化（チャート） ===== */
+  .chart-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.4rem;
+  }
+  @media (max-width: 640px) {
+    .chart-cards { grid-template-columns: 1fr; }
+  }
+  .chart-cards-title { margin: 0 0 0.4rem; font-size: 0.76rem; color: #666; font-weight: 600; text-align: center; }
+  .chart-box { position: relative; height: 220px; }
+
   .unit-econ-table-wrap { overflow-x: auto; }
   .unit-econ-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 560px; }
   .unit-econ-table th, .unit-econ-table td { padding: 0.45rem 0.4rem; border-bottom: 1px solid #f0f0f0; text-align: right; }
@@ -1354,6 +1505,8 @@ const industries = benchmarkData.industries;
   :global(.unit-econ-table .text-muted) { color: #bbb; }
   :global(.unit-econ-table .text-good) { color: #1a7f37; font-weight: 700; }
   :global(.unit-econ-table .text-warn) { color: #c2410c; font-weight: 700; }
+  :global(.unit-econ-table .unit-econ-row--summary) { background: #f8fafc; font-weight: 700; }
+  :global(.unit-econ-table .unit-econ-row--summary td) { border-top: 2px solid #e2e8f0; border-bottom: none; }
 
   :global(.decision-badge) {
     display: inline-block;
