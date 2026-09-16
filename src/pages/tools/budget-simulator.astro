@@ -1,7 +1,7 @@
 ---
 // src/pages/tools/budget-simulator.astro
 //
-// 来期マーケティング予算詳細シミュレーター & 計画書ツール
+// 来期マーケティング予算シミュレーター & 計画書ツール
 //
 // 仕様書（Google Docs）に基づいて実装。デザインは仕様書のスクリーンショット（ダークネイビー×インディゴ）ではなく、
 // サイト全体のトンマナ（ライトブルー系 #2563eb）に合わせて配色のみ調整している。
@@ -20,14 +20,14 @@ const industries = benchmarkData.industries;
 ---
 
 <BaseLayout
-  title="来期マーケティング予算詳細シミュレーター｜MKTG.AX"
+  title="来期マーケティング予算シミュレーター｜MKTG.AX"
   description="今期実績と来期施策（人件費・ツール費・広告費等）を入力し、根拠ある予算計画書を作成します。"
   ogImage="/open-graph/default.png"
 >
   <main class="budget-tool" data-industries={JSON.stringify(industries)}>
     <header class="tool-header">
       <p class="eyebrow">無料診断ツール ／ マーケティングマネージャー用</p>
-      <h1>来期マーケティング予算詳細シミュレーター</h1>
+      <h1>来期マーケティング予算シミュレーター</h1>
       <p class="lead">
         今期実績と来期施策（人件費・ツール費・広告費等）を入力し、逆算パイプライン・費用内訳・ROI試算まで含めた計画書を作成します。
       </p>
