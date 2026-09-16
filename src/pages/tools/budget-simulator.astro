@@ -179,6 +179,61 @@ const industries = benchmarkData.industries;
           </div>
         </div>
 
+        <div class="decision-dashboard">
+          <div class="decision-dashboard-title">
+            <h3><span class="card-icon">▼</span>経営判断ダッシュボード</h3>
+          </div>
+          <div class="kpi-cards kpi-cards--decision">
+            <div class="kpi-card kpi-card--dark">
+              <p class="kpi-label">来期 創出限界利益</p>
+              <p class="kpi-value"><span id="kpi-marginalProfit"></span><span class="kpi-unit">億円</span></p>
+              <p class="kpi-sub" id="kpi-marginalProfitSub">粗利 − マーケ総費用</p>
+            </div>
+            <div class="kpi-card kpi-card--accent">
+              <p class="kpi-label">限界利益ROI（粗利／費用）</p>
+              <p class="kpi-value"><span id="kpi-marginalRoi"></span><span class="kpi-unit">%</span></p>
+              <p class="kpi-sub" id="kpi-marginalRoiSub"></p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">算定総合CPL（費用÷件）</p>
+              <p class="kpi-value"><span id="kpi-calcCpl"></span><span class="kpi-unit">万円</span></p>
+              <p class="kpi-sub" id="kpi-calcCplSub"></p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">CPL安全率（撤退余地）</p>
+              <p class="kpi-value"><span id="kpi-safetyMargin"></span><span class="kpi-unit">%</span></p>
+              <p class="kpi-sub" id="kpi-safetyMarginSub"></p>
+            </div>
+          </div>
+          <div class="alert-box" id="health-alert-box">
+            <span class="alert-icon" id="health-alert-icon">✓</span>
+            <span id="health-alert-message">計算中...</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row">
+            <h3><span class="card-icon">▼</span>施策別 Unit Economics（単位当たり収益性）＆ 投資判定</h3>
+          </div>
+          <div class="unit-econ-table-wrap">
+            <table class="unit-econ-table">
+              <thead>
+                <tr>
+                  <th>施策・コスト科目</th>
+                  <th>来期予算</th>
+                  <th>目標リード</th>
+                  <th>施策CPL</th>
+                  <th>1件限界利益</th>
+                  <th>創出限界利益</th>
+                  <th>投資判定</th>
+                </tr>
+              </thead>
+              <tbody id="unit-econ-body"></tbody>
+            </table>
+          </div>
+          <p class="field-note">※ 1件あたり限界利益＝（1件LTV × 粗利率 × リード→商談化率 × 商談→成約率）－施策CPL。許容上限CPLを超過している施策は「要改善」または「撤退」判定となります。</p>
+        </div>
+
         <div class="report-columns">
           <div class="report-col">
             <div class="card">
@@ -273,6 +328,15 @@ const industries = benchmarkData.industries;
               <p id="footer-request"></p>
             </div>
           </div>
+        </div>
+
+        <div class="card checklist-card">
+          <h4 class="checklist-title">最終チェックポイント</h4>
+          <ul class="checklist-list">
+            <li><strong>許容上限CPLの厳守：</strong>1件LTV・粗利率・歩留まりから数学的に算出された許容上限CPL（撤退ライン）を基準に、各施策の収益性を判定しています。</li>
+            <li><strong>シナリオ別の成約感度：</strong>悲観（-20%）／標準／楽観（+20%）の3パターンで成約率・商談化率を調整し、許容上限CPLと必要リード数への影響を確認できます。</li>
+            <li><strong>固定費投資の回収要件：</strong>ツール費や人件費の増額は、商談化率の向上やリード数の底上げで投資回収できる見込みがあるかを判定してください。</li>
+          </ul>
         </div>
 
         <div class="card reference-card">
@@ -458,6 +522,70 @@ const industries = benchmarkData.industries;
     const budgetRatioToSales = s.targetSales > 0 ? (totals.budget / (s.targetSales * 10000)) * 100 : 0;
     const growthRate = s.currentSales > 0 ? ((s.targetSales - s.currentSales) / s.currentSales) * 100 : 0;
     return { roi, cac, budgetRatioToSales, growthRate };
+  }
+
+  // 経営判断ダッシュボード：創出限界利益（粗利－マーケ総費用）と限界利益ROI
+  function computeMarginalProfit(s, pipeline, totals) {
+    const grossProfitMan = pipeline.mktTargetMan * ((s.grossMargin || 0) / 100);
+    const marginalProfitMan = grossProfitMan - totals.budget;
+    const marginalProfitOku = marginalProfitMan / 10000;
+    const marginalROI = totals.budget > 0 ? (grossProfitMan / totals.budget) * 100 : 0;
+    return { grossProfitMan, marginalProfitMan, marginalProfitOku, marginalROI };
+  }
+
+  // 施策別 Unit Economics（単位当たり収益性）テーブルの描画
+  function renderUnitEconTable(s, maxCPL) {
+    const tbody = document.getElementById('unit-econ-body');
+    if (!tbody) return;
+    tbody.innerHTML = COST_KEYS.map((c) => {
+      const budget = s.costs[c.key].next || 0;
+      if (!c.hasLeads) {
+        return `
+        <tr>
+          <td>${c.name}</td>
+          <td class="num">${fmtManNoUnit(budget)} 万</td>
+          <td class="num">-</td>
+          <td class="num text-muted">固定費</td>
+          <td class="num text-muted">-</td>
+          <td class="num">-</td>
+          <td class="center"><span class="decision-badge decision-badge--fixed">固定投資</span></td>
+        </tr>`;
+      }
+      const leads = s.costs[c.key].nextLeads || 0;
+      if (leads <= 0) {
+        return `
+        <tr>
+          <td>${c.name}</td>
+          <td class="num">${fmtManNoUnit(budget)} 万</td>
+          <td class="num">-</td>
+          <td class="num text-muted">-</td>
+          <td class="num text-muted">-</td>
+          <td class="num">-</td>
+          <td class="center"><span class="decision-badge decision-badge--fixed">リード未入力</span></td>
+        </tr>`;
+      }
+      const cpl = budget / leads;
+      const unitProfit = maxCPL - cpl;
+      const totalProfitOku = (unitProfit * leads) / 10000;
+      let badgeClass = 'decision-badge--fixed';
+      let badgeText = '判定不可';
+      if (maxCPL > 0) {
+        if (cpl <= maxCPL * 0.8) { badgeClass = 'decision-badge--expand'; badgeText = '積極拡大'; }
+        else if (cpl <= maxCPL) { badgeClass = 'decision-badge--keep'; badgeText = '計画維持'; }
+        else if (cpl <= maxCPL * 1.3) { badgeClass = 'decision-badge--review'; badgeText = '要改善'; }
+        else { badgeClass = 'decision-badge--withdraw'; badgeText = '撤退・要改善'; }
+      }
+      return `
+      <tr>
+        <td>${c.name}</td>
+        <td class="num">${fmtManNoUnit(budget)} 万</td>
+        <td class="num">${fmtCount(leads)}</td>
+        <td class="num ${maxCPL > 0 && cpl > maxCPL ? 'text-warn' : ''}">${cpl.toFixed(2)} 万</td>
+        <td class="num ${unitProfit < 0 ? 'text-warn' : 'text-good'}">${unitProfit >= 0 ? '+' : ''}${unitProfit.toFixed(2)} 万</td>
+        <td class="num">${totalProfitOku >= 0 ? '+' : ''}${totalProfitOku.toFixed(2)} 億</td>
+        <td class="center"><span class="decision-badge ${badgeClass}">${badgeText}</span></td>
+      </tr>`;
+    }).join('');
   }
 
   function computePosition(ratio, industryRatio) {
@@ -799,6 +927,44 @@ const industries = benchmarkData.industries;
     document.getElementById('kpi-budgetRatio').textContent = `売上目標比 ${kpis.budgetRatioToSales.toFixed(1)}%`;
     document.getElementById('kpi-roi').textContent = kpis.roi.toFixed(0);
     document.getElementById('kpi-cac').textContent = `想定CAC：${kpis.cac.toFixed(1)}万円／件`;
+
+    // 経営判断ダッシュボード（創出限界利益／限界利益ROI／算定総合CPL／CPL安全率）
+    const marginal = computeMarginalProfit(state, pipeline, totals);
+    document.getElementById('kpi-marginalProfit').textContent = marginal.marginalProfitOku.toFixed(2);
+    document.getElementById('kpi-marginalProfitSub').textContent =
+      `粗利 ${(marginal.grossProfitMan / 10000).toFixed(2)}億 − 費 ${(totals.budget / 10000).toFixed(2)}億`;
+    document.getElementById('kpi-marginalRoi').textContent = marginal.marginalROI.toFixed(0);
+    document.getElementById('kpi-marginalRoiSub').textContent = `売上ベースROI：${kpis.roi.toFixed(0)}%`;
+    document.getElementById('kpi-calcCpl').textContent = impliedCpl.toFixed(2);
+    document.getElementById('kpi-calcCplSub').textContent = `許容上限CPL（自動）：${maxCPL.toFixed(2)}万円`;
+    const safetyMarginPct = maxCPL > 0 ? ((maxCPL - impliedCpl) / maxCPL) * 100 : 0;
+    const safetyMarginYen = (maxCPL - impliedCpl) * 10000;
+    document.getElementById('kpi-safetyMargin').textContent = safetyMarginPct.toFixed(1);
+    document.getElementById('kpi-safetyMarginSub').textContent = `1件当たり ${Math.round(safetyMarginYen).toLocaleString('ja-JP')}円のクッション`;
+
+    const alertBox = document.getElementById('health-alert-box');
+    const alertMsg = document.getElementById('health-alert-message');
+    const alertIcon = document.getElementById('health-alert-icon');
+    if (alertBox && alertMsg && alertIcon) {
+      if (maxCPL <= 0) {
+        alertBox.className = 'alert-box';
+        alertIcon.textContent = 'ℹ';
+        alertMsg.textContent = '商品粗利率・1件LTVを入力すると、健全性判定が表示されます。';
+      } else if (safetyMarginPct < 0) {
+        alertBox.className = 'alert-box alert-box--danger';
+        alertIcon.textContent = '⚠';
+        alertMsg.innerHTML = `<strong>危険判定（撤退リスク）</strong>：算定総合CPL（${impliedCpl.toFixed(2)}万円）が許容上限CPL（${maxCPL.toFixed(2)}万円）を超過しており赤字構造です。高CPL施策の縮小が必要です。`;
+      } else if (safetyMarginPct < 15) {
+        alertBox.className = 'alert-box alert-box--warn';
+        alertIcon.textContent = '⚠';
+        alertMsg.innerHTML = `<strong>注意判定（余地わずか）</strong>：CPL安全率が${safetyMarginPct.toFixed(1)}%と低めです。CPLの悪化や成約率ダウンで赤字転落するリスクがあります。`;
+      } else {
+        alertBox.className = 'alert-box';
+        alertIcon.textContent = '✓';
+        alertMsg.innerHTML = `<strong>健全性確認（利益構造クリア）</strong>：算定CPL（${impliedCpl.toFixed(2)}万円）は許容上限CPL（${maxCPL.toFixed(2)}万円）を下回っており、${safetyMarginPct.toFixed(1)}%の確実な利益クッションが確保されています。`;
+      }
+    }
+    renderUnitEconTable(state, maxCPL);
 
     // 逆算パイプライン
     document.getElementById('pl-mktTarget').textContent = fmtOku(pipeline.mktTargetOku);
@@ -1294,6 +1460,72 @@ const industries = benchmarkData.industries;
   .kpi-card--accent .kpi-value { color: var(--color-accent, #2563eb); }
   .kpi-unit { font-size: 0.78rem; font-weight: 600; margin-left: 0.2rem; color: #888; }
   .kpi-sub { font-size: 0.7rem; color: #999; margin: 0.25rem 0 0; }
+
+  /* ===== 経営判断ダッシュボード ===== */
+  .decision-dashboard { margin: 1.1rem 0; }
+  .decision-dashboard-title h3 {
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .kpi-cards--decision { margin-bottom: 0.7rem; }
+  .kpi-card--dark {
+    background: linear-gradient(135deg, #0f766e, #134e3a);
+    border-color: transparent;
+  }
+  .kpi-card--dark .kpi-label { color: #bbf7d0; }
+  .kpi-card--dark .kpi-value { color: #fff; }
+  .kpi-card--dark .kpi-unit { color: #bbf7d0; }
+  .kpi-card--dark .kpi-sub { color: #bbf7d0; }
+
+  .alert-box {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: #eef4ff;
+    border: 1px solid #dbe6fd;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.78rem;
+    color: #1e3a8a;
+    line-height: 1.55;
+  }
+  .alert-box--warn { background: #fff7ed; border-color: #fde68a; color: #92400e; }
+  .alert-box--danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  .alert-icon { font-weight: 700; flex-shrink: 0; }
+
+  .unit-econ-table-wrap { overflow-x: auto; }
+  .unit-econ-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 560px; }
+  .unit-econ-table th, .unit-econ-table td { padding: 0.45rem 0.4rem; border-bottom: 1px solid #f0f0f0; text-align: right; }
+  .unit-econ-table th:first-child, .unit-econ-table td:first-child { text-align: left; }
+  .unit-econ-table thead th { color: #999; font-weight: 600; font-size: 0.68rem; background: #fafafa; }
+  /* tbody は JS が innerHTML で書き換えるため :global() が必要 */
+  :global(.unit-econ-table td.num) { font-variant-numeric: tabular-nums; }
+  :global(.unit-econ-table td.center) { text-align: center; }
+  :global(.unit-econ-table .text-muted) { color: #bbb; }
+  :global(.unit-econ-table .text-good) { color: #1a7f37; font-weight: 700; }
+  :global(.unit-econ-table .text-warn) { color: #c2410c; font-weight: 700; }
+
+  :global(.decision-badge) {
+    display: inline-block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  :global(.decision-badge--expand) { background: #dcfce7; color: #15803d; }
+  :global(.decision-badge--keep) { background: #e0f2fe; color: #0369a1; }
+  :global(.decision-badge--review) { background: #fef3c7; color: #b45309; }
+  :global(.decision-badge--withdraw) { background: #ffe4e6; color: #be123c; }
+  :global(.decision-badge--fixed) { background: #f1f5f9; color: #64748b; }
+
+  .checklist-title { margin: 0 0 0.5rem; font-size: 0.88rem; color: #222; }
+  .checklist-list { margin: 0; padding-left: 1.1rem; font-size: 0.76rem; color: #555; line-height: 1.6; }
+  .checklist-list li { margin-bottom: 0.35rem; }
+  .checklist-list li:last-child { margin-bottom: 0; }
 
   .report-columns {
     display: grid;
