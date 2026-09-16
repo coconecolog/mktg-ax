@@ -553,6 +553,13 @@ const industries = benchmarkData.industries;
     fillSetupForm(true);
   });
 
+  // 予備費率（%）はSTEP1の合計プレビューにもリアルタイムで反映する
+  document.getElementById('in-reserveRate')?.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    state.reserveRate = isFinite(val) && val >= 0 ? val : 0;
+    renderSetupTotals();
+  });
+
   // ---------- スライダー生成 ----------
   function createSliderRow(config, currentValue, initialValue, containerId) {
     const wrap = document.createElement('div');
