@@ -985,12 +985,24 @@ const industries = benchmarkData.industries;
   }
 
   // ---------- チャート（来期 収益構造・CPL可視化） ----------
+  // サイトのアクセントカラー（--color-accent）をJSから参照するためのヘルパー。
+  // Chart.jsの色設定はCSS変数を直接使えないため、実際に適用されている値を都度読み取る。
+  function getAccentColor() {
+    try {
+      const v = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim();
+      return v || '#2563eb';
+    } catch (e) {
+      return '#2563eb';
+    }
+  }
+
   let leadGapChartInstance = null;
   let cplComparisonChartInstance = null;
   let costProfitChartInstance = null;
 
   function initCharts() {
     if (typeof Chart === 'undefined') return;
+    const accent = getAccentColor();
     const leadGapCtx = document.getElementById('leadGapChart');
     if (leadGapCtx) {
       leadGapChartInstance = new Chart(leadGapCtx, {
@@ -999,7 +1011,7 @@ const industries = benchmarkData.industries;
           labels: ['来期計画リード（合計）', '目標未達ギャップ'],
           datasets: [{
             data: [0, 0],
-            backgroundColor: ['#2563eb', '#f59e0b'],
+            backgroundColor: [accent, '#f59e0b'],
             borderWidth: 0,
           }],
         },
@@ -1027,7 +1039,7 @@ const industries = benchmarkData.industries;
             {
               label: '千円',
               data: [0, 0, 0],
-              backgroundColor: ['#10b981', '#94a3b8', '#2563eb'],
+              backgroundColor: ['#10b981', '#94a3b8', accent],
             },
           ],
         },
@@ -1052,7 +1064,7 @@ const industries = benchmarkData.industries;
           labels: ['今期実績', '来期計画'],
           datasets: [
             { label: 'マーケ投資コスト（千円）', data: [0, 0], backgroundColor: '#94a3b8', borderRadius: 6 },
-            { label: 'マーケ創出粗利（千円）', data: [0, 0], backgroundColor: '#10b981', borderRadius: 6 },
+            { label: 'マーケ創出粗利（千円）', data: [0, 0], backgroundColor: accent, borderRadius: 6 },
           ],
         },
         options: {
@@ -1083,7 +1095,7 @@ const industries = benchmarkData.industries;
       const planColor = maxCPL > 0 && planCpl > maxCPL ? '#dc2626' : '#10b981';
       cplComparisonChartInstance.data.labels = ['許容上限CPL', planLabel, '限界CPL'];
       cplComparisonChartInstance.data.datasets[0].data = [maxCPL, planCpl, marginalCpl || 0];
-      cplComparisonChartInstance.data.datasets[0].backgroundColor = ['#10b981', planColor, '#2563eb'];
+      cplComparisonChartInstance.data.datasets[0].backgroundColor = ['#10b981', planColor, getAccentColor()];
       cplComparisonChartInstance.update();
     }
     if (costProfitChartInstance) {
@@ -1734,7 +1746,7 @@ const industries = benchmarkData.industries;
     flex-shrink: 0;
   }
   .kpi-icon--accent { background: #dbe6fd; color: var(--color-accent, #2563eb); }
-  .kpi-icon--dark { background: rgba(255, 255, 255, 0.18); color: #bbf7d0; }
+  .kpi-icon--dark { background: rgba(255, 255, 255, 0.18); color: #bfdbfe; }
   .kpi-icon--warn { background: #fde68a; color: #92400e; }
   .kpi-label { font-size: 0.72rem; color: #777; margin: 0 0 0.25rem; }
   .kpi-value { font-size: 1.35rem; font-weight: 800; color: #1a1a1a; margin: 0; }
@@ -1774,13 +1786,13 @@ const industries = benchmarkData.industries;
   }
   .kpi-cards--decision { margin-bottom: 0.7rem; }
   .kpi-card--dark {
-    background: linear-gradient(135deg, #0f766e, #134e3a);
+    background: linear-gradient(135deg, var(--color-accent, #2563eb), #0f2444);
     border-color: transparent;
   }
-  .kpi-card--dark .kpi-label { color: #bbf7d0; }
+  .kpi-card--dark .kpi-label { color: #bfdbfe; }
   .kpi-card--dark .kpi-value { color: #fff; }
-  .kpi-card--dark .kpi-unit { color: #bbf7d0; }
-  .kpi-card--dark .kpi-sub { color: #bbf7d0; }
+  .kpi-card--dark .kpi-unit { color: #bfdbfe; }
+  .kpi-card--dark .kpi-sub { color: #bfdbfe; }
 
   .alert-box {
     display: flex;
@@ -1822,7 +1834,7 @@ const industries = benchmarkData.industries;
   @media (max-width: 900px) {
     .chart-guide-grid { grid-template-columns: 1fr; }
   }
-  .chart-guide-card { margin-top: 0; }
+  .card.chart-guide-card { margin-top: 0; }
   .chart-cards-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.3rem; }
   .chart-cards-title { margin: 0; font-size: 0.82rem; color: #1a1a1a; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
   .chart-cards-desc { margin: 0 0 0.5rem; font-size: 0.72rem; color: #888; }
@@ -1854,7 +1866,7 @@ const industries = benchmarkData.industries;
   }
   :global(.chart-stat-strip strong) { color: #1a1a1a; }
 
-  .chart-guide-card--reco { background: #f7f9fc; }
+  .card.chart-guide-card--reco { background: #f7f9fc; }
   .reco-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
   /* reco-list の中身は JS が innerHTML で書き換えるため :global() が必要 */
   :global(.reco-list li) { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.74rem; color: #444; line-height: 1.6; }
@@ -1945,7 +1957,7 @@ const industries = benchmarkData.industries;
   :global(.decision-badge--withdraw) { background: #ffe4e6; color: #be123c; }
   :global(.decision-badge--fixed) { background: #f1f5f9; color: #64748b; }
 
-  .checklist-card {
+  .card.checklist-card {
     background: linear-gradient(135deg, #1e3a5f, #0f2444);
     border: none;
   }
@@ -2032,7 +2044,7 @@ const industries = benchmarkData.industries;
   :global(.cost-grid-cpl--warn) { color: #c2410c; }
 
   .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f4f4f4; font-size: 0.85rem; }
-  .result-row--highlight { font-weight: 700; color: #dc2626; }
+  .result-row--highlight { font-weight: 700; color: var(--color-accent, #2563eb); }
   .ranking-chart { margin-top: 0.7rem; }
   :global(.rank-row) { display: grid; grid-template-columns: 130px 1fr 52px; align-items: center; gap: 0.6rem; padding: 0.22rem 0; font-size: 0.74rem; }
   :global(.rank-row .name) { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2076,6 +2088,6 @@ const industries = benchmarkData.industries;
       padding: 0;
     }
     .card { border: 1px solid #ccc; box-shadow: none; }
-    .checklist-card { border: none; }
+    .card.checklist-card { border: none; }
   }
 </style>
