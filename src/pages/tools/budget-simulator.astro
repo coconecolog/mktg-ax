@@ -166,22 +166,42 @@ const industries = benchmarkData.industries;
           </div>
           <div class="kpi-cards kpi-cards--decision">
             <div class="kpi-card">
-              <p class="kpi-label">来期 総投資コスト（予算）</p>
+              <div class="kpi-card-head">
+                <p class="kpi-label">来期 総投資コスト（予算）</p>
+                <span class="kpi-icon kpi-icon--accent">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </span>
+              </div>
               <p class="kpi-value"><span id="kpi-budget"></span><span class="kpi-unit">千円</span></p>
               <p class="kpi-sub" id="kpi-budgetSub"></p>
             </div>
             <div class="kpi-card kpi-card--dark">
-              <p class="kpi-label">来期 創出限界利益</p>
+              <div class="kpi-card-head">
+                <p class="kpi-label">来期 創出限界利益</p>
+                <span class="kpi-icon kpi-icon--dark">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+                </span>
+              </div>
               <p class="kpi-value"><span id="kpi-marginalProfit"></span><span class="kpi-unit">千円</span></p>
               <p class="kpi-sub" id="kpi-marginalProfitSub">粗利 − マーケ総費用</p>
             </div>
             <div class="kpi-card kpi-card--accent">
-              <p class="kpi-label">限界利益ROI（粗利／費用）</p>
+              <div class="kpi-card-head">
+                <p class="kpi-label">限界利益ROI（粗利／費用）</p>
+                <span class="kpi-icon kpi-icon--accent">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 6"/></svg>
+                </span>
+              </div>
               <p class="kpi-value"><span id="kpi-marginalRoi"></span><span class="kpi-unit">%</span></p>
               <p class="kpi-sub" id="kpi-marginalRoiSub"></p>
             </div>
             <div class="kpi-card" id="kpi-leadRateCard">
-              <p class="kpi-label">全社目標達成率（リード）</p>
+              <div class="kpi-card-head">
+                <p class="kpi-label">全社目標達成率（リード）</p>
+                <span class="kpi-icon kpi-icon--warn" id="kpi-leadRateIcon">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </span>
+              </div>
               <p class="kpi-value"><span id="kpi-leadRate"></span><span class="kpi-unit">%</span></p>
               <p class="kpi-sub" id="kpi-leadRateSub"></p>
             </div>
@@ -198,16 +218,28 @@ const industries = benchmarkData.industries;
           </div>
           <div class="chart-cards">
             <div class="chart-cards-col">
-              <p class="chart-cards-title">来期 マーケ創出売上・粗利・費用構造</p>
+              <div class="chart-cards-head">
+                <p class="chart-cards-title">来期 マーケ創出売上・粗利・費用構造</p>
+                <span class="chart-tag" id="chartTag1">計算中</span>
+              </div>
               <div class="chart-box"><canvas id="profitStructureChart"></canvas></div>
+              <div class="chart-stat-strip" id="chartStat1"></div>
             </div>
             <div class="chart-cards-col">
-              <p class="chart-cards-title">施策別CPL vs 許容上限CPL 比較（千円）</p>
+              <div class="chart-cards-head">
+                <p class="chart-cards-title">施策別CPL vs 許容上限CPL 比較（千円）</p>
+                <span class="chart-tag" id="chartTag2">計算中</span>
+              </div>
               <div class="chart-box"><canvas id="cplComparisonChart"></canvas></div>
+              <div class="chart-stat-strip" id="chartStat2"></div>
             </div>
             <div class="chart-cards-col">
-              <p class="chart-cards-title">今期実績 vs 来期計画（コスト・創出粗利）</p>
+              <div class="chart-cards-head">
+                <p class="chart-cards-title">今期実績 vs 来期計画（コスト・創出粗利）</p>
+                <span class="chart-tag" id="chartTag3">計算中</span>
+              </div>
               <div class="chart-box"><canvas id="costProfitChart"></canvas></div>
+              <div class="chart-stat-strip" id="chartStat3"></div>
             </div>
           </div>
         </div>
@@ -303,9 +335,9 @@ const industries = benchmarkData.industries;
         <div class="card checklist-card">
           <h4 class="checklist-title">本日の経営会議での確認ポイント</h4>
           <ul class="checklist-list checklist-list--check">
-            <li><span class="check-icon">☑</span><strong>許容上限CPLの厳守：</strong>1件LTV・粗利率・歩留まりから数学的に算出された許容上限CPL（撤退ライン）を基準に、各施策の収益性を判定しています。</li>
-            <li><span class="check-icon">☑</span><strong>シナリオ別の成約感度：</strong>悲観（-20%）／標準／楽観（+20%）の3パターンで成約率・商談化率を調整し、許容上限CPLと必要リード数への影響を確認できます。</li>
-            <li><span class="check-icon">☑</span><strong>固定費投資の回収要件：</strong>ツール費や人件費の増額は、商談化率の向上やリード数の底上げで投資回収できる見込みがあるかを判定してください。</li>
+            <li><span class="check-icon">✓</span><strong>許容上限CPLの厳守：</strong>1件LTV・粗利率・歩留まりから数学的に算出された許容上限CPL（撤退ライン）を基準に、各施策の収益性を判定しています。</li>
+            <li><span class="check-icon">✓</span><strong>シナリオ別の成約感度：</strong>悲観（-20%）／標準／楽観（+20%）の3パターンで成約率・商談化率を調整し、許容上限CPLと必要リード数への影響を確認できます。</li>
+            <li><span class="check-icon">✓</span><strong>固定費投資の回収要件：</strong>ツール費や人件費の増額は、商談化率の向上やリード数の底上げで投資回収できる見込みがあるかを判定してください。</li>
           </ul>
         </div>
 
@@ -533,6 +565,10 @@ const industries = benchmarkData.industries;
     let sumLeadsAll = 0;
     let sumTotalProfit = 0;
     let anyComputed = false;
+    let worstTier = -1; // -1:該当なし 0:健全 1:要調整 2:超過
+    let worstChannelName = '';
+
+    const warnIconSvg = '<span class="row-warn-icon" title="許容上限CPLを超過しています"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>';
 
     const rowsHtml = COST_KEYS.map((c) => {
       const budget = s.costs[c.key].next || 0;
@@ -573,14 +609,18 @@ const industries = benchmarkData.industries;
       // 投資判定は3段階に簡略化（健全／要調整／超過）
       let badgeClass = 'decision-badge--fixed';
       let badgeText = '判定不可';
+      let tier = -1;
       if (maxCPL > 0) {
-        if (cpl <= maxCPL) { badgeClass = 'decision-badge--expand'; badgeText = '健全'; }
-        else if (cpl <= maxCPL * 1.3) { badgeClass = 'decision-badge--review'; badgeText = '要調整'; }
-        else { badgeClass = 'decision-badge--withdraw'; badgeText = '超過'; }
+        if (cpl <= maxCPL) { badgeClass = 'decision-badge--expand'; badgeText = '健全'; tier = 0; }
+        else if (cpl <= maxCPL * 1.3) { badgeClass = 'decision-badge--review'; badgeText = '要調整'; tier = 1; }
+        else { badgeClass = 'decision-badge--withdraw'; badgeText = '超過'; tier = 2; }
       }
+      if (tier > worstTier) { worstTier = tier; worstChannelName = c.name; }
+      const rowClass = tier >= 1 ? ' class="unit-econ-row--warn"' : '';
+      const nameCell = tier >= 1 ? `${warnIconSvg}${c.name}` : c.name;
       return `
-      <tr>
-        <td>${c.name}</td>
+      <tr${rowClass}>
+        <td>${nameCell}</td>
         <td class="num">${fmtThousandNoUnit(budget)} 千円</td>
         <td class="num">${fmtCount(leads)}</td>
         <td class="num ${maxCPL > 0 && cpl > maxCPL ? 'text-warn' : ''}">${cpl.toFixed(2)} 千円</td>
@@ -593,6 +633,17 @@ const industries = benchmarkData.industries;
     // 合計行（全施策の来期予算・目標リード・創出限界利益を集計。CPLは実施中のリード獲得施策のみの実額ベース）
     const blendedCplValue = computeBlendedActiveCpl(s.costs, 'next', 'nextLeads');
     const blendedCpl = sumLeadsAll > 0 ? blendedCplValue : null;
+
+    // 合計行の投資判定：施策別判定の中で最も悪い判定を集約バッジとして表示
+    let summaryBadgeHtml = '-';
+    if (worstTier === 0) {
+      summaryBadgeHtml = '<span class="decision-badge decision-badge--expand">全施策健全</span>';
+    } else if (worstTier === 1) {
+      summaryBadgeHtml = `<span class="decision-badge decision-badge--review">要施策調整</span>`;
+    } else if (worstTier === 2) {
+      summaryBadgeHtml = `<span class="decision-badge decision-badge--withdraw">要施策調整</span>`;
+    }
+
     const summaryRowHtml = `
       <tr class="unit-econ-row--summary">
         <td>合計</td>
@@ -601,7 +652,7 @@ const industries = benchmarkData.industries;
         <td class="num">${blendedCpl !== null ? `${blendedCpl.toFixed(2)} 千円` : '-'}</td>
         <td class="num text-muted">-</td>
         <td class="num ${anyComputed && sumTotalProfit < 0 ? 'text-warn' : anyComputed ? 'text-good' : ''}">${anyComputed ? `${sumTotalProfit >= 0 ? '+' : ''}${fmtThousandNoUnit(sumTotalProfit)} 千円` : '-'}</td>
-        <td class="center">-</td>
+        <td class="center">${summaryBadgeHtml}</td>
       </tr>`;
 
     tbody.innerHTML = rowsHtml + summaryRowHtml;
@@ -1103,6 +1154,55 @@ const industries = benchmarkData.industries;
         alertMsg.innerHTML = `<strong>健全性確認（利益構造クリア）</strong>：${leadGapText}${worstChannelText}算定CPL（${impliedCpl.toFixed(2)}千円）は許容上限CPL（${maxCPL.toFixed(2)}千円）を下回っており、${safetyMarginPct.toFixed(1)}%の確実な利益クッションが確保されています。`;
       }
     }
+    // チャートカードのタグ・フッター統計ストリップ（現状値から動的生成）
+    const chartTag1 = document.getElementById('chartTag1');
+    const chartStat1 = document.getElementById('chartStat1');
+    if (chartTag1 && chartStat1) {
+      if (marginal.marginalProfit < 0) {
+        chartTag1.textContent = '赤字構造';
+        chartTag1.className = 'chart-tag chart-tag--danger';
+      } else if (marginal.marginalROI < 100) {
+        chartTag1.textContent = '利益率要改善';
+        chartTag1.className = 'chart-tag chart-tag--warn';
+      } else {
+        chartTag1.textContent = '黒字確保';
+        chartTag1.className = 'chart-tag chart-tag--good';
+      }
+      chartStat1.innerHTML = `<span>来期投資コスト：<strong>${fmtThousandNoUnit(totals.budget)}千円</strong></span><span>創出限界利益：<strong>${marginal.marginalProfit >= 0 ? '+' : ''}${fmtThousandNoUnit(marginal.marginalProfit)}千円</strong></span>`;
+    }
+    const chartTag2 = document.getElementById('chartTag2');
+    const chartStat2 = document.getElementById('chartStat2');
+    if (chartTag2 && chartStat2) {
+      if (worstChannel) {
+        chartTag2.textContent = `${worstChannel.name}が許容超過`;
+        chartTag2.className = 'chart-tag chart-tag--danger';
+      } else if (maxCPL > 0 && safetyMarginPct < 15) {
+        chartTag2.textContent = '安全率わずか';
+        chartTag2.className = 'chart-tag chart-tag--warn';
+      } else {
+        chartTag2.textContent = 'CPL基準内';
+        chartTag2.className = 'chart-tag chart-tag--good';
+      }
+      chartStat2.innerHTML = `<span>許容上限CPL：<strong>${maxCPL > 0 ? maxCPL.toFixed(2) : '-'}千円</strong></span><span>総合平均CPL：<strong>${impliedCpl > 0 ? impliedCpl.toFixed(2) : '-'}千円</strong></span>`;
+    }
+    const chartTag3 = document.getElementById('chartTag3');
+    const chartStat3 = document.getElementById('chartStat3');
+    if (chartTag3 && chartStat3) {
+      const budgetDelta = totals.budget - marginal.currentBudget;
+      const profitDelta = marginal.grossProfit - marginal.grossProfitCurrent;
+      if (profitDelta >= 0 && budgetDelta <= 0) {
+        chartTag3.textContent = 'コスト効率改善';
+        chartTag3.className = 'chart-tag chart-tag--good';
+      } else if (profitDelta < 0) {
+        chartTag3.textContent = '粗利減少見込み';
+        chartTag3.className = 'chart-tag chart-tag--warn';
+      } else {
+        chartTag3.textContent = '投資拡大フェーズ';
+        chartTag3.className = 'chart-tag';
+      }
+      chartStat3.innerHTML = `<span>投資額 増減：<strong>${budgetDelta >= 0 ? '+' : ''}${fmtThousandNoUnit(budgetDelta)}千円</strong></span><span>創出粗利 増減：<strong>${profitDelta >= 0 ? '+' : ''}${fmtThousandNoUnit(profitDelta)}千円</strong></span>`;
+    }
+
     renderUnitEconTable(state, maxCPL);
     updateCharts(state, pipeline, totals, marginal, maxCPL, impliedCpl);
 
@@ -1575,6 +1675,20 @@ const industries = benchmarkData.industries;
   .kpi-card--warn .kpi-label { color: #92400e; }
   .kpi-card--warn .kpi-value { color: #92400e; }
   .kpi-card--warn .kpi-sub { color: #b45309; }
+  .kpi-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
+  .kpi-card-head .kpi-label { margin: 0; }
+  .kpi-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .kpi-icon--accent { background: #dbe6fd; color: var(--color-accent, #2563eb); }
+  .kpi-icon--dark { background: rgba(255, 255, 255, 0.18); color: #bbf7d0; }
+  .kpi-icon--warn { background: #fde68a; color: #92400e; }
   .kpi-label { font-size: 0.72rem; color: #777; margin: 0 0 0.25rem; }
   .kpi-value { font-size: 1.35rem; font-weight: 800; color: #1a1a1a; margin: 0; }
   .kpi-card--accent .kpi-value { color: var(--color-accent, #2563eb); }
@@ -1623,19 +1737,33 @@ const industries = benchmarkData.industries;
 
   .alert-box {
     display: flex;
-    align-items: center;
-    gap: 0.55rem;
+    align-items: flex-start;
+    gap: 0.65rem;
     background: #eef4ff;
     border: 1px solid #dbe6fd;
-    border-radius: 8px;
-    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
     font-size: 0.78rem;
     color: #1e3a8a;
-    line-height: 1.55;
+    line-height: 1.6;
   }
   .alert-box--warn { background: #fff7ed; border-color: #fde68a; color: #92400e; }
   .alert-box--danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-  .alert-icon { font-weight: 700; flex-shrink: 0; }
+  .alert-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 8px;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background: var(--color-accent, #2563eb);
+    color: #fff;
+  }
+  .alert-box--warn .alert-icon { background: #d97706; }
+  .alert-box--danger .alert-icon { background: #dc2626; }
 
   /* ===== 来期 収益構造・CPL可視化（チャート） ===== */
   .chart-cards {
@@ -1650,8 +1778,35 @@ const industries = benchmarkData.industries;
   @media (max-width: 640px) {
     .chart-cards { grid-template-columns: 1fr; }
   }
-  .chart-cards-title { margin: 0 0 0.4rem; font-size: 0.76rem; color: #666; font-weight: 600; text-align: center; }
+  .chart-cards-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.4rem; }
+  .chart-cards-title { margin: 0; font-size: 0.76rem; color: #666; font-weight: 600; }
+  .chart-tag {
+    flex-shrink: 0;
+    font-size: 0.63rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: var(--color-accent, #2563eb);
+    white-space: nowrap;
+  }
+  :global(.chart-tag--warn) { background: #fff7ed; color: #b45309; }
+  :global(.chart-tag--danger) { background: #fef2f2; color: #be123c; }
+  :global(.chart-tag--good) { background: #ecfdf5; color: #15803d; }
   .chart-box { position: relative; height: 220px; }
+  .chart-stat-strip {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    background: #f8fafc;
+    border: 1px solid #eef1f5;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    color: #555;
+  }
+  :global(.chart-stat-strip strong) { color: #1a1a1a; }
 
   /* ===== 指標の見方ガイド（許容上限CPL・投資判定ルール） ===== */
   .guide-grid {
@@ -1691,8 +1846,20 @@ const industries = benchmarkData.industries;
   :global(.unit-econ-table .text-muted) { color: #bbb; }
   :global(.unit-econ-table .text-good) { color: #1a7f37; font-weight: 700; }
   :global(.unit-econ-table .text-warn) { color: #c2410c; font-weight: 700; }
-  :global(.unit-econ-table .unit-econ-row--summary) { background: #f8fafc; font-weight: 700; }
-  :global(.unit-econ-table .unit-econ-row--summary td) { border-top: 2px solid #e2e8f0; border-bottom: none; }
+  :global(.unit-econ-table .unit-econ-row--summary) { background: #eef4ff; font-weight: 700; }
+  :global(.unit-econ-table .unit-econ-row--summary td) { border-top: 2px solid #dbe6fd; border-bottom: none; }
+  :global(.unit-econ-table .unit-econ-row--warn) { background: #fffbeb; }
+  :global(.unit-econ-table .unit-econ-row--warn td) { border-bottom-color: #fde68a; }
+  :global(.unit-econ-table .row-warn-icon) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-right: 0.3rem;
+    color: #b45309;
+    vertical-align: -0.2rem;
+  }
 
   :global(.decision-badge) {
     display: inline-block;
@@ -1707,13 +1874,32 @@ const industries = benchmarkData.industries;
   :global(.decision-badge--withdraw) { background: #ffe4e6; color: #be123c; }
   :global(.decision-badge--fixed) { background: #f1f5f9; color: #64748b; }
 
-  .checklist-title { margin: 0 0 0.5rem; font-size: 0.88rem; color: #222; }
-  .checklist-list { margin: 0; padding-left: 1.1rem; font-size: 0.76rem; color: #555; line-height: 1.6; }
+  .checklist-card {
+    background: linear-gradient(135deg, #1e3a5f, #0f2444);
+    border: none;
+  }
+  .checklist-title { margin: 0 0 0.6rem; font-size: 0.88rem; color: #fff; font-weight: 700; }
+  .checklist-list { margin: 0; padding-left: 1.1rem; font-size: 0.76rem; color: #cbd8ec; line-height: 1.6; }
   .checklist-list li { margin-bottom: 0.35rem; }
   .checklist-list li:last-child { margin-bottom: 0; }
   .checklist-list--check { padding-left: 0; list-style: none; }
-  .checklist-list--check li { display: flex; align-items: flex-start; gap: 0.45rem; }
-  .check-icon { color: var(--color-accent, #2563eb); font-size: 0.9rem; line-height: 1.5; flex-shrink: 0; }
+  .checklist-list--check li { display: flex; align-items: flex-start; gap: 0.55rem; color: #dce6f5; }
+  .checklist-list--check strong { color: #fff; }
+  .check-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-top: 0.15rem;
+    border: 1.5px solid #7ea3d6;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #93c5fd;
+    font-size: 0.68rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
 
   .card {
     border: 1px solid #eee;
@@ -1804,6 +1990,11 @@ const industries = benchmarkData.industries;
 
   /* ===== 印刷 ===== */
   @media print {
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color-adjust: exact;
+    }
     .no-print { display: none !important; }
     body { background: #fff; }
     .tool-header, .input-panel { display: none !important; }
@@ -1814,5 +2005,6 @@ const industries = benchmarkData.industries;
       padding: 0;
     }
     .card { border: 1px solid #ccc; box-shadow: none; }
+    .checklist-card { border: none; }
   }
 </style>
