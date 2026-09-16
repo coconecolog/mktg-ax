@@ -165,6 +165,11 @@ const industries = benchmarkData.industries;
             <h3><span class="card-icon">▼</span>経営判断ダッシュボード</h3>
           </div>
           <div class="kpi-cards kpi-cards--decision">
+            <div class="kpi-card">
+              <p class="kpi-label">来期 総投資コスト（予算）</p>
+              <p class="kpi-value"><span id="kpi-budget"></span><span class="kpi-unit">千円</span></p>
+              <p class="kpi-sub" id="kpi-budgetSub"></p>
+            </div>
             <div class="kpi-card kpi-card--dark">
               <p class="kpi-label">来期 創出限界利益</p>
               <p class="kpi-value"><span id="kpi-marginalProfit"></span><span class="kpi-unit">千円</span></p>
@@ -175,15 +180,10 @@ const industries = benchmarkData.industries;
               <p class="kpi-value"><span id="kpi-marginalRoi"></span><span class="kpi-unit">%</span></p>
               <p class="kpi-sub" id="kpi-marginalRoiSub"></p>
             </div>
-            <div class="kpi-card">
-              <p class="kpi-label">算定総合CPL（費用÷件）</p>
-              <p class="kpi-value"><span id="kpi-calcCpl"></span><span class="kpi-unit">千円</span></p>
-              <p class="kpi-sub" id="kpi-calcCplSub"></p>
-            </div>
-            <div class="kpi-card">
-              <p class="kpi-label">CPL安全率（撤退余地）</p>
-              <p class="kpi-value"><span id="kpi-safetyMargin"></span><span class="kpi-unit">%</span></p>
-              <p class="kpi-sub" id="kpi-safetyMarginSub"></p>
+            <div class="kpi-card" id="kpi-leadRateCard">
+              <p class="kpi-label">全社目標達成率（リード）</p>
+              <p class="kpi-value"><span id="kpi-leadRate"></span><span class="kpi-unit">%</span></p>
+              <p class="kpi-sub" id="kpi-leadRateSub"></p>
             </div>
           </div>
           <div class="alert-box" id="health-alert-box">
@@ -205,12 +205,42 @@ const industries = benchmarkData.industries;
               <p class="chart-cards-title">施策別CPL vs 許容上限CPL 比較（千円）</p>
               <div class="chart-box"><canvas id="cplComparisonChart"></canvas></div>
             </div>
+            <div class="chart-cards-col">
+              <p class="chart-cards-title">今期実績 vs 来期計画（コスト・創出粗利）</p>
+              <div class="chart-box"><canvas id="costProfitChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row">
+            <h3><span class="card-icon">▼</span>指標の見方（許容上限CPLと投資判定基準）</h3>
+          </div>
+          <div class="guide-grid">
+            <div class="guide-box">
+              <p class="guide-box-title"><span class="guide-dot guide-dot--good"></span>許容上限CPL（損益分岐CPL）とは</p>
+              <p class="guide-box-text">獲得した1リードが生み出す平均利益から算出した、「これを超えると赤字になる」リード獲得コストの上限です。この数値を基準に、各施策の計画CPLが健全かどうかを判定します。</p>
+              <div class="guide-box-formula">許容上限CPL＝1件LTV × 粗利率 × リード→商談化率 × 商談→成約率</div>
+            </div>
+            <div class="guide-box guide-box--accent">
+              <p class="guide-box-title"><span class="guide-dot guide-dot--accent"></span>投資判定ルール（下記テーブルの判定基準）</p>
+              <ul class="guide-rule-list">
+                <li><span class="guide-dot guide-dot--good"></span><strong>計画CPL ≤ 許容上限CPL：</strong>健全。現行施策を維持・拡大して問題ありません。</li>
+                <li><span class="guide-dot guide-dot--warn"></span><strong>許容上限CPLの1.0〜1.3倍：</strong>要調整。CVR改善や予算配分の見直しを検討してください。</li>
+                <li><span class="guide-dot guide-dot--bad"></span><strong>許容上限CPLの1.3倍超：</strong>超過。施策の縮小・停止を検討してください。</li>
+              </ul>
+            </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-title-row">
             <h3><span class="card-icon">▼</span>施策別 Unit Economics（単位当たり収益性）＆ 投資判定</h3>
+            <span class="badge-legend">
+              <span class="badge-legend-item"><span class="guide-dot guide-dot--good"></span>健全</span>
+              <span class="badge-legend-item"><span class="guide-dot guide-dot--warn"></span>要調整</span>
+              <span class="badge-legend-item"><span class="guide-dot guide-dot--bad"></span>超過</span>
+            </span>
           </div>
           <div class="unit-econ-table-wrap">
             <table class="unit-econ-table">
@@ -271,11 +301,11 @@ const industries = benchmarkData.industries;
         </div>
 
         <div class="card checklist-card">
-          <h4 class="checklist-title">最終チェックポイント</h4>
-          <ul class="checklist-list">
-            <li><strong>許容上限CPLの厳守：</strong>1件LTV・粗利率・歩留まりから数学的に算出された許容上限CPL（撤退ライン）を基準に、各施策の収益性を判定しています。</li>
-            <li><strong>シナリオ別の成約感度：</strong>悲観（-20%）／標準／楽観（+20%）の3パターンで成約率・商談化率を調整し、許容上限CPLと必要リード数への影響を確認できます。</li>
-            <li><strong>固定費投資の回収要件：</strong>ツール費や人件費の増額は、商談化率の向上やリード数の底上げで投資回収できる見込みがあるかを判定してください。</li>
+          <h4 class="checklist-title">本日の経営会議での確認ポイント</h4>
+          <ul class="checklist-list checklist-list--check">
+            <li><span class="check-icon">☑</span><strong>許容上限CPLの厳守：</strong>1件LTV・粗利率・歩留まりから数学的に算出された許容上限CPL（撤退ライン）を基準に、各施策の収益性を判定しています。</li>
+            <li><span class="check-icon">☑</span><strong>シナリオ別の成約感度：</strong>悲観（-20%）／標準／楽観（+20%）の3パターンで成約率・商談化率を調整し、許容上限CPLと必要リード数への影響を確認できます。</li>
+            <li><span class="check-icon">☑</span><strong>固定費投資の回収要件：</strong>ツール費や人件費の増額は、商談化率の向上やリード数の底上げで投資回収できる見込みがあるかを判定してください。</li>
           </ul>
         </div>
 
@@ -490,7 +520,7 @@ const industries = benchmarkData.industries;
     const grossProfitCurrent = s.currentMktSales * ((s.grossMargin || 0) / 100);
     const marginalProfitCurrent = grossProfitCurrent - currentBudget;
 
-    return { grossProfit, marginalProfit, marginalROI, marginalProfitCurrent };
+    return { grossProfit, marginalProfit, marginalROI, marginalProfitCurrent, grossProfitCurrent, currentBudget };
   }
 
   // 施策別 Unit Economics（単位当たり収益性）テーブルの描画
@@ -540,13 +570,13 @@ const industries = benchmarkData.industries;
       const totalProfit = unitProfit * leads;
       sumTotalProfit += totalProfit;
       anyComputed = true;
+      // 投資判定は3段階に簡略化（健全／要調整／超過）
       let badgeClass = 'decision-badge--fixed';
       let badgeText = '判定不可';
       if (maxCPL > 0) {
-        if (cpl <= maxCPL * 0.8) { badgeClass = 'decision-badge--expand'; badgeText = '積極拡大'; }
-        else if (cpl <= maxCPL) { badgeClass = 'decision-badge--keep'; badgeText = '計画維持'; }
-        else if (cpl <= maxCPL * 1.3) { badgeClass = 'decision-badge--review'; badgeText = '要改善'; }
-        else { badgeClass = 'decision-badge--withdraw'; badgeText = '撤退・要改善'; }
+        if (cpl <= maxCPL) { badgeClass = 'decision-badge--expand'; badgeText = '健全'; }
+        else if (cpl <= maxCPL * 1.3) { badgeClass = 'decision-badge--review'; badgeText = '要調整'; }
+        else { badgeClass = 'decision-badge--withdraw'; badgeText = '超過'; }
       }
       return `
       <tr>
@@ -851,6 +881,7 @@ const industries = benchmarkData.industries;
   // ---------- チャート（来期 収益構造・CPL可視化） ----------
   let profitStructureChartInstance = null;
   let cplComparisonChartInstance = null;
+  let costProfitChartInstance = null;
 
   function initCharts() {
     if (typeof Chart === 'undefined') return;
@@ -918,6 +949,30 @@ const industries = benchmarkData.industries;
         },
       });
     }
+    const costProfitCtx = document.getElementById('costProfitChart');
+    if (costProfitCtx) {
+      costProfitChartInstance = new Chart(costProfitCtx, {
+        type: 'bar',
+        data: {
+          labels: ['今期実績', '来期計画'],
+          datasets: [
+            { label: 'マーケ投資コスト（千円）', data: [0, 0], backgroundColor: '#94a3b8', borderRadius: 6 },
+            { label: 'マーケ創出粗利（千円）', data: [0, 0], backgroundColor: '#10b981', borderRadius: 6 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+            x: { ticks: { font: { size: 10 } } },
+          },
+        },
+      });
+    }
   }
 
   function updateCharts(s, pipeline, totals, marginal, maxCPL, impliedCpl) {
@@ -937,6 +992,11 @@ const industries = benchmarkData.industries;
       cplComparisonChartInstance.data.datasets[0].data = bars;
       cplComparisonChartInstance.data.datasets[1].data = bars.map(() => maxCPL);
       cplComparisonChartInstance.update();
+    }
+    if (costProfitChartInstance) {
+      costProfitChartInstance.data.datasets[0].data = [marginal.currentBudget, totals.budget];
+      costProfitChartInstance.data.datasets[1].data = [marginal.grossProfitCurrent, marginal.grossProfit];
+      costProfitChartInstance.update();
     }
   }
 
@@ -958,8 +1018,15 @@ const industries = benchmarkData.industries;
       subnoteEl.textContent = `※今期実績比較・歩留まり逆算モデル適用／成約・商談化率シナリオ：${scenarioText}`;
     }
 
-    // 経営判断ダッシュボード（創出限界利益／限界利益ROI／算定総合CPL／CPL安全率）
+    // 施策別（Web広告・展示会・SEO）の来期目標リード合計 vs 全社目標からの必要リード数（KPIカード・アラート双方で使用）
+    const leadsNextSum = sumLeads(state.costs, 'nextLeads');
+    const leadGap = pipeline.requiredLeads - leadsNextSum;
+
+    // 経営判断ダッシュボード（来期予算／創出限界利益／限界利益ROI／全社目標達成率）
     const marginal = computeMarginalProfit(state, pipeline, totals);
+    document.getElementById('kpi-budget').textContent = fmtThousandNoUnit(totals.budget);
+    document.getElementById('kpi-budgetSub').textContent =
+      fmtChangeRate(marginal.currentBudget, totals.budget) || '今期実績データなし';
     document.getElementById('kpi-marginalProfit').textContent = fmtThousandNoUnit(marginal.marginalProfit);
     document.getElementById('kpi-marginalProfitSub').textContent =
       `粗利 ${fmtThousand(marginal.grossProfit)} − 費 ${fmtThousand(totals.budget)}`;
@@ -970,12 +1037,15 @@ const industries = benchmarkData.industries;
     document.getElementById('kpi-marginalRoiSub').textContent = marginal.marginalROI >= 100
       ? `✓ 100%超＝投資価値あり（売上ベースROI ${kpis.roi.toFixed(0)}%）`
       : `⚠ 100%未満＝要再検討（売上ベースROI ${kpis.roi.toFixed(0)}%）`;
-    document.getElementById('kpi-calcCpl').textContent = impliedCpl.toFixed(2);
-    document.getElementById('kpi-calcCplSub').textContent = `許容上限CPL（自動）：${maxCPL.toFixed(2)}千円`;
+    const leadRatePct = pipeline.requiredLeads > 0 ? (leadsNextSum / pipeline.requiredLeads) * 100 : 0;
+    document.getElementById('kpi-leadRate').textContent = leadRatePct.toFixed(1);
+    document.getElementById('kpi-leadRateSub').textContent = leadGap > 0
+      ? `必要${fmtCount(pipeline.requiredLeads)}に対し${fmtCount(leadGap)}不足`
+      : `必要${fmtCount(pipeline.requiredLeads)}を充足`;
+    document.getElementById('kpi-leadRateCard')?.classList.toggle('kpi-card--warn', leadGap > 0);
+
+    // 算定総合CPL・CPL安全率（KPIカードとしては非表示だが、判定ロジックには引き続き使用）
     const safetyMarginPct = maxCPL > 0 ? ((maxCPL - impliedCpl) / maxCPL) * 100 : 0;
-    const safetyMarginYen = (maxCPL - impliedCpl) * 1000;
-    document.getElementById('kpi-safetyMargin').textContent = safetyMarginPct.toFixed(1);
-    document.getElementById('kpi-safetyMarginSub').textContent = `1件当たり ${Math.round(safetyMarginYen).toLocaleString('ja-JP')}円のクッション`;
 
     // エグゼクティブサマリー（結論ファースト：絶対額と投資判定を1行目で提示）
     const execEl = document.getElementById('exec-summary');
@@ -990,6 +1060,27 @@ const industries = benchmarkData.industries;
       execTextEl.innerHTML = `来期マーケ予算 <strong>${fmtThousand(totals.budget)}</strong> に対し、創出限界利益は <strong>${marginal.marginalProfit >= 0 ? '+' : ''}${fmtThousandNoUnit(marginal.marginalProfit)}千円</strong>（限界利益ROI ${marginal.marginalROI.toFixed(0)}%）。判定：<strong>${judgeLabel}</strong>`;
     }
 
+    // 課題の特定：許容上限CPLを超過している施策のうち、最もCPLが高いものを名指しする
+    let worstChannel = null;
+    let worstCpl = 0;
+    if (maxCPL > 0) {
+      COST_KEYS.forEach((c) => {
+        if (!c.hasLeads) return;
+        const budget = state.costs[c.key].next || 0;
+        const leads = state.costs[c.key].nextLeads || 0;
+        if (budget > 0 && leads > 0) {
+          const cpl = budget / leads;
+          if (cpl > maxCPL && cpl > worstCpl) { worstCpl = cpl; worstChannel = c; }
+        }
+      });
+    }
+    const leadGapText = leadGap > 0
+      ? `全社目標達成に必要な${fmtCount(pipeline.requiredLeads)}に対し、来期計画のリード獲得見込みは${fmtCount(leadsNextSum)}（不足 ${fmtCount(leadGap)}）です。`
+      : '';
+    const worstChannelText = worstChannel
+      ? `${worstChannel.name}の計画CPL（${worstCpl.toFixed(1)}千円）が許容上限CPL（${maxCPL.toFixed(1)}千円）を超過しています。`
+      : '';
+
     const alertBox = document.getElementById('health-alert-box');
     const alertMsg = document.getElementById('health-alert-message');
     const alertIcon = document.getElementById('health-alert-icon');
@@ -1001,22 +1092,20 @@ const industries = benchmarkData.industries;
       } else if (safetyMarginPct < 0) {
         alertBox.className = 'alert-box alert-box--danger';
         alertIcon.textContent = '⚠';
-        alertMsg.innerHTML = `<strong>危険判定（撤退リスク）</strong>：算定総合CPL（${impliedCpl.toFixed(2)}千円）が許容上限CPL（${maxCPL.toFixed(2)}千円）を超過しており赤字構造です。高CPL施策の縮小が必要です。`;
+        alertMsg.innerHTML = `<strong>危険判定（撤退リスク）</strong>：${leadGapText}${worstChannelText}算定総合CPL（${impliedCpl.toFixed(2)}千円）が許容上限CPL（${maxCPL.toFixed(2)}千円）を超過しており赤字構造です。高CPL施策の縮小が必要です。`;
       } else if (safetyMarginPct < 15) {
         alertBox.className = 'alert-box alert-box--warn';
         alertIcon.textContent = '⚠';
-        alertMsg.innerHTML = `<strong>注意判定（余地わずか）</strong>：CPL安全率が${safetyMarginPct.toFixed(1)}%と低めです。CPLの悪化や成約率ダウンで赤字転落するリスクがあります。`;
+        alertMsg.innerHTML = `<strong>注意判定（余地わずか）</strong>：${leadGapText}${worstChannelText}CPL安全率が${safetyMarginPct.toFixed(1)}%と低めです。CPLの悪化や成約率ダウンで赤字転落するリスクがあります。`;
       } else {
         alertBox.className = 'alert-box';
         alertIcon.textContent = '✓';
-        alertMsg.innerHTML = `<strong>健全性確認（利益構造クリア）</strong>：算定CPL（${impliedCpl.toFixed(2)}千円）は許容上限CPL（${maxCPL.toFixed(2)}千円）を下回っており、${safetyMarginPct.toFixed(1)}%の確実な利益クッションが確保されています。`;
+        alertMsg.innerHTML = `<strong>健全性確認（利益構造クリア）</strong>：${leadGapText}${worstChannelText}算定CPL（${impliedCpl.toFixed(2)}千円）は許容上限CPL（${maxCPL.toFixed(2)}千円）を下回っており、${safetyMarginPct.toFixed(1)}%の確実な利益クッションが確保されています。`;
       }
     }
     renderUnitEconTable(state, maxCPL);
     updateCharts(state, pipeline, totals, marginal, maxCPL, impliedCpl);
 
-    // 施策別（Web広告・展示会・SEO）の来期目標リード合計 vs 全社目標からの必要リード数
-    const leadsNextSum = sumLeads(state.costs, 'nextLeads');
     const leadsCheckEl = document.getElementById('leads-plan-check');
     if (leadsCheckEl) {
       if (leadsNextSum > 0) {
@@ -1481,6 +1570,11 @@ const industries = benchmarkData.industries;
     background: #fafafa;
   }
   .kpi-card--accent { background: #eef4ff; border-color: #dbe6fd; }
+  /* 全社目標達成率カード：リード不足時にアンバー色で注意を促す（JSがトグル） */
+  .kpi-card--warn { background: #fff7ed; border-color: #fde68a; }
+  .kpi-card--warn .kpi-label { color: #92400e; }
+  .kpi-card--warn .kpi-value { color: #92400e; }
+  .kpi-card--warn .kpi-sub { color: #b45309; }
   .kpi-label { font-size: 0.72rem; color: #777; margin: 0 0 0.25rem; }
   .kpi-value { font-size: 1.35rem; font-weight: 800; color: #1a1a1a; margin: 0; }
   .kpi-card--accent .kpi-value { color: var(--color-accent, #2563eb); }
@@ -1546,15 +1640,45 @@ const industries = benchmarkData.industries;
   /* ===== 来期 収益構造・CPL可視化（チャート） ===== */
   .chart-cards {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
     margin-top: 0.4rem;
+  }
+  @media (max-width: 900px) {
+    .chart-cards { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
     .chart-cards { grid-template-columns: 1fr; }
   }
   .chart-cards-title { margin: 0 0 0.4rem; font-size: 0.76rem; color: #666; font-weight: 600; text-align: center; }
   .chart-box { position: relative; height: 220px; }
+
+  /* ===== 指標の見方ガイド（許容上限CPL・投資判定ルール） ===== */
+  .guide-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.4rem;
+  }
+  @media (max-width: 640px) {
+    .guide-grid { grid-template-columns: 1fr; }
+  }
+  .guide-box { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 0.9rem 1rem; }
+  .guide-box--accent { background: #eef4ff; border-color: #dbe6fd; }
+  .guide-box-title { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.5rem; font-size: 0.82rem; font-weight: 700; color: #1a1a1a; }
+  .guide-box-text { margin: 0 0 0.6rem; font-size: 0.76rem; color: #555; line-height: 1.6; }
+  .guide-box-formula { background: #fff; border: 1px solid #e2e2e2; border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 0.72rem; color: #333; font-family: monospace; }
+  .guide-rule-list { margin: 0; padding: 0; list-style: none; font-size: 0.76rem; color: #333; line-height: 1.7; }
+  .guide-rule-list li { display: flex; align-items: baseline; gap: 0.4rem; }
+  .guide-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 999px; flex-shrink: 0; }
+  .guide-dot--good { background: #1a7f37; }
+  .guide-dot--warn { background: #b45309; }
+  .guide-dot--bad { background: #c2410c; }
+  .guide-dot--accent { background: var(--color-accent, #2563eb); }
+
+  /* Unit Economicsテーブル見出しの判定凡例（健全／要調整／超過） */
+  .badge-legend { display: flex; align-items: center; gap: 0.7rem; font-size: 0.7rem; color: #666; }
+  .badge-legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
 
   .unit-econ-table-wrap { overflow-x: auto; }
   .unit-econ-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 560px; }
@@ -1579,7 +1703,6 @@ const industries = benchmarkData.industries;
     white-space: nowrap;
   }
   :global(.decision-badge--expand) { background: #dcfce7; color: #15803d; }
-  :global(.decision-badge--keep) { background: #e0f2fe; color: #0369a1; }
   :global(.decision-badge--review) { background: #fef3c7; color: #b45309; }
   :global(.decision-badge--withdraw) { background: #ffe4e6; color: #be123c; }
   :global(.decision-badge--fixed) { background: #f1f5f9; color: #64748b; }
@@ -1588,6 +1711,9 @@ const industries = benchmarkData.industries;
   .checklist-list { margin: 0; padding-left: 1.1rem; font-size: 0.76rem; color: #555; line-height: 1.6; }
   .checklist-list li { margin-bottom: 0.35rem; }
   .checklist-list li:last-child { margin-bottom: 0; }
+  .checklist-list--check { padding-left: 0; list-style: none; }
+  .checklist-list--check li { display: flex; align-items: flex-start; gap: 0.45rem; }
+  .check-icon { color: var(--color-accent, #2563eb); font-size: 0.9rem; line-height: 1.5; flex-shrink: 0; }
 
   .card {
     border: 1px solid #eee;
