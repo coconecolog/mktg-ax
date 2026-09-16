@@ -33,119 +33,107 @@ const industries = benchmarkData.industries;
       </p>
     </header>
 
-    <!-- ============ STEP 1：初期条件・コスト内訳入力 ============ -->
-    <section id="step-setup" class="step-setup">
-      <div class="setup-toolbar">
-        <button id="setup-reset-btn" type="button" class="setup-reset-btn">すべてリセット</button>
-      </div>
-
-      <p class="required-legend"><span class="req-mark">※</span>は必須入力項目です（それ以外は任意項目です）</p>
-
-      <fieldset class="field-group">
-        <legend>1. 全社目標・売上パイプライン前提（来期）</legend>
-        <p class="field-note">※過去実績から算出した期待歩留まりを入力</p>
-        <div class="form-grid">
-          <label>来期 全社売上目標（億円）<span class="req-mark">※</span><input type="number" id="in-targetSales" min="0" step="0.1" /></label>
-          <label>マーケ貢献売上割合（％）<span class="req-mark">※</span><input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
-          <label>平均客単価（万円／件）<span class="req-mark">※</span><input type="number" id="in-unitPrice" min="0" step="10" /></label>
-          <label>商談 → 成約率（％）<span class="req-mark">※</span><input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
-          <label>リード → 商談化率（％）<span class="req-mark">※</span><input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
-          <label>目標平均CPL（万円／件）<input type="number" id="in-cpl" min="0" step="0.1" /></label>
-        </div>
-      </fieldset>
-
-      <fieldset class="field-group">
-        <legend>2. 施策チャネル・コスト詳細内訳（今期実績 vs 来期計画）</legend>
-        <p class="field-note">※すべて任意項目です。空欄の場合は0として扱われ、該当する実績比較・グラフの表示のみが参考値になります。</p>
-        <div class="form-grid">
-          <label>今期 売上着地実績（億円）<input type="number" id="in-currentSales" min="0" step="0.1" /></label>
-          <label>今期 マーケ貢献売上着地（億円）<input type="number" id="in-currentMktSales" min="0" step="0.1" /></label>
-          <label>今期 獲得リード数（件）<input type="number" id="in-currentLeads" min="0" step="10" /></label>
+    <!-- ============ 入力エリア（左）＋ 結果レポート（右） 固定2カラム ============ -->
+    <div class="tool-layout">
+      <div class="input-panel">
+        <div class="setup-toolbar">
+          <button id="setup-reset-btn" type="button" class="setup-reset-btn">すべてリセット</button>
         </div>
 
-        <table class="cost-table">
-          <thead>
-            <tr>
-              <th class="col-name">費用項目・施策名</th>
-              <th class="col-desc">具体的な内容例</th>
-              <th class="col-num">今期実績（万円）</th>
-              <th class="col-num">来期計画（万円）</th>
-            </tr>
-          </thead>
-          <tbody id="cost-table-body"></tbody>
-          <tfoot>
-            <tr class="reserve-row">
-              <td colspan="2">予備費・バッファ（施策小計の<input type="number" id="in-reserveRate" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</td>
-              <td id="setup-reserve-current" class="col-num"></td>
-              <td id="setup-reserve-next" class="col-num"></td>
-            </tr>
-            <tr class="total-row">
-              <td colspan="2">合計マーケティング予算（総投資額）</td>
-              <td id="setup-total-current" class="col-num"></td>
-              <td id="setup-total-next" class="col-num"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </fieldset>
+        <p class="required-legend"><span class="req-mark">※</span>は必須入力項目です（それ以外は任意項目です）</p>
 
-      <fieldset class="field-group">
-        <legend>3. 参考：業界データとの比較（任意）</legend>
-        <p class="field-note">
-          計画書の下部に「業界の広告宣伝費水準と比べてどうか」を参考情報として表示します（中小企業実態基本調査）。
-        </p>
-        <div class="form-grid">
-          <label>
-            業種
-            <select id="in-industry">
-              {industries.map((item) => (
-                <option value={item.industry} data-ratio={item.adToSalesRatioPercent}>
-                  {item.industry}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </fieldset>
-
-      <p id="setup-error" class="setup-error" hidden></p>
-      <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
-
-      <div class="setup-help">
-        <p class="setup-help-title">用語・計算式の説明</p>
-        <dl>
-          <dt>マーケ貢献売上割合（％）</dt>
-          <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
-          <dt>平均客単価（万円／件）</dt>
-          <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
-          <dt>商談 → 成約率（％）</dt>
-          <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
-          <dt>リード → 商談化率（％）</dt>
-          <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
-          <dt>目標平均CPL（万円／件）</dt>
-          <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
-        </dl>
-      </div>
-    </section>
-
-    <!-- ============ STEP 2：リアルタイムシミュレーション 兼 役員提出用ダッシュボード ============ -->
-    <section id="step-dashboard" class="step-dashboard" hidden>
-      <div class="dashboard-layout">
-      <div class="control-panel no-print">
-        <div class="control-header">
-          <span class="control-title">条件＆施策別予算 リアルタイムシミュレーション</span>
-          <div class="control-actions">
-            <button id="reset-btn" type="button">初期入力値に戻す</button>
-            <button id="reconfig-btn" type="button">条件再設定</button>
-            <button id="print-btn" type="button">1ページ印刷／PDF出力</button>
+        <fieldset class="field-group">
+          <legend>1. 全社目標・売上パイプライン前提（来期）</legend>
+          <p class="field-note">※過去実績から算出した期待歩留まりを入力</p>
+          <div class="form-grid">
+            <label>来期 全社売上目標（億円）<span class="req-mark">※</span><input type="number" id="in-targetSales" min="0" step="0.1" /></label>
+            <label>マーケ貢献売上割合（％）<span class="req-mark">※</span><input type="number" id="in-mktRatio" min="0" max="100" step="1" /></label>
+            <label>平均客単価（万円／件）<span class="req-mark">※</span><input type="number" id="in-unitPrice" min="0" step="10" /></label>
+            <label>商談 → 成約率（％）<span class="req-mark">※</span><input type="number" id="in-winRate" min="0" max="100" step="1" /></label>
+            <label>リード → 商談化率（％）<span class="req-mark">※</span><input type="number" id="in-oppRate" min="0" max="100" step="1" /></label>
+            <label>目標平均CPL（万円／件）<input type="number" id="in-cpl" min="0" step="0.1" /></label>
           </div>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend>2. 施策チャネル・コスト詳細内訳（今期実績 vs 来期計画）</legend>
+          <p class="field-note">※すべて任意項目です。空欄の場合は0として扱われ、該当する実績比較・グラフの表示のみが参考値になります。</p>
+          <div class="form-grid">
+            <label>今期 売上着地実績（億円）<input type="number" id="in-currentSales" min="0" step="0.1" /></label>
+            <label>今期 マーケ貢献売上着地（億円）<input type="number" id="in-currentMktSales" min="0" step="0.1" /></label>
+            <label>今期 獲得リード数（件）<input type="number" id="in-currentLeads" min="0" step="10" /></label>
+          </div>
+
+          <table class="cost-table">
+            <thead>
+              <tr>
+                <th class="col-name">費用項目・施策名</th>
+                <th class="col-desc">具体的な内容例</th>
+                <th class="col-num">今期実績（万円）</th>
+                <th class="col-num">来期計画（万円）</th>
+              </tr>
+            </thead>
+            <tbody id="cost-table-body"></tbody>
+            <tfoot>
+              <tr class="reserve-row">
+                <td colspan="2">予備費・バッファ（施策小計の<input type="number" id="in-reserveRate" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</td>
+                <td id="setup-reserve-current" class="col-num"></td>
+                <td id="setup-reserve-next" class="col-num"></td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="2">合計マーケティング予算（総投資額）</td>
+                <td id="setup-total-current" class="col-num"></td>
+                <td id="setup-total-next" class="col-num"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend>3. 参考：業界データとの比較（任意）</legend>
+          <p class="field-note">
+            計画書の下部に「業界の広告宣伝費水準と比べてどうか」を参考情報として表示します（中小企業実態基本調査）。
+          </p>
+          <div class="form-grid">
+            <label>
+              業種
+              <select id="in-industry">
+                {industries.map((item) => (
+                  <option value={item.industry} data-ratio={item.adToSalesRatioPercent}>
+                    {item.industry}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="setup-help">
+          <p class="setup-help-title">用語・計算式の説明</p>
+          <dl>
+            <dt>マーケ貢献売上割合（％）</dt>
+            <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
+            <dt>平均客単価（万円／件）</dt>
+            <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
+            <dt>商談 → 成約率（％）</dt>
+            <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
+            <dt>リード → 商談化率（％）</dt>
+            <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
+            <dt>目標平均CPL（万円／件）</dt>
+            <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
+          </dl>
         </div>
-        <p class="control-sublabel">① 全社目標 &amp; コンバージョン歩留まり</p>
-        <div class="slider-list" id="target-sliders"></div>
-        <p class="control-sublabel control-sublabel--second">② 施策・費目別予算微調整（来期）</p>
-        <div class="slider-grid" id="cost-sliders"></div>
+
+        <p id="setup-error" class="setup-error" hidden></p>
+        <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
       </div>
-      <div class="print-container" id="print-container">
-        <div class="report-tags">
+
+      <div class="result-panel">
+        <div class="result-toolbar no-print">
+          <button id="print-btn" type="button">1ページ印刷／PDF出力</button>
+        </div>
+        <div class="print-container" id="print-container">
+          <div class="report-tags">
           <span class="tag">役員会提出資料</span>
           <span class="tag-sep">・</span>
           <span class="tag-plain">マーケティング部マネージャー作成</span>
@@ -300,9 +288,9 @@ const industries = benchmarkData.industries;
             <p id="footer-request"></p>
           </div>
         </div>
+        </div>
       </div>
-      </div>
-    </section>
+    </div>
   </main>
 </BaseLayout>
 
@@ -341,18 +329,7 @@ const industries = benchmarkData.industries;
   ];
 
 
-  const TARGET_SLIDERS = [
-    { key: 'targetSales', label: '全社売上目標', unit: '億円', min: 1, max: 50, step: 0.5, decimals: 1 },
-    { key: 'mktRatio', label: 'マーケ貢献割合', unit: '%', min: 0, max: 100, step: 1, decimals: 0 },
-    { key: 'unitPrice', label: '平均客単価', unit: '万円', min: 10, max: 3000, step: 10, decimals: 0 },
-    { key: 'winRate', label: '商談→成約率', unit: '%', min: 1, max: 100, step: 1, decimals: 0 },
-    { key: 'oppRate', label: 'リード→商談率', unit: '%', min: 1, max: 100, step: 1, decimals: 0 },
-    { key: 'cpl', label: '目標CPL', unit: '万円', min: 0.1, max: 30, step: 0.1, decimals: 1 },
-    { key: 'budget', label: '来期総マーケ予算（予備費込）', unit: '万円', min: 100, max: 50000, step: 50, decimals: 0 },
-  ];
-
   let state = JSON.parse(JSON.stringify(DEMO_DATA));
-  let initialConfig = JSON.parse(JSON.stringify(state));
 
   const toolRoot = document.querySelector('.budget-tool');
   const allIndustries = JSON.parse(toolRoot?.dataset.industries || '[]');
@@ -560,104 +537,6 @@ const industries = benchmarkData.industries;
     renderSetupTotals();
   });
 
-  // ---------- スライダー生成 ----------
-  function createSliderRow(config, currentValue, initialValue, containerId) {
-    const wrap = document.createElement('div');
-    wrap.className = 'slider-item' + (config.wide ? ' slider-item--wide' : '');
-    wrap.innerHTML = `
-      <div class="slider-top">
-        <span class="slider-label">${config.label}</span>
-        <span class="slider-value" id="${containerId}-value">${formatSliderValue(config, currentValue)}</span>
-      </div>
-      <input type="range" id="${containerId}" min="${config.min}" max="${config.max}" step="${config.step}" value="${currentValue}" />
-      <p class="slider-initial">初期値: ${formatSliderValue(config, initialValue)}</p>
-    `;
-    return wrap;
-  }
-
-  function formatSliderValue(config, value) {
-    const num = Number(value).toFixed(config.decimals);
-    return `${Number(num).toLocaleString('ja-JP')} ${config.unit}`;
-  }
-
-  function buildSliders() {
-    const targetContainer = document.getElementById('target-sliders');
-    const costContainer = document.getElementById('cost-sliders');
-    targetContainer.innerHTML = '';
-    costContainer.innerHTML = '';
-
-    TARGET_SLIDERS.forEach((config) => {
-      const id = `slider-${config.key}`;
-      const currentValue = config.key === 'budget' ? computeCostTotals(state).budget : state[config.key];
-      const initialValue = config.key === 'budget' ? computeCostTotals(initialConfig).budget : initialConfig[config.key];
-      const row = createSliderRow(config, currentValue, initialValue, id);
-      targetContainer.appendChild(row);
-      const rangeInput = document.getElementById(id);
-      rangeInput.addEventListener('input', () => {
-        const val = parseFloat(rangeInput.value);
-        document.getElementById(`${id}-value`).textContent = formatSliderValue(config, val);
-        if (config.key === 'budget') {
-          redistributeBudget(val);
-          syncCostSliders();
-        } else {
-          state[config.key] = val;
-        }
-        render();
-      });
-    });
-
-    COST_KEYS.forEach((c) => {
-      const config = { key: `cost-${c.key}`, label: c.name, unit: '万円', min: 0, max: 8000, step: 50, decimals: 0 };
-      const id = `slider-${config.key}`;
-      const row = createSliderRow(config, state.costs[c.key].next, initialConfig.costs[c.key].next, id);
-      costContainer.appendChild(row);
-      const rangeInput = document.getElementById(id);
-      rangeInput.addEventListener('input', () => {
-        const val = parseFloat(rangeInput.value);
-        document.getElementById(`${id}-value`).textContent = formatSliderValue(config, val);
-        state.costs[c.key].next = val;
-        syncBudgetSlider();
-        render();
-      });
-    });
-  }
-
-  function redistributeBudget(newBudget) {
-    const newSubtotal = newBudget / 1.05;
-    const oldSubtotal = sumCosts(state.costs, 'next');
-    if (oldSubtotal <= 0) {
-      COST_KEYS.forEach((c) => {
-        state.costs[c.key].next = c.key === 'ad' ? Math.round(newSubtotal) : 0;
-      });
-      return;
-    }
-    const ratio = newSubtotal / oldSubtotal;
-    COST_KEYS.forEach((c) => {
-      state.costs[c.key].next = Math.round(state.costs[c.key].next * ratio);
-    });
-  }
-
-  function syncCostSliders() {
-    COST_KEYS.forEach((c) => {
-      const id = `slider-cost-${c.key}`;
-      const el = document.getElementById(id);
-      if (el) {
-        el.value = String(state.costs[c.key].next);
-        const config = { unit: '万円', decimals: 0 };
-        document.getElementById(`${id}-value`).textContent = formatSliderValue(config, state.costs[c.key].next);
-      }
-    });
-  }
-
-  function syncBudgetSlider() {
-    const el = document.getElementById('slider-budget');
-    if (!el) return;
-    const budget = computeCostTotals(state).budget;
-    el.value = String(Math.round(budget));
-    const config = { unit: '万円', decimals: 0 };
-    document.getElementById('slider-budget-value').textContent = formatSliderValue(config, budget);
-  }
-
   // ---------- Chart.js ----------
   function initCharts() {
     // @ts-ignore CDN経由のグローバル変数
@@ -844,7 +723,7 @@ const industries = benchmarkData.industries;
     diffEl.className = diff > 0 ? 'diff-up' : diff < 0 ? 'diff-down' : '';
   }
 
-  // ---------- イベント：実行／リセット／再設定／印刷 ----------
+  // ---------- イベント：実行／印刷 ----------
   document.getElementById('run-btn')?.addEventListener('click', () => {
     const missing = validateRequiredFields();
     if (missing.length > 0) {
@@ -852,11 +731,6 @@ const industries = benchmarkData.industries;
       return;
     }
     readSetupForm();
-    initialConfig = JSON.parse(JSON.stringify(state));
-
-    document.getElementById('step-setup').setAttribute('hidden', 'true');
-    const dashboard = document.getElementById('step-dashboard');
-    dashboard.removeAttribute('hidden');
 
     const reportDate = document.getElementById('report-date');
     if (reportDate) {
@@ -864,33 +738,24 @@ const industries = benchmarkData.industries;
       reportDate.textContent = `作成日：${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
     }
 
-    buildSliders();
-    if (!costChart) {
-      initCharts();
+    render();
+
+    const resultPanel = document.querySelector('.result-panel');
+    if (resultPanel && window.innerWidth < 960) {
+      resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    render();
-    dashboard.scrollIntoView({ behavior: 'smooth' });
-  });
-
-  document.getElementById('reset-btn')?.addEventListener('click', () => {
-    state = JSON.parse(JSON.stringify(initialConfig));
-    buildSliders();
-    render();
-  });
-
-  document.getElementById('reconfig-btn')?.addEventListener('click', () => {
-    document.getElementById('step-dashboard').setAttribute('hidden', 'true');
-    document.getElementById('step-setup').removeAttribute('hidden');
-    fillSetupForm(false);
-    document.getElementById('step-setup').scrollIntoView({ behavior: 'smooth' });
   });
 
   document.getElementById('print-btn')?.addEventListener('click', () => {
     window.print();
   });
 
-  // ---------- 初期表示（見本の数字はプレースホルダーとしてのみ表示。計算には使わない） ----------
+  // ---------- 初期表示 ----------
+  // 見本の数字はプレースホルダーとしてのみ表示（計算には使わない）。
+  // 右側の結果パネルは、実行前は0・グラフは枠のみの状態で表示しておく。
   fillSetupForm(true);
+  initCharts();
+  render();
 </script>
 
 <style>
@@ -915,9 +780,23 @@ const industries = benchmarkData.industries;
     max-width: 760px;
   }
 
-  /* ===== STEP1 ===== */
-  .step-setup {
+  /* ===== 固定2カラムレイアウト（左＝入力エリア／右＝結果レポート） ===== */
+  .tool-layout {
+    display: grid;
+    grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.15fr);
+    gap: 1.5rem;
+    align-items: start;
     margin-top: 1.3rem;
+  }
+  @media (max-width: 960px) {
+    .tool-layout { grid-template-columns: 1fr; }
+  }
+  .input-panel { min-width: 0; }
+  .result-panel { min-width: 0; }
+  .result-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 0.9rem;
   }
   .section-label {
     font-weight: 700;
@@ -1076,70 +955,19 @@ const industries = benchmarkData.industries;
   .setup-help dt:first-child { margin-top: 0; }
   .setup-help dd { margin: 0.2rem 0 0; line-height: 1.6; color: #555; }
 
-  /* ===== STEP2：左右2カラム（左＝レポート／右＝シミュレーター） ===== */
-  .step-dashboard { margin-top: 1.2rem; }
-  .dashboard-layout {
-    display: grid;
-    grid-template-columns: minmax(230px, 300px) minmax(420px, 1fr);
-    gap: 1.2rem;
-    align-items: start;
-  }
-  @media (max-width: 860px) {
-    .dashboard-layout { grid-template-columns: 1fr; }
-  }
-
-  /* ===== STEP2：コントロールパネル（シミュレーター／左カラム） ===== */
-  .control-panel {
-    background: #10162b;
-    border-radius: 14px;
-    padding: 1rem 1.2rem;
-    color: #e5e9f5;
-    position: sticky;
-    top: 1rem;
-  }
-  @media (max-width: 900px) { .control-panel { position: static; margin-bottom: 1.1rem; } }
-  .control-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.7rem;
-  }
-  .control-title { font-weight: 700; font-size: 0.9rem; color: #fff; }
-  .control-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .control-actions button {
-    padding: 0.4rem 0.75rem;
+  #print-btn {
+    padding: 0.5rem 1rem;
     border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--color-accent, #2563eb);
+    background: var(--color-accent, #2563eb);
     color: #fff;
-    font-size: 0.76rem;
+    font-size: 0.8rem;
+    font-weight: 700;
     cursor: pointer;
   }
-  #print-btn { background: var(--color-accent, #2563eb); border-color: var(--color-accent, #2563eb); font-weight: 700; }
-  .control-sublabel { font-size: 0.74rem; color: #9aa4c4; margin: 0 0 0.4rem; }
-  .control-sublabel--second { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.08); }
-  .slider-list { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.2rem; }
-  .slider-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.55rem;
-  }
-  /* スライダー項目もJSで動的生成されるため :global() が必要 */
-  :global(.slider-item) {
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    padding: 0.5rem 0.6rem;
-  }
-  :global(.slider-item--wide) { grid-column: span 2; }
-  :global(.slider-top) { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 0.3rem; }
-  :global(.slider-label) { color: #c3c9e0; }
-  :global(.slider-value) { color: #fff; font-weight: 700; }
-  :global(.slider-item input[type="range"]) { width: 100%; accent-color: var(--color-accent, #2563eb); }
-  :global(.slider-initial) { font-size: 0.65rem; color: #7c85a8; margin: 0.2rem 0 0; }
+  #print-btn:hover { opacity: 0.9; }
 
-  /* ===== STEP2：印刷レポート本体 ===== */
+  /* ===== 結果レポート本体 ===== */
   .print-container {
     background: #fff;
     border: 1px solid #e2e2e2;
@@ -1291,8 +1119,8 @@ const industries = benchmarkData.industries;
   @media print {
     .no-print { display: none !important; }
     body { background: #fff; }
-    .tool-header, .step-setup { display: none !important; }
-    .dashboard-layout { display: block; }
+    .tool-header, .input-panel { display: none !important; }
+    .tool-layout { display: block; }
     .print-container {
       border: none;
       border-radius: 0;
