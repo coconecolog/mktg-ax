@@ -67,8 +67,8 @@ const industries = benchmarkData.industries;
           <div class="cost-cards" id="cost-cards-body"></div>
 
           <div class="cost-summary">
-            <div class="cost-summary-row">
-              <span class="cost-summary-label">予備費・バッファ（施策小計の<input type="number" id="in-reserveRate" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</span>
+            <div class="cost-summary-row cost-summary-row--buffer">
+              <span class="cost-summary-label">予備費・バッファ（今期実績<input type="number" id="in-reserveRateCurrent" class="reserve-rate-input" min="0" max="100" step="1" value="5" />% ／ 来期計画<input type="number" id="in-reserveRateNext" class="reserve-rate-input" min="0" max="100" step="1" value="5" />%）</span>
               <span class="cost-summary-vals">
                 <span class="cost-summary-item"><span class="cost-summary-tag">今期</span><span id="setup-reserve-current"></span></span>
                 <span class="cost-summary-arrow">→</span>
@@ -105,12 +105,8 @@ const industries = benchmarkData.industries;
           </div>
         </fieldset>
 
-        <div class="setup-toolbar">
-          <button id="setup-help-link" type="button" class="setup-help-link-btn">用語・計算式の説明を見る</button>
-        </div>
-
         <p id="setup-error" class="setup-error" hidden></p>
-        <button id="run-btn" type="button">シミュレーター実行・1ページ計画書を生成</button>
+        <button id="run-btn" type="button">シミュレーター実行</button>
       </div>
 
       <div class="result-panel">
@@ -273,27 +269,29 @@ const industries = benchmarkData.industries;
             <p id="footer-request"></p>
           </div>
         </div>
+        <!-- ↑ report-footer 閉じ -->
+        </div>
+        <!-- ↑ print-container 閉じ -->
+
+        <div class="setup-help no-print" id="setup-help">
+          <p class="setup-help-title">用語・計算式の説明</p>
+          <dl>
+            <dt>マーケ貢献売上割合（％）</dt>
+            <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
+            <dt>平均客単価（万円／件）</dt>
+            <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
+            <dt>商談 → 成約率（％）</dt>
+            <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
+            <dt>リード → 商談化率（％）</dt>
+            <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
+            <dt>目標平均CPL（万円／件）</dt>
+            <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
+          </dl>
+
+          <p class="setup-help-title setup-help-title--sub">施策チャネル費用の内容例</p>
+          <dl class="setup-help-costs" id="setup-help-costs"></dl>
         </div>
       </div>
-    </div>
-
-    <div class="setup-help" id="setup-help">
-      <p class="setup-help-title">用語・計算式の説明</p>
-      <dl>
-        <dt>マーケ貢献売上割合（％）</dt>
-        <dd>「マーケの売上額」＝自社のマーケ施策（広告・SEO・展示会等）経由で獲得したリードが契約に至り、売上として計上された金額の合計（最初の接点＝ファーストタッチ基準）。この金額が、来期の全社売上目標に対してどのくらいの割合を占めるかの目標値です。</dd>
-        <dt>平均客単価（万円／件）</dt>
-        <dd>契約1件あたりの平均売上額。目標成約件数 ＝ マーケ貢献目標売上 ÷ 平均客単価。</dd>
-        <dt>商談 → 成約率（％）</dt>
-        <dd>成約件数 ÷ 商談件数 × 100。必要商談数 ＝ 目標成約件数 ÷ 商談→成約率。</dd>
-        <dt>リード → 商談化率（％）</dt>
-        <dd>商談件数 ÷ リード件数 × 100。必要リード数 ＝ 必要商談数 ÷ リード→商談化率。</dd>
-        <dt>目標平均CPL（万円／件）</dt>
-        <dd>予算 ÷ 獲得リード数の上限目標値。申請予算・必要リード数から逆算した実質CPLと比較し、予算配分が妥当かを判定する基準です（任意項目）。</dd>
-      </dl>
-
-      <p class="setup-help-title setup-help-title--sub">施策チャネル費用の内容例</p>
-      <dl class="setup-help-costs" id="setup-help-costs"></dl>
     </div>
   </main>
 </BaseLayout>
@@ -315,7 +313,7 @@ const industries = benchmarkData.industries;
   // 入力欄のプレースホルダー（記入例）としてのみ使う見本データ。実際の計算には使われない。
   const DEMO_DATA = {
     targetSales: 10.0, mktRatio: 40, unitPrice: 500, winRate: 20, oppRate: 10, cpl: 1.5,
-    currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250, reserveRate: 5,
+    currentSales: 8.0, currentMktSales: 3.1, currentLeads: 3250, reserveRateCurrent: 5, reserveRateNext: 5,
     costs: {
       ad: { current: 2000, next: 2400 }, event: { current: 0, next: 0 },
       seo: { current: 800, next: 1000 }, tools: { current: 600, next: 900 },
@@ -369,13 +367,14 @@ const industries = benchmarkData.industries;
 
   function computeCostTotals(s) {
     // 仕様書 4.2：Buffer = Math.round(Subtotal * rate) を先に丸めてから TotalBudget に加算する
-    // rate（予備費率）は既定5%だが、STEP1の入力欄で変更可能（2-5対応）。0%も許容する。
-    const rate = (isFinite(s.reserveRate) && s.reserveRate >= 0 ? s.reserveRate : 5) / 100;
+    // 予備費率は今期実績・来期計画で別々に持つ（実態が異なるため）。既定5%。0%も許容する。
+    const rateNext = (isFinite(s.reserveRateNext) && s.reserveRateNext >= 0 ? s.reserveRateNext : 5) / 100;
+    const rateCurrent = (isFinite(s.reserveRateCurrent) && s.reserveRateCurrent >= 0 ? s.reserveRateCurrent : 5) / 100;
     const subtotal = sumCosts(s.costs, 'next');
-    const reserve = Math.round(subtotal * rate);
+    const reserve = Math.round(subtotal * rateNext);
     const budget = subtotal + reserve;
     const subtotalCurrent = sumCosts(s.costs, 'current');
-    const reserveCurrent = Math.round(subtotalCurrent * rate);
+    const reserveCurrent = Math.round(subtotalCurrent * rateCurrent);
     const budgetCurrent = subtotalCurrent + reserveCurrent;
     return { subtotal, reserve, budget, subtotalCurrent, reserveCurrent, budgetCurrent };
   }
@@ -478,7 +477,8 @@ const industries = benchmarkData.industries;
         el.value = String(val);
       }
     });
-    document.getElementById('in-reserveRate').value = String(isFinite(state.reserveRate) ? state.reserveRate : 5);
+    document.getElementById('in-reserveRateCurrent').value = String(isFinite(state.reserveRateCurrent) ? state.reserveRateCurrent : 5);
+    document.getElementById('in-reserveRateNext').value = String(isFinite(state.reserveRateNext) ? state.reserveRateNext : 5);
 
     if (asPlaceholder) {
       // 見本表示のみ＝計算対象外にする（実行時に0扱いになる。必須項目はエラー扱いになる）
@@ -529,8 +529,10 @@ const industries = benchmarkData.industries;
     state.currentSales = parseFloat(document.getElementById('in-currentSales').value) || 0;
     state.currentMktSales = parseFloat(document.getElementById('in-currentMktSales').value) || 0;
     state.currentLeads = parseFloat(document.getElementById('in-currentLeads').value) || 0;
-    const reserveRateInput = parseFloat(document.getElementById('in-reserveRate').value);
-    state.reserveRate = isFinite(reserveRateInput) && reserveRateInput >= 0 ? reserveRateInput : 5;
+    const reserveRateCurrentInput = parseFloat(document.getElementById('in-reserveRateCurrent').value);
+    state.reserveRateCurrent = isFinite(reserveRateCurrentInput) && reserveRateCurrentInput >= 0 ? reserveRateCurrentInput : 5;
+    const reserveRateNextInput = parseFloat(document.getElementById('in-reserveRateNext').value);
+    state.reserveRateNext = isFinite(reserveRateNextInput) && reserveRateNextInput >= 0 ? reserveRateNextInput : 5;
     selectedIndustryName = document.getElementById('in-industry').value;
     // costs はテーブルの入力欄がすでに state.costs を直接更新している
   }
@@ -542,15 +544,15 @@ const industries = benchmarkData.industries;
     fillSetupForm(true);
   });
 
-  // 「用語・計算式の説明」（ページ下部・フッター直上）へスクロール
-  document.getElementById('setup-help-link')?.addEventListener('click', () => {
-    document.getElementById('setup-help')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  // 予備費率（%）はSTEP1の合計プレビューにもリアルタイムで反映する
-  document.getElementById('in-reserveRate')?.addEventListener('input', (e) => {
+  // 予備費率（%）は今期実績・来期計画で別々に、STEP1の合計プレビューにもリアルタイムで反映する
+  document.getElementById('in-reserveRateCurrent')?.addEventListener('input', (e) => {
     const val = parseFloat(e.target.value);
-    state.reserveRate = isFinite(val) && val >= 0 ? val : 0;
+    state.reserveRateCurrent = isFinite(val) && val >= 0 ? val : 0;
+    renderSetupTotals();
+  });
+  document.getElementById('in-reserveRateNext')?.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    state.reserveRateNext = isFinite(val) && val >= 0 ? val : 0;
     renderSetupTotals();
   });
 
@@ -723,7 +725,7 @@ const industries = benchmarkData.industries;
     document.getElementById('footer-policy').textContent =
       `${COST_KEYS[0].name}と${COST_KEYS[3].name}の強化により、${fmtCount(pipeline.requiredLeads)}のリード獲得と商談化率の維持・改善を図る。予算配分は今期実績をベースに、施策ごとの費用対効果を見ながら四半期ごとに見直す想定。`;
     document.getElementById('footer-risk').textContent =
-      `申請予算の${isFinite(state.reserveRate) ? state.reserveRate : 5}%（${fmtMan(totals.reserve)}）を予備費として確保。市況変化や新チャネルの検証、CPA高騰時の緊急補填策へ機動的に充当する。`;
+      `申請予算の${isFinite(state.reserveRateNext) ? state.reserveRateNext : 5}%（${fmtMan(totals.reserve)}）を予備費として確保。市況変化や新チャネルの検証、CPA高騰時の緊急補填策へ機動的に充当する。`;
     document.getElementById('footer-request').textContent =
       `本申請枠（${fmtMan(totals.budget)}）のご承認を依頼する。期中は月次でROI・CACをモニタリングし、四半期終了時点で予実差が大きい場合はチャネル間の再配分を行う。`;
 
@@ -810,7 +812,16 @@ const industries = benchmarkData.industries;
     .tool-layout { grid-template-columns: 1fr; }
   }
   .input-panel { min-width: 0; }
-  .result-panel { min-width: 0; }
+  /* 右カラム（結果レポート）はスクロールに追従させる */
+  .result-panel {
+    min-width: 0;
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+  }
+  @media (max-width: 900px) {
+    .result-panel { position: static; }
+  }
   .result-toolbar {
     display: flex;
     justify-content: flex-end;
@@ -837,17 +848,6 @@ const industries = benchmarkData.industries;
     cursor: pointer;
   }
   .setup-reset-btn:hover { background: #f4f4f4; }
-  .setup-help-link-btn {
-    padding: 0.45rem 0.9rem;
-    border: 1px solid var(--color-accent, #2563eb);
-    border-radius: 8px;
-    background: #fff;
-    color: var(--color-accent, #2563eb);
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .setup-help-link-btn:hover { background: #eef4ff; }
 
   .field-group {
     border: 1px solid #e2e2e2;
