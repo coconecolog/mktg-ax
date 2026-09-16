@@ -209,6 +209,7 @@ const industries = benchmarkData.industries;
             </table>
           </div>
           <p class="field-note">※ 1件あたり限界利益＝（1件LTV × 粗利率 × リード→商談化率 × 商談→成約率）－施策CPL。許容上限CPLを超過している施策は「要改善」または「撤退」判定となります。</p>
+          <p class="field-note field-note--warn">※「リード未入力」と表示される場合は、左側「3. 施策チャネル・コスト詳細内訳」のWeb広告費・展示会・イベント費・SEO・コンテンツ制作の各カードで、「来期計画（万円）」と「来期 目標リード（件）」の両方を入力してください（どちらか一方でも空欄だと算出できません）。ツール・SaaS利用料／人件費／外注費はリードを直接生まない施策のため「固定投資」表示のままで正常です。</p>
         </div>
 
         <div class="card">
@@ -473,16 +474,17 @@ const industries = benchmarkData.industries;
         </tr>`;
       }
       const leads = s.costs[c.key].nextLeads || 0;
-      if (leads <= 0) {
+      if (leads <= 0 || budget <= 0) {
+        const missing = leads <= 0 && budget <= 0 ? '予算・リード未入力' : leads <= 0 ? 'リード未入力' : '予算未入力';
         return `
         <tr>
           <td>${c.name}</td>
-          <td class="num">${fmtManNoUnit(budget)} 万</td>
-          <td class="num">-</td>
+          <td class="num">${budget > 0 ? `${fmtManNoUnit(budget)} 万` : '-'}</td>
+          <td class="num">${leads > 0 ? fmtCount(leads) : '-'}</td>
           <td class="num text-muted">-</td>
           <td class="num text-muted">-</td>
           <td class="num">-</td>
-          <td class="center"><span class="decision-badge decision-badge--fixed">リード未入力</span></td>
+          <td class="center"><span class="decision-badge decision-badge--fixed">${missing}</span></td>
         </tr>`;
       }
       const cpl = budget / leads;
@@ -540,6 +542,7 @@ const industries = benchmarkData.industries;
         ? `placeholder="${demo.nextLeads || 0}" value=""`
         : `value="${state.costs[c.key].nextLeads || 0}"`;
       const leadsRow = c.hasLeads ? `
+        <p class="cost-card-leads-heading">◆ 獲得リード数（施策別CPL算出に必須）</p>
         <div class="cost-card-inputs cost-card-inputs--leads">
           <label>今期 獲得リード（件）<input type="number" min="0" step="10" data-cost-key="${c.key}" data-cost-field="currentLeads" ${currentLeadsAttr} /></label>
           <label>来期 目標リード（件）<input type="number" min="0" step="10" data-cost-key="${c.key}" data-cost-field="nextLeads" ${nextLeadsAttr} /></label>
@@ -1048,6 +1051,7 @@ const industries = benchmarkData.industries;
     padding: 0 0.4rem;
   }
   .field-note { font-size: 0.78rem; color: #888; margin: 0.2rem 0 1rem; }
+  .field-note--warn { color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 0.5rem 0.65rem; margin-top: 0.6rem; }
   /* 自動計算された値の表示欄。入力欄と混同しないよう、枠線は付けず背景色のみで区別する */
   .auto-readout {
     display: flex;
@@ -1162,11 +1166,18 @@ const industries = benchmarkData.industries;
     border-color: var(--color-accent, #2563eb);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
   }
-  /* リード数の入力行。費用の行と区別しやすいよう、区切り線とラベル色を変えている */
+  /* リード数の入力行。費用の行と見落とされないよう、見出し・背景色・ラベル色で強調している */
+  :global(.cost-card-leads-heading) {
+    margin: 0.6rem 0 0.35rem;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #2563eb;
+  }
   :global(.cost-card-inputs--leads) {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed #e5e5e5;
+    background: #f4f8ff;
+    border-radius: 8px;
+    padding: 0.5rem 0.5rem 0.55rem;
+    margin: 0;
   }
   :global(.cost-card-inputs--leads label) { color: #2563eb; }
   .form-grid input::placeholder,
