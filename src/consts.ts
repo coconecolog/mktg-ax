@@ -17,7 +17,7 @@ export const TOOLS_NAV_ITEMS = [
     href: "/tools/budget-simulator",
     icon: "🧮",
     label: "マーケティング予算策定・投資計画書",
-    description: "来期予算を逆算し、役員提出用の計画書を自動作成",
+    description: "来期の予算計画書を自動作成",
   },
   {
     href: "/tools/roas-cac-simulator",
