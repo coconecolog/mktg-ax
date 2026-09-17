@@ -15,25 +15,25 @@ export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 export const TOOLS_NAV_ITEMS = [
   {
     href: "/tools/budget-simulator",
-    icon: "🧮",
+    icon: "/images/tool-icons/icon-budget-simulator.svg",
     label: "マーケティング予算策定・投資計画書",
     description: "来期の予算計画書を自動作成",
   },
   {
     href: "/tools/roas-cac-simulator",
-    icon: "📊",
+    icon: "/images/tool-icons/icon-roas-cac-simulator.svg",
     label: "ROAS/CACシミュレーター",
     description: "LTV/CAC比率と投資回収期間を診断",
   },
   {
     href: "/tools/seo-aeo-aio-check",
-    icon: "✅",
+    icon: "/images/tool-icons/icon-seo-aeo-aio-check.svg",
     label: "SEO・AEO・AIO診断チェック",
     description: "AI検索時代の対応状況を簡易診断",
   },
   {
     href: "/tools/inhouse-vs-outsource",
-    icon: "⚖️",
+    icon: "/images/tool-icons/icon-inhouse-vs-outsource.svg",
     label: "内製 vs 外注 コスト比較",
     description: "採用と外注、コストで比較する",
   },
