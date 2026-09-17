@@ -4,7 +4,7 @@
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || "https://mktg-ax.pages.dev";
 
 export const SITE_NAME = "MKTG.AX";
-export const SITE_TAGLINE = "マーケティング責任者のための分析ツール&情報メディア";
+export const SITE_TAGLINE = "マーケティング責任者のための　分析ツール&情報メディア";
 export const SITE_DESCRIPTION =
   "マーケティング責任者向けに、マーケティング分析ツールや実践的な施策・マーケット情報を発信するメディアです。";
 
