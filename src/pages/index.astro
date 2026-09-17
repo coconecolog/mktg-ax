@@ -42,8 +42,8 @@ const latestResources = getAllResources().slice(0, 3);
         {
           HOME_TOOLS_ITEMS.map((tool) => (
             <a href={tool.href} class="block rounded-2xl border border-neutral-100 bg-white p-6 transition-shadow hover:shadow-lg">
-              <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-2xl">
-                {tool.icon}
+              <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100">
+                <img src={tool.icon} alt="" class="h-6 w-6" />
               </span>
               <h3 class="mt-4 font-bold text-ink-950">{tool.label}</h3>
               <p class="mt-2 text-sm leading-relaxed text-neutral-500">{tool.description}</p>
