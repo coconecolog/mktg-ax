@@ -551,9 +551,8 @@ export async function generateFallbackThumbnail(idHint, background, title, subti
     // 背景画像があればそれをフルサイズで敷き、文字が読めるよう上に薄暗いオーバーレイを重ねる。
     // 画像が無ければ、これまでどおりカテゴリのテーマカラーのグラデーションにする。
     const backgroundMarkup = dataUri
-      ? `<image href="${dataUri}" x="0" y="0" width="1200" height="675" preserveAspectRatio="xMidYMid slice" />
-  <rect width="1200" height="675" fill="#000000" opacity="0.35" />`
-      : (() => {
+  ? `<image href="${dataUri}" x="0" y="0" width="1200" height="675" preserveAspectRatio="xMidYMid slice" />`
+  : (() => {
           const [colorFrom, colorTo] = CATEGORY_COLOR_GRADIENTS[colorKey] || CATEGORY_COLOR_GRADIENTS.default;
           return `<defs>
     <linearGradient id="grad-${idHint}" x1="0%" y1="0%" x2="100%" y2="100%">
