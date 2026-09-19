@@ -15,7 +15,7 @@ const dateLabel = new Date(item.publishedAt)
 const readTimeLabel = item.metaLabel ? item.metaLabel.replace(/^◷\s*/, "") : null;
 ---
 
-<a href={item.href} class="group flex flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
+<a href={item.href} class="group flex flex-col overflow-hidden rounded-2xl border border-neutral-300 bg-white transition-shadow hover:shadow-lg">
   <div class={`aspect-video w-full overflow-hidden ${isResource ? "bg-brand-100 p-6" : "bg-neutral-50"}`}>
     <img
       src={item.thumbnail || DEFAULT_OG_IMAGE}
@@ -33,7 +33,7 @@ const readTimeLabel = item.metaLabel ? item.metaLabel.replace(/^◷\s*/, "") : n
     </div>
     <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{item.title}</h3>
     <p class="mt-2 line-clamp-2 flex-1 text-sm text-neutral-500">{item.description}</p>
-    <span class={`mt-4 flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-bold ${isResource ? "bg-black text-white" : "bg-neutral-200 text-black"}`}>
+    <span class={`mt-4 flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-bold ${isResource ? "bg-black text-white" : "bg-[#F5F5F5] text-black"}`}>
       {item.ctaLabel}
     </span>
   </div>
