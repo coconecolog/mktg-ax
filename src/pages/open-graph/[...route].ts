@@ -11,8 +11,8 @@ const posts = getAllPosts();
 const JP_FONT = ["./src/fonts/NotoSansJP-Variable.ttf"];
 const JP_FAMILY = ["Noto Sans JP"];
 const BRAND_GRADIENT: [number, number, number][] = [
-  [124, 92, 245],
-  [76, 40, 166],
+  [11, 11, 18],
+  [11, 11, 18],
 ];
 
 type PageEntry = {
