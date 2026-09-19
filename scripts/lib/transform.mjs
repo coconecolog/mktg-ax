@@ -604,10 +604,10 @@ const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
     // キャンバス幅1200px・左右余白72pxずつを踏まえた「行が使い切れる最大幅」を文字数換算で算出。
     // （以前は10/16という固定値で、フォントサイズに対して余白を広く取りすぎ、
     //   本来まだ入るはずの1〜2文字だけが次の行に落ちる不自然な改行になっていた）
-    const titleWrapWidth = 15;
+    const titleWrapWidth = 12;
     const subtitleFontSize = 42;
     const subtitleLineHeight = 56;
-    const subtitleWrapWidth = 24;
+    const subtitleWrapWidth = 19;
     const blockGap = 20;
 
     const titleLines = wrapText(title, titleWrapWidth, 3);
@@ -616,7 +616,7 @@ const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
     const blockHeight =
       (subtitleLines.length > 0 ? subtitleLines.length * subtitleLineHeight + blockGap : 0) +
       titleLines.length * titleLineHeight;
-    let cursorY = (675 - blockHeight) / 2;
+    let cursorY = (675 - blockHeight) / 2 + 40;
 
     cursorY += subtitleLines.length > 0 ? subtitleLineHeight * 0.75 : titleLineHeight * 0.75;
     const subtitleTspans = subtitleLines
@@ -656,7 +656,7 @@ const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   ${backgroundMarkup}
   ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="400" fill="${textFill}" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
-  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="${textFill}">${titleTspans}}</text>
+   <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="${textFill}">${titleTspans}</text>
 </svg>`;
 
     await fs.mkdir(GENERATED_THUMBNAIL_OUT_DIR, { recursive: true });
