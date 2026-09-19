@@ -148,7 +148,7 @@ const groups = groupBlocks(blocks);
       case "callout":
         // コールアウト: 枠線・斜体なしの背景ボックス（引用ブロックとは見た目を区別する）
         return (
-          <div class="flex gap-3 rounded-xl bg-brand-50 p-4 not-italic">
+          <div class="flex gap-3 rounded-xl border border-neutral-300 bg-white p-4 not-italic">
             {block.emoji && <span class="text-xl leading-none">{block.emoji}</span>}
             <div class="min-w-0 flex-1 [&>p]:m-0">
               <RichText items={block.richText} />
