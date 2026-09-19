@@ -30,7 +30,7 @@
     scroll-padding-top: 5rem;
   }
   body {
-    @apply bg-white text-ink-950 antialiased;
+    @apply bg-[#FAF9F9] text-ink-950 antialiased;
     font-feature-settings: "palt";
   }
 }
