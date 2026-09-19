@@ -63,8 +63,11 @@ export const NAV_LINKS = [
 
 export const POSTS_PER_PAGE = 10;
 
-// カテゴリページ・タグページで1ページに表示する記事数（ブログ一覧とは別に6件区切りにしたいため分けている）
+// カテゴリページで1ページに表示する記事数（ブログ一覧とは別に6件区切りにしたいため分けている）
 export const CATEGORY_TAG_PAGE_SIZE = 6;
+
+// タグページで1ページに表示する記事数（カテゴリページとは別に4件区切りにしたいため分けている）
+export const TAG_PAGE_SIZE = 4;
 
 // ライブラリ（記事・資料統合）ページで1ページに表示する件数
 export const LIBRARY_PAGE_SIZE = 8;
