@@ -655,7 +655,7 @@ const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   ${backgroundMarkup}
-  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="400" fill="${textFill}" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
+  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="700" fill="${textFill}" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
    <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="${textFill}">${titleTspans}</text>
 </svg>`;
 
