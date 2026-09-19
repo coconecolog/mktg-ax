@@ -1,29 +1,32 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PostCard from "@/components/PostCard.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllPosts } from "@/lib/posts";
-import { getAllResources } from "@/lib/resources";
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, DEFAULT_OG_IMAGE, HOME_TOOLS_ITEMS } from "@/consts";
+import { getLibraryItems } from "@/lib/library";
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, HOME_TOOLS_ITEMS } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
 
-const latestPosts = getAllPosts().slice(0, 3);
+const latestPosts = getLibraryItems("post").slice(0, 3);
+const latestResources = getLibraryItems("resource").slice(0, 3);
 const organizationSchema = buildOrganizationSchema();
-const latestResources = getAllResources().slice(0, 3);
 ---
 
 <BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore jsonLd={organizationSchema}>
-  <section class="mx-auto max-w-6xl px-5 pb-20 pt-16 md:pt-24">
-    <div class="max-w-2xl">
-      <h1 class="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-5xl">
+  <section class="bg-ink-950">
+    <div class="mx-auto max-w-3xl px-5 py-20 text-center md:py-28">
+      <span class="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-1.5 text-xs font-medium text-white/70">
+        <span class="h-1.5 w-1.5 rounded-full bg-white/70"></span>
+        B2B Marketing Analytics & Media
+      </span>
+      <h1 class="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
         {SITE_TAGLINE}
       </h1>
-      <p class="mt-6 text-lg leading-relaxed text-neutral-500">{SITE_DESCRIPTION}</p>
-      <div class="mt-8 flex flex-wrap gap-3">
-        <a href="/library/blog" class="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
+      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/60">{SITE_DESCRIPTION}</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <a href="/library/blog" class="rounded-full bg-white px-6 py-3 text-sm font-bold text-ink-950 hover:bg-neutral-200">
           最新記事を読む
         </a>
-        <a href="/service" class="rounded-full border border-neutral-200 px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
+        <a href="/service" class="rounded-full border border-white/20 px-6 py-3 text-sm font-bold text-white hover:border-white/40">
           サービスについて
         </a>
       </div>
@@ -33,7 +36,10 @@ const latestResources = getAllResources().slice(0, 3);
   <section class="border-t border-neutral-100 bg-neutral-50 py-16">
     <div class="mx-auto max-w-6xl px-5">
       <div class="flex items-end justify-between">
-        <h2 class="text-2xl font-bold tracking-tight text-ink-950">便利ツール</h2>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-neutral-400">UTILITIES</p>
+          <h2 class="mt-1 text-2xl font-bold tracking-tight text-ink-950">便利ツール</h2>
+        </div>
         <a href="/tools" class="text-sm font-medium text-brand-700 hover:underline">
           ツール一覧へ →
         </a>
@@ -41,12 +47,15 @@ const latestResources = getAllResources().slice(0, 3);
       <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {
           HOME_TOOLS_ITEMS.map((tool) => (
-            <a href={tool.href} class="block rounded-2xl border border-neutral-100 bg-white p-6 transition-shadow hover:shadow-lg">
+            <a href={tool.href} class="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 transition-shadow hover:shadow-lg">
               <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100">
                 <img src={tool.icon} alt="" class="h-6 w-6" />
               </span>
               <h3 class="mt-4 font-bold text-ink-950">{tool.label}</h3>
-              <p class="mt-2 text-sm leading-relaxed text-neutral-500">{tool.description}</p>
+              <p class="mt-2 flex-1 text-sm leading-relaxed text-neutral-500">{tool.description}</p>
+              <span class="mt-4 flex w-full items-center justify-center rounded-full bg-[#F5F5F5] px-4 py-2.5 text-sm font-bold text-black">
+                ツールを使ってみる
+              </span>
             </a>
           ))
         }
@@ -59,14 +68,17 @@ const latestResources = getAllResources().slice(0, 3);
       <section class="py-16">
         <div class="mx-auto max-w-6xl px-5">
           <div class="flex items-end justify-between">
-            <h2 class="text-2xl font-bold tracking-tight text-ink-950">最新記事</h2>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-widest text-neutral-400">ARTICLES</p>
+              <h2 class="mt-1 text-2xl font-bold tracking-tight text-ink-950">最新記事</h2>
+            </div>
             <a href="/library/blog" class="text-sm font-medium text-brand-700 hover:underline">
               記事一覧へ →
             </a>
           </div>
           <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {latestPosts.map((post) => (
-              <PostCard post={post} />
+            {latestPosts.map((item) => (
+              <LibraryCard item={item} />
             ))}
           </div>
         </div>
@@ -74,33 +86,28 @@ const latestResources = getAllResources().slice(0, 3);
     )
   }
 
-
-
-  <section class="border-t border-neutral-100 bg-neutral-50 py-16">
-    <div class="mx-auto max-w-6xl px-5">
-      <div class="flex items-end justify-between">
-        <h2 class="text-2xl font-bold tracking-tight text-ink-950">資料ダウンロード</h2>
-        <a href="/library/resources" class="text-sm font-medium text-brand-700 hover:underline">
-          資料一覧へ →
-        </a>
-      </div>
-      <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {
-          latestResources.map((resource) => (
-            <a href={`/resources/${resource.slug}`} class="block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
-              <div class="aspect-video w-full overflow-hidden bg-brand-100 p-6">
-                <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full rounded-md object-cover shadow-lg" />
-              </div>
-              <div class="p-5">
-                {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
-                <h3 class="mt-1 line-clamp-2 font-bold text-ink-950">{resource.title}</h3>
-              </div>
+  {
+    latestResources.length > 0 && (
+      <section class="border-t border-neutral-100 bg-neutral-50 py-16">
+        <div class="mx-auto max-w-6xl px-5">
+          <div class="flex items-end justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-widest text-neutral-400">DOWNLOADS</p>
+              <h2 class="mt-1 text-2xl font-bold tracking-tight text-ink-950">資料ダウンロード</h2>
+            </div>
+            <a href="/library/resource" class="text-sm font-medium text-brand-700 hover:underline">
+              資料一覧へ →
             </a>
-          ))
-        }
-      </div>
-    </div>
-  </section>
+          </div>
+          <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {latestResources.map((item) => (
+              <LibraryCard item={item} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   <ContactCta />
 </BaseLayout>
