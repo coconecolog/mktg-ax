@@ -11,7 +11,7 @@ export const SITE_TAGLINE = "マーケティング責任者のための 分析�
 // 文言を変える際は、ここで改行したい位置で要素を分ければOK（成り行きの折り返しにはしない）。
 export const HOME_HERO_TITLE_LINES = ["マーケティング責任者のための", "分析ツール&情報メディア"];
 export const SITE_DESCRIPTION =
-  "マーケティング責任者向けに、マーケティング分析ツールや実践的な施策・マーケット情報を発信するメディアです。";
+  "勘と経験頼みの意思決定から抜け出す。明日からの戦略・予算配分を裏付ける実践型メディアです。";
 
 export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 
