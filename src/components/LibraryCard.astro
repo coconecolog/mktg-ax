@@ -8,35 +8,32 @@ interface Props {
 }
 
 const { item } = Astro.props;
-const dateLabel = new Date(item.publishedAt).toLocaleDateString("ja-JP", {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+const isResource = item.kind === "resource";
+const dateLabel = new Date(item.publishedAt)
+  .toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })
+  .replaceAll("/", ".");
+const readTimeLabel = item.metaLabel ? item.metaLabel.replace(/^◷\s*/, "") : null;
 ---
 
 <a href={item.href} class="group flex flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg">
-  <div class={`aspect-video w-full overflow-hidden ${item.kind === "resource" ? "bg-brand-100 p-6" : "bg-neutral-50"}`}>
+  <div class={`aspect-video w-full overflow-hidden ${isResource ? "bg-brand-100 p-6" : "bg-neutral-50"}`}>
     <img
       src={item.thumbnail || DEFAULT_OG_IMAGE}
       alt=""
-      class={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${item.kind === "resource" ? "rounded-md shadow-lg" : ""}`}
+      class={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${isResource ? "rounded-md shadow-lg" : ""}`}
     />
   </div>
-  <div class="flex flex-1 flex-col p-5">
-    <div class="flex flex-wrap items-center gap-2 text-xs">
-      <span class={`rounded-full px-2.5 py-0.5 font-bold ${item.kind === "resource" ? "bg-brand-600 text-white" : "bg-neutral-100 text-neutral-600"}`}>
-        {item.typeLabel}
-      </span>
-      {item.metaLabel && <span class="text-neutral-400">{item.metaLabel}</span>}
-    </div>
-    <div class="mt-2 flex items-center gap-2 text-xs text-neutral-400">
+  <div class={`flex flex-1 flex-col px-5 pb-5 ${isResource ? "pt-5" : "pt-10"}`}>
+    <div class="flex flex-wrap items-center gap-1.5 text-xs text-neutral-400">
       {item.category && <span class="font-medium text-brand-600">{item.category}</span>}
-      <time datetime={item.publishedAt}>{dateLabel}</time>
+      {item.category && <span class="text-neutral-300">/</span>}
+      <span>{dateLabel}</span>
+      {!isResource && readTimeLabel && <span class="text-neutral-300">/</span>}
+      {!isResource && readTimeLabel && <span>{readTimeLabel}</span>}
     </div>
     <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{item.title}</h3>
     <p class="mt-2 line-clamp-2 flex-1 text-sm text-neutral-500">{item.description}</p>
-    <span class="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-bold text-white">
+    <span class={`mt-4 flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-bold ${isResource ? "bg-black text-white" : "bg-neutral-200 text-black"}`}>
       {item.ctaLabel}
     </span>
   </div>
