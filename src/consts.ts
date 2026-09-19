@@ -4,7 +4,12 @@
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || "https://mktg-ax.pages.dev";
 
 export const SITE_NAME = "MKTG.AX";
-export const SITE_TAGLINE = "マーケティング責任者のための　分析ツール&情報メディア";
+// 修正後（SITE_TAGLINEはFooter・OGP画像でも使うので変更しない。
+// トップページ見出し専用に、改行位置を配列で明示できる定数を追加）
+export const SITE_TAGLINE = "マーケティング責任者のための 分析ツール&情報メディア";
+// トップページのファーストビュー見出し。配列の要素ごとに改行される。
+// 文言を変える際は、ここで改行したい位置で要素を分ければOK（成り行きの折り返しにはしない）。
+export const HOME_HERO_TITLE_LINES = ["マーケティング責任者のための", "分析ツール&情報メディア"];
 export const SITE_DESCRIPTION =
   "マーケティング責任者向けに、マーケティング分析ツールや実践的な施策・マーケット情報を発信するメディアです。";
 
