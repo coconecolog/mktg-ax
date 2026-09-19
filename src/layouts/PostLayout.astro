@@ -120,13 +120,13 @@ const dateLabel = (iso: string) =>
           )
         }
 
-        {
-          post.thumbnail && (
-            <div class="mt-8 aspect-video w-full overflow-hidden rounded-2xl bg-neutral-100">
-              <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
-            </div>
-          )
-        }
+{
+  post.thumbnail && (
+    <div class="mt-8 aspect-video w-full overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100">
+      <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
+    </div>
+  )
+}
 
         {
           toc.length > 0 && (
