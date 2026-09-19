@@ -595,8 +595,8 @@ function pickReadableTextColor(dataUri) {
 
 export async function generateFallbackThumbnail(idHint, background, title, subtitle) {
   try {
-    const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
-    const { dataUri, colorKey } = background || {};
+const { dataUri, colorKey } = background || {};
+const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
 
     // サブタイトルを上・小さめ、メインタイトルを下・大きめに表示する。
     const titleFontSize = 66;
