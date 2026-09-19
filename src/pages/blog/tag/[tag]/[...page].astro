@@ -15,7 +15,7 @@ import {
   getLibraryCountsByTag,
   type LibraryItem,
 } from "@/lib/library";
-import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+import { TAG_PAGE_SIZE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 
 // タグページ。カテゴリページ（/blog/category/[category]/[...page].astro）とは意図的にデザインを分けている
@@ -41,7 +41,7 @@ export const getStaticPaths = (async ({ paginate }) => {
   return tagNames.flatMap((name) =>
     paginate(getLibraryItemsByTag(name, "all"), {
       params: { tag: toRouteSlug(name) },
-      pageSize: CATEGORY_TAG_PAGE_SIZE,
+     pageSize: TAG_PAGE_SIZE,
       props: { tagName: name },
     }),
   );
