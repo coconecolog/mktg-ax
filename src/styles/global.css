@@ -10,16 +10,16 @@
     "Inter", "Noto Sans JP", ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
     "Yu Gothic", sans-serif;
 
-  --color-brand-50: #f6f9fb;
-  --color-brand-100: #eaf3f8;
-  --color-brand-200: #d2e6f1;
-  --color-brand-300: #b0d4e8;
-  --color-brand-400: #8abfde;
-  --color-brand-500: #56a5d1;
-  --color-brand-600: #337ea9;
-  --color-brand-700: #25668b;
-  --color-brand-800: #1c4e6b;
-  --color-brand-900: #153649;
+--color-brand-50: #fafafa;
+--color-brand-100: #ededed;
+--color-brand-200: #d9d9d9;
+--color-brand-300: #bfbfbf;
+--color-brand-400: #999999;
+--color-brand-500: #737373;
+--color-brand-600: #0b0b12;
+--color-brand-700: #0b0b12;
+--color-brand-800: #08080d;
+--color-brand-900: #000000;
 
   --color-ink-950: #0b0b12;
 }
