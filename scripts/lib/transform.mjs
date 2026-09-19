@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { resolveDataSourceId, queryAllPages } from "./notion-client.mjs";
+import zlib from "node:zlib";
 
 const execFileAsync = promisify(execFile);
 
@@ -506,8 +507,95 @@ const GENERATED_THUMBNAIL_OUT_DIR = path.resolve(process.cwd(), "public/images/g
  * @param {string} title 大きく表示するテキスト（サムネ用タイトル。未入力なら記事タイトルを渡す）
  * @param {string} subtitle 補足として小さく表示するテキスト（空文字なら非表示）
  */
+// PNG(8bit・RGB/RGBA・非インターレース)のデータURIから平均の明るさを計算し、
+// 読みやすい文字色（白 or ブランドインク色）を選ぶ。想定外の形式やデコード失敗時は
+// 安全側として従来通り白を返す。
+function pickReadableTextColor(dataUri) {
+  try {
+    const base64 = dataUri.split(",")[1];
+    const buf = Buffer.from(base64, "base64");
+    if (buf.length < 8 || buf.readUInt32BE(0) !== 0x89504e47) return "#ffffff";
+
+    let offset = 8;
+    let width = 0, height = 0, bitDepth = 0, colorType = 0, interlace = 0;
+    const idatChunks = [];
+
+    while (offset < buf.length) {
+      const len = buf.readUInt32BE(offset);
+      const type = buf.toString("ascii", offset + 4, offset + 8);
+      const data = buf.subarray(offset + 8, offset + 8 + len);
+      if (type === "IHDR") {
+        width = data.readUInt32BE(0);
+        height = data.readUInt32BE(4);
+        bitDepth = data.readUInt8(8);
+        colorType = data.readUInt8(9);
+        interlace = data.readUInt8(12);
+      } else if (type === "IDAT") {
+        idatChunks.push(data);
+      } else if (type === "IEND") {
+        break;
+      }
+      offset += 8 + len + 4;
+    }
+
+    if (bitDepth !== 8 || interlace !== 0 || (colorType !== 2 && colorType !== 6)) {
+      return "#ffffff";
+    }
+
+    const bpp = colorType === 6 ? 4 : 3;
+    const raw = zlib.inflateSync(Buffer.concat(idatChunks));
+    const stride = width * bpp;
+    const pixels = Buffer.alloc(height * stride);
+
+    let inOff = 0, outOff = 0;
+    for (let y = 0; y < height; y++) {
+      const filterType = raw[inOff];
+      inOff += 1;
+      for (let x = 0; x < stride; x++) {
+        const rawByte = raw[inOff + x];
+        const a = x >= bpp ? pixels[outOff + x - bpp] : 0;
+        const b = y > 0 ? pixels[outOff - stride + x] : 0;
+        const c = x >= bpp && y > 0 ? pixels[outOff - stride + x - bpp] : 0;
+        let value;
+        switch (filterType) {
+          case 0: value = rawByte; break;
+          case 1: value = rawByte + a; break;
+          case 2: value = rawByte + b; break;
+          case 3: value = rawByte + Math.floor((a + b) / 2); break;
+          case 4: {
+            const p = a + b - c;
+            const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+            value = rawByte + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c);
+            break;
+          }
+          default:
+            value = rawByte;
+        }
+        pixels[outOff + x] = value & 0xff;
+      }
+      inOff += stride;
+      outOff += stride;
+    }
+
+    let sum = 0, count = 0;
+    for (let y = 0; y < height; y += 3) {
+      for (let x = 0; x < width; x += 3) {
+        const p = y * stride + x * bpp;
+        sum += 0.299 * pixels[p] + 0.587 * pixels[p + 1] + 0.114 * pixels[p + 2];
+        count += 1;
+      }
+    }
+    const avgLuma = count > 0 ? sum / count : 0;
+    return avgLuma > 150 ? "#0b0b12" : "#ffffff";
+  } catch {
+    return "#ffffff";
+  }
+}
+
+
 export async function generateFallbackThumbnail(idHint, background, title, subtitle) {
   try {
+    const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
     const { dataUri, colorKey } = background || {};
 
     // サブタイトルを上・小さめ、メインタイトルを下・大きめに表示する。
@@ -567,8 +655,8 @@ export async function generateFallbackThumbnail(idHint, background, title, subti
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   ${backgroundMarkup}
-  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="400" fill="#ffffff" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
-  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="#ffffff">${titleTspans}</text>
+  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="400" fill="${textFill}" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
+  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="${textFill}">${titleTspans}}</text>
 </svg>`;
 
     await fs.mkdir(GENERATED_THUMBNAIL_OUT_DIR, { recursive: true });
