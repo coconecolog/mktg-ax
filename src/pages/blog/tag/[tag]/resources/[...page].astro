@@ -14,7 +14,7 @@ import {
   getLibraryCountsByTag,
   type LibraryItem,
 } from "@/lib/library";
-import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
+import { TAG_PAGE_SIZE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 
 // タグページの「無料資料・eBook」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
@@ -26,7 +26,7 @@ export const getStaticPaths = (async ({ paginate }) => {
   return tagNames.flatMap((name) =>
     paginate(getLibraryItemsByTag(name, "resource"), {
       params: { tag: toRouteSlug(name) },
-      pageSize: CATEGORY_TAG_PAGE_SIZE,
+      pageSize: TAG_PAGE_SIZE,
       props: { tagName: name },
     }),
   );
