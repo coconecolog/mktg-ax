@@ -3,7 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getLibraryItems } from "@/lib/library";
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, HOME_TOOLS_ITEMS } from "@/consts";
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, HOME_TOOLS_ITEMS, HOME_HERO_TITLE_LINES } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
 
 const latestPosts = getLibraryItems("post").slice(0, 3);
@@ -19,7 +19,12 @@ const organizationSchema = buildOrganizationSchema();
         B2B Marketing Analytics & Media
       </span>
       <h1 class="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
-        {SITE_TAGLINE}
+        {HOME_HERO_TITLE_LINES.map((line, i) => (
+          <>
+            {i > 0 && <br />}
+            {line}
+          </>
+        ))}
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/60">{SITE_DESCRIPTION}</p>
       <div class="mt-8 flex flex-wrap justify-center gap-3">
