@@ -388,16 +388,16 @@ export async function downloadImage(url, idHint) {
 // 「テーマカラー」プロパティで選べる色はすべてここに用意してあるので、
 // 新しいカテゴリを追加したときはNotion側で色を選ぶだけでよい（コード変更不要）。
 const CATEGORY_COLOR_GRADIENTS = {
-  default: ["#94a3b8", "#64748b"],
-  gray: ["#9ca3af", "#6b7280"],
-  brown: ["#b08968", "#8b5e34"],
-  orange: ["#fb923c", "#ea580c"],
-  yellow: ["#fbbf24", "#ca8a04"],
-  green: ["#4ade80", "#15803d"],
-  blue: ["#60a5fa", "#1d4ed8"],
-  purple: ["#a78bfa", "#6c3fe8"],
-  pink: ["#f472b6", "#db2777"],
-  red: ["#f87171", "#b91c1c"],
+  default: ["#5c5c5c", "#1a1a1a"],
+  gray: ["#5c5c5c", "#1a1a1a"],
+  brown: ["#5c5c5c", "#1a1a1a"],
+  orange: ["#5c5c5c", "#1a1a1a"],
+  yellow: ["#5c5c5c", "#1a1a1a"],
+  green: ["#5c5c5c", "#1a1a1a"],
+  blue: ["#5c5c5c", "#1a1a1a"],
+  purple: ["#5c5c5c", "#1a1a1a"],
+  pink: ["#5c5c5c", "#1a1a1a"],
+  red: ["#5c5c5c", "#1a1a1a"],
 };
 
 function escapeXml(text) {
