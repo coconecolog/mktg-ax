@@ -1,159 +1,170 @@
-// .notion-cache/posts.json （scripts/fetch-notion.mjs が生成）の型定義。
-// スクリプト側（JS）とAstro側（TS）で二重管理になっているので、
-// 片方の形を変えたらもう片方も忘れずに直してください。
+import fs from "node:fs";
+import path from "node:path";
+import type { Author, BlockNode, Category, Post, PostsCache, Tag, TocItem } from "./types";
 
-export interface RichTextItem {
-  text: string;
-  href: string | null;
-  bold: boolean;
-  italic: boolean;
-  strikethrough: boolean;
-  underline: boolean;
-  code: boolean;
-  color: string | null;
+const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/posts.json");
+
+function loadCache(): PostsCache {
+  try {
+    const raw = fs.readFileSync(CACHE_PATH, "utf-8");
+    const parsed = JSON.parse(raw) as PostsCache;
+    // categories(記事の複数カテゴリ配列)・カテゴリ一覧・カテゴリ本文(blocks)は後から追加したフィールドなので、
+    // 古いキャッシュ（未生成のもの）にも耐えるようにする
+    const posts = (parsed.posts || []).map((p) => ({
+      ...p,
+      categories: p.categories || (p.category ? [p.category] : []),
+      author: p.author ?? null,
+      keyPoints: p.keyPoints || [],
+      // 「公開後の編集中」スナップショットなど、このフィールドが無い古いデータにも耐える
+      ctaResourceId: p.ctaResourceId ?? null,
+    }));
+    const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
+    // タグ一覧(マスタータグDBの解説文・本文)も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
+    const tags = (parsed.tags || []).map((t) => ({ ...t, blocks: t.blocks || [] }));
+    // 執筆者一覧（執筆者リストDB）も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
+    const authors = parsed.authors || [];
+    return { ...parsed, posts, categories, tags, authors };
+  } catch {
+    console.warn(
+      "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
+    );
+    return { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], authors: [] };
+  }
 }
 
-export interface BlockNode {
-  id: string;
-  type: string;
-  level?: number;
-  richText?: RichTextItem[];
-  anchor?: string;
-  toggleable?: boolean;
-  children?: BlockNode[];
-  checked?: boolean;
-  emoji?: string | null;
-  language?: string;
-  caption?: string;
-  src?: string;
-  alt?: string;
-  visibleCaption?: string | null;
-  hasColumnHeader?: boolean;
-  hasRowHeader?: boolean;
-  rows?: { cells: RichTextItem[][] }[];
-  url?: string;
-  name?: string;
-  expression?: string;
+const cache = loadCache();
+
+/** 公開日の新しい順にソートされた全記事 */
+export function getAllPosts(): Post[] {
+  return [...cache.posts].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
 }
 
-export interface Post {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  tags: string[];
-  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名の先頭1件（未設定ならnull）。カード等の単一バッジ表示用。 */
-  category: string | null;
-  /** 「マスターカテゴリ」DBとのリレーションから解決した全カテゴリ名（複数選択可）。カテゴリページの絞り込みはこちらを使う。 */
-  categories: string[];
-  /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
-  author: string | null;
-  /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
-  keyPoints: string[];
-  /** 「CTA資料」リレーション（資料DB）の先頭1件のページID。Resource.id と突き合わせて記事末尾の資料DLのCTAを表示する。未設定ならnull（CTA非表示）。 */
-  ctaResourceId: string | null;
-  publishedAt: string;
-  updatedAt: string;
-  thumbnail: string | null;
-  blocks: BlockNode[];
+export function getPostBySlug(slug: string): Post | undefined {
+  return cache.posts.find((p) => p.slug === slug);
 }
 
-// マスターカテゴリDB（Notion）1件分。記事DBの「カテゴリ」リレーション先そのもの。
-// representativeSlug は「代表記事Slug」プロパティの値で、
-// 対応する記事が見つからない場合は null として扱う。
-export interface Category {
-  name: string;
-  description: string;
-  representativeSlug: string | null;
-  /** 自動生成サムネイルの背景色（画像未設定時のフォールバック）。「テーマカラー」セレクトプロパティの値。未設定ならnull */
-  themeColor: string | null;
-  /** 自動生成サムネイルの背景画像ファイル名（public/images/category-backgrounds/ 配下）。未設定なら空文字 */
-  backgroundImageFilename: string;
-  /** 表示順（「並び順」プロパティ、小さい順）。未設定ならnull（末尾に表示される） */
-  order: number | null;
-  /** カテゴリページ本文（Notion側で「説明文」より下に書かれた解説記事）のブロック。カテゴリページ下部に表示する。 */
-  blocks: BlockNode[];
+export function getAllTags(): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const post of cache.posts) {
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
-// マスタータグDB（Notion）1件分。記事DB・資料DBの「タグ」リレーション先そのもの。
-// マスターカテゴリと同じ構成（自動生成サムネイル用のテーマカラー・背景画像プロパティは無い）。
-export interface Tag {
-  name: string;
-  description: string;
-  representativeSlug: string | null;
-  /** タグページ本文（Notion側で「説明文」より下に書かれた解説文）のブロック。タグページ下部に表示する。 */
-  blocks: BlockNode[];
+export function getPostsByTag(tag: string): Post[] {
+  return getAllPosts().filter((p) => p.tags.includes(tag));
 }
 
-// 執筆者リストDB（Notion）1件分。記事DB・資料DBの「執筆者」リレーション先そのもの。
-export interface Author {
-  name: string;
-  /** 「肩書」プロパティ（例: Consultant）。未設定なら空文字 */
-  title: string;
-  /** 「主な経験分野」プロパティ（複数行テキスト）。改行を含んだまま保持し、表示側で white-space: pre-line 的に扱う。未設定なら空文字 */
-  expertise: string;
-  /** 「執筆者紹介文」プロパティ。未設定なら空文字 */
-  bio: string;
-  /** 「執筆者画像」（files & media）をダウンロードしたローカル配信パス。未設定・未アップロードならnull */
-  image: string | null;
-  /** 表示順（「並び順」プロパティ、小さい順）。未設定ならnull（末尾に表示される）。取得時点で既にソート済みのため、通常はこの値を直接参照する必要はない */
-  order: number | null;
+/** マスタータグDBに登録されているタグ1件分（説明文・本文ブロック）。未登録のタグ名ならundefined。 */
+export function getTagByName(name: string): Tag | undefined {
+  return cache.tags.find((t) => t.name === name);
 }
 
-export interface PostsCache {
-  generatedAt: string;
-  posts: Post[];
-  categories: Category[];
-  tags: Tag[];
-  authors: Author[];
-  error?: string;
+/** マスターカテゴリDBの全カテゴリ（Notion側の並び順のまま）。 */
+export function getAllCategories(): Category[] {
+  return cache.categories;
 }
 
-export interface TocItem {
-  anchor: string;
-  text: string;
-  level: number;
-  children: TocItem[];
+export function getCategoryByName(name: string): Category | undefined {
+  return cache.categories.find((c) => c.name === name);
 }
 
-// ------------------------------------------------------------
-// .notion-cache/resources.json （scripts/fetch-notion-resources.mjs が生成）の型定義。
-// こちらもスクリプト側（JS）と二重管理なので、片方を変えたらもう片方も直すこと。
-// ------------------------------------------------------------
-
-export interface Resource {
-  id: string;
-  slug: string;
-  title: string;
-  /** 資料説明（本文に表示する説明文） */
-  description: string;
-  /** ディスクリプション（SEO用メタディスクリプション。未入力ならdescriptionを流用） */
-  metaDescription: string;
-  tags: string[];
-  /** 「マスタータグ」DBとのリレーションから解決した単一の主タグ（未設定ならnull） */
-  mainTag: string | null;
-  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
-  category: string | null;
-  /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
-  author: string | null;
-  /** 「ターゲット・目次」を1行ずつに分割した配列。1行目を見出し、2行目以降を箇条書きとして表示する。 */
-  targetToc: string[];
-  publishedAt: string;
-  updatedAt: string;
-  /** 一覧・詳細ページの見出し画像。資料ファイル（PDF）の1ページ目を自動キャプチャしたもの（旧「資料サムネイル」プロパティは廃止）。PDF以外や生成失敗時はnull */
-  thumbnail: string | null;
-  /** 資料本体ファイルの配信パス。Notion側に「資料ファイル」プロパティが無い間はnull */
-  fileUrl: string | null;
-  /** 資料ファイル（PDF）の1ページ目を自動キャプチャした表紙画像。PDF以外やキャプチャ失敗時はnull */
-  coverImage: string | null;
-  /** 「抜粋ページ」で指定したページ番号を自動キャプチャした画像（指定順）。未指定なら空配列 */
-  excerptImages: string[];
-  /** 資料DBページ本文のブロック（記事と同じ形式）。見出し・リストなど自由に構成できる可変セクション用。 */
-  blocks: BlockNode[];
+/** 指定カテゴリに属する記事（記事側の「カテゴリ」リレーションは複数選択可なので、いずれか1つでも一致すれば対象）。 */
+export function getPostsByCategory(name: string): Post[] {
+  return getAllPosts().filter((p) => p.categories.includes(name));
 }
 
-export interface ResourcesCache {
-  generatedAt: string;
-  resources: Resource[];
-  error?: string;
+/** カテゴリページの「関連するテーマ・キーワード」用に、そのカテゴリの記事に付いているタグだけを集計する。 */
+export function getCategoryTags(name: string): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const post of getPostsByCategory(name)) {
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tagName, count]) => ({ name: tagName, count }))
+    .sort((a, b) => b.count - a.count);
 }
+
+/** 執筆者リストDBの全執筆者（Notion側の並び順のまま）。 */
+export function getAllAuthors(): Author[] {
+  return cache.authors;
+}
+
+export function getAuthorByName(name: string): Author | undefined {
+  return cache.authors.find((a) => a.name === name);
+}
+
+/** 指定執筆者が書いた記事（公開日の新しい順）。 */
+export function getPostsByAuthor(name: string): Post[] {
+  return getAllPosts().filter((p) => p.author === name);
+}
+
+/** 執筆者ページのプロフィールカードに出すピル用。その執筆者の最新記事から、タグを重複なく最大limit件集める。 */
+export function getAuthorRecentTags(name: string, limit: number): string[] {
+  const tags: string[] = [];
+  for (const post of getPostsByAuthor(name)) {
+    for (const tag of post.tags) {
+      if (!tags.includes(tag)) tags.push(tag);
+      if (tags.length >= limit) return tags;
+    }
+  }
+  return tags;
+}
+
+/**
+ * 人気記事（上位N件）。
+ * TODO: Google Analyticsとの連携が済み次第、閲覧数ベースのランキングに差し替える。
+ * 現在は連携準備が整うまでの仮実装として、公開日の新しい順で代用している。
+ */
+export function getPopularPosts(limit: number): Post[] {
+  return getAllPosts().slice(0, limit);
+}
+
+/**
+ * 見出し2・見出し3から目次を組み立てる（H3はH2の下にネスト）。
+ * 見出し1・見出し4は目次に含めない（仕様どおり）。
+ * column_list / column の中身は透過的にたどるが、toggle/callout/quoteの中は目次に含めない。
+ */
+export function buildToc(blocks: BlockNode[]): TocItem[] {
+  const toc: TocItem[] = [];
+  let currentH2: TocItem | null = null;
+
+  function walk(nodes: BlockNode[]) {
+    for (const node of nodes) {
+      if (node.type === "heading_2" && node.anchor) {
+        currentH2 = {
+          anchor: node.anchor,
+          text: (node.richText || []).map((r) => r.text).join(""),
+          level: 2,
+          children: [],
+        };
+        toc.push(currentH2);
+      } else if (node.type === "heading_3" && node.anchor) {
+        const item: TocItem = {
+          anchor: node.anchor,
+          text: (node.richText || []).map((r) => r.text).join(""),
+          level: 3,
+          children: [],
+        };
+        if (currentH2) currentH2.children.push(item);
+        else toc.push(item);
+      } else if (node.type === "column_list" || node.type === "column") {
+        if (node.children) walk(node.children);
+      }
+    }
+  }
+
+  walk(blocks);
+  return toc;
+}
+
+export const CACHE_GENERATED_AT = cache.generatedAt;
+export const CACHE_ERROR = cache.error;
