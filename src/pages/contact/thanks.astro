@@ -1,0 +1,85 @@
+---
+// お問い合わせフォーム送信後のサンクスページ（/contact/thanks）。
+// 遷移元は src/pages/contact.astro（送信成功時に自動遷移）。
+// 構成: お礼 → 今後の流れ → サイト内の案内リンク。資料DLのサンクスと違い、コンテンツ紹介は出さない。
+// GA4: ページ自体が /contact/thanks という固有URLなので page_view で到達数を計測できる。
+//      お問い合わせの「イベント」（contact_form_submit）はフォーム側で送信済みのため、このページでは送らない。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "お問い合わせ", href: "/contact" },
+  { name: "送信完了", href: "/contact/thanks" },
+];
+
+const steps = [
+  { no: "1", title: "受付完了", text: "お問い合わせを受け付けました。" },
+  { no: "2", title: "内容の確認", text: "担当者が内容を確認します。" },
+  { no: "3", title: "メールでご連絡", text: "通常2〜3営業日以内にご返信します。" },
+];
+
+const links = [
+  { title: "トップページ", text: "サイトの全体像を見る", href: "/" },
+  { title: "記事・資料", text: "実務ノウハウと資料を探す", href: "/library" },
+  { title: "無料ツール", text: "予算策定・シミュレーターを使う", href: "/tools" },
+  { title: "サイト内検索", text: "キーワードから探す", href: "/search" },
+];
+---
+
+<BaseLayout
+  title="お問い合わせありがとうございました"
+  description="お問い合わせを受け付けました。担当者よりメールでご連絡いたします。"
+  noindex
+  pagefindIgnore
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pb-12 pt-4">
+    <!-- お礼（高さは min-h で確保。資料DLのサンクスページと揃えている） -->
+    <section class="mx-auto flex min-h-[20rem] max-w-2xl flex-col items-center justify-center py-10 text-center md:min-h-[24rem]">
+      <p class="text-xs font-bold tracking-widest text-neutral-500">THANK YOU</p>
+      <h1 class="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+        お問い合わせありがとうございます
+      </h1>
+      <p class="mt-5 text-sm leading-relaxed text-neutral-600">
+        お問い合わせを受け付けました。内容を確認のうえ、担当よりメールでご連絡いたします。<br />
+        数日たっても返信が届かない場合は、迷惑メールフォルダをご確認ください。
+      </p>
+    </section>
+
+    <!-- 今後の流れ -->
+    <section class="mt-14 border-t border-neutral-200 pt-12">
+      <p class="text-xs font-bold tracking-widest text-neutral-400">NEXT STEPS</p>
+      <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">今後の流れ</h2>
+      <ol class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {
+          steps.map((step) => (
+            <li class="rounded-2xl border border-neutral-300 bg-white p-6">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{step.no}</span>
+              <p class="mt-4 text-base font-bold text-ink-950">{step.title}</p>
+              <p class="mt-1 text-sm leading-relaxed text-neutral-500">{step.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <!-- サイト内の案内 -->
+    <section class="mt-14 border-t border-neutral-200 pt-12">
+      <p class="text-xs font-bold tracking-widest text-neutral-400">EXPLORE</p>
+      <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">引き続きサイトをご覧ください</h2>
+      <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          links.map((link) => (
+            <a href={link.href} class="group flex flex-col rounded-2xl border border-neutral-300 bg-white p-6 no-underline transition-shadow hover:shadow-lg">
+              <span class="text-base font-bold text-ink-950">{link.title}</span>
+              <span class="mt-1 text-sm leading-relaxed text-neutral-500">{link.text}</span>
+              <span class="mt-4 text-sm font-medium text-brand-700 underline underline-offset-4 group-hover:text-brand-800">開く →</span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</BaseLayout>
