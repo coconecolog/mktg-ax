@@ -37,6 +37,12 @@ const dateLabel = (iso: string) =>
 const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 
 const author = resource.author ? getAuthorByName(resource.author) : undefined;
+
+// 送信完了後に遷移するサンクスページ。カテゴリごとに静的ページ（/resources/thanks/[category]）があり、
+// カテゴリ未設定の資料は /resources/thanks/general に遷移する。
+// ?slug= は、サンクスページ側で「今ダウンロードした資料」を名前表示・おすすめから除外するために渡す。
+const thanksCategorySegment = resource.category ? encodeURIComponent(toRouteSlug(resource.category)) : "general";
+const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
 ---
 
 <BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={faqSchema}>
@@ -167,6 +173,8 @@ const author = resource.author ? getAuthorByName(resource.author) : undefined;
                 data-resource-slug={resource.slug}
                 data-resource-title={resource.title}
                 data-download-url={resource.fileUrl}
+                data-resource-category={resource.category ?? ""}
+                data-thanks-url={thanksUrl}
               >
                 <div>
                   <label for="rdf-name" class="text-xs font-medium text-neutral-600">
@@ -324,7 +332,7 @@ const author = resource.author ? getAuthorByName(resource.author) : undefined;
 <script>
   // 資料ダウンロードフォームの送信処理。
   // 送信先は Cloudflare Pages Functions（functions/api/resource-download.js）。
-  // ページ遷移なしで結果（成功/エラー）をフォーム直下に表示する。
+  // エラー時はフォーム直下にメッセージを表示。成功時はサンクスページ（/resources/thanks/[category]）へ遷移する。
   const form = document.getElementById("resource-download-form") as HTMLFormElement | null;
   const messageEl = document.getElementById("rdf-message");
   const submitBtn = document.getElementById("rdf-submit") as HTMLButtonElement | null;
@@ -359,25 +367,37 @@ const author = resource.author ? getAuthorByName(resource.author) : undefined;
       const data = await res.json().catch(() => ({ ok: false, error: null }));
 
       if (res.ok && data.ok) {
-        if (typeof (window as any).gtag === "function") {
-          (window as any).gtag("event", "resource_download", {
-            resource_slug: form.dataset.resourceSlug,
-            resource_title: form.dataset.resourceTitle,
-          });
-        } else if ((window as any).dataLayer) {
-          (window as any).dataLayer.push({
-            event: "resource_download",
-            resource_slug: form.dataset.resourceSlug,
-            resource_title: form.dataset.resourceTitle,
-          });
+        // 成功後はサンクスページへ遷移する。GA4計測（GTM経由）が遷移で途切れないよう、
+        // dataLayer の eventCallback（GTMが該当タグを送り終えたら呼ばれる）で遷移し、
+        // 万一コールバックが来なくても1.5秒後には必ず遷移する（二重遷移は go() 内で防止）。
+        const thanksUrl = form.dataset.thanksUrl || "/resources";
+        let moved = false;
+        const go = () => {
+          if (moved) return;
+          moved = true;
+          window.location.href = thanksUrl;
+        };
+        const eventParams = {
+          resource_slug: form.dataset.resourceSlug,
+          resource_title: form.dataset.resourceTitle,
+          resource_category: form.dataset.resourceCategory || "(none)",
+        };
+        const w = window as any;
+        try {
+          if (typeof w.gtag === "function") {
+            w.gtag("event", "resource_download", { ...eventParams, event_callback: go, event_timeout: 1500 });
+          } else if (w.dataLayer) {
+            w.dataLayer.push({ event: "resource_download", ...eventParams, eventCallback: go, eventTimeout: 1500 });
+          } else {
+            go();
+          }
+        } catch {
+          go();
         }
-        form.reset();
-        form.querySelectorAll("input, button").forEach((el) => {
-          (el as HTMLInputElement | HTMLButtonElement).disabled = true;
-        });
+        setTimeout(go, 1500);
         messageEl.classList.remove("text-neutral-500");
         messageEl.classList.add("text-emerald-600");
-        messageEl.textContent = "ご入力いただいたメールアドレスに、資料のダウンロードリンクをお送りしました。";
+        messageEl.textContent = "送信しました。ページを移動します…";
       } else {
         submitBtn.disabled = false;
         messageEl.classList.remove("text-neutral-500");
