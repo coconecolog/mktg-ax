@@ -210,18 +210,32 @@ const snsLinks = [
         const data = await res.json().catch(() => ({ ok: false, error: null }));
 
         if (res.ok && data.ok) {
-          if (typeof (window as any).gtag === "function") {
-            (window as any).gtag("event", "contact_form_submit");
-          } else if ((window as any).dataLayer) {
-            (window as any).dataLayer.push({ event: "contact_form_submit" });
+          // 計測イベントを送ってからサンクスページへ移動する（イベント送信完了 or 1.5秒経過のどちらか早い方）。
+          let moved = false;
+          const go = () => {
+            if (moved) return;
+            moved = true;
+            window.location.href = "/contact/thanks";
+          };
+          const w = window as any;
+          try {
+            if (typeof w.gtag === "function") {
+              w.gtag("event", "contact_form_submit", { event_callback: go, event_timeout: 1500 });
+            } else if (w.dataLayer) {
+              w.dataLayer.push({ event: "contact_form_submit", eventCallback: go, eventTimeout: 1500 });
+            } else {
+              go();
+            }
+          } catch {
+            go();
           }
-          form.reset();
+          setTimeout(go, 1500);
           form.querySelectorAll("input, select, textarea, button").forEach((el) => {
             (el as HTMLInputElement | HTMLButtonElement).disabled = true;
           });
           resultEl.classList.remove("text-neutral-500");
           resultEl.classList.add("text-emerald-600");
-          resultEl.textContent = "お問い合わせを受け付けました。担当より折り返しご連絡いたします。";
+          resultEl.textContent = "送信しました。ページを移動します…";
         } else {
           submitBtn.disabled = false;
           resultEl.classList.remove("text-neutral-500");
