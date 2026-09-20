@@ -160,7 +160,7 @@ const dateLabel = (iso: string) =>
 
         {ctaResource && <ResourceCta resource={ctaResource} />}
 
-        {ctaTool && <ToolCta tool={ctaTool} />}
+        {ctaTool && <ToolCta tool={ctaTool} attached={!!ctaResource} />}
 
         {author && <AuthorCard author={author} />}
 
