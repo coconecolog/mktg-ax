@@ -50,6 +50,8 @@ export interface Post {
   author: string | null;
   /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
   keyPoints: string[];
+  /** 「CTA資料」リレーション（資料DB）の先頭1件のページID。Resource.id と突き合わせて記事末尾の資料DLのCTAを表示する。未設定ならnull（CTA非表示）。 */
+  ctaResourceId: string | null;
   publishedAt: string;
   updatedAt: string;
   thumbnail: string | null;
