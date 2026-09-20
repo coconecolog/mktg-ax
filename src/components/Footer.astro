@@ -1,8 +1,9 @@
 ---
 // フッターのリンクは3カラムに手動で分類して表示している（NAV_LINKSのフラット表示はしていない）。
-// 「ツール」カラムは TOOLS_NAV_ITEMS をそのまま使うため、ツールの追加・変更は consts.ts の編集だけで自動反映される。
+// 「ツール」カラムは ツールDB（Notion）から自動生成されるため、ツールの追加・変更はNotion側の編集だけで自動反映される。
 // 色はすべて src/styles/global.css の brand-* トークン経由（デザインレギュレーション準拠。hexのハードコード禁止）。
-import { SITE_NAME, SITE_TAGLINE, TOOLS_NAV_ITEMS } from "@/consts";
+import { SITE_NAME, SITE_TAGLINE } from "@/consts";
+import { getToolNavItems } from "@/lib/tools";
 const year = new Date().getFullYear();
 ---
 
@@ -34,7 +35,7 @@ const year = new Date().getFullYear();
         <h3 class="text-xs font-bold uppercase tracking-wider text-brand-400">ツール</h3>
         <ul class="mt-4 space-y-2.5">
           {
-            TOOLS_NAV_ITEMS.map((tool) => (
+            getToolNavItems().map((tool) => (
               <li>
                 <a href={tool.href} class="text-sm text-brand-100 hover:text-white">
                   {tool.label}
