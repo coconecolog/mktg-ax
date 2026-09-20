@@ -1,23 +1,25 @@
 ---
 // 資料ダウンロード完了後のサンクスページ（カテゴリごとに1ページを静的生成）。
-//   /resources/thanks/[category]  … そのカテゴリの資料をDLした人向け（お礼＋同カテゴリの記事・資料）
-//   /resources/thanks/general     … カテゴリ未設定の資料をDLした人向け（お礼＋新着の記事・資料）
+//   /resources/thanks/[category]  … そのカテゴリの資料をDLした人向け
+//   /resources/thanks/general     … カテゴリ未設定の資料をDLした人向け
 // 遷移元は src/pages/resources/[slug].astro の資料DLフォーム（成功時に自動遷移）。
+//
+// 構成（上から）: お礼 → TOOLS（無料ツール。そのカテゴリのツール、無ければ全ツールの先頭）
+//                → OTHER DOWNLOADS（そのカテゴリの記事・資料を混合で3件。今ダウンロードした資料は除外）→ お問い合わせCTA
 // GA4: ページ自体が /resources/thanks/... という固有URLなので、GTM/GA4の page_view で計測できる。
 //      DLの「イベント」（resource_download）はフォーム側で送信済みのため、このページでは二重に送らない。
 // ?slug=<資料slug> が付いている場合のみ、クライアント側で「今ダウンロードした資料名」を表示し、
-//      おすすめ資料から同じ資料を除外する（静的ページのため、この情報だけはブラウザ側で出し分ける）。
+//      関連一覧から同じ資料を外す（静的ページのため、この情報だけはブラウザ側で出し分ける）。
 import type { GetStaticPaths } from "astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
-import ToolCard from "@/components/ToolCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getCategoryByName } from "@/lib/posts";
+import { getAllCategories } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
 import { getAllTools, getToolsByCategory } from "@/lib/tools";
-import { toRouteSlug, fromRouteSlug } from "@/lib/routeSlug";
+import { toRouteSlug } from "@/lib/routeSlug";
 
 export const getStaticPaths = (async () => {
   // マスターカテゴリDBの全カテゴリ＋資料に実際に設定されているカテゴリ（マスターDB未設定の環境でも壊れないように）
@@ -33,22 +35,18 @@ export const getStaticPaths = (async () => {
   return paths;
 }) satisfies GetStaticPaths;
 
-// ※ getStaticPaths はAstroの仕様でこのファイルの他の変数を参照できないため、"general" は直書きにしている
-const GENERAL = "general";
 const { categoryName } = Astro.props as { categoryName: string | null };
 
-const category = categoryName ? getCategoryByName(categoryName) : undefined;
-const displayName = categoryName ? fromRouteSlug(categoryName) : null;
+// TOOLS: そのカテゴリのツール（最大3件）。該当が無いカテゴリ・カテゴリ未設定のときは、並び順の先頭3件。
+const categoryTools = categoryName ? getToolsByCategory(categoryName) : [];
+const tools = (categoryTools.length > 0 ? categoryTools : getAllTools()).slice(0, 3);
 
-const posts = (categoryName ? getLibraryItemsByCategory(categoryName, "post") : getLibraryItems("post")).slice(0, 3);
-// 「今ダウンロードした資料」を後から除外できるよう、1件多めに用意して最大3件表示する
-const resources = (categoryName ? getLibraryItemsByCategory(categoryName, "resource") : getLibraryItems("resource")).slice(0, 4);
+// OTHER DOWNLOADS: そのカテゴリの記事・資料の混合リスト。「今ダウンロードした資料」を後から除外できるよう
+// 1件多め（4件）を出力しておき、ブラウザ側で3件に整える。
+const related = (categoryName ? getLibraryItemsByCategory(categoryName, "all") : getLibraryItems("all")).slice(0, 4);
 
-// このカテゴリのツール（最大3件）。カテゴリ未設定の資料の場合は「並び順」の先頭3件。
-const tools = (categoryName ? getToolsByCategory(categoryName) : getAllTools()).slice(0, 3);
-
-const categoryHref = categoryName ? `/blog/category/${encodeURIComponent(toRouteSlug(categoryName))}` : "/library";
-const heading = displayName ? `${displayName}の記事・資料` : "新着の記事・資料";
+// 「今ダウンロードした資料名」を表示するための slug → 資料名 の対応表（全資料。ページに埋め込む）
+const resourceTitleMap = Object.fromEntries(getAllResources().map((r) => [r.slug, r.title]));
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -59,7 +57,7 @@ const breadcrumbItems = [
 
 <BaseLayout
   title="ダウンロードありがとうございました"
-  description="資料のダウンロードリンクをメールでお送りしました。あわせて関連する記事・資料もご覧ください。"
+  description="資料のダウンロードリンクをメールでお送りしました。あわせて無料ツールや関連する記事・資料もご覧ください。"
   noindex
   pagefindIgnore
 >
@@ -67,47 +65,53 @@ const breadcrumbItems = [
 
   <div class="mx-auto max-w-6xl px-5 py-12">
     <!-- お礼 -->
-    <section class="mx-auto max-w-2xl text-center" data-thanks-category={displayName ?? GENERAL}>
-      <p class="text-xs font-bold tracking-wide text-brand-600">THANK YOU</p>
-      <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
-        お申し込みありがとうございます
+    <section class="mx-auto max-w-2xl text-center">
+      <p class="text-xs font-bold tracking-widest text-neutral-500">THANK YOU</p>
+      <h1 class="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+        資料ダウンロードありがとうございます
       </h1>
-      <p id="thanks-resource-line" class="mt-4 hidden text-sm font-bold text-ink-950">
+      <p id="thanks-resource-line" class="mt-5 hidden text-sm font-bold text-ink-950">
         「<span id="thanks-resource-title"></span>」
       </p>
-      <p class="mt-4 text-sm leading-relaxed text-neutral-600">
+      <p class="mt-5 text-sm leading-relaxed text-neutral-600">
         ご入力いただいたメールアドレス宛に、資料のダウンロードリンクをお送りしました。<br />
         メールが届かない場合は、迷惑メールフォルダをご確認ください。
       </p>
     </section>
 
-    <!-- このカテゴリの記事 -->
+    <!-- TOOLS -->
     {
-      posts.length > 0 && (
-        <section class="mt-16">
-          <div class="flex items-end justify-between gap-4">
-            <h2 class="text-xl font-bold text-ink-950">{displayName ? `${displayName}の記事` : "新着の記事"}</h2>
-            <a href={categoryHref} class="shrink-0 text-sm text-brand-700 hover:underline">
-              {displayName ? "このカテゴリをもっと見る →" : "ライブラリを見る →"}
-            </a>
-          </div>
-          <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((item) => (
-              <LibraryCard item={item} />
+      tools.length > 0 && (
+        <section class="mt-14 border-t border-neutral-200 pt-12">
+          <p class="text-xs font-bold tracking-widest text-neutral-400">TOOLS</p>
+          <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">業務効率化に役立つ無料ツール</h2>
+          <div class="mt-6 space-y-4">
+            {tools.map((tool) => (
+              <a href={tool.href} class="group flex flex-col gap-3 rounded-2xl border border-neutral-300 bg-white p-6 no-underline transition-shadow hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+                <div class="min-w-0">
+                  {(tool.tag || tool.category) && <p class="text-xs text-neutral-400">{tool.tag || tool.category}</p>}
+                  <h3 class="mt-1 text-xl font-extrabold leading-snug tracking-tight text-ink-950 group-hover:text-brand-700">{tool.title}</h3>
+                  {tool.description && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-500">{tool.description}</p>}
+                </div>
+                <span class="shrink-0 text-sm font-bold text-ink-950 underline underline-offset-4 group-hover:text-brand-700">
+                  {tool.ctaLabel}
+                </span>
+              </a>
             ))}
           </div>
         </section>
       )
     }
 
-    <!-- このカテゴリの資料 -->
+    <!-- OTHER DOWNLOADS -->
     {
-      resources.length > 0 && (
-        <section id="thanks-resources" class="mt-16">
-          <h2 class="text-xl font-bold text-ink-950">{displayName ? `${displayName}の資料` : "新着の資料"}</h2>
+      related.length > 0 && (
+        <section id="thanks-related" class="mt-14 border-t border-neutral-200 pt-12">
+          <p class="text-xs font-bold tracking-widest text-neutral-400">OTHER DOWNLOADS</p>
+          <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">関連するその他の記事・資料</h2>
           <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {resources.map((item) => (
-              <div class="thanks-resource-card contents" data-slug={item.slug} data-title={item.title}>
+            {related.map((item) => (
+              <div class="thanks-related-card contents" data-kind={item.kind} data-slug={item.slug}>
                 <LibraryCard item={item} />
               </div>
             ))}
@@ -115,59 +119,39 @@ const breadcrumbItems = [
         </section>
       )
     }
-
-    <!-- このカテゴリのツール -->
-    {
-      tools.length > 0 && (
-        <section class="mt-16">
-          <div class="flex items-end justify-between gap-4">
-            <h2 class="text-xl font-bold text-ink-950">{displayName ? `${displayName}のツール` : "無料で使えるツール"}</h2>
-            <a href="/tools" class="shrink-0 text-sm text-brand-700 hover:underline">
-              ツール一覧を見る →
-            </a>
-          </div>
-          <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {tools.map((tool) => (
-              <ToolCard tool={tool} as="h3" />
-            ))}
-          </div>
-        </section>
-      )
-    }
-
-    {
-      posts.length === 0 && resources.length === 0 && tools.length === 0 && (
-        <p class="mt-16 text-center text-sm text-neutral-500">
-          <a href="/library" class="text-brand-700 underline">ライブラリ（記事・資料）</a>から、ほかの記事・資料もご覧いただけます。
-        </p>
-      )
-    }
   </div>
 
   <ContactCta />
+
+  <script type="application/json" id="thanks-resource-map" set:html={JSON.stringify(resourceTitleMap)} />
 </BaseLayout>
 
 <script>
-  // ?slug= が付いているときだけ、今ダウンロードした資料名を表示し、おすすめ資料から同じ資料を外す。
-  // slug が無い・該当なしの場合は何もしない（静的ページのままの表示）。
+  // ?slug= が付いているときだけ、今ダウンロードした資料名を表示し、関連一覧から同じ資料を外す。
+  // その上で、関連一覧は最大3件に整える。slug が無い・該当なしの場合も3件に整えるだけで、他は何もしない。
   const slug = new URLSearchParams(window.location.search).get("slug");
+
   if (slug) {
-    const cards = Array.from(document.querySelectorAll<HTMLElement>(".thanks-resource-card"));
-    const current = cards.find((el) => el.dataset.slug === slug);
-    if (current) {
+    try {
+      const map = JSON.parse(document.getElementById("thanks-resource-map")?.textContent || "{}") as Record<string, string>;
+      const title = map[slug];
       const titleEl = document.getElementById("thanks-resource-title");
       const lineEl = document.getElementById("thanks-resource-line");
-      if (titleEl && lineEl) {
-        titleEl.textContent = current.dataset.title || "";
+      if (title && titleEl && lineEl) {
+        titleEl.textContent = title;
         lineEl.classList.remove("hidden");
       }
-      current.remove();
+    } catch {
+      // 対応表が読めなくても、ページの表示自体には影響させない
     }
-    // 除外後に4件残っていたら3件に揃える
-    const rest = Array.from(document.querySelectorAll<HTMLElement>(".thanks-resource-card"));
-    rest.slice(3).forEach((el) => el.remove());
-    if (rest.length === 0) document.getElementById("thanks-resources")?.remove();
-  } else {
-    Array.from(document.querySelectorAll<HTMLElement>(".thanks-resource-card")).slice(3).forEach((el) => el.remove());
+    document
+      .querySelectorAll<HTMLElement>('.thanks-related-card[data-kind="resource"]')
+      .forEach((el) => {
+        if (el.dataset.slug === slug) el.remove();
+      });
   }
+
+  const cards = Array.from(document.querySelectorAll<HTMLElement>(".thanks-related-card"));
+  cards.slice(3).forEach((el) => el.remove());
+  if (cards.length === 0) document.getElementById("thanks-related")?.remove();
 </script>
