@@ -3,10 +3,13 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getLibraryItems } from "@/lib/library";
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, HOME_TOOLS_ITEMS, HOME_HERO_TITLE_LINES } from "@/consts";
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, HOME_HERO_TITLE_LINES } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
+import { getToolNavItems } from "@/lib/tools";
 
 const latestPosts = getLibraryItems("post").slice(0, 3);
+// トップページの「便利ツール」は、ツールDBの「並び順」の先頭3件。
+const homeTools = getToolNavItems().slice(0, 3);
 const latestResources = getLibraryItems("resource").slice(0, 3);
 const organizationSchema = buildOrganizationSchema();
 ---
@@ -51,7 +54,7 @@ const organizationSchema = buildOrganizationSchema();
       </div>
       <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {
-          HOME_TOOLS_ITEMS.map((tool) => (
+          homeTools.map((tool) => (
             <a href={tool.href} class="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 transition-shadow hover:shadow-lg">
               <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100">
                 <img src={tool.icon} alt="" class="h-6 w-6" />
