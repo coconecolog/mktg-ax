@@ -11,10 +11,12 @@ import type { GetStaticPaths } from "astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
+import ToolCard from "@/components/ToolCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getCategoryByName } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
+import { getAllTools, getToolsByCategory } from "@/lib/tools";
 import { toRouteSlug, fromRouteSlug } from "@/lib/routeSlug";
 
 export const getStaticPaths = (async () => {
@@ -41,6 +43,9 @@ const displayName = categoryName ? fromRouteSlug(categoryName) : null;
 const posts = (categoryName ? getLibraryItemsByCategory(categoryName, "post") : getLibraryItems("post")).slice(0, 3);
 // 「今ダウンロードした資料」を後から除外できるよう、1件多めに用意して最大3件表示する
 const resources = (categoryName ? getLibraryItemsByCategory(categoryName, "resource") : getLibraryItems("resource")).slice(0, 4);
+
+// このカテゴリのツール（最大3件）。カテゴリ未設定の資料の場合は「並び順」の先頭3件。
+const tools = (categoryName ? getToolsByCategory(categoryName) : getAllTools()).slice(0, 3);
 
 const categoryHref = categoryName ? `/blog/category/${encodeURIComponent(toRouteSlug(categoryName))}` : "/library";
 const heading = displayName ? `${displayName}の記事・資料` : "新着の記事・資料";
@@ -111,8 +116,27 @@ const breadcrumbItems = [
       )
     }
 
+    <!-- このカテゴリのツール -->
     {
-      posts.length === 0 && resources.length === 0 && (
+      tools.length > 0 && (
+        <section class="mt-16">
+          <div class="flex items-end justify-between gap-4">
+            <h2 class="text-xl font-bold text-ink-950">{displayName ? `${displayName}のツール` : "無料で使えるツール"}</h2>
+            <a href="/tools" class="shrink-0 text-sm text-brand-700 hover:underline">
+              ツール一覧を見る →
+            </a>
+          </div>
+          <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {tools.map((tool) => (
+              <ToolCard tool={tool} as="h3" />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      posts.length === 0 && resources.length === 0 && tools.length === 0 && (
         <p class="mt-16 text-center text-sm text-neutral-500">
           <a href="/library" class="text-brand-700 underline">ライブラリ（記事・資料）</a>から、ほかの記事・資料もご覧いただけます。
         </p>
