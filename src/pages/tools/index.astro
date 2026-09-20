@@ -3,7 +3,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import MoreExplore from "@/components/MoreExplore.astro";
 import ContactCta from "@/components/ContactCta.astro";
+import ToolCard from "@/components/ToolCard.astro";
 import { getAllCategories, getPopularPosts } from "@/lib/posts";
+import { getAllTools, getToolCategories } from "@/lib/tools";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -13,70 +15,9 @@ const breadcrumbItems = [
 const categories = getAllCategories();
 const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
 
-// フィルタータブ。key が下の TOOLS の category と対応する。
-const FILTERS = [
-  { key: "all", label: "すべて" },
-  { key: "revenue-cost", label: "収益・費用シミュレーション" },
-  { key: "seo-aeo", label: "SEO / AEO 診断" },
-  { key: "org-outsource", label: "体制・外注検討" },
-];
-
-const TOOLS = [
-  {
-    href: "/tools/budget-simulator",
-    category: "revenue-cost",
-    tag: "予算・投資計画",
-    tagClass: "bg-brand-50 text-brand-700",
-    duration: "所要3分",
-    title: "マーケティング予算策定・投資計画書",
-    description:
-      "今期実績と来期施策（人件費・ツール費・広告費等）を入力するだけで、逆算パイプライン・費用内訳・ROI試算まで含めた役員提出用の予算計画書を自動作成します。",
-    cta: "計画書を作成する →",
-  },
-  {
-    href: "/tools/kpi-benchmark",
-    category: "revenue-cost",
-    tag: "広告宣伝費・予算診断",
-    tagClass: "bg-brand-50 text-brand-700",
-    duration: "所要1分",
-    title: "広告宣伝費 業界ベンチマーク診断",
-    description:
-      "業種・年間売上高・年間広告宣伝費を入力するだけで、同業種の実データと比べて広告宣伝費が多いか少ないかを診断します。予算の逆算にも対応。",
-    cta: "診断を開始 →",
-  },
-  {
-    href: "/tools/roas-cac-simulator",
-    category: "revenue-cost",
-    tag: "広告運用・収益化",
-    tagClass: "bg-brand-50 text-brand-700",
-    duration: "所要1分",
-    title: "広告費用対効果（ROAS/CAC）シミュレーター",
-    description:
-      "月額単価・粗利率・解約率・獲得単価（CAC）を入力するだけで、LTV/CAC比率と投資回収期間（Payback）を診断します。",
-    cta: "シミュレーションを開始 →",
-  },
-  {
-    href: "/tools/seo-aeo-aio-check",
-    category: "seo-aeo",
-    tag: "SEO・生成AI",
-    tagClass: "bg-emerald-50 text-emerald-700",
-    duration: "所要2分",
-    title: "簡易SEO・AEO・AIO診断チェックリスト",
-    description:
-      "全15項目のチェックだけで、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断します。",
-    cta: "診断をチェックする →",
-  },
-  {
-    href: "/tools/inhouse-vs-outsource",
-    category: "org-outsource",
-    tag: "組織・コスト",
-    tagClass: "bg-violet-50 text-violet-700",
-    duration: "所要2分",
-    title: "内製 vs 外注 コスト比較シミュレーター",
-    description: "マーケティング担当者を採用するか、外注に任せるか。月次・年間コストを試算して比較します。",
-    cta: "コスト比較を開始 →",
-  },
-];
+// ツールはNotionのツールDB（src/lib/tools.ts）から取得する。フィルタータブは、ツールが1件以上あるカテゴリから自動で作る。
+const tools = getAllTools();
+const filterCategories = getToolCategories();
 ---
 
 <BaseLayout
@@ -96,39 +37,31 @@ const TOOLS = [
       <p class="mt-3 text-neutral-500">入力データはサーバーに保存されません。安心してお手元の数値で試算できます。</p>
     </div>
 
-    <div class="mt-8 flex flex-wrap justify-center gap-2" id="tool-filters">
-      {
-        FILTERS.map((filter, i) => (
+    {
+      filterCategories.length > 0 && (
+        <div class="mt-8 flex flex-wrap justify-center gap-2" id="tool-filters">
           <button
             type="button"
-            data-filter={filter.key}
-            class={`tool-filter-btn rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              i === 0 ? "bg-brand-600 text-white" : "border border-neutral-200 text-neutral-600 hover:border-brand-300"
-            }`}
+            data-filter="all"
+            class="tool-filter-btn rounded-full bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors"
           >
-            {filter.label}
-            {filter.key === "all" && ` (${TOOLS.length})`}
+            すべて ({tools.length})
           </button>
-        ))
-      }
-    </div>
+          {filterCategories.map((name) => (
+            <button
+              type="button"
+              data-filter={name}
+              class="tool-filter-btn rounded-full border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:border-brand-300"
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )
+    }
 
     <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3" id="tool-cards">
-      {
-        TOOLS.map((tool) => (
-          <div data-category={tool.category} class="tool-card flex flex-col rounded-2xl border border-neutral-100 bg-white p-6">
-            <div class="flex items-center justify-between gap-2">
-              <span class={`rounded-full px-2.5 py-0.5 text-xs font-medium ${tool.tagClass}`}>{tool.tag}</span>
-              <span class="shrink-0 text-xs text-neutral-400">🕐 {tool.duration}</span>
-            </div>
-            <h2 class="mt-4 font-bold text-ink-950">{tool.title}</h2>
-            <p class="mt-2 flex-1 text-sm leading-relaxed text-neutral-500">{tool.description}</p>
-            <a href={tool.href} class="mt-5 block rounded-xl bg-ink-950 px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-neutral-800">
-              {tool.cta}
-            </a>
-          </div>
-        ))
-      }
+      {tools.map((tool) => <ToolCard tool={tool} />)}
     </div>
 
     <p class="mt-10 text-sm text-neutral-400">
@@ -163,7 +96,7 @@ const TOOLS = [
 
   function applyFilter(key: string) {
     cards.forEach((card) => {
-      const show = key === "all" || card.dataset.category === key;
+      const show = key === "all" || (card.dataset.categories || "").split("|").includes(key);
       card.classList.toggle("hidden", !show);
     });
   }
