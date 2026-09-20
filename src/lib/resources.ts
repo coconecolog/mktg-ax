@@ -28,6 +28,10 @@ export function getAllResources(): Resource[] {
 export function getResourceBySlug(slug: string): Resource | undefined {
   return cache.resources.find((r) => r.slug === slug);
 }
+/** NotionページIDから資料を引く（記事の「CTA資料」リレーション用。公開されていない資料は見つからず undefined になる）。 */
+export function getResourceById(id: string): Resource | undefined {
+  return cache.resources.find((r) => r.id === id);
+}
 /** 指定カテゴリに属する資料（資料側の「カテゴリ」リレーションから解決した名前で判定）。 */
 export function getResourcesByCategory(name: string): Resource[] {
   return getAllResources().filter((r) => r.category === name);
