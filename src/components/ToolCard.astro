@@ -1,0 +1,31 @@
+---
+// ツール1件分のカード。ツール一覧ページ・サンクスページで共通に使う。
+// data-categories（カテゴリ名を「|」で連結）は、ツール一覧ページのカテゴリ絞り込み（クライアント側JS）が参照する。
+import type { Tool } from "@/lib/types";
+
+interface Props {
+  tool: Tool;
+  /** 見出しのレベル。ページ内の見出し階層に合わせて指定する（既定はh2） */
+  as?: "h2" | "h3";
+}
+
+const { tool, as: Heading = "h2" } = Astro.props;
+---
+
+<div data-categories={tool.categories.join("|")} class="tool-card flex flex-col rounded-2xl border border-neutral-100 bg-white p-6">
+  <div class="flex items-center justify-between gap-2">
+    {
+      tool.tag ? (
+        <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">{tool.tag}</span>
+      ) : (
+        <span />
+      )
+    }
+    {tool.duration && <span class="shrink-0 text-xs text-neutral-400">🕐 {tool.duration}</span>}
+  </div>
+  <Heading class="mt-4 font-bold text-ink-950">{tool.title}</Heading>
+  <p class="mt-2 flex-1 text-sm leading-relaxed text-neutral-500">{tool.description}</p>
+  <a href={tool.href} class="mt-5 block rounded-xl bg-ink-950 px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-neutral-800">
+    {tool.ctaLabel}
+  </a>
+</div>
