@@ -17,6 +17,7 @@ function loadCache(): PostsCache {
       keyPoints: p.keyPoints || [],
       // 「公開後の編集中」スナップショットなど、このフィールドが無い古いデータにも耐える
       ctaResourceId: p.ctaResourceId ?? null,
+      ctaToolId: p.ctaToolId ?? null,
     }));
     const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
     // タグ一覧(マスタータグDBの解説文・本文)も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
