@@ -83,8 +83,15 @@ const breadcrumbItems = [
     {
       tools.length > 0 && (
         <section class="mt-14 border-t border-neutral-200 pt-12">
-          <p class="text-xs font-bold tracking-widest text-neutral-400">TOOLS</p>
-          <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">業務効率化に役立つ無料ツール</h2>
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <p class="text-xs font-bold tracking-widest text-neutral-400">TOOLS</p>
+              <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">業務効率化に役立つ無料ツール</h2>
+            </div>
+            <a href="/tools" class="shrink-0 text-sm font-medium text-brand-700 hover:underline">
+              ツール一覧へ →
+            </a>
+          </div>
           <div class="mt-6 space-y-4">
             {tools.map((tool) => (
               <a href={tool.href} class="group flex flex-col gap-3 rounded-2xl border border-neutral-300 bg-white p-6 no-underline transition-shadow hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
@@ -107,8 +114,15 @@ const breadcrumbItems = [
     {
       related.length > 0 && (
         <section id="thanks-related" class="mt-14 border-t border-neutral-200 pt-12">
-          <p class="text-xs font-bold tracking-widest text-neutral-400">OTHER DOWNLOADS</p>
-          <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">関連するその他の記事・資料</h2>
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <p class="text-xs font-bold tracking-widest text-neutral-400">OTHER DOWNLOADS</p>
+              <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">関連するその他の記事・資料</h2>
+            </div>
+            <a href="/library" class="shrink-0 text-sm font-medium text-brand-700 hover:underline">
+              記事・資料一覧へ →
+            </a>
+          </div>
           <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((item) => (
               <div class="thanks-related-card contents" data-kind={item.kind} data-slug={item.slug}>
