@@ -2,6 +2,7 @@
 // ブログ記事の末尾に表示する「無料ツール」CTA（細い帯）。ツールDBの内容から自動で組み立てる。
 // 記事DBの「CTAツール」リレーションに値がある記事でのみ、PostLayout.astro から呼ばれる。
 // 資料CTA（ResourceCta）の直下に置く前提で、ボタンは右端・同じ幅（sm:w-60）・同じ左右余白（sm:px-8）にそろえている。
+// ボタンは帯の下端（説明文の最終行の高さ）にそろえる。
 // attached=true（資料CTAの直下に置くとき）は上余白を小さくして、2つを近づける。
 import type { Tool } from "@/lib/types";
 import { DEFAULT_TOOL_ICON } from "@/lib/tools";
@@ -16,7 +17,7 @@ const icon = tool.icon || DEFAULT_TOOL_ICON;
 ---
 
 <aside
-  class={`${attached ? "mt-4" : "mt-12"} flex flex-col gap-4 rounded-2xl border border-brand-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:gap-5 sm:px-8`}
+  class={`${attached ? "mt-4" : "mt-12"} flex flex-col gap-4 rounded-2xl border border-brand-200 bg-white px-6 py-5 sm:flex-row sm:items-end sm:gap-5 sm:px-8`}
   aria-label="無料ツール"
 >
   <div class="flex min-w-0 flex-1 items-center gap-4">
