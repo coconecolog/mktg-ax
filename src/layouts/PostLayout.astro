@@ -34,8 +34,13 @@ const author = post.author ? getAuthorByName(post.author) : undefined;
 // 記事DBの「CTA資料」に値がある記事だけ、資料DLのCTAを出す。値が無い、または資料が非公開で
 // 資料キャッシュに存在しない場合は undefined になり、CTAは表示されない。
 const ctaResource = post.ctaResourceId ? getResourceById(post.ctaResourceId) : undefined;
-// 記事DBの「CTAツール」に値がある記事だけ、ツールCTAを出す（資料CTAと並べて表示。両方ある場合は2カラム）。
+// 記事DBの「CTAツール」に値がある記事だけ、ツールCTAを出す（資料CTAの下に縦に並べて表示）。
 const ctaTool = post.ctaToolId ? getToolById(post.ctaToolId) : undefined;
+if (post.ctaToolId && !ctaTool) {
+  console.warn(
+    `[PostLayout] 「${post.title}」の「CTAツール」に指定されたツールが見つかりません（ツールDBで「公開」がOFF、またはSlugに対応するページが無いためスキップされた可能性があります）。`,
+  );
+}
 
 // 同じカテゴリの他記事（自分自身を除く、最大3件）。ブログ記事ページのみで表示するため PostLayout.astro 側に置く。
 const relatedItems = post.category
@@ -153,19 +158,9 @@ const dateLabel = (iso: string) =>
           <NotionBlocks blocks={post.blocks} />
         </div>
 
-        {
-          ctaResource && ctaTool ? (
-            <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-              <ResourceCta resource={ctaResource} compact />
-              <ToolCta tool={ctaTool} compact />
-            </div>
-          ) : (
-            <>
-              {ctaResource && <ResourceCta resource={ctaResource} />}
-              {ctaTool && <ToolCta tool={ctaTool} />}
-            </>
-          )
-        }
+        {ctaResource && <ResourceCta resource={ctaResource} />}
+
+        {ctaTool && <ToolCta tool={ctaTool} />}
 
         {author && <AuthorCard author={author} />}
 
