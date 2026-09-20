@@ -43,6 +43,9 @@ import {
 
 // 記事DBの「CTA資料」リレーションプロパティ名（記事末尾の資料ダウンロードCTAに使う資料DBのページ）。
 const CTA_RESOURCE_PROP = "CTA資料";
+// 記事DBの「CTAツール」リレーションプロパティ名（記事末尾のツールCTAに使うツールDBのページ）。資料CTAと並べて表示する。
+const CTA_TOOL_PROP = "CTAツール";
+let warnedMissingCtaToolProp = false;
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
 const CACHE_FILE = path.join(CACHE_DIR, "posts.json");
@@ -338,6 +341,13 @@ async function main() {
     const ctaResourceProp = page.properties?.[CTA_RESOURCE_PROP];
     const ctaResourceId =
       ctaResourceProp?.type === "relation" ? ctaResourceProp.relation?.[0]?.id ?? null : null;
+    // 「CTAツール」も同様に、ページIDだけを保持する。未設定なら null（ツールCTAを表示しない）。
+    const ctaToolProp = page.properties?.[CTA_TOOL_PROP];
+    if (!ctaToolProp && !warnedMissingCtaToolProp) {
+      warnedMissingCtaToolProp = true;
+      console.warn(`  [notion] 警告: 記事DBに「${CTA_TOOL_PROP}」プロパティが見つかりません。プロパティ名（完全一致）を確認してください。`);
+    }
+    const ctaToolId = ctaToolProp?.type === "relation" ? ctaToolProp.relation?.[0]?.id ?? null : null;
 
     // 「サムネイル画像」に実ファイルがアップロードされていればそれを優先。
     // 未設定の場合は、カテゴリのテーマカラー＋「サムネ用タイトル/サブタイトル」から自動生成する。
@@ -368,6 +378,7 @@ async function main() {
       author,
       keyPoints,
       ctaResourceId,
+      ctaToolId,
       publishedAt,
       updatedAt,
       thumbnail,
