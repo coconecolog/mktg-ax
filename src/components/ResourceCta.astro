@@ -2,38 +2,34 @@
 // ブログ記事の末尾に表示する「資料ダウンロード」CTA。
 // 表紙（PDF1ページ目の自動キャプチャ）・資料名・資料説明・資料詳細ページへのボタンを、資料DBの内容から自動で組み立てる。
 // 記事DBの「CTA資料」リレーションに値がある記事でのみ、PostLayout.astro から呼ばれる。
+// ボタンは右下に置き、直下のツールCTA（ToolCta）のボタンと同じ幅・同じ右端にそろえている（幅 sm:w-60、左右余白 sm:p-8）。
 import type { Resource } from "@/lib/types";
 
 interface Props {
   resource: Resource;
-  /** ツールCTAと並べて2カラムで表示するときに指定する（表紙を上、文章を下に縦積みにする） */
-  compact?: boolean;
 }
 
-const { resource, compact = false } = Astro.props;
+const { resource } = Astro.props;
 const cover = resource.thumbnail || resource.coverImage;
 const href = `/resources/${resource.slug}`;
 ---
 
-<aside
-  class={`${compact ? "flex h-full flex-col" : "mt-12"} rounded-2xl border border-brand-200 bg-brand-50 p-6 sm:p-8`}
-  aria-label="資料ダウンロード"
->
+<aside class="mt-12 rounded-2xl border border-brand-200 bg-brand-50 p-6 sm:p-8" aria-label="資料ダウンロード">
   <p class="text-xs font-bold tracking-wide text-brand-700">無料ダウンロード資料</p>
-  <div class={`mt-4 grid flex-1 grid-cols-1 gap-6 ${compact ? "content-start" : "items-center sm:grid-cols-[200px_1fr]"}`}>
+  <div class="mt-4 grid grid-cols-1 items-center gap-6 sm:grid-cols-[200px_1fr]">
     {
       cover && (
         <a href={href} class="block no-underline">
           <img
             src={cover}
             alt={`${resource.title}の表紙`}
-            class={`w-full rounded-md border border-neutral-100 bg-white shadow-lg ${compact ? "max-w-[200px]" : ""}`}
+            class="w-full rounded-md border border-neutral-100 bg-white shadow-lg"
             loading="lazy"
           />
         </a>
       )
     }
-    <div class={`flex flex-col ${!compact && !cover ? "sm:col-span-2" : ""}`}>
+    <div class={cover ? "" : "sm:col-span-2"}>
       <h2 class="text-xl font-extrabold leading-snug tracking-tight text-ink-950">
         <a href={href} class="text-ink-950 no-underline hover:text-brand-700">{resource.title}</a>
       </h2>
@@ -44,10 +40,8 @@ const href = `/resources/${resource.slug}`;
           </p>
         )
       }
-      <div class="mt-auto pt-5">
-        <a href={href}
-          class="inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white no-underline hover:bg-brand-700"
-        >
+      <div class="mt-5 flex sm:justify-end">
+        <a href={href} class="inline-block w-full rounded-full bg-brand-600 px-6 py-3 text-center text-sm font-bold text-white no-underline hover:bg-brand-700 sm:w-60">
           資料を無料でダウンロード
         </a>
       </div>
