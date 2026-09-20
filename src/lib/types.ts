@@ -52,6 +52,8 @@ export interface Post {
   keyPoints: string[];
   /** 「CTA資料」リレーション（資料DB）の先頭1件のページID。Resource.id と突き合わせて記事末尾の資料DLのCTAを表示する。未設定ならnull（CTA非表示）。 */
   ctaResourceId: string | null;
+  /** 「CTAツール」リレーション（ツールDB）の先頭1件のページID。Tool.id と突き合わせて記事末尾のツールCTAを表示する。未設定ならnull（CTA非表示）。 */
+  ctaToolId: string | null;
   publishedAt: string;
   updatedAt: string;
   thumbnail: string | null;
@@ -155,5 +157,40 @@ export interface Resource {
 export interface ResourcesCache {
   generatedAt: string;
   resources: Resource[];
+  error?: string;
+}
+
+// ------------------------------------------------------------
+// .notion-cache/tools.json （scripts/fetch-notion-tools.mjs が生成）の型定義。
+// スクリプト側（JS）と二重管理なので、片方を変えたらもう片方も直すこと。
+// ------------------------------------------------------------
+
+export interface Tool {
+  id: string;
+  /** /tools/{slug} のURL。対応するページ src/pages/tools/{slug}.astro が存在するツールだけがキャッシュに入る */
+  slug: string;
+  href: string;
+  title: string;
+  /** 説明文（一覧・サンクスページ・CTA用の通常の長さ） */
+  description: string;
+  /** 「短い説明」（ヘッダー・フッター・トップ用）。未入力なら空文字（表示側で説明文の冒頭を使う） */
+  shortDescription: string;
+  ctaLabel: string;
+  duration: string | null;
+  /** アイコンの配信パス（public/images/tool-icons/ 配下）。未設定・見つからない場合は null */
+  icon: string | null;
+  /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名の先頭1件 */
+  category: string | null;
+  /** 全カテゴリ名（複数選択可。絞り込みはこちらを使う） */
+  categories: string[];
+  /** 「マスタータグ」DBとのリレーションの先頭1件（カードのバッジ表示） */
+  tag: string | null;
+  tags: string[];
+  order: number | null;
+}
+
+export interface ToolsCache {
+  generatedAt: string;
+  tools: Tool[];
   error?: string;
 }
