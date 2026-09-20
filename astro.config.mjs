@@ -18,7 +18,7 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      filter: (page) => !page.includes("/internal-links") && !page.includes("/resources/thanks"),
+      filter: (page) => !page.includes("/internal-links") && !page.includes("/resources/thanks") && !page.includes("/contact/thanks"),
     }),
   ],
 });
