@@ -1,10 +1,9 @@
 ---
 import { NAV_LINKS, SITE_NAME } from "@/consts";
-import { getToolNavItems } from "@/lib/tools";
 
-// 「便利ツール」のプルダウンはNotionのツールDBから自動生成する（consts.ts のNAV_LINKSの該当項目を差し替える）。
-const toolNavItems = getToolNavItems();
-const navLinks = NAV_LINKS.map((link) => (link.href === "/tools" ? { ...link, children: toolNavItems } : link));
+// 「便利ツール」のプルダウンは廃止（2026-09-20）。子メニューを持たない通常のリンクとして表示する
+// （ツールの一覧は /tools ページ、DB連動）。プルダウンを復活させたい場合は children に getToolNavItems()（@/lib/tools）を渡す。
+const navLinks = NAV_LINKS.map((link) => ({ ...link, children: [] as { href: string; icon: string; label: string; description: string }[] }));
 
 const currentPath = Astro.url.pathname;
 function isActive(href: string) {
