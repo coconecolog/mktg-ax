@@ -1,0 +1,149 @@
+---
+// 資料ダウンロード完了後のサンクスページ（カテゴリごとに1ページを静的生成）。
+//   /resources/thanks/[category]  … そのカテゴリの資料をDLした人向け（お礼＋同カテゴリの記事・資料）
+//   /resources/thanks/general     … カテゴリ未設定の資料をDLした人向け（お礼＋新着の記事・資料）
+// 遷移元は src/pages/resources/[slug].astro の資料DLフォーム（成功時に自動遷移）。
+// GA4: ページ自体が /resources/thanks/... という固有URLなので、GTM/GA4の page_view で計測できる。
+//      DLの「イベント」（resource_download）はフォーム側で送信済みのため、このページでは二重に送らない。
+// ?slug=<資料slug> が付いている場合のみ、クライアント側で「今ダウンロードした資料名」を表示し、
+//      おすすめ資料から同じ資料を除外する（静的ページのため、この情報だけはブラウザ側で出し分ける）。
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import LibraryCard from "@/components/LibraryCard.astro";
+import ContactCta from "@/components/ContactCta.astro";
+import { getAllCategories, getCategoryByName } from "@/lib/posts";
+import { getAllResources } from "@/lib/resources";
+import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
+import { toRouteSlug, fromRouteSlug } from "@/lib/routeSlug";
+
+export const getStaticPaths = (async () => {
+  // マスターカテゴリDBの全カテゴリ＋資料に実際に設定されているカテゴリ（マスターDB未設定の環境でも壊れないように）
+  const names = new Set<string>();
+  for (const c of getAllCategories()) names.add(c.name);
+  for (const r of getAllResources()) if (r.category) names.add(r.category);
+
+  const paths = [...names].map((name) => ({
+    params: { category: toRouteSlug(name) },
+    props: { categoryName: name as string | null },
+  }));
+  paths.push({ params: { category: "general" }, props: { categoryName: null } });
+  return paths;
+}) satisfies GetStaticPaths;
+
+// ※ getStaticPaths はAstroの仕様でこのファイルの他の変数を参照できないため、"general" は直書きにしている
+const GENERAL = "general";
+const { categoryName } = Astro.props as { categoryName: string | null };
+
+const category = categoryName ? getCategoryByName(categoryName) : undefined;
+const displayName = categoryName ? fromRouteSlug(categoryName) : null;
+
+const posts = (categoryName ? getLibraryItemsByCategory(categoryName, "post") : getLibraryItems("post")).slice(0, 3);
+// 「今ダウンロードした資料」を後から除外できるよう、1件多めに用意して最大3件表示する
+const resources = (categoryName ? getLibraryItemsByCategory(categoryName, "resource") : getLibraryItems("resource")).slice(0, 4);
+
+const categoryHref = categoryName ? `/blog/category/${encodeURIComponent(toRouteSlug(categoryName))}` : "/library";
+const heading = displayName ? `${displayName}の記事・資料` : "新着の記事・資料";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ダウンロードありがとうございました", href: Astro.url.pathname },
+];
+---
+
+<BaseLayout
+  title="ダウンロードありがとうございました"
+  description="資料のダウンロードリンクをメールでお送りしました。あわせて関連する記事・資料もご覧ください。"
+  noindex
+  pagefindIgnore
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <!-- お礼 -->
+    <section class="mx-auto max-w-2xl text-center" data-thanks-category={displayName ?? GENERAL}>
+      <p class="text-xs font-bold tracking-wide text-brand-600">THANK YOU</p>
+      <h1 class="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+        お申し込みありがとうございます
+      </h1>
+      <p id="thanks-resource-line" class="mt-4 hidden text-sm font-bold text-ink-950">
+        「<span id="thanks-resource-title"></span>」
+      </p>
+      <p class="mt-4 text-sm leading-relaxed text-neutral-600">
+        ご入力いただいたメールアドレス宛に、資料のダウンロードリンクをお送りしました。<br />
+        メールが届かない場合は、迷惑メールフォルダをご確認ください。
+      </p>
+    </section>
+
+    <!-- このカテゴリの記事 -->
+    {
+      posts.length > 0 && (
+        <section class="mt-16">
+          <div class="flex items-end justify-between gap-4">
+            <h2 class="text-xl font-bold text-ink-950">{displayName ? `${displayName}の記事` : "新着の記事"}</h2>
+            <a href={categoryHref} class="shrink-0 text-sm text-brand-700 hover:underline">
+              {displayName ? "このカテゴリをもっと見る →" : "ライブラリを見る →"}
+            </a>
+          </div>
+          <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((item) => (
+              <LibraryCard item={item} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- このカテゴリの資料 -->
+    {
+      resources.length > 0 && (
+        <section id="thanks-resources" class="mt-16">
+          <h2 class="text-xl font-bold text-ink-950">{displayName ? `${displayName}の資料` : "新着の資料"}</h2>
+          <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {resources.map((item) => (
+              <div class="thanks-resource-card contents" data-slug={item.slug} data-title={item.title}>
+                <LibraryCard item={item} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      posts.length === 0 && resources.length === 0 && (
+        <p class="mt-16 text-center text-sm text-neutral-500">
+          <a href="/library" class="text-brand-700 underline">ライブラリ（記事・資料）</a>から、ほかの記事・資料もご覧いただけます。
+        </p>
+      )
+    }
+  </div>
+
+  <ContactCta />
+</BaseLayout>
+
+<script>
+  // ?slug= が付いているときだけ、今ダウンロードした資料名を表示し、おすすめ資料から同じ資料を外す。
+  // slug が無い・該当なしの場合は何もしない（静的ページのままの表示）。
+  const slug = new URLSearchParams(window.location.search).get("slug");
+  if (slug) {
+    const cards = Array.from(document.querySelectorAll<HTMLElement>(".thanks-resource-card"));
+    const current = cards.find((el) => el.dataset.slug === slug);
+    if (current) {
+      const titleEl = document.getElementById("thanks-resource-title");
+      const lineEl = document.getElementById("thanks-resource-line");
+      if (titleEl && lineEl) {
+        titleEl.textContent = current.dataset.title || "";
+        lineEl.classList.remove("hidden");
+      }
+      current.remove();
+    }
+    // 除外後に4件残っていたら3件に揃える
+    const rest = Array.from(document.querySelectorAll<HTMLElement>(".thanks-resource-card"));
+    rest.slice(3).forEach((el) => el.remove());
+    if (rest.length === 0) document.getElementById("thanks-resources")?.remove();
+  } else {
+    Array.from(document.querySelectorAll<HTMLElement>(".thanks-resource-card")).slice(3).forEach((el) => el.remove());
+  }
+</script>
