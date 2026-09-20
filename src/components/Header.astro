@@ -1,5 +1,10 @@
 ---
 import { NAV_LINKS, SITE_NAME } from "@/consts";
+import { getToolNavItems } from "@/lib/tools";
+
+// 「便利ツール」のプルダウンはNotionのツールDBから自動生成する（consts.ts のNAV_LINKSの該当項目を差し替える）。
+const toolNavItems = getToolNavItems();
+const navLinks = NAV_LINKS.map((link) => (link.href === "/tools" ? { ...link, children: toolNavItems } : link));
 
 const currentPath = Astro.url.pathname;
 function isActive(href: string) {
@@ -16,7 +21,7 @@ function isActive(href: string) {
 
     <nav class="hidden items-center gap-1 md:flex">
       {
-        NAV_LINKS.map((link) =>
+        navLinks.map((link) =>
           link.children.length > 0 ? (
             <div class="nav-dropdown relative">
               <div
@@ -78,7 +83,7 @@ function isActive(href: string) {
       </summary>
       <nav class="absolute right-0 mt-2 w-64 rounded-2xl border border-neutral-100 bg-white p-2 shadow-lg">
         {
-          NAV_LINKS.map((link) => (
+          navLinks.map((link) => (
             <>
               <a href={link.href} class="block rounded-xl px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
                 {link.label}
