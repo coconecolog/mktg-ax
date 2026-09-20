@@ -7,6 +7,8 @@ import BlogSidebar from "@/components/BlogSidebar.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
+import ResourceCta from "@/components/ResourceCta.astro";
+import { getResourceById } from "@/lib/resources";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
 import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts } from "@/lib/posts";
 import { getLibraryItemsByCategory } from "@/lib/library";
@@ -26,6 +28,10 @@ const categories = getAllCategories();
 const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const tags = getAllTags();
 const author = post.author ? getAuthorByName(post.author) : undefined;
+
+// 記事DBの「CTA資料」に値がある記事だけ、資料DLのCTAを出す。値が無い、または資料が非公開で
+// 資料キャッシュに存在しない場合は undefined になり、CTAは表示されない。
+const ctaResource = post.ctaResourceId ? getResourceById(post.ctaResourceId) : undefined;
 
 // 同じカテゴリの他記事（自分自身を除く、最大3件）。ブログ記事ページのみで表示するため PostLayout.astro 側に置く。
 const relatedItems = post.category
@@ -142,6 +148,8 @@ const dateLabel = (iso: string) =>
         <div class="prose-notion mt-10 w-full">
           <NotionBlocks blocks={post.blocks} />
         </div>
+
+        {ctaResource && <ResourceCta resource={ctaResource} />}
 
         {author && <AuthorCard author={author} />}
 
