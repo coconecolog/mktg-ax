@@ -6,29 +6,34 @@ import type { Resource } from "@/lib/types";
 
 interface Props {
   resource: Resource;
+  /** ツールCTAと並べて2カラムで表示するときに指定する（表紙を上、文章を下に縦積みにする） */
+  compact?: boolean;
 }
 
-const { resource } = Astro.props;
+const { resource, compact = false } = Astro.props;
 const cover = resource.thumbnail || resource.coverImage;
 const href = `/resources/${resource.slug}`;
 ---
 
-<aside class="mt-12 rounded-2xl border border-brand-200 bg-brand-50 p-6 sm:p-8" aria-label="資料ダウンロード">
+<aside
+  class={`${compact ? "flex h-full flex-col" : "mt-12"} rounded-2xl border border-brand-200 bg-brand-50 p-6 sm:p-8`}
+  aria-label="資料ダウンロード"
+>
   <p class="text-xs font-bold tracking-wide text-brand-700">無料ダウンロード資料</p>
-  <div class="mt-4 grid grid-cols-1 items-center gap-6 sm:grid-cols-[200px_1fr]">
+  <div class={`mt-4 grid flex-1 grid-cols-1 gap-6 ${compact ? "content-start" : "items-center sm:grid-cols-[200px_1fr]"}`}>
     {
       cover && (
         <a href={href} class="block no-underline">
           <img
             src={cover}
             alt={`${resource.title}の表紙`}
-            class="w-full rounded-md border border-neutral-100 bg-white shadow-lg"
+            class={`w-full rounded-md border border-neutral-100 bg-white shadow-lg ${compact ? "max-w-[200px]" : ""}`}
             loading="lazy"
           />
         </a>
       )
     }
-    <div class={cover ? "" : "sm:col-span-2"}>
+    <div class={`flex flex-col ${!compact && !cover ? "sm:col-span-2" : ""}`}>
       <h2 class="text-xl font-extrabold leading-snug tracking-tight text-ink-950">
         <a href={href} class="text-ink-950 no-underline hover:text-brand-700">{resource.title}</a>
       </h2>
@@ -39,12 +44,13 @@ const href = `/resources/${resource.slug}`;
           </p>
         )
       }
-      <a
-        href={href}
-        class="mt-5 inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white no-underline hover:bg-brand-700"
-      >
-        資料を無料でダウンロード
-      </a>
+      <div class="mt-auto pt-5">
+        <a href={href}
+          class="inline-block rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white no-underline hover:bg-brand-700"
+        >
+          資料を無料でダウンロード
+        </a>
+      </div>
     </div>
   </div>
 </aside>
