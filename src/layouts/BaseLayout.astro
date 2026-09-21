@@ -4,6 +4,7 @@ import Analytics from "@/components/Analytics.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import { GTM_ID } from "@/consts";
+import { buildToolSchema } from "@/lib/schema";
 import "@/styles/global.css";
 
 interface Props {
@@ -21,12 +22,24 @@ interface Props {
 }
 
 const { title, description, ogImage, noindex, jsonLd, pagefindIgnore, canonicalPath } = Astro.props;
+
+// /tools/xxx（ツール本体ページ。一覧の /tools は除く）には、各ページを個別に編集しなくても
+// 自動でWebApplication（無料の診断・シミュレーションツール）の構造化データを付ける。
+const toolPath = Astro.url.pathname.replace(/\/index(\.html)?$/, "").replace(/\.html$/, "").replace(/\/+$/, "");
+const toolSchema = /^\/tools\/[^/]+$/.test(toolPath)
+  ? buildToolSchema({
+      name: title.replace(/\s*[|｜]\s*MKTG\.AX\s*$/, ""),
+      description,
+      path: toolPath,
+    })
+  : null;
+const mergedJsonLd = toolSchema ? [...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []), toolSchema] : jsonLd;
 ---
 
 <!doctype html>
 <html lang="ja">
   <head>
-    <SEO title={title} description={description} ogImage={ogImage} noindex={noindex} jsonLd={jsonLd} canonicalPath={canonicalPath} />
+    <SEO title={title} description={description} ogImage={ogImage} noindex={noindex} jsonLd={mergedJsonLd} canonicalPath={canonicalPath} />
     <Analytics />
   </head>
   <body class="flex min-h-screen flex-col">
