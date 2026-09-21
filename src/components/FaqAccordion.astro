@@ -1,5 +1,7 @@
 ---
 // ツールページ等で使う汎用FAQアコーディオン。ネイティブ<details>で実装（JS不要）。
+import { buildFaqSchemaFromItems } from "@/lib/schema";
+
 interface FaqItem {
   question: string;
   answer: string;
@@ -11,7 +13,11 @@ interface Props {
 }
 
 const { items, heading = "❓ よくある質問（FAQ）" } = Astro.props;
+// 画面に表示している質問と回答を、そのままFAQPageの構造化データとしても出力する（表示内容と必ず一致させるため）。
+const faqSchema = buildFaqSchemaFromItems(items);
 ---
+
+{faqSchema && <script type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} />}
 
 {
   items.length > 0 && (
