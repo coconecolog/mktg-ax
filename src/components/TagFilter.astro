@@ -1,7 +1,7 @@
 ---
 // タグ絞り込み。静的サイトなのでJSでフィルタするのではなく、
 // タグごとに実際のページ（/blog/tag/xxx）へのリンクにしている（SEO・キャッシュの面でも有利）。
-import { toRouteSlug } from "@/lib/routeSlug";
+import { getTagPath } from "@/lib/posts";
 
 interface Props {
   tags: { name: string; count: number }[];
@@ -12,8 +12,7 @@ const { tags, activeTag } = Astro.props;
 ---
 
 <div class="flex flex-wrap gap-2">
-  <a
-    href="/blog"
+  <a href="/blog"
     class={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
       !activeTag
         ? "border-brand-600 bg-brand-600 text-white"
@@ -24,8 +23,7 @@ const { tags, activeTag } = Astro.props;
   </a>
   {
     tags.map((tag) => (
-      <a
-        href={`/blog/tag/${encodeURIComponent(toRouteSlug(tag.name))}`}
+      <a href={getTagPath(tag.name)}
         class={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
           activeTag === tag.name
             ? "border-brand-600 bg-brand-600 text-white"
