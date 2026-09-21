@@ -23,7 +23,9 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      filter: (page) => !page.includes("/internal-links") && !page.includes("/resources/thanks") && !page.includes("/contact/thanks"),
+      filter: (page) => !page.includes("/internal-links") && !page.includes("/resources/thanks") && !page.includes("/contact/thanks") &&
+        // タグページの「ブログ記事」「無料資料」タブは本体ページへcanonicalを向けているため、サイトマップには載せない
+        !/\/blog\/tag\/[^/]+\/(blog|resources)(\/|$)/.test(page),
     }),
   ],
 });
