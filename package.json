@@ -8,9 +8,9 @@
     "fetch-notion-resources": "node scripts/fetch-notion-resources.mjs",
     "fetch-notion-tools": "node scripts/fetch-notion-tools.mjs",
     "fetch-notion:sample": "node scripts/build-sample-cache.mjs",
-    "build:sample": "npm run fetch-notion:sample && astro build && npx pagefind --site dist",
+    "build:sample": "npm run fetch-notion:sample && astro build && node scripts/generate-tag-redirects.mjs && npx pagefind --site dist",
     "dev": "astro dev",
-    "build": "npm run fetch-notion && npm run fetch-notion-resources && npm run fetch-notion-tools && astro build && npx pagefind --site dist",
+    "build": "npm run fetch-notion && npm run fetch-notion-resources && npm run fetch-notion-tools && astro build && node scripts/generate-tag-redirects.mjs && npx pagefind --site dist",
     "build:skip-notion": "astro build",
     "preview": "astro preview",
     "astro": "astro"
