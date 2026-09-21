@@ -10,7 +10,7 @@ import { getAllResources } from "@/lib/resources";
 import { getAuthorByName, getTagPath } from "@/lib/posts";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
-import { buildFaqSchema } from "@/lib/schema";
+import { buildFaqSchema, buildResourceSchema } from "@/lib/schema";
 
 export const getStaticPaths = (async () => {
   return getAllResources().map((resource) => ({
@@ -22,6 +22,19 @@ export const getStaticPaths = (async () => {
 const { resource } = Astro.props as { resource: Resource };
 
 const faqSchema = buildFaqSchema(resource.blocks);
+// 構造化データ: 資料そのもの（DigitalDocument）＋本文にFAQがあればFAQPage
+const resourceSchema = buildResourceSchema({
+  title: resource.title,
+  description: resource.metaDescription || resource.description,
+  slug: resource.slug,
+  thumbnail: resource.thumbnail || resource.coverImage,
+  fileUrl: resource.fileUrl,
+  tags: resource.tags,
+  publishedAt: resource.publishedAt,
+  updatedAt: resource.updatedAt,
+  authorName: resource.author,
+});
+const jsonLd = faqSchema ? [resourceSchema, faqSchema] : resourceSchema;
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -45,7 +58,7 @@ const thanksCategorySegment = resource.category ? encodeURIComponent(toRouteSlug
 const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
 ---
 
-<BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={faqSchema}>
+<BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={jsonLd}>
   <Breadcrumb items={breadcrumbItems} />
 
   <article class="mx-auto max-w-6xl px-5 py-10">
