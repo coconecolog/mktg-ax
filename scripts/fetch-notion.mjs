@@ -163,8 +163,29 @@ async function fetchTags(token, linkMap) {
   const rawPages = await queryAllPages(token, dataSourceId, {});
 
   const tags = [];
+  const usedSlugs = new Set();
   for (const page of rawPages) {
     const name = getTitleText(page, TAG_PROP.name) || "(無題タグ)";
+    // URL用の英字Slug。半角英小文字・数字・ハイフンのみ有効（大文字は小文字に直す）。
+    // 未設定・不正・重複の場合は null（従来どおりタグ名そのものがURLになる）にして警告を出す。
+    const slugRaw = getRichTextPlain(page, TAG_PROP.slug).trim().toLowerCase();
+    let slug = null;
+    if (!slugRaw) {
+      console.warn(`[fetch-notion] タグ「${name}」に英字Slugが未設定です（URLが日本語のままになります）。`);
+    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugRaw)) {
+      console.warn(`[fetch-notion] タグ「${name}」のSlug「${slugRaw}」は使えない文字を含みます（半角英小文字・数字・ハイフンのみ）。無視します。`);
+    } else if (usedSlugs.has(slugRaw)) {
+      console.warn(`[fetch-notion] タグ「${name}」のSlug「${slugRaw}」は他のタグと重複しています。無視します。`);
+    } else {
+      slug = slugRaw;
+      usedSlugs.add(slugRaw);
+    }
+    // titleタグ。末尾に「| MKTG.AX」を書いてしまっても二重にならないよう取り除く。
+    const seoTitle =
+      getRichTextPlain(page, TAG_PROP.seoTitle).trim().replace(/\s*[|｜]\s*MKTG\.AX\s*$/i, "") || null;
+    if (!seoTitle) {
+      console.warn(`[fetch-notion] タグ「${name}」にSEOタイトルが未設定です（仮のタイトルになります）。`);
+    }
     const description = getRichTextPlain(page, TAG_PROP.description);
     const representativeSlugRaw = resolveRepresentativeSlug(
       page,
@@ -178,6 +199,8 @@ async function fetchTags(token, linkMap) {
 
     tags.push({
       name,
+      slug,
+      seoTitle,
       description,
       representativeSlug: representativeSlugRaw || null,
       blocks,
