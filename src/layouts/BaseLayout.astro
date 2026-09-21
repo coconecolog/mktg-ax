@@ -12,19 +12,21 @@ interface Props {
   ogImage?: string;
   noindex?: boolean;
    jsonLd?: object | object[];
+  // 正規URLを別ページに寄せたいときのサイト内パス（SEO.astroのcanonicalPathへそのまま渡す）
+  canonicalPath?: string;
   // true にすると、このページをサイト内検索（Pagefind）の索引対象から除外する。
   // タグ一覧・カテゴリ一覧のように記事本文を含まない一覧ページ向け。
   // 検索エンジン向けのnoindexとは別物（そちらはSEO.astro側でmeta robotsを制御）。
   pagefindIgnore?: boolean;
 }
 
-const { title, description, ogImage, noindex, jsonLd, pagefindIgnore } = Astro.props;
+const { title, description, ogImage, noindex, jsonLd, pagefindIgnore, canonicalPath } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="ja">
   <head>
-    <SEO title={title} description={description} ogImage={ogImage} noindex={noindex} jsonLd={jsonLd} />
+    <SEO title={title} description={description} ogImage={ogImage} noindex={noindex} jsonLd={jsonLd} canonicalPath={canonicalPath} />
     <Analytics />
   </head>
   <body class="flex min-h-screen flex-col">
