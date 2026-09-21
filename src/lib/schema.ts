@@ -142,3 +142,53 @@ return {
   })),
 };
 }
+
+// ---- タグページ（ピラーページ）用の構造化データ ----
+// タグページは「そのテーマの総合解説（ピラー）＋関連記事・資料（クラスター）の一覧」として設計している。
+// CollectionPage（一覧ページであること）／about: DefinedTerm（そのテーマの定義）／mainEntity: ItemList（クラスター一覧）
+// を1つのJSON-LDにまとめて出力する。パンくず（BreadcrumbList）は Breadcrumb.astro が別途出力するのでここでは含めない。
+export interface TagSchemaItem {
+  href: string;
+  title: string;
+}
+
+export function buildTagPageSchema(params: {
+  tagName: string;
+  pageTitle: string;
+  description: string;
+  path: string; // 例: /blog/tag/ROI
+  items: TagSchemaItem[]; // このページに表示している記事・資料
+  itemsStartIndex: number; // 0始まり。ページネーション2ページ目以降の position 連番用
+  totalItems: number;
+}) {
+  const { tagName, pageTitle, description, path, items, itemsStartIndex, totalItems } = params;
+  const url = new URL(path, SITE_URL).toString();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: pageTitle,
+    description,
+    inLanguage: "ja",
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    about: {
+      "@type": "DefinedTerm",
+      name: tagName,
+      description,
+      url,
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      name: `${tagName}に関する記事・資料`,
+      numberOfItems: totalItems,
+      itemListElement: items.map((item, i) => ({
+        "@type": "ListItem",
+        position: itemsStartIndex + i + 1,
+        name: item.title,
+        url: new URL(item.href, SITE_URL).toString(),
+      })),
+    },
+  };
+}
