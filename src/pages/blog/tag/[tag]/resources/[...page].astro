@@ -55,6 +55,7 @@ const breadcrumbItems = [
   title={`${tagName}の無料資料・eBook一覧｜タグ`}
   description={tagInfo?.description || `「${tagName}」タグが付いた資料の一覧です。`}
   ogImage="/open-graph/default.png"
+  canonicalPath={tagBasePath}
   pagefindIgnore
 >
   <Breadcrumb items={breadcrumbItems} />
