@@ -6,6 +6,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import ToolCard from "@/components/ToolCard.astro";
 import { getAllCategories, getPopularPosts } from "@/lib/posts";
 import { getAllTools, getToolCategories } from "@/lib/tools";
+import { buildCollectionPageSchema } from "@/lib/schema";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -18,12 +19,21 @@ const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.tit
 // ツールはNotionのツールDB（src/lib/tools.ts）から取得する。フィルタータブは、ツールが1件以上あるカテゴリから自動で作る。
 const tools = getAllTools();
 const filterCategories = getToolCategories();
+
+const pageDescription = "日々の意思決定にそのまま使える無料のマーケティング診断・シミュレーションツールを公開しています。";
+const toolsSchema = buildCollectionPageSchema({
+  name: "便利ツール",
+  description: pageDescription,
+  path: "/tools",
+  items: tools.map((t) => ({ href: t.href, title: t.title })),
+});
 ---
 
 <BaseLayout
   title="便利ツール"
-  description="日々の意思決定にそのまま使える無料のマーケティング診断・シミュレーションツールを公開しています。"
+  description={pageDescription}
   ogImage="/open-graph/tools.png"
+  jsonLd={toolsSchema}
   pagefindIgnore
 >
   <Breadcrumb items={breadcrumbItems} />
