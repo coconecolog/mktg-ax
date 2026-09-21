@@ -11,6 +11,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getAllPosts, getAllTags, getPopularPosts, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
+import { autoLinkRelatedTerms } from "@/lib/relatedTermLinks";
 import {
   getAllLibraryTagNames,
   getLibraryItemsByTag,
@@ -91,6 +92,8 @@ const tagSchema = buildTagPageSchema({
   totalItems: page.total,
 });
 const faqSchema = tagInfo?.blocks ? buildFaqSchema(tagInfo.blocks) : null;
+// 本文中の「似た用語との違い」「関連用語」セクションに出てくる用語名は、同名のタグページがあれば自動でリンクする
+const linkedBlocks = autoLinkRelatedTerms(tagInfo?.blocks, tagName);
 const jsonLd = faqSchema ? [tagSchema, faqSchema] : tagSchema;
 
 const breadcrumbItems = [
@@ -162,7 +165,7 @@ const breadcrumbItems = [
         {
           tagInfo?.blocks && tagInfo.blocks.length > 0 && (
             <div class="prose-notion mt-12 w-full">
-              <NotionBlocks blocks={tagInfo.blocks} />
+              <NotionBlocks blocks={linkedBlocks} />
             </div>
           )
         }
