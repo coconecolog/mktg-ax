@@ -13,6 +13,7 @@ import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
+import { buildCollectionPageSchema, buildFaqSchema } from "@/lib/schema";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const categories = getAllCategories();
@@ -42,6 +43,21 @@ const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, reso
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
 
+// 構造化データ（カテゴリ = 「そのテーマの総合ページ」。CollectionPage + ItemList、本文にFAQがあればFAQPageも）
+const pageTitle = `${category.name}｜カテゴリ一覧`;
+const pageDescription = category.description || `${category.name}に関する記事の一覧です。`;
+const collectionSchema = buildCollectionPageSchema({
+  name: pageTitle,
+  description: pageDescription,
+  path: categoryBasePath,
+  about: { name: category.name, description: category.description || undefined },
+  items: page.data.map((item) => ({ href: item.href, title: item.title })),
+  itemsStartIndex: page.start,
+  totalItems: page.total,
+});
+const faqSchema = category.blocks ? buildFaqSchema(category.blocks) : null;
+const jsonLd = faqSchema ? [collectionSchema, faqSchema] : collectionSchema;
+
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
@@ -50,9 +66,10 @@ const breadcrumbItems = [
 ---
 
 <BaseLayout
-  title={`${category.name}｜カテゴリ一覧`}
-  description={category.description || `${category.name}に関する記事の一覧です。`}
+  title={pageTitle}
+  description={pageDescription}
   ogImage="/open-graph/default.png"
+  jsonLd={jsonLd}
   pagefindIgnore
 >
   <Breadcrumb items={breadcrumbItems} />
