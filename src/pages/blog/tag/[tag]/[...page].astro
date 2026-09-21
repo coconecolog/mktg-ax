@@ -8,14 +8,16 @@ import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getTagByName } from "@/lib/posts";
+import { getAllCategories, getAllPosts, getAllTags, getPopularPosts, getTagByName } from "@/lib/posts";
+import { getAllResources } from "@/lib/resources";
+import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
 import {
   getAllLibraryTagNames,
   getLibraryItemsByTag,
   getLibraryCountsByTag,
   type LibraryItem,
 } from "@/lib/library";
-import { TAG_PAGE_SIZE } from "@/consts";
+import { SITE_NAME, TAG_PAGE_SIZE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 
 // タグページ。カテゴリページ（/blog/category/[category]/[...page].astro）とは意図的にデザインを分けている
@@ -32,6 +34,12 @@ import { toRouteSlug } from "@/lib/routeSlug";
 // ページネーション→マスタータグDB本文ブロック。代表記事カードは表示しない（マスタータグDBに登録しても、
 // タグページの見た目には反映されない）。カテゴリページ側は代表記事カードも従来通り表示するので、
 // 混同しないこと。
+// 2026-09-21追記（SEO対応）: タグページを「ピラーページ」として位置づけ直した。
+//   カテゴリ（大分類）⊃ タグ＝ピラー（〇〇とは）⊃ クラスター（ブログ記事）。1つのタグは複数カテゴリにまたがる。
+//   (1) titleを「〇〇とは？…」形式に変更（H1は短い「タグ名」のまま、UX優先）
+//   (2) 定義ボックスの見出しを<p>から<h2>「〇〇とは」に変更（H1が短くてもSEO上「〇〇とは」の見出しを持たせる）
+//   (3) 構造化データ（CollectionPage＋DefinedTerm＋ItemList、本文にFAQトグルがあればFAQPage）を出力
+//   (4) 「関連カテゴリ」リンクを追加（ピラー↔カテゴリの内部リンク）
 // 以前あった「すべて／B2B／KPI…」のようなタグ切り替え（TagFilter）は、種類別タブに置き換える形で廃止済み。
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -61,6 +69,30 @@ const tabHrefs = { all: tagBasePath, post: `${tagBasePath}/blog`, resource: `${t
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
 
+// このタグが付いた記事・資料が属するカテゴリ（カテゴリ側→タグ側の相互リンク用）。並びはマスターカテゴリDBの「並び順」に従う。
+const usedCategoryNames = new Set<string>([
+  ...getAllPosts().filter((p) => p.tags.includes(tagName)).flatMap((p) => p.categories),
+  ...getAllResources().filter((r) => r.tags.includes(tagName)).flatMap((r) => (r.category ? [r.category] : [])),
+]);
+const relatedCategories = allCategories.filter((c) => usedCategoryNames.has(c.name));
+
+// titleタグ。検索結果で「〇〇の用語ページ」と伝わるよう「〇〇とは？」を先頭に置く。
+// 末尾の「 | MKTG.AX」はSEO.astroが自動で付ける。
+const pageTitle = `${tagName}とは？意味・解説と関連記事・資料一覧`;
+const metaDescription = tagInfo?.description || `「${tagName}」タグが付いた記事・資料の一覧です。`;
+
+const tagSchema = buildTagPageSchema({
+  tagName,
+  pageTitle: `${pageTitle} | ${SITE_NAME}`,
+  description: metaDescription,
+  path: tagBasePath,
+  items: page.data.map((item) => ({ href: item.href, title: item.title })),
+  itemsStartIndex: page.start,
+  totalItems: page.total,
+});
+const faqSchema = tagInfo?.blocks ? buildFaqSchema(tagInfo.blocks) : null;
+const jsonLd = faqSchema ? [tagSchema, faqSchema] : tagSchema;
+
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
@@ -69,9 +101,10 @@ const breadcrumbItems = [
 ---
 
 <BaseLayout
-  title={`${tagName}｜タグ一覧`}
-  description={tagInfo?.description || `「${tagName}」タグが付いた記事・資料の一覧です。`}
+  title={pageTitle}
+  description={metaDescription}
   ogImage="/open-graph/default.png"
+  jsonLd={jsonLd}
   pagefindIgnore
 >
   <Breadcrumb items={breadcrumbItems} />
@@ -85,10 +118,23 @@ const breadcrumbItems = [
         {
           tagInfo?.description && (
             <div class="mt-6 rounded-2xl border border-neutral-300 bg-white p-6 sm:p-8">
-              <p class="text-sm font-bold text-ink-950">{tagName}とは</p>
+              <h2 class="text-sm font-bold text-ink-950">{tagName}とは</h2>
               <p class="mt-2 text-sm leading-relaxed text-neutral-600 whitespace-pre-line">
                 {tagInfo.description}
               </p>
+            </div>
+          )
+        }
+
+        {
+          relatedCategories.length > 0 && (
+            <div class="mt-6 flex flex-wrap items-center gap-2 text-sm">
+              <span class="font-bold text-ink-950">関連カテゴリ</span>
+              {relatedCategories.map((c) => (
+                <a href={`/blog/category/${encodeURIComponent(toRouteSlug(c.name))}`} class="rounded border border-brand-300 px-2 py-0.5 text-brand-700 hover:bg-brand-50">
+                  {c.name}
+                </a>
+              ))}
             </div>
           )
         }
