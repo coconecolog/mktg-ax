@@ -12,6 +12,7 @@ import { getAllAuthors, getAllCategories, getAllTags, getPopularPosts } from "@/
 import { getLibraryItemsByAuthor, getLibraryCountsByAuthor, type LibraryItem } from "@/lib/library";
 import { AUTHOR_PAGE_SIZE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
+import { buildAuthorSchema } from "@/lib/schema";
 
 // 執筆者ページ。カテゴリページ・タグページとデザインの考え方を揃えている
 // （プロフィールカード → すべて/ブログ記事/無料資料タブ → 記事・資料混合カード → ページネーション）。
@@ -40,6 +41,15 @@ const tabHrefs = { all: authorBasePath, post: `${authorBasePath}/blog`, resource
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
 
+const authorSchema = buildAuthorSchema({
+  name: author.name,
+  path: authorBasePath,
+  title: author.title,
+  expertise: author.expertise,
+  bio: author.bio,
+  image: author.image,
+});
+
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
@@ -51,6 +61,7 @@ const breadcrumbItems = [
   title={`${author.name}｜執筆者`}
   description={author.expertise || author.bio || `${author.name}が執筆した記事・資料の一覧です。`}
   ogImage="/open-graph/default.png"
+  jsonLd={authorSchema}
   pagefindIgnore
 >
   <Breadcrumb items={breadcrumbItems} />
