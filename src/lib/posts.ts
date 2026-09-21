@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { toRouteSlug } from "./routeSlug";
 import type { Author, BlockNode, Category, Post, PostsCache, Tag, TocItem } from "./types";
 
 const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/posts.json");
@@ -21,7 +22,12 @@ function loadCache(): PostsCache {
     }));
     const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
     // タグ一覧(マスタータグDBの解説文・本文)も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
-    const tags = (parsed.tags || []).map((t) => ({ ...t, blocks: t.blocks || [] }));
+    const tags = (parsed.tags || []).map((t) => ({
+      ...t,
+      blocks: t.blocks || [],
+      slug: t.slug ?? null,
+      seoTitle: t.seoTitle ?? null,
+    }));
     // 執筆者一覧（執筆者リストDB）も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
     const authors = parsed.authors || [];
     return { ...parsed, posts, categories, tags, authors };
@@ -65,6 +71,19 @@ export function getPostsByTag(tag: string): Post[] {
 /** マスタータグDBに登録されているタグ1件分（説明文・本文ブロック）。未登録のタグ名ならundefined。 */
 export function getTagByName(name: string): Tag | undefined {
   return cache.tags.find((t) => t.name === name);
+}
+
+/**
+ * タグページのURL用セグメント。マスタータグDBの「Slug」（英字）があればそれを、無ければ従来どおりタグ名を使う。
+ * getStaticPaths の params と、リンク生成（getTagPath）の両方で必ずこの関数を通すこと。
+ */
+export function getTagSlug(name: string): string {
+  return getTagByName(name)?.slug || toRouteSlug(name);
+}
+
+/** タグページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /blog/tag/roi */
+export function getTagPath(name: string): string {
+  return `/blog/tag/${encodeURIComponent(getTagSlug(name))}`;
 }
 
 /** マスターカテゴリDBの全カテゴリ（Notion側の並び順のまま）。 */
