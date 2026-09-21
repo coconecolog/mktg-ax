@@ -81,6 +81,10 @@ export interface Category {
 // マスターカテゴリと同じ構成（自動生成サムネイル用のテーマカラー・背景画像プロパティは無い）。
 export interface Tag {
   name: string;
+  /** タグページのURL用の英字Slug（半角英小文字・数字・ハイフン）。未設定・不正ならnull（タグ名がそのままURLになる）。 */
+  slug: string | null;
+  /** タグページ専用のtitleタグ（「| MKTG.AX」は含まない）。未設定ならnull。 */
+  seoTitle: string | null;
   description: string;
   representativeSlug: string | null;
   /** タグページ本文（Notion側で「説明文」より下に書かれた解説文）のブロック。タグページ下部に表示する。 */
