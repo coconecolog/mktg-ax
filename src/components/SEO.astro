@@ -7,13 +7,17 @@ interface Props {
   ogImage?: string;
   noindex?: boolean;
   jsonLd?: object | object[];
+  // 正規URLを明示したいとき（例: タグページの「ブログ記事」「無料資料」タブを本体ページへ寄せる）に、
+  // サイト内パスで指定する。未指定なら現在のURLが正規URLになる。
+  canonicalPath?: string;
 }
 
-const { title, description, ogImage, noindex = false, jsonLd } = Astro.props;
+const { title, description, ogImage, noindex = false, jsonLd, canonicalPath: canonicalPathProp } = Astro.props;
 
 const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;
 // canonical は常に「スラッシュなし・.htmlなし」に正規化する（トップ "/" のみ例外）
 const canonicalPath =
+  canonicalPathProp ||
   Astro.url.pathname.replace(/\/index(\.html)?$/, "/").replace(/\.html$/, "").replace(/(.)\/+$/, "$1") || "/";
 const canonicalURL = new URL(canonicalPath, Astro.site);
 const resolvedOgImage = ogImage ? new URL(ogImage, Astro.site).toString() : undefined;
