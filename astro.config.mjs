@@ -13,6 +13,11 @@ export default defineConfig({
   site: SITE_URL,
   output: "static",
   trailingSlash: "never",
+  // 出力を `blog/x.html` 形式（file）にする。既定の directory 形式（`blog/x/index.html`）だと
+  // Cloudflare Pages が「/blog/x → /blog/x/」へ自動リダイレクトし、canonical / サイトマップ（スラッシュなし）と矛盾する。
+  build: {
+    format: "file",
+  },
   vite: {
     plugins: [tailwindcss()],
   },

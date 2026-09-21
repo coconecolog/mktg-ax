@@ -1,0 +1,2 @@
+# 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（Cloudflare Pages）
+/*/ /:splat 301

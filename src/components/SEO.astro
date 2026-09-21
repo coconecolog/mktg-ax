@@ -12,7 +12,10 @@ interface Props {
 const { title, description, ogImage, noindex = false, jsonLd } = Astro.props;
 
 const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+// canonical は常に「スラッシュなし・.htmlなし」に正規化する（トップ "/" のみ例外）
+const canonicalPath =
+  Astro.url.pathname.replace(/\/index(\.html)?$/, "/").replace(/\.html$/, "").replace(/(.)\/+$/, "$1") || "/";
+const canonicalURL = new URL(canonicalPath, Astro.site);
 const resolvedOgImage = ogImage ? new URL(ogImage, Astro.site).toString() : undefined;
 const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 ---

@@ -55,6 +55,11 @@ const breadcrumbItems = [
     return div.innerHTML;
   }
 
+  // 検索結果のリンクも「スラッシュなし・.htmlなし」の正規URLに揃える
+  function normalizeUrl(url) {
+    return String(url || "").replace(/\.html(?=$|[?#])/, "").replace(/(.)\/(?=$|[?#])/, "$1");
+  }
+
   function cleanTitle(title) {
     return (title || "").replace(new RegExp(`\\s*\\|\\s*${SITE_NAME}$`), "");
   }
@@ -99,7 +104,7 @@ const breadcrumbItems = [
       resultsEl.innerHTML = items
         .map(
           (item) => `
-            <a href="${item.url}" class="block rounded-2xl border border-neutral-100 bg-white p-5 transition-shadow hover:shadow-lg">
+            <a href="${normalizeUrl(item.url)}" class="block rounded-2xl border border-neutral-100 bg-white p-5 transition-shadow hover:shadow-lg">
               <h2 class="font-bold text-ink-950">${escapeHtml(cleanTitle(item.meta?.title))}</h2>
               <p class="mt-2 text-sm leading-relaxed text-neutral-500">${item.excerpt}</p>
             </a>
