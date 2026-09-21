@@ -76,6 +76,10 @@ export const TAG_PROP = {
   description: "説明文",
   // 2026-09-08にNotion側のプロパティ名を「代表記事（Slug）」から「代表記事」に変更したため追従。
   representativeSlug: "代表記事",
+  // 2026-09-21追加: タグページのURL用英字Slug（テキスト。半角英小文字・数字・ハイフンのみ）と、
+  // タグページ専用のtitleタグ（テキスト。「| MKTG.AX」はサイト側で自動付与するので書かない）。
+  slug: "Slug",
+  seoTitle: "SEOタイトル",
 };
 
 // 「執筆者リスト」DB（記事DB・資料DBの「執筆者」リレーション先）自体のプロパティ名。
