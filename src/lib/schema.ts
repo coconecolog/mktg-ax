@@ -84,21 +84,27 @@ export function buildOrganizationSchema() {
 }
 
 // ---- FAQPageスキーマ自動生成 ----
-// Notion本文中の「トグルブロック(またはトグル見出し)」で、見出し文が「?」で終わるものを
-// 質問とみなし、その中身(子ブロック)を回答として抽出する。
-// 記事・資料・カテゴリ・タグページなど blocks: BlockNode[] を持つあらゆるページで共通利用できる。
-// Notion側で「トグル(またはトグル見出し)」を使い、見出し文を疑問形にするだけで
-// 自動的にFAQPageの構造化データとして出力される(特別な設定は不要)。
+// blocks: BlockNode[] を持つあらゆるページ（記事・資料・カテゴリ・タグページなど）で共通利用できる。
+// 次の2通りの書き方を質問と回答とみなして自動で拾う（Notion側の特別な設定は不要）。
+//  (1) トグル（またはトグル見出し）で、見出し文が「？」で終わるもの → 中身（子ブロック）を回答にする。
+//  (2) 「よくある質問」（または「FAQ」）という見出しの下にあるセクション内で、
+//      見出し（または「Q1.」で始まる段落）の文が「？」で終わるもの → 次の見出しまでの段落を回答にする。
+//      「Q1.」「A.」などの接頭辞は取り除く。セクションの終わりは、「よくある質問」見出しと同じかそれより
+//      上位の見出し（またはページ末尾）。記事本文の途中にたまたまある疑問形の見出しは対象にしない。
+
+function blockText(block: BlockNode): string {
+  return (block.richText || []).map((r) => r.text).join("").trim();
+}
 
 function flattenBlockText(blocks: BlockNode[]): string {
   return blocks
-  .map((block) => {
-    const own = (block.richText || []).map((r) => r.text).join("");
-    const child = block.children && block.children.length > 0 ? flattenBlockText(block.children) : "";
-    return [own, child].filter(Boolean).join(" ");
-  })
-  .filter(Boolean)
-  .join("\n");
+    .map((block) => {
+      const own = (block.richText || []).map((r) => r.text).join("");
+      const child = block.children && block.children.length > 0 ? flattenBlockText(block.children) : "";
+      return [own, child].filter(Boolean).join(" ");
+    })
+    .filter(Boolean)
+    .join("\n");
 }
 
 interface FaqEntry {
@@ -106,41 +112,105 @@ interface FaqEntry {
   answer: string;
 }
 
+const isHeading = (b: BlockNode) => b.type.startsWith("heading_");
+const isQuestionText = (t: string) => t.endsWith("?") || t.endsWith("？");
+const isFaqSectionHeading = (b: BlockNode) => {
+  if (!isHeading(b)) return false;
+  const t = blockText(b);
+  return t.includes("よくある質問") || t.includes("よくあるご質問") || /^faq\b/i.test(t) || /^q\s*&\s*a$/i.test(t);
+};
+const Q_PREFIX = /^Q\s*(?:[0-9０-９]+\s*[.．:：、)）]?|[.．:：、)）])\s*/i;
+const A_PREFIX = /^A\s*[.．:：、)）]\s*/i;
+// 「Q1. 〜？」の形の段落（見出しではなく太字段落などで書かれている場合）
+const isQNumberedParagraph = (b: BlockNode) => !isHeading(b) && /^Q\s*[0-9０-９]+\s*[.．:：、)）]/i.test(blockText(b));
+
+// 「よくある質問」セクション（同じ階層に並んだブロック列）から、質問と回答を取り出す
+function parseFaqSection(region: BlockNode[]): FaqEntry[] {
+  const entries: FaqEntry[] = [];
+  for (let i = 0; i < region.length; i++) {
+    const block = region[i];
+    const text = blockText(block);
+    const isQuestion = (isHeading(block) || isQNumberedParagraph(block)) && isQuestionText(text);
+    if (!isQuestion) continue;
+    const answerBlocks: BlockNode[] = [];
+    let j = i + 1;
+    while (j < region.length && !isHeading(region[j]) && !isQNumberedParagraph(region[j])) {
+      answerBlocks.push(region[j]);
+      j++;
+    }
+    // 見出し自体が開閉式（トグル見出し）の場合は、中身（子ブロック）を回答に使う
+    const answer = (block.children && block.children.length > 0 ? flattenBlockText(block.children) : flattenBlockText(answerBlocks))
+      .replace(A_PREFIX, "")
+      .trim();
+    const question = text.replace(Q_PREFIX, "").trim();
+    if (question && answer) entries.push({ question, answer });
+    i = j - 1;
+  }
+  return entries;
+}
+
 function collectFaqEntries(blocks: BlockNode[]): FaqEntry[] {
   const entries: FaqEntry[] = [];
-  for (const block of blocks) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+
+    // (2) 「よくある質問」見出しのセクション
+    if (isFaqSectionHeading(block)) {
+      const level = block.level ?? 2;
+      let region: BlockNode[];
+      if (block.toggleable && block.children && block.children.length > 0) {
+        region = block.children;
+      } else {
+        region = [];
+        for (let j = i + 1; j < blocks.length; j++) {
+          if (isHeading(blocks[j]) && (blocks[j].level ?? 2) <= level) break;
+          region.push(blocks[j]);
+        }
+      }
+      entries.push(...parseFaqSection(region));
+    }
+
+    // (1) トグルで、見出し文が「？」で終わるもの
     const isToggleLike = block.type === "toggle" || block.toggleable === true;
     if (isToggleLike) {
-      const question = (block.richText || []).map((r) => r.text).join("").trim();
-        const isQuestion = question.endsWith("?") || question.endsWith("？");
-        if (isQuestion && block.children && block.children.length > 0) {
-          const answer = flattenBlockText(block.children).trim();
-          if (answer) entries.push({ question, answer });
+      const question = blockText(block);
+      if (isQuestionText(question) && block.children && block.children.length > 0) {
+        const answer = flattenBlockText(block.children).trim();
+        if (answer) entries.push({ question, answer });
       }
     }
     if (block.children && block.children.length > 0) {
       entries.push(...collectFaqEntries(block.children));
     }
   }
-  return entries;
+  // (1)と(2)で同じ質問を二重に拾わないようにする
+  const seen = new Set<string>();
+  return entries.filter((e) => (seen.has(e.question) ? false : (seen.add(e.question), true)));
+}
+
+function faqPage(entries: FaqEntry[]) {
+  if (entries.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: entries.map((entry) => ({
+      "@type": "Question",
+      name: entry.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: entry.answer,
+      },
+    })),
+  };
 }
 
 export function buildFaqSchema(blocks: BlockNode[]) {
-  const entries = collectFaqEntries(blocks);
-  if (entries.length === 0) return null;
+  return faqPage(collectFaqEntries(blocks));
+}
 
-return {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: entries.map((entry) => ({
-    "@type": "Question",
-    name: entry.question,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: entry.answer,
-    },
-  })),
-};
+// ツールページ・お問い合わせページのように、質問と回答を配列（{question, answer}）で持っているページ用。
+export function buildFaqSchemaFromItems(items: { question: string; answer: string }[]) {
+  return faqPage(items.filter((i) => i.question && i.answer));
 }
 
 // ---- タグページ（ピラーページ）用の構造化データ ----
@@ -190,5 +260,137 @@ export function buildTagPageSchema(params: {
         url: new URL(item.href, SITE_URL).toString(),
       })),
     },
+  };
+}
+
+// ---- 共通: 一覧ページ（CollectionPage + ItemList） ----
+// カテゴリページ・ツール一覧などで使う。about には「そのページが扱うテーマ」を渡す（任意）。
+export function buildCollectionPageSchema(params: {
+  name: string;
+  description: string;
+  path: string;
+  about?: { name: string; description?: string };
+  items: TagSchemaItem[];
+  itemsStartIndex?: number;
+  totalItems?: number;
+}) {
+  const { name, description, path, about, items, itemsStartIndex = 0, totalItems = items.length } = params;
+  const url = new URL(path, SITE_URL).toString();
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${url}#webpage`,
+    url,
+    name,
+    description,
+    inLanguage: "ja",
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    ...(about ? { about: { "@type": "Thing", name: about.name, ...(about.description ? { description: about.description } : {}) } } : {}),
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: totalItems,
+      itemListElement: items.map((item, i) => ({
+        "@type": "ListItem",
+        position: itemsStartIndex + i + 1,
+        name: item.title,
+        url: new URL(item.href, SITE_URL).toString(),
+      })),
+    },
+  };
+}
+
+// ---- 資料詳細ページ（無料ダウンロード資料 = DigitalDocument） ----
+// ダウンロードはメール経由のゲート方式のため、ファイルの直接URL（contentUrl）は載せない。
+export function buildResourceSchema(params: {
+  title: string;
+  description: string;
+  slug: string;
+  thumbnail: string | null;
+  fileUrl: string | null;
+  tags: string[];
+  publishedAt: string;
+  updatedAt: string;
+  authorName: string | null;
+}) {
+  const { title, description, slug, thumbnail, fileUrl, tags, publishedAt, updatedAt, authorName } = params;
+  const url = new URL(`/resources/${slug}`, SITE_URL).toString();
+  const imageUrl = thumbnail ? new URL(thumbnail, SITE_URL).toString() : undefined;
+  const isPdf = !!fileUrl && /\.pdf(\?|$)/i.test(fileUrl);
+  return {
+    "@context": "https://schema.org",
+    "@type": "DigitalDocument",
+    "@id": `${url}#document`,
+    name: title,
+    description,
+    url,
+    inLanguage: "ja",
+    isAccessibleForFree: true,
+    ...(isPdf ? { encodingFormat: "application/pdf" } : {}),
+    ...(imageUrl ? { image: [imageUrl], thumbnailUrl: imageUrl } : {}),
+    ...(tags.length > 0 ? { keywords: tags.join(",") } : {}),
+    datePublished: toIsoDateTime(publishedAt),
+    dateModified: toIsoDateTime(updatedAt),
+    author: authorName
+      ? { "@type": "Person", name: authorName }
+      : { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+  };
+}
+
+// ---- 執筆者ページ（ProfilePage + Person） ----
+export function buildAuthorSchema(params: {
+  name: string;
+  path: string;
+  title: string;
+  expertise: string;
+  bio: string;
+  image: string | null;
+}) {
+  const { name, path, title, expertise, bio, image } = params;
+  const url = new URL(path, SITE_URL).toString();
+  const knowsAbout = expertise
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": `${url}#webpage`,
+    url,
+    name: `${name}｜執筆者`,
+    inLanguage: "ja",
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    mainEntity: {
+      "@type": "Person",
+      "@id": `${url}#person`,
+      name,
+      url,
+      ...(title ? { jobTitle: title } : {}),
+      ...(bio ? { description: bio } : {}),
+      ...(image ? { image: new URL(image, SITE_URL).toString() } : {}),
+      ...(knowsAbout.length > 0 ? { knowsAbout } : {}),
+      worksFor: { "@id": `${SITE_URL}/#organization` },
+    },
+  };
+}
+
+// ---- ツールページ（無料のWebアプリ = WebApplication） ----
+export function buildToolSchema(params: { name: string; description: string; path: string }) {
+  const { name, description, path } = params;
+  const url = new URL(path, SITE_URL).toString();
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "@id": `${url}#app`,
+    name,
+    description,
+    url,
+    inLanguage: "ja",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
+    publisher: { "@id": `${SITE_URL}/#organization` },
   };
 }
