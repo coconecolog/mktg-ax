@@ -7,7 +7,7 @@ import LibraryCard from "@/components/LibraryCard.astro";
 import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getTagByName } from "@/lib/posts";
+import { getAllCategories, getAllTags, getPopularPosts, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import {
   getAllLibraryTagNames,
   getLibraryItemsByTag,
@@ -15,7 +15,6 @@ import {
   type LibraryItem,
 } from "@/lib/library";
 import { TAG_PAGE_SIZE } from "@/consts";
-import { toRouteSlug } from "@/lib/routeSlug";
 
 // タグページの「ブログ記事」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
 // 一覧の中身だけ記事のみに絞っている（カテゴリページ側の同名ファイルと同じ考え方）。
@@ -25,7 +24,7 @@ export const getStaticPaths = (async ({ paginate }) => {
   const tagNames = getAllLibraryTagNames();
   return tagNames.flatMap((name) =>
     paginate(getLibraryItemsByTag(name, "post"), {
-      params: { tag: toRouteSlug(name) },
+      params: { tag: getTagSlug(name) },
      pageSize: TAG_PAGE_SIZE,
       props: { tagName: name },
     }),
@@ -38,7 +37,7 @@ const allCategories = getAllCategories();
 // マスタータグDBの情報はSEO用のmeta descriptionにのみ使う（見た目には表示しない）。
 const tagInfo = getTagByName(tagName);
 const counts = getLibraryCountsByTag(tagName);
-const tagBasePath = `/blog/tag/${encodeURIComponent(toRouteSlug(tagName))}`;
+const tagBasePath = getTagPath(tagName);
 const tabHrefs = { all: tagBasePath, post: `${tagBasePath}/blog`, resource: `${tagBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
