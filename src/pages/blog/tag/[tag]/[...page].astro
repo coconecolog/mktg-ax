@@ -8,7 +8,7 @@ import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllPosts, getAllTags, getPopularPosts, getTagByName } from "@/lib/posts";
+import { getAllCategories, getAllPosts, getAllTags, getPopularPosts, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
 import {
@@ -48,7 +48,7 @@ export const getStaticPaths = (async ({ paginate }) => {
   // 「/」を含むタグ名でもビルドが落ちず、常にリンクが機能するようにする（詳細はrouteSlug.ts参照）。
   return tagNames.flatMap((name) =>
     paginate(getLibraryItemsByTag(name, "all"), {
-      params: { tag: toRouteSlug(name) },
+      params: { tag: getTagSlug(name) },
      pageSize: TAG_PAGE_SIZE,
       props: { tagName: name },
     }),
@@ -63,7 +63,7 @@ const allCategories = getAllCategories();
 // （上部コメント参照）。本文ブロック（tagInfo.blocks）はページ下部に表示する（2026-09-12復活）。
 const tagInfo = getTagByName(tagName);
 const counts = getLibraryCountsByTag(tagName);
-const tagBasePath = `/blog/tag/${encodeURIComponent(toRouteSlug(tagName))}`;
+const tagBasePath = getTagPath(tagName);
 const tabHrefs = { all: tagBasePath, post: `${tagBasePath}/blog`, resource: `${tagBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
@@ -76,9 +76,9 @@ const usedCategoryNames = new Set<string>([
 ]);
 const relatedCategories = allCategories.filter((c) => usedCategoryNames.has(c.name));
 
-// titleタグ。検索結果で「〇〇の用語ページ」と伝わるよう「〇〇とは？」を先頭に置く。
-// 末尾の「 | MKTG.AX」はSEO.astroが自動で付ける。
-const pageTitle = `${tagName}とは？意味・解説と関連記事・資料一覧`;
+// titleタグ。マスタータグDBの「SEOタイトル」を使う（末尾の「 | MKTG.AX」はSEO.astroが自動で付ける）。
+// 未設定のタグだけ、仮のタイトル（「〇〇とは？…」）にフォールバックする（ビルド時に警告が出る）。
+const pageTitle = tagInfo?.seoTitle || `${tagName}とは？意味・解説と関連記事・資料一覧`;
 const metaDescription = tagInfo?.description || `「${tagName}」タグが付いた記事・資料の一覧です。`;
 
 const tagSchema = buildTagPageSchema({
