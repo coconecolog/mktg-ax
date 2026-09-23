@@ -609,9 +609,9 @@ const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
     // （以前は10/16という固定値で、フォントサイズに対して余白を広く取りすぎ、
     //   本来まだ入るはずの1〜2文字だけが次の行に落ちる不自然な改行になっていた）
     const titleWrapWidth = 12;
-    const subtitleFontSize = 42;
-    const subtitleLineHeight = 56;
-    const subtitleWrapWidth = 19;
+    const subtitleFontSize = 54;
+    const subtitleLineHeight = 70;
+    const subtitleWrapWidth = 15;
     const blockGap = 20;
 
     const titleLines = wrapText(title, titleWrapWidth, 3);
