@@ -293,6 +293,81 @@ export function richTextToPlain(richText) {
 }
 
 // ------------------------------------------------------------
+// 記事本文への「一番最初のタグ」自動リンク
+// ------------------------------------------------------------
+
+// /blog/tag/[tag] のURL変換ルール（src/lib/routeSlug.tsのtoRouteSlug()と同じロジック）。
+// scripts側（.mjs）からTSファイルをimportできないため、ここに同じ1行だけ複製している
+// （scripts/generate-tag-redirects.mjsの既存コメントも参照）。「/」を含むタグ名でも
+// ビルドが壊れないよう、URL上だけ全角スラッシュ「／」に置き換える。
+function toRouteSlugForAutoLink(name) {
+  return name.replaceAll("/", "／");
+}
+
+/**
+ * 記事本文中に、その記事の「一番最初のタグ」（tags[0]）と完全一致する文言が出てきたら、
+ * 本文全体でちょうど1箇所だけ、自動的にそのタグページ（/blog/tag/タグ名）へのリンクに変換する。
+ *
+ * - 見出し（H1〜H4）自身の文言は対象外（見出しブロックの下の子ブロックは対象内）。
+ * - コードブロックの中も対象外（コードの意味を壊さないため）。
+ * - 既に別のリンク（メンションリンク等、richTextのrunに既にhrefが付いている部分）の中は対象外。
+ * - 2箇所目以降には付けない（最初の1箇所が見つかった時点で探索を打ち切る）。
+ * - テーブルのセル内は対象外（tableブロックはrichTextではなくrowsという別構造のため未対応）。
+ *
+ * blocks（transformBlocksの戻り値）を直接書き換える。呼び出し側は
+ * `autoLinkFirstTagKeyword(blocks, post.tags[0])` のように、tags[0]が存在する記事にだけ呼ぶ想定
+ * （tags[0]が無い＝タグ未設定の記事は呼ばなくてよい。呼んでも何も起きない）。
+ */
+export function autoLinkFirstTagKeyword(blocks, tagName) {
+  const keyword = (tagName || "").trim();
+  if (!keyword) return blocks;
+
+  const tagHref = `/blog/tag/${encodeURIComponent(toRouteSlugForAutoLink(keyword))}`;
+  const state = { done: false };
+
+  const HEADING_TYPES = new Set(["heading_1", "heading_2", "heading_3", "heading_4"]);
+
+  const walk = (nodes) => {
+    if (state.done || !Array.isArray(nodes)) return;
+    for (const node of nodes) {
+      if (state.done) return;
+
+      // 見出し自身の文言・コードブロックの中身にはリンクを張らない
+      // （見出しブロックの子ブロック自体は下のwalk(node.children)で対象内のまま探索される）。
+      const skipOwnText = HEADING_TYPES.has(node.type) || node.type === "code";
+
+      if (!skipOwnText && Array.isArray(node.richText)) {
+        for (let i = 0; i < node.richText.length; i++) {
+          const run = node.richText[i];
+          if (run.href) continue; // 既にリンクが付いている部分は対象外
+          const idx = run.text.indexOf(keyword);
+          if (idx === -1) continue;
+
+          const before = run.text.slice(0, idx);
+          const middle = run.text.slice(idx, idx + keyword.length);
+          const after = run.text.slice(idx + keyword.length);
+
+          const replacement = [];
+          if (before) replacement.push({ ...run, text: before });
+          replacement.push({ ...run, text: middle, href: tagHref });
+          if (after) replacement.push({ ...run, text: after });
+
+          node.richText.splice(i, 1, ...replacement);
+          state.done = true;
+          break;
+        }
+      }
+
+      if (state.done) return;
+      if (Array.isArray(node.children)) walk(node.children);
+    }
+  };
+
+  walk(blocks);
+  return blocks;
+}
+
+// ------------------------------------------------------------
 // 画像キャプション/altの3パターン判定
 //   1) 空欄            → alt無し・キャプション非表示
 //   2) "alt:" で始まる  → 残りの文をaltとしてのみ使用（画面には非表示）
