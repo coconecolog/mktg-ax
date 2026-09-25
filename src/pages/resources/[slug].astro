@@ -7,9 +7,8 @@ import ContactCta from "@/components/ContactCta.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
 import { getAllResources } from "@/lib/resources";
-import { getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
+import { getAuthorByName, getCategoryPath, getCategorySlug, getTagPath } from "@/lib/posts";
 import { DEFAULT_OG_IMAGE } from "@/consts";
-import { toRouteSlug } from "@/lib/routeSlug";
 import { buildFaqSchema, buildResourceSchema } from "@/lib/schema";
 
 export const getStaticPaths = (async () => {
@@ -54,7 +53,7 @@ const author = resource.author ? getAuthorByName(resource.author) : undefined;
 // 送信完了後に遷移するサンクスページ。カテゴリごとに静的ページ（/resources/thanks/[category]）があり、
 // カテゴリ未設定の資料は /resources/thanks/general に遷移する。
 // ?slug= は、サンクスページ側で「今ダウンロードした資料」を名前表示・おすすめから除外するために渡す。
-const thanksCategorySegment = resource.category ? encodeURIComponent(toRouteSlug(resource.category)) : "general";
+const thanksCategorySegment = resource.category ? encodeURIComponent(getCategorySlug(resource.category)) : "general";
 const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
 ---
 
