@@ -20,7 +20,8 @@ function loadCache(): PostsCache {
       ctaResourceId: p.ctaResourceId ?? null,
       ctaToolId: p.ctaToolId ?? null,
     }));
-    const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [] }));
+    // カテゴリの英字Slug（2026-09-25追加）も、古いキャッシュ（未生成のもの）に耐えるようにする
+    const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [], slug: c.slug ?? null }));
     // タグ一覧(マスタータグDBの解説文・本文)も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
     const tags = (parsed.tags || []).map((t) => ({
       ...t,
@@ -93,6 +94,19 @@ export function getAllCategories(): Category[] {
 
 export function getCategoryByName(name: string): Category | undefined {
   return cache.categories.find((c) => c.name === name);
+}
+
+/**
+ * カテゴリページのURL用セグメント。マスターカテゴリDBの「Slug」（英字）があればそれを、無ければ従来どおりカテゴリ名を使う。
+ * getStaticPaths の params と、リンク生成（getCategoryPath）の両方で必ずこの関数を通すこと。
+ */
+export function getCategorySlug(name: string): string {
+  return getCategoryByName(name)?.slug || toRouteSlug(name);
+}
+
+/** カテゴリページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /blog/category/strategy */
+export function getCategoryPath(name: string): string {
+  return `/blog/category/${encodeURIComponent(getCategorySlug(name))}`;
 }
 
 /** 指定カテゴリに属する記事（記事側の「カテゴリ」リレーションは複数選択可なので、いずれか1つでも一致すれば対象）。 */

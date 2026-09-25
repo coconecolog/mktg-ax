@@ -65,6 +65,8 @@ export interface Post {
 // 対応する記事が見つからない場合は null として扱う。
 export interface Category {
   name: string;
+  /** カテゴリページのURL用の英字Slug（半角英小文字・数字・ハイフン）。未設定・不正ならnull（カテゴリ名がそのままURLになる）。 */
+  slug: string | null;
   description: string;
   representativeSlug: string | null;
   /** 自動生成サムネイルの背景色（画像未設定時のフォールバック）。「テーマカラー」セレクトプロパティの値。未設定ならnull */
