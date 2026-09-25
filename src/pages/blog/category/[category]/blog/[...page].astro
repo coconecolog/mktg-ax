@@ -9,21 +9,20 @@ import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
+import { getAllCategories, getAllTags, getCategoryPath, getCategorySlug, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
-import { toRouteSlug } from "@/lib/routeSlug";
 
 // カテゴリページの「ブログ記事」タブ（絞り込み表示）。中身は親の[...page].astroとほぼ同じで、
 // 一覧の中身だけ記事のみに絞っている。
 
 export const getStaticPaths = (async ({ paginate }) => {
   const categories = getAllCategories();
-  // 親の[...page].astroと同じ理由・同じ対策。パラメータ値はtoRouteSlug()したものを使い、
+  // 親の[...page].astroと同じ理由・同じ対策。パラメータ値はgetCategorySlug()（英字Slug、未設定ならtoRouteSlug()したカテゴリ名）を使い、
   // 「/」を含むカテゴリ名でもビルドが落ちず、常にリンクが機能するようにする（詳細は親を参照）。
   return categories.flatMap((category) =>
     paginate(getLibraryItemsByCategory(category.name, "post"), {
-      params: { category: toRouteSlug(category.name) },
+      params: { category: getCategorySlug(category.name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { category },
     }),
@@ -35,7 +34,7 @@ const { category, page } = Astro.props as { category: Category; page: Page<Libra
 const allCategories = getAllCategories();
 const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
 const counts = getLibraryCountsByCategory(category.name);
-const categoryBasePath = `/blog/category/${encodeURIComponent(toRouteSlug(category.name))}`;
+const categoryBasePath = getCategoryPath(category.name);
 const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, resource: `${categoryBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
