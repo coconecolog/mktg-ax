@@ -12,7 +12,7 @@ import ToolCta from "@/components/ToolCta.astro";
 import { getResourceById } from "@/lib/resources";
 import { getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
-import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts, getTagPath } from "@/lib/posts";
+import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts, getCategoryPath, getTagPath } from "@/lib/posts";
 import { getLibraryItemsByCategory } from "@/lib/library";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
@@ -74,7 +74,7 @@ const dateLabel = (iso: string) =>
             (post.categories.length > 0 || post.tags.length > 0) && (
               <div class="mb-4 flex flex-wrap items-center gap-1.5">
                 {post.categories.map((cat) => (
-                  <a href={`/blog/category/${encodeURIComponent(toRouteSlug(cat))}`}
+                  <a href={getCategoryPath(cat)}
                     class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
                   >
                     {cat}
