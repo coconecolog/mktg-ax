@@ -15,11 +15,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories } from "@/lib/posts";
+import { getAllCategories, getCategorySlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
 import { getAllTools, getToolsByCategory } from "@/lib/tools";
-import { toRouteSlug } from "@/lib/routeSlug";
 
 export const getStaticPaths = (async () => {
   // マスターカテゴリDBの全カテゴリ＋資料に実際に設定されているカテゴリ（マスターDB未設定の環境でも壊れないように）
@@ -28,7 +27,8 @@ export const getStaticPaths = (async () => {
   for (const r of getAllResources()) if (r.category) names.add(r.category);
 
   const paths = [...names].map((name) => ({
-    params: { category: toRouteSlug(name) },
+    // 2026-09-25: カテゴリページと同じく、マスターカテゴリDBの英字Slugを使う（未設定ならカテゴリ名）。
+    params: { category: getCategorySlug(name) },
     props: { categoryName: name as string | null },
   }));
   paths.push({ params: { category: "general" }, props: { categoryName: null } });
