@@ -2,8 +2,7 @@
 // ブログ記事ページ・カテゴリページ・タグページ・ライブラリページで共通の右カラムナビ。
 // 「サイト内検索」「カテゴリ」「人気記事」「タグ一覧」の4ブロックを表示する。
 import type { Category } from "@/lib/types";
-import { toRouteSlug } from "@/lib/routeSlug";
-import { getTagPath } from "@/lib/posts";
+import { getCategoryPath, getTagPath } from "@/lib/posts";
 
 interface Props {
   categories: Category[];
@@ -38,7 +37,7 @@ const { categories, popularPosts, tags, searchLabel = "サイト内検索" } = A
         <ul class="mt-3 divide-y divide-neutral-100 border-t border-neutral-100">
           {categories.map((category) => (
             <li>
-              <a href={`/blog/category/${encodeURIComponent(toRouteSlug(category.name))}`}
+              <a href={getCategoryPath(category.name)}
                 class="flex items-center justify-between py-3 text-sm text-neutral-600 hover:text-brand-700"
               >
                 {category.name}
