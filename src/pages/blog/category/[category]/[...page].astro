@@ -9,10 +9,9 @@ import Pagination from "@/components/Pagination.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getAllTags, getPopularPosts, getPostBySlug } from "@/lib/posts";
+import { getAllCategories, getAllTags, getCategoryPath, getCategorySlug, getPopularPosts, getPostBySlug } from "@/lib/posts";
 import { getLibraryItemsByCategory, getLibraryCountsByCategory, type LibraryItem } from "@/lib/library";
 import { CATEGORY_TAG_PAGE_SIZE } from "@/consts";
-import { toRouteSlug } from "@/lib/routeSlug";
 import { buildCollectionPageSchema, buildFaqSchema } from "@/lib/schema";
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -23,9 +22,12 @@ export const getStaticPaths = (async ({ paginate }) => {
   // toRouteSlug()で「/」だけを別の文字に置き換えた文字列をパラメータ値として使い、
   // リンク側（categoryBasePath等）も同じ関数で生成することで、どんなカテゴリ名でも
   // コード側の変更なしに常にリンクが機能するようにしている（詳細はrouteSlug.tsのコメント参照）。
+  // 2026-09-25: マスターカテゴリDBの「Slug」（英字）があればそれをURLに使う。未設定なら上記の方式に
+  // フォールバックする（getCategorySlug()。リンク側はgetCategoryPath()で同じ値を使う）。
+  // 旧URL（日本語）→新URL（英字）の301はscripts/generate-category-redirects.mjsがビルド後に生成する。
   return categories.flatMap((category) =>
     paginate(getLibraryItemsByCategory(category.name, "all"), {
-      params: { category: toRouteSlug(category.name) },
+      params: { category: getCategorySlug(category.name) },
       pageSize: CATEGORY_TAG_PAGE_SIZE,
       props: { category },
     }),
@@ -37,7 +39,7 @@ const { category, page } = Astro.props as { category: Category; page: Page<Libra
 const allCategories = getAllCategories();
 const representativePost = category.representativeSlug ? getPostBySlug(category.representativeSlug) : undefined;
 const counts = getLibraryCountsByCategory(category.name);
-const categoryBasePath = `/blog/category/${encodeURIComponent(toRouteSlug(category.name))}`;
+const categoryBasePath = getCategoryPath(category.name);
 const tabHrefs = { all: categoryBasePath, post: `${categoryBasePath}/blog`, resource: `${categoryBasePath}/resources` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
