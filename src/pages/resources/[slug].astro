@@ -7,7 +7,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
 import { getAllResources } from "@/lib/resources";
-import { getAuthorByName, getTagPath } from "@/lib/posts";
+import { getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 import { toRouteSlug } from "@/lib/routeSlug";
 import { buildFaqSchema, buildResourceSchema } from "@/lib/schema";
@@ -67,7 +67,7 @@ const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURICo
         (resource.category || resource.tags.length > 0) && (
           <div class="mb-4 flex flex-wrap items-center gap-1.5">
             {resource.category && (
-              <a href={`/blog/category/${encodeURIComponent(toRouteSlug(resource.category))}`}
+              <a href={getCategoryPath(resource.category)}
                 class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
               >
                 {resource.category}
