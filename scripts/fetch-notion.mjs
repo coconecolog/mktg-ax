@@ -90,8 +90,24 @@ async function fetchCategories(token, linkMap) {
   const rawPages = await queryAllPages(token, dataSourceId, {});
 
   const categories = [];
+  const usedSlugs = new Set();
   for (const page of rawPages) {
     const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
+    // URL用の英字Slug（2026-09-25追加）。半角英小文字・数字・ハイフンのみ有効（大文字は小文字に直す）。
+    // 未設定・不正・重複の場合は null（従来どおりカテゴリ名そのものがURLになる）にして警告を出す。
+    // タグの「Slug」（fetchTags）と同じルール。
+    const slugRaw = getRichTextPlain(page, CATEGORY_PROP.slug).trim().toLowerCase();
+    let slug = null;
+    if (!slugRaw) {
+      console.warn(`[fetch-notion] カテゴリ「${name}」に英字Slugが未設定です（URLが日本語のままになります）。`);
+    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugRaw)) {
+      console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「${slugRaw}」は使えない文字を含みます（半角英小文字・数字・ハイフンのみ）。無視します。`);
+    } else if (usedSlugs.has(slugRaw)) {
+      console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「${slugRaw}」は他のカテゴリと重複しています。無視します。`);
+    } else {
+      slug = slugRaw;
+      usedSlugs.add(slugRaw);
+    }
     const description = getRichTextPlain(page, CATEGORY_PROP.description);
         const representativeSlugRaw = resolveRepresentativeSlug(
       page,
@@ -110,6 +126,7 @@ async function fetchCategories(token, linkMap) {
 
     categories.push({
       name,
+      slug,
       description,
       representativeSlug: representativeSlugRaw || null,
       themeColor,
