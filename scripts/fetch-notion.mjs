@@ -104,6 +104,9 @@ async function fetchCategories(token, linkMap) {
       console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「${slugRaw}」は使えない文字を含みます（半角英小文字・数字・ハイフンのみ）。無視します。`);
     } else if (usedSlugs.has(slugRaw)) {
       console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「${slugRaw}」は他のカテゴリと重複しています。無視します。`);
+    } else if (slugRaw === "general") {
+      // 「general」はカテゴリ未設定の資料用サンクスページ（/resources/thanks/general）と衝突するため使えない
+      console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「general」は予約語のため使えません。無視します。`);
     } else {
       slug = slugRaw;
       usedSlugs.add(slugRaw);

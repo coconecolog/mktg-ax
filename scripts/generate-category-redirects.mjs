@@ -7,6 +7,7 @@
 // 転送するページは、ビルド済みの dist/blog/category/{英字Slug}.html と dist/blog/category/{英字Slug}/ 配下を
 // 実際に走査して決める（カテゴリ本体・「ブログ記事」「無料資料」タブ・ページネーション /2, /3… をすべて個別に転送）。
 // ページ数を件数から計算しないので、1ページあたり件数（CATEGORY_TAG_PAGE_SIZE）を変えても追従する。
+// あわせて、資料DL後のサンクスページ（/resources/thanks/{カテゴリ}）の旧URL→新URLも転送する（2026-09-25追加）。
 // 日本語URLは「そのままの文字」と「%エンコード」の2通りを書く（どちらで届いても一致するように）。
 // Cloudflare Pagesの静的リダイレクトは上限2,000行（動的リダイレクト（*）は上限100行のため使わない）。
 import fs from "node:fs";
@@ -72,6 +73,15 @@ for (const category of postsCache.categories || []) {
     const to = `/blog/category/${slug}${tail}`;
     const fromRaw = `/blog/category/${oldSeg}${tail}`;
     const fromEnc = `/blog/category/${encodeURIComponent(oldSeg)}${tail}`;
+    lines.push(`${fromRaw} ${to} 301`);
+    if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
+  }
+
+  // サンクスページ（noindex・サイトマップ対象外。ブックマーク等で旧URLに来た場合の保険）
+  if (fs.existsSync(path.join(DIST, "resources/thanks", `${slug}.html`))) {
+    const to = `/resources/thanks/${slug}`;
+    const fromRaw = `/resources/thanks/${oldSeg}`;
+    const fromEnc = `/resources/thanks/${encodeURIComponent(oldSeg)}`;
     lines.push(`${fromRaw} ${to} 301`);
     if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
   }
