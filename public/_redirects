@@ -3,6 +3,7 @@
 /blog/ma-roi/  /blog/marketing-roi 301
 /blog/ma-person-dependent   /blog/marketing-talent-development 301
 /blog/ma-person-dependent/  /blog/marketing-talent-development 301
-
+/blog/advertising-expense-to-sales-ratio  /blog/marketing-budget-justification 301
+/blog/advertising-expense-to-sales-ratio/  /blog/marketing-budget-justification 301
 # 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（Cloudflare Pages）
 /*/ /:splat 301
