@@ -39,7 +39,6 @@ import {
   extractExcerpt,
   buildNotionLinkMap,
   splitBulletLines,
-  autoLinkFirstTagKeyword,
 } from "./lib/transform.mjs";
 
 // 記事DBの「CTA資料」リレーションプロパティ名（記事末尾の資料ダウンロードCTAに使う資料DBのページ）。
@@ -409,12 +408,8 @@ async function main() {
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
 
-    // 本文中に、この記事の「一番最初のタグ」（tags[0]）と同じ文言が出てきたら、最初の1箇所だけ
-    // 自動的にそのタグページへのリンクにする（見出し・コードブロックの中は対象外）。
-    // タグが増減しても、次回ビルド時にtags[0]を見て毎回判定し直すため、都度コード修正は不要。
-    if (tags[0]) {
-      autoLinkFirstTagKeyword(blocks, tags[0]);
-    }
+    // 本文中のタグ名の自動リンクは、ここではなく記事ページの描画時（src/lib/tagKeywordLinks.ts）で行う。
+    // （全タグが対象・タグごとに初出1箇所・英字SlugのURL・「公開後の編集中」の記事にも適用するため）
 
     const description = getRichTextPlain(page, PROP.description).trim() || extractExcerpt(blocks);
 
