@@ -14,6 +14,7 @@ import { getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
 import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts, getCategoryPath, getTagPath } from "@/lib/posts";
 import { getLibraryItemsByCategory } from "@/lib/library";
+import { autoLinkTagKeywords } from "@/lib/tagKeywordLinks";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
 
@@ -25,6 +26,8 @@ const { post } = Astro.props;
 const toc = buildToc(post.blocks);
 const articleSchema = buildArticleSchema(post);
 const faqSchema = buildFaqSchema(post.blocks);
+// 本文中のタグ名（サイト内の全タグ）を、タグごとに最初の1箇所だけタグページへのリンクにする（src/lib/tagKeywordLinks.ts）。
+const bodyBlocks = autoLinkTagKeywords(post.blocks);
 
 const categories = getAllCategories();
 const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
@@ -155,7 +158,7 @@ const dateLabel = (iso: string) =>
         }
 
         <div class="prose-notion mt-10 w-full">
-          <NotionBlocks blocks={post.blocks} />
+          <NotionBlocks blocks={bodyBlocks} />
         </div>
 
         {ctaResource && <ResourceCta resource={ctaResource} />}
