@@ -1,0 +1,19 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *"   # 3日ごと（UTC 0時 = 日本時間9時）
+  workflow_dispatch:         # 手動実行ボタンも用意
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/${{ secrets.SUPABASE_PING_TABLE }}?select=*&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "HTTP status: $status"
+          if [ "$status" -ge 400 ]; then exit 1; fi
