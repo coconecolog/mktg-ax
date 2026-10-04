@@ -21,6 +21,7 @@ import {
   getRichTextPlain,
   getCheckbox,
   getDateISO,
+  getNumber,
   resolveSlug,
   makeAnchorFactory,
   transformBlocks,
@@ -31,6 +32,12 @@ import {
 } from "./lib/transform.mjs";
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
+
+// トップページ「02 実務で使う資料」用の任意プロパティ（資料DBに無くても動く。名前は完全一致が必要）。
+// ・トップ掲載（数値）: 1 = 大きい枠、2・3 = 小さい枠。空欄なら掲載しない（3枠が埋まらない分は新しい順で自動補完）。
+// ・トップ用キャッチ（テキスト）: 大きい枠のタイトル上に出す一文。空欄なら非表示。
+// ・内容物（テキスト）: 大きい枠の下部に出す「管理シート＋16ページの使い方ガイド」などの説明。空欄なら非表示。
+const HOME_PROP = { order: "トップ掲載", catch: "トップ用キャッチ", contents: "内容物" };
 const CACHE_FILE = path.join(CACHE_DIR, "resources.json");
 
 async function writeEmptyCache(reason) {
@@ -120,6 +127,9 @@ async function main() {
     const description = getRichTextPlain(page, RESOURCE_PROP.description).trim();
     const metaDescription = getRichTextPlain(page, RESOURCE_PROP.metaDescription).trim() || description;
     const targetToc = splitBulletLines(getRichTextPlain(page, RESOURCE_PROP.targetToc));
+    const homeOrder = getNumber(page, HOME_PROP.order);
+    const homeCatch = getRichTextPlain(page, HOME_PROP.catch).trim();
+    const contents = getRichTextPlain(page, HOME_PROP.contents).trim();
 
     // ページ本文（記事と同じ仕組み）。「目次」「導入事例紹介」など、都度自由に見出し・内容を変えたい
     // 可変セクションはここに書けば、資料DBのプロパティを増やさずにNotion側だけで表現できる。
@@ -144,6 +154,9 @@ async function main() {
       fileUrl,
       coverImage,
       excerptImages,
+      homeOrder,
+      homeCatch,
+      contents,
       blocks,
     });
   }
