@@ -156,6 +156,12 @@ export interface Resource {
   coverImage: string | null;
   /** 「抜粋ページ」で指定したページ番号を自動キャプチャした画像（指定順）。未指定なら空配列 */
   excerptImages: string[];
+  /** 「トップ掲載」（数値）。1 = トップ02エリアの大きい枠、2・3 = 小さい枠。未設定ならnull（古いキャッシュではundefinedの場合あり） */
+  homeOrder?: number | null;
+  /** 「トップ用キャッチ」。トップの大きい枠のタイトル上に出す一文。未設定なら空文字 */
+  homeCatch?: string;
+  /** 「内容物」（例: 管理シート＋16ページの使い方ガイド）。トップの大きい枠に表示。未設定なら空文字 */
+  contents?: string;
   /** 資料DBページ本文のブロック（記事と同じ形式）。見出し・リストなど自由に構成できる可変セクション用。 */
   blocks: BlockNode[];
 }
