@@ -197,6 +197,14 @@ const latestPosts = getLibraryItems("post")
           )
         }
 
+        {/* 記事・資料をすべて見る（資料の下・右寄せ、分析ツール一覧と同じ枠付きボタン） */}
+        <div class="mt-8 flex justify-end">
+          <a href={HOME_TOOLS_TABLE.allLink.href} class="inline-flex items-center justify-between gap-10 border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950">
+            {HOME_TOOLS_TABLE.allLink.label}
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
         {/* 分析ツールの表（src/data/home.ts の HOME_TOOLS_TABLE） */}
         <h2 class="mt-20 text-2xl font-extrabold tracking-tight md:text-[1.75rem]">{HOME_TOOLS_TABLE.heading}</h2>
         <div class="mt-8">
@@ -236,9 +244,6 @@ const latestPosts = getLibraryItems("post")
               <span aria-hidden="true">→</span>
             </a>
           </div>
-        </div>
-        <div class="mt-10 text-right">
-          <a href={HOME_TOOLS_TABLE.allLink.href} class="text-sm font-bold hover:underline">{HOME_TOOLS_TABLE.allLink.label} →</a>
         </div>
       </div>
     </section>
