@@ -1,0 +1,271 @@
+---
+// カテゴリページ（2026-10-12リニューアル）。
+// カテゴリ内の記事・資料を、サブカテゴリ（マスターサブカテゴリDB）ごとのブロックに分けて1ページで表示する。
+// - サブカテゴリ専用のページは作らず、ページ内アンカー（#Slug）で各テーマへ移動する
+// - ページ番号のページネーションは廃止。件数の多いテーマは「もっと見る」ボタンで開く
+// - 「すべて／記事／無料資料」の切り替えと「このカテゴリ内を検索」は、ページ内のJSで絞り込む
+// 旧URL（/blog/category/{slug}/2・/blog・/resources）は public/_redirects でこのページへ301転送している。
+import type { GetStaticPaths } from "astro";
+import type { Category } from "@/lib/types";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import CategoryTabs from "@/components/CategoryTabs.astro";
+import CategorySectionBlock from "@/components/CategorySectionBlock.astro";
+import NotionBlocks from "@/components/NotionBlocks.astro";
+import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
+import { getCategoryGuide } from "@/lib/library";
+import { buildCollectionPageSchema, buildFaqSchema } from "@/lib/schema";
+
+export const getStaticPaths = (() => {
+  // URLは英字Slug（未設定ならカテゴリ名を toRouteSlug() したもの）。詳細は getCategorySlug() のコメント参照。
+  return getAllCategories().map((category) => ({
+    params: { category: getCategorySlug(category.name) },
+    props: { category },
+  }));
+}) satisfies GetStaticPaths;
+
+const { category } = Astro.props as { category: Category };
+
+const guide = getCategoryGuide(category.name);
+const themeSections = guide.sections.filter((s) => s.subcategory !== null);
+const categoryPath = getCategoryPath(category.name);
+const otherCategories = getAllCategories().filter((c) => c.name !== category.name);
+
+// 資料が無いテーマの右側に出す「関連テーマも活用する」のリンク（同じカテゴリ内で資料があるテーマ。最大3件）
+const sectionsWithResources = themeSections.filter((s) => s.resources.length > 0);
+function relatedFor(index: number) {
+  const self = guide.sections[index];
+  if (!self.subcategory || self.resources.length > 0) return [];
+  return sectionsWithResources
+    .filter((s) => s !== self)
+    .slice(0, 3)
+    .map((s) => ({
+      number: s.number,
+      name: s.name,
+      anchor: s.anchor,
+      direction: (guide.sections.indexOf(s) < index ? "up" : "down") as "up" | "down",
+    }));
+}
+
+// 構造化データ（カテゴリ = 「そのテーマの総合ページ」。CollectionPage + ItemList、本文にFAQがあればFAQPageも）
+const pageTitle = `${category.name}｜カテゴリ一覧`;
+const pageDescription = category.description || `${category.name}に関する記事・資料の一覧です。`;
+const collectionSchema = buildCollectionPageSchema({
+  name: pageTitle,
+  description: pageDescription,
+  path: categoryPath,
+  about: { name: category.name, description: category.description || undefined },
+  items: guide.items.map((item) => ({ href: item.href, title: item.title })),
+});
+const faqSchema = category.blocks ? buildFaqSchema(category.blocks) : null;
+const jsonLd = faqSchema ? [collectionSchema, faqSchema] : collectionSchema;
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: category.name, href: categoryPath },
+];
+
+const filters = [
+  { key: "all", label: "すべて", count: guide.counts.all },
+  { key: "post", label: "記事", count: guide.counts.post },
+  { key: "resource", label: "無料資料", count: guide.counts.resource },
+];
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={pageDescription}
+  ogImage="/open-graph/default.png"
+  jsonLd={jsonLd}
+  pagefindIgnore
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10 pb-6" data-guide>
+    {/* ページ見出し */}
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
+      <p class="font-bold tracking-wider text-ink-950">CATEGORY GUIDE</p>
+      <p>記事 {guide.counts.post}件 / 無料資料 {guide.counts.resource}件</p>
+    </div>
+    <h1 class="mt-3 text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{category.name}</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
+    {category.description && <p class="mt-3 text-sm leading-relaxed text-neutral-500 whitespace-pre-line">{category.description}</p>}
+
+    <div class="mt-6">
+      <CategoryTabs current={category.name} />
+    </div>
+
+    {/* いま、取り組みたいテーマは？ */}
+    {
+      themeSections.length > 0 && (
+        <div class="mt-10">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-bold text-ink-950">いま、取り組みたいテーマは？</p>
+            <p class="text-xs text-neutral-500">順番に読む必要はありません</p>
+          </div>
+          <ul class={`mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 ${themeSections.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
+            {themeSections.map((s) => (
+              <li>
+                <a href={`#${s.anchor}`} class="group flex h-full flex-col border border-neutral-300 bg-white p-4 transition-colors hover:border-ink-950">
+                  <span class="flex items-center justify-between text-xs text-neutral-500">
+                    <span class="tabular-nums">{s.number}</span>
+                    <span aria-hidden="true" class="text-ink-950 transition-transform group-hover:translate-y-0.5">↓</span>
+                  </span>
+                  <span class="mt-3 block text-[15px] font-bold text-ink-950">{s.name}</span>
+                  {s.summary && <span class="mt-1.5 block text-xs leading-relaxed text-neutral-500">{s.summary}</span>}
+                  <span class="mt-auto block pt-3 text-xs text-neutral-400">
+                    {s.resources.length > 0 ? `記事 ${s.posts.length} / 無料資料 ${s.resources.length}` : `記事 ${s.posts.length}`}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    {/* 検索・絞り込み */}
+    <div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <label class="flex flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 py-3">
+        <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8" /><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+        <span class="sr-only">このカテゴリ内を検索</span>
+        <input type="search" data-search-input placeholder="このカテゴリ内を検索　例：予算案、ROI、稟議書" class="w-full bg-transparent text-sm text-ink-950 placeholder:text-neutral-400 focus:outline-none" />
+      </label>
+      <div class="flex gap-2" role="group" aria-label="形式で絞り込む">
+        {
+          filters.map((f) => (
+            <button type="button" data-filter={f.key} aria-pressed={f.key === "all" ? "true" : "false"} class="border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-ink-950 transition-colors aria-pressed:border-ink-950 aria-pressed:bg-ink-950 aria-pressed:text-white">
+              {f.label} <span class="font-normal tabular-nums">{f.count}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <p class="font-bold text-ink-950" data-status aria-live="polite">{guide.counts.all}件すべてを表示</p>
+      <p class="text-neutral-500">テーマ別に表示 / 記事・無料資料</p>
+    </div>
+
+    {/* テーマ（サブカテゴリ）ごとのブロック */}
+    <div class="mt-4">
+      {
+        guide.sections.length > 0 ? (
+          guide.sections.map((section, index) => <CategorySectionBlock section={section} related={relatedFor(index)} />)
+        ) : (
+          <p class="border-t-2 border-ink-950 py-10 text-sm text-neutral-400">このカテゴリにはまだコンテンツがありません。</p>
+        )
+      }
+      <p data-empty hidden class="border-t-2 border-ink-950 py-10 text-sm text-neutral-500">
+        条件に合う記事・資料が見つかりませんでした。キーワードを変えるか、「すべて」に戻してください。
+      </p>
+    </div>
+
+    {/* カテゴリ本文（Notionのマスターカテゴリページに書いた解説・FAQ） */}
+    {
+      category.blocks && category.blocks.length > 0 && (
+        <div class="prose-notion mt-6 w-full border-t border-neutral-300 pt-10">
+          <NotionBlocks blocks={category.blocks} />
+        </div>
+      )
+    }
+  </div>
+
+  {/* ほかのテーマ（ほかのカテゴリ） */}
+  {
+    otherCategories.length > 0 && (
+      <section class="mt-10 bg-neutral-100">
+        <div class="mx-auto max-w-6xl px-5 py-12">
+          <h2 class="text-lg font-bold text-ink-950">{category.name}とつながる、ほかのテーマ</h2>
+          <ul class="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
+            {otherCategories.map((c) => (
+              <li class="border-b border-neutral-300">
+                <a href={getCategoryPath(c.name)} class="group block py-4">
+                  <span class="block text-sm font-bold text-ink-950 group-hover:underline">{c.name} →</span>
+                  {c.description && <span class="mt-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-500">{c.description}</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<script>
+  // 「すべて／記事／無料資料」の切り替え・カテゴリ内検索・「もっと見る」の制御。
+  // 絞り込み中（「すべて」以外を選ぶ／キーワードを入れる）は、「もっと見る」で隠れている分も含めて条件に合う全件を表示する。
+  const root = document.querySelector<HTMLElement>("[data-guide]");
+  if (root) {
+    const input = root.querySelector<HTMLInputElement>("[data-search-input]");
+    const filterButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-filter]"));
+    const sections = Array.from(root.querySelectorAll<HTMLElement>("[data-section]"));
+    const status = root.querySelector<HTMLElement>("[data-status]");
+    const empty = root.querySelector<HTMLElement>("[data-empty]");
+    const normalize = (text: string) => text.normalize("NFKC").toLowerCase().trim();
+    // 1つの記事が複数のテーマに出ることがあるため、件数はURLで重複を除いて数える
+    const hrefOf = (el: HTMLElement) => (el.matches("a") ? el.getAttribute("href") : el.querySelector("a")?.getAttribute("href")) || "";
+    const allCount = new Set(Array.from(root.querySelectorAll<HTMLElement>("[data-item]")).map(hrefOf)).size;
+
+    let kind = "all";
+    let query = "";
+
+    function render() {
+      const words = normalize(query).split(/\s+/).filter(Boolean);
+      const active = kind !== "all" || words.length > 0;
+      const matched = new Set<string>();
+
+      for (const section of sections) {
+        let sectionHits = 0;
+        for (const column of ["post", "resource"]) {
+          const items = Array.from(section.querySelectorAll<HTMLElement>(`[data-item][data-kind="${column}"]`));
+          const list = section.querySelector<HTMLElement>(`[data-list="${column}"]`);
+          const expanded = list?.dataset.expanded === "true";
+          let columnHits = 0;
+          for (const item of items) {
+            const text = normalize(item.dataset.search || "");
+            const hit = (kind === "all" || kind === column) && words.every((w) => text.includes(w));
+            if (hit) {
+              columnHits++;
+              matched.add(hrefOf(item));
+            }
+            item.hidden = active ? !hit : item.hasAttribute("data-extra") && !expanded;
+          }
+          sectionHits += columnHits;
+          const more = section.querySelector<HTMLElement>(`[data-more="${column}"]`);
+          if (more) more.hidden = active || expanded;
+          const columnEl = section.querySelector<HTMLElement>(`[data-column="${column}"]`);
+          if (columnEl) columnEl.hidden = active && columnHits === 0;
+        }
+        section.querySelectorAll<HTMLElement>("[data-related], [data-tools]").forEach((el) => (el.hidden = active));
+        section.hidden = active && sectionHits === 0;
+      }
+
+      if (status) status.textContent = active ? `${matched.size}件を表示` : `${allCount}件すべてを表示`;
+      if (empty) empty.hidden = !active || matched.size > 0;
+    }
+
+    filterButtons.forEach((button) =>
+      button.addEventListener("click", () => {
+        kind = button.dataset.filter || "all";
+        filterButtons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+        render();
+      }),
+    );
+    input?.addEventListener("input", () => {
+      query = input.value;
+      render();
+    });
+
+    root.querySelectorAll<HTMLButtonElement>("[data-more]").forEach((button) =>
+      button.addEventListener("click", () => {
+        const section = button.closest<HTMLElement>("[data-section]");
+        const list = section?.querySelector<HTMLElement>(`[data-list="${button.dataset.more}"]`);
+        if (list) list.dataset.expanded = "true";
+        render();
+      }),
+    );
+  }
+</script>

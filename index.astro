@@ -1,0 +1,344 @@
+---
+// ライブラリ（記事・資料）トップ（2026-10-12リニューアル）。
+// 上:「カテゴリから探す」… カテゴリごとにサブカテゴリ（テーマ）を並べ、カテゴリページの該当テーマ（#アンカー）へ案内する
+// 下:「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う
+// 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
+// 「記事だけ」「資料だけ」の一覧へも /library?type=post・/library?type=resource でリンクできる。
+// 旧URL（/library/2・/library/blog・/library/resources）は public/_redirects でここへ301転送している。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import { getLibraryItems } from "@/lib/library";
+import { getAllCategories, getCategoryPath, getCategorySlug, getSubcategoriesByCategory, getSubcategoryPath } from "@/lib/posts";
+import { LIBRARY_PAGE_SIZE } from "@/consts";
+
+const items = getLibraryItems("all");
+const postCount = items.filter((item) => item.kind === "post").length;
+const counts = { all: items.length, post: postCount, resource: items.length - postCount };
+
+const categories = getAllCategories().map((c) => ({
+  name: c.name,
+  slug: getCategorySlug(c.name),
+  path: getCategoryPath(c.name),
+  subcategories: getSubcategoriesByCategory(c.name).map((s) => ({ name: s.name, path: getSubcategoryPath(s) })),
+}));
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo" }).replaceAll("/", ".");
+
+const filters = [
+  { key: "all", label: "すべて", count: counts.all },
+  { key: "post", label: "記事", count: counts.post },
+  { key: "resource", label: "無料資料", count: counts.resource },
+];
+
+const pageDescription =
+  "業務に直結するノウハウ記事（ブログ）と、社内提案や設計にそのまま使える無料テンプレート・ホワイトペーパーを一括検索できます。";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "ライブラリ（記事・資料）", href: "/library" },
+];
+---
+
+<BaseLayout title="ライブラリ（記事・資料）" description={pageDescription} ogImage="/open-graph/default.png" pagefindIgnore>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10 pb-16">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">ライブラリ（記事・資料）</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
+
+    {/* カテゴリから探す */}
+    {
+      categories.length > 0 && (
+        <section class="mt-12">
+          <div class="flex flex-wrap items-end justify-between gap-2">
+            <h2 class="text-xl font-bold text-ink-950">カテゴリから探す</h2>
+            <p class="text-xs text-neutral-500">いま取り組みたいテーマを選んでください</p>
+          </div>
+          <ul class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {categories.map((c) => (
+              <li class="flex flex-col border border-neutral-300 bg-white p-4">
+                <a href={c.path} class="border-b border-neutral-300 pb-4 text-[15px] font-bold text-ink-950 hover:underline">{c.name}</a>
+                {c.subcategories.length > 0 && (
+                  <ul class="text-xs text-neutral-600">
+                    {c.subcategories.map((s) => (
+                      <li class="border-b border-neutral-200 last:border-b-0">
+                        {s.path ? (
+                          <a href={s.path} class="block py-3 leading-relaxed hover:text-ink-950 hover:underline">{s.name}</a>
+                        ) : (
+                          <span class="block py-3 leading-relaxed">{s.name}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <a href={c.path} class="group mt-auto flex items-center justify-between pt-5 text-xs font-bold text-ink-950">
+                  カテゴリを見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {/* すべての記事・資料 */}
+    <section class="mt-14 border-t-2 border-ink-950 pt-8" data-library data-page-size={LIBRARY_PAGE_SIZE}>
+      <div class="flex flex-wrap items-end justify-between gap-2">
+        <h2 class="text-xl font-bold text-ink-950" id="all-items">すべての記事・資料</h2>
+        <p class="text-xs text-neutral-500">カテゴリを横断して探せます</p>
+      </div>
+
+      <form data-form class="mt-5 bg-neutral-100 p-4 sm:p-5" role="search">
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <label class="flex flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 py-3">
+            <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8" /><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+            <span class="sr-only">すべての記事・資料を検索</span>
+            <input type="search" name="q" data-q placeholder="すべての記事・資料を検索　例：予算案、KPI、営業連携" class="w-full bg-transparent text-sm text-ink-950 placeholder:text-neutral-400 focus:outline-none" />
+          </label>
+          <button type="submit" class="bg-ink-950 px-6 py-3 text-sm font-bold text-white hover:opacity-90">検索する</button>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-ink-950">形式</span>
+            <div class="flex gap-1.5" role="group" aria-label="形式で絞り込む">
+              {
+                filters.map((f) => (
+                  <button type="button" data-type={f.key} aria-pressed={f.key === "all" ? "true" : "false"} class="border border-neutral-300 bg-white px-3.5 py-2 text-xs font-bold text-ink-950 transition-colors aria-pressed:border-ink-950 aria-pressed:bg-ink-950 aria-pressed:text-white">
+                    {f.label} <span class="font-normal tabular-nums">{f.count}</span>
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+          <label class="flex items-center gap-3">
+            <span class="text-xs font-bold text-ink-950">カテゴリ</span>
+            <select data-category class="min-w-48 border border-neutral-300 bg-white px-3 py-2 text-xs text-ink-950">
+              <option value="">すべてのカテゴリ</option>
+              {categories.map((c) => <option value={c.slug} data-name={c.name}>{c.name}</option>)}
+            </select>
+          </label>
+          <button type="button" data-clear class="text-xs text-neutral-500 underline-offset-2 hover:text-ink-950 hover:underline">条件をクリア</button>
+        </div>
+      </form>
+
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-300 pb-4">
+        <p class="text-sm font-bold text-ink-950" data-status aria-live="polite">{counts.all}件中 1–{Math.min(LIBRARY_PAGE_SIZE, counts.all)}件を表示</p>
+        <label class="flex items-center gap-2 text-xs text-neutral-500">
+          並び順
+          <select data-sort class="border border-neutral-300 bg-white px-3 py-1.5 text-xs text-ink-950">
+            <option value="new">新着順</option>
+            <option value="old">古い順</option>
+          </select>
+        </label>
+      </div>
+
+      <ul data-list>
+        {
+          items.map((item, i) => (
+            <li data-row data-kind={item.kind} data-categories={item.categories.join("|")} data-date={item.publishedAt} data-search={`${item.title} ${item.description} ${item.categories.join(" ")}`} hidden={i >= LIBRARY_PAGE_SIZE} class={`border-b border-neutral-300 ${item.kind === "resource" ? "bg-neutral-100" : ""}`}>
+              <a href={item.href} class="group grid grid-cols-1 gap-3 px-3 py-6 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:items-center sm:gap-6 sm:px-3">
+                <span class="flex gap-3 text-xs leading-relaxed text-neutral-500 sm:block">
+                  <span class="block tabular-nums">{formatDate(item.publishedAt)}</span>
+                  <span class="block">{item.kind === "post" ? `読了${item.readMinutes}分` : item.fileExt ? `${item.fileExt}資料` : "無料資料"}</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="flex flex-wrap items-center gap-2">
+                    {item.kind === "post" ? (
+                      <span class="inline-flex items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
+                    ) : (
+                      <span class="inline-flex items-center bg-ink-950 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">無料資料</span>
+                    )}
+                    {item.categories[0] && <span class="text-xs text-neutral-500">{item.categories[0]}</span>}
+                  </span>
+                  <span class="mt-2 block text-base font-bold leading-relaxed text-ink-950 group-hover:underline sm:text-[17px]">{item.title}</span>
+                  {item.description && <span class="mt-1 line-clamp-2 text-xs leading-relaxed text-neutral-500">{item.description}</span>}
+                </span>
+                {item.kind === "post" ? (
+                  <span class="flex items-center gap-6 text-xs font-bold text-ink-950 sm:justify-end">
+                    記事を読む<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                ) : (
+                  <span class="flex w-fit items-center gap-4 bg-ink-950 px-4 py-2.5 text-xs font-bold text-white sm:justify-self-end">
+                    資料を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                )}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p data-empty hidden class="py-12 text-center text-sm text-neutral-500">条件に合う記事・資料が見つかりませんでした。キーワードや条件を変えてお試しください。</p>
+
+      <nav data-pager aria-label="ページ送り" class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm"></nav>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  // 「すべての記事・資料」の検索・絞り込み・並び替え・ページ送り。状態はURLのクエリと同期する。
+  const root = document.querySelector<HTMLElement>("[data-library]");
+  if (root) {
+    const pageSize = Number(root.dataset.pageSize) || 8;
+    const list = root.querySelector<HTMLElement>("[data-list]")!;
+    const rows = Array.from(root.querySelectorAll<HTMLElement>("[data-row]"));
+    const form = root.querySelector<HTMLFormElement>("[data-form]")!;
+    const qInput = root.querySelector<HTMLInputElement>("[data-q]")!;
+    const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-type]"));
+    const categorySelect = root.querySelector<HTMLSelectElement>("[data-category]")!;
+    const sortSelect = root.querySelector<HTMLSelectElement>("[data-sort]")!;
+    const clearButton = root.querySelector<HTMLButtonElement>("[data-clear]")!;
+    const status = root.querySelector<HTMLElement>("[data-status]")!;
+    const empty = root.querySelector<HTMLElement>("[data-empty]")!;
+    const pager = root.querySelector<HTMLElement>("[data-pager]")!;
+    const heading = root.querySelector<HTMLElement>("#all-items");
+
+    const normalize = (text: string) => text.normalize("NFKC").toLowerCase().trim();
+    const searchIndex = new Map(rows.map((row) => [row, normalize(row.dataset.search || "")]));
+    const time = (row: HTMLElement) => new Date(row.dataset.date || 0).getTime();
+
+    const state = { type: "all", category: "", q: "", sort: "new", page: 1 };
+
+    // URLのクエリから初期状態を読む
+    const params = new URLSearchParams(location.search);
+    const typeParam = params.get("type");
+    if (typeParam === "post" || typeParam === "resource") state.type = typeParam;
+    const categoryParam = params.get("category") || "";
+    if (Array.from(categorySelect.options).some((o) => o.value === categoryParam)) state.category = categoryParam;
+    state.q = params.get("q") || "";
+    if (params.get("sort") === "old") state.sort = "old";
+    state.page = Math.max(1, parseInt(params.get("page") || "1", 10) || 1);
+
+    function syncControls() {
+      qInput.value = state.q;
+      categorySelect.value = state.category;
+      sortSelect.value = state.sort;
+      typeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.type === state.type)));
+    }
+
+    function writeUrl() {
+      const next = new URLSearchParams();
+      if (state.type !== "all") next.set("type", state.type);
+      if (state.category) next.set("category", state.category);
+      if (state.q.trim()) next.set("q", state.q.trim());
+      if (state.sort !== "new") next.set("sort", state.sort);
+      if (state.page > 1) next.set("page", String(state.page));
+      const query = next.toString();
+      history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}${location.hash}`);
+    }
+
+    function pageButton(label: string, page: number | null, current = false, ariaLabel?: string) {
+      if (page === null) {
+        const span = document.createElement("span");
+        span.textContent = label;
+        span.className = "px-2 text-neutral-300";
+        return span;
+      }
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      if (ariaLabel) button.setAttribute("aria-label", ariaLabel);
+      if (current) button.setAttribute("aria-current", "page");
+      const isNumber = /^\d+$/.test(label);
+      button.className = isNumber
+        ? `h-9 min-w-9 border px-2 tabular-nums ${current ? "border-ink-950 bg-ink-950 text-white" : "border-neutral-300 bg-white text-ink-950 hover:border-ink-950"}`
+        : "px-2 py-2 text-ink-950 hover:underline";
+      button.addEventListener("click", () => {
+        state.page = page;
+        render();
+        heading?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return button;
+    }
+
+    function renderPager(totalPages: number) {
+      pager.replaceChildren();
+      if (totalPages <= 1) return;
+      const current = state.page;
+      if (current > 1) pager.append(pageButton("← 前へ", current - 1));
+      // 7ページ以内なら全部、それ以上は「1 … 前後 … 最終」の形にする
+      const pages: (number | null)[] = [];
+      if (totalPages <= 7) {
+        for (let p = 1; p <= totalPages; p++) pages.push(p);
+      } else {
+        const start = Math.max(2, current - 1);
+        const end = Math.min(totalPages - 1, current + 1);
+        pages.push(1);
+        if (start > 2) pages.push(null);
+        for (let p = start; p <= end; p++) pages.push(p);
+        if (end < totalPages - 1) pages.push(null);
+        pages.push(totalPages);
+      }
+      for (const p of pages) pager.append(p === null ? pageButton("…", null) : pageButton(String(p), p, p === current, `${p}ページ目`));
+      if (current < totalPages) pager.append(pageButton("次へ →", current + 1));
+    }
+
+    function render() {
+      const words = normalize(state.q).split(/\s+/).filter(Boolean);
+      const categoryName = categorySelect.selectedOptions[0]?.dataset.name || "";
+
+      const matched = rows.filter((row) => {
+        if (state.type !== "all" && row.dataset.kind !== state.type) return false;
+        if (categoryName && !(row.dataset.categories || "").split("|").includes(categoryName)) return false;
+        const text = searchIndex.get(row) || "";
+        return words.every((w) => text.includes(w));
+      });
+      matched.sort((a, b) => (state.sort === "old" ? time(a) - time(b) : time(b) - time(a)));
+
+      const totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+      state.page = Math.min(state.page, totalPages);
+      const start = (state.page - 1) * pageSize;
+      const visible = new Set(matched.slice(start, start + pageSize));
+
+      // 並び順を反映（表示する行を先頭に並べ替える）
+      list.append(...matched, ...rows.filter((row) => !matched.includes(row)));
+      rows.forEach((row) => (row.hidden = !visible.has(row)));
+
+      status.textContent =
+        matched.length === 0 ? "0件" : `${matched.length}件中 ${start + 1}–${start + visible.size}件を表示`;
+      empty.hidden = matched.length > 0;
+      renderPager(matched.length === 0 ? 0 : totalPages);
+      writeUrl();
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      state.q = qInput.value;
+      state.page = 1;
+      render();
+    });
+    qInput.addEventListener("input", () => {
+      state.q = qInput.value;
+      state.page = 1;
+      render();
+    });
+    typeButtons.forEach((button) =>
+      button.addEventListener("click", () => {
+        state.type = button.dataset.type || "all";
+        state.page = 1;
+        syncControls();
+        render();
+      }),
+    );
+    categorySelect.addEventListener("change", () => {
+      state.category = categorySelect.value;
+      state.page = 1;
+      render();
+    });
+    sortSelect.addEventListener("change", () => {
+      state.sort = sortSelect.value;
+      state.page = 1;
+      render();
+    });
+    clearButton.addEventListener("click", () => {
+      Object.assign(state, { type: "all", category: "", q: "", sort: "new", page: 1 });
+      syncControls();
+      render();
+    });
+
+    syncControls();
+    render();
+  }
+</script>
