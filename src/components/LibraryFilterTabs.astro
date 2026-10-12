@@ -10,7 +10,7 @@ interface Props {
 
 const { active, counts, hrefs } = Astro.props;
 
-const defaultHrefs = { all: "/library", post: "/library/blog", resource: "/library/resources" };
+const defaultHrefs = { all: "/library", post: "/library?type=post", resource: "/library?type=resource" };
 const resolvedHrefs = hrefs || defaultHrefs;
 
 const tabs = [
