@@ -1,42 +1,29 @@
 ---
-// ブログ記事の末尾に表示する「無料ツール」CTA（細い帯）。ツールDBの内容から自動で組み立てる。
-// 記事DBの「CTAツール」リレーションに値がある記事でのみ、PostLayout.astro から呼ばれる。
-// 資料CTA（ResourceCta）の直下に置く前提で、ボタンは右端・同じ幅（sm:w-60）・同じ左右余白（sm:px-8）にそろえている。
-// ボタンは帯の下端（説明文の最終行の高さ）にそろえる。
-// attached=true（資料CTAの直下に置くとき）は上余白を小さくして、2つを近づける。
-import type { Tool } from "@/lib/types";
-import { DEFAULT_TOOL_ICON } from "@/lib/tools";
-
+// トップページと共通の「お問い合わせ」CTAブロック。他ページでも再利用する。
+// heading/descriptionは呼び出し側で文言を変えられるように任意指定可（未指定ならトップページと同じ文言）。
 interface Props {
-  tool: Tool;
-  attached?: boolean;
+  heading?: string;
+  description?: string;
 }
 
-const { tool, attached = false } = Astro.props;
-const icon = tool.icon || DEFAULT_TOOL_ICON;
+const {
+  heading = "自社のマーケティング課題について相談したい方へ",
+  description = "現状の課題整理から施策の優先順位づけまで、まずはお気軽にご相談ください。",
+} = Astro.props;
 ---
 
-<aside
-  class={`${attached ? "mt-4" : "mt-12"} flex flex-col gap-4 border border-brand-200 bg-white px-6 py-5 sm:flex-row sm:items-end sm:gap-5 sm:px-8`}
-  aria-label="無料ツール"
->
-  <div class="flex min-w-0 flex-1 items-center gap-4">
-    <span class="flex h-12 w-12 shrink-0 items-center justify-center bg-brand-100">
-      <img src={icon} alt="" class="h-6 w-6" />
-    </span>
-    <div class="min-w-0">
-      <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        <span class="font-bold tracking-wide text-brand-700">無料で使えるツール</span>
-        {tool.tag && <span class="bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{tool.tag}</span>}
-        {tool.duration && <span class="text-neutral-400">🕐 {tool.duration}</span>}
-      </p>
-      <h2 class="mt-1 text-base font-bold leading-snug text-ink-950">
-        <a href={tool.href} class="text-ink-950 no-underline hover:text-brand-700">{tool.title}</a>
+<section class="py-16">
+  <div class="mx-auto max-w-6xl px-5">
+    <div class="bg-ink-950 px-6 py-16 text-center md:px-16">
+      <h2 class="text-2xl font-bold tracking-tight text-white md:text-3xl">
+        {heading}
       </h2>
-      {tool.description && <p class="mt-1 line-clamp-2 text-sm leading-relaxed text-neutral-500">{tool.description}</p>}
+      <p class="mx-auto mt-4 max-w-2xl text-white/60">
+        {description}
+      </p>
+      <a href="/contact" class="mt-8 inline-block bg-white px-8 py-3 text-sm font-bold text-ink-950 hover:bg-neutral-200">
+        お問い合わせはこちら
+      </a>
     </div>
   </div>
-  <a href={tool.href} class="block w-full shrink-0 bg-brand-600 px-6 py-3 text-center text-sm font-bold text-white no-underline hover:bg-brand-700 sm:w-60">
-    {tool.ctaLabel}
-  </a>
-</aside>
+</section>
