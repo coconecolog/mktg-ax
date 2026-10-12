@@ -5,18 +5,18 @@ import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
-import LibraryCard from "@/components/LibraryCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import ResourceCta from "@/components/ResourceCta.astro";
 import ToolCta from "@/components/ToolCta.astro";
 import { getResourceById } from "@/lib/resources";
 import { getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
-import { buildToc, getAllCategories, getAllTags, getAuthorByName, getPopularPosts, getCategoryPath, getTagPath } from "@/lib/posts";
+import { buildToc, getAllTags, getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
 import { getLibraryItemsByCategory } from "@/lib/library";
 import { autoLinkTagKeywords } from "@/lib/tagKeywordLinks";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
+import { DEFAULT_OG_IMAGE } from "@/consts";
 
 interface Props {
   post: Post;
@@ -29,8 +29,6 @@ const faqSchema = buildFaqSchema(post.blocks);
 // 本文中のタグ名（サイト内の全タグ）を、タグごとに最初の1箇所だけタグページへのリンクにする（src/lib/tagKeywordLinks.ts）。
 const bodyBlocks = autoLinkTagKeywords(post.blocks);
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const tags = getAllTags();
 const author = post.author ? getAuthorByName(post.author) : undefined;
 
@@ -45,9 +43,9 @@ if (post.ctaToolId && !ctaTool) {
   );
 }
 
-// 同じカテゴリの他記事（自分自身を除く、最大3件）。ブログ記事ページのみで表示するため PostLayout.astro 側に置く。
+// 同じカテゴリの他記事（自分自身を除く、最大2件）。ブログ記事ページのみで表示するため PostLayout.astro 側に置く。
 const relatedItems = post.category
-  ? getLibraryItemsByCategory(post.category, "post").filter((item) => item.slug !== post.slug).slice(0, 3)
+  ? getLibraryItemsByCategory(post.category, "post").filter((item) => item.slug !== post.slug).slice(0, 2)
   : [];
 
 const breadcrumbItems = [
@@ -56,6 +54,10 @@ const breadcrumbItems = [
   { name: "ブログ記事", href: "/library?type=post" },
   { name: post.title, href: `/blog/${post.slug}` },
 ];
+
+// 右カラムの目次（H2のみ・01からの連番）。
+const sidebarToc = toc.map((h2, i) => ({ ...h2, no: String(i + 1).padStart(2, "0") }));
+const ctaCover = ctaResource ? ctaResource.thumbnail || ctaResource.coverImage : null;
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
@@ -127,7 +129,7 @@ const dateLabel = (iso: string) =>
 
         {
           post.keyPoints.length > 0 && (
-            <div class="mt-6 rounded-2xl border border-neutral-100 bg-neutral-50 px-5 py-4">
+            <div class="mt-6 border border-neutral-200 bg-white px-5 py-4">
               <p class="text-sm font-bold text-ink-950">👉 この記事でわかること</p>
               <ul class="mt-2 space-y-1">
                 {post.keyPoints.map((point) => (
@@ -140,16 +142,17 @@ const dateLabel = (iso: string) =>
 
 {
   post.thumbnail && (
-    <div class="mt-8 aspect-video w-full overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100">
+    <div class="mt-8 aspect-video w-full overflow-hidden border border-neutral-300 bg-neutral-100">
       <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
     </div>
   )
 }
 
+        {/* 目次は右カラムに表示。右カラムが記事の下に回るスマホ・タブレットだけ、ここに折りたたみで出す */}
         {
           toc.length > 0 && (
-            <details class="mt-8 rounded-2xl border border-neutral-100 bg-neutral-50 open:pb-2">
-              <summary class="cursor-pointer px-5 py-4 text-sm font-bold text-ink-950 marker:text-brand-500">目次</summary>
+            <details class="mt-8 border border-neutral-200 bg-white open:pb-2 lg:hidden">
+              <summary class="cursor-pointer px-5 py-4 text-sm font-bold text-ink-950">目次</summary>
               <div class="px-5 pb-4">
                 <TableOfContents items={toc} showHeading={false} wrapped={false} />
               </div>
@@ -165,15 +168,23 @@ const dateLabel = (iso: string) =>
 
         {ctaTool && <ToolCta tool={ctaTool} attached={!!ctaResource} />}
 
-        {author && <AuthorCard author={author} />}
+        {author && <AuthorCard author={author} showBio={false} />}
 
         {
           relatedItems.length > 0 && (
-            <div class="mt-12 border-t border-neutral-100 pt-10">
+            <div class="mt-12 border-t border-neutral-200 pt-10">
               <h2 class="text-xl font-extrabold tracking-tight text-ink-950">{post.category}の記事</h2>
-              <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
                 {relatedItems.map((item) => (
-                  <LibraryCard item={item} />
+                  <a href={item.href} class="group flex flex-col border-2 border-ink-950 bg-white p-5 no-underline">
+                    <div class="aspect-video w-full overflow-hidden bg-neutral-100">
+                      <img src={item.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" loading="lazy" />
+                    </div>
+                    <h3 class="mt-4 line-clamp-3 flex-1 font-bold leading-relaxed text-ink-950 group-hover:underline">{item.title}</h3>
+                    <span class="mt-5 block bg-neutral-200 px-4 py-3 text-center text-sm font-bold text-ink-950 transition-colors group-hover:bg-neutral-300">
+                      {item.ctaLabel}
+                    </span>
+                  </a>
                 ))}
               </div>
               <p class="mt-6 text-center">
@@ -187,7 +198,55 @@ const dateLabel = (iso: string) =>
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
-        <BlogSidebar categories={categories} popularPosts={popularPosts} tags={tags} />
+        <div class="space-y-10">
+          {
+            ctaResource && (
+              <div>
+                <p class="text-sm font-bold text-ink-950">この記事に関連する資料</p>
+                <div class="mt-3 bg-neutral-100 p-5">
+                  {ctaCover && (
+                    <a href={`/resources/${ctaResource.slug}`} class="block" aria-hidden="true" tabindex="-1">
+                      <img src={ctaCover} alt="" class="w-full border border-neutral-200 bg-white" loading="lazy" />
+                    </a>
+                  )}
+                  <p class="mt-4 text-xs font-bold text-neutral-500">無料資料</p>
+                  <p class="mt-2 text-base font-extrabold leading-snug text-ink-950">
+                    <a href={`/resources/${ctaResource.slug}`} class="text-ink-950 no-underline hover:underline">{ctaResource.title}</a>
+                  </p>
+                  {ctaResource.contents && <p class="mt-3 text-xs font-bold leading-relaxed text-ink-950">{ctaResource.contents}</p>}
+                  {ctaResource.homeCatch && <p class="mt-3 text-xs leading-relaxed text-neutral-600">{ctaResource.homeCatch}</p>}
+                  {ctaResource.description && (
+                    <p class="mt-3 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-neutral-600">{ctaResource.description}</p>
+                  )}
+                  <a href={`/resources/${ctaResource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800">
+                    資料を見る
+                    <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+              </div>
+            )
+          }
+
+          {
+            sidebarToc.length > 0 && (
+              <nav aria-label="目次" class="hidden border-t-2 border-ink-950 pt-5 lg:block">
+                <p class="text-sm font-bold text-ink-950">目次</p>
+                <ol class="mt-4 space-y-3 text-sm">
+                  {sidebarToc.map((h2) => (
+                    <li>
+                      <a href={`#${h2.anchor}`} class="flex gap-3 text-neutral-500 no-underline hover:text-ink-950">
+                        <span class="shrink-0 tabular-nums text-neutral-400">{h2.no}</span>
+                        <span>{h2.text}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            )
+          }
+
+          <BlogSidebar showSearch={false} categories={[]} popularPosts={[]} tags={tags} />
+        </div>
       </aside>
     </div>
   </article>
