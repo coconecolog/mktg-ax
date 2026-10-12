@@ -9,7 +9,6 @@ import type { GetStaticPaths } from "astro";
 import type { Category } from "@/lib/types";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import CategoryTabs from "@/components/CategoryTabs.astro";
 import CategorySectionBlock from "@/components/CategorySectionBlock.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
@@ -66,11 +65,6 @@ const breadcrumbItems = [
   { name: category.name, href: categoryPath },
 ];
 
-const filters = [
-  { key: "all", label: "すべて", count: guide.counts.all },
-  { key: "post", label: "記事", count: guide.counts.post },
-  { key: "resource", label: "無料資料", count: guide.counts.resource },
-];
 ---
 
 <BaseLayout
@@ -84,17 +78,10 @@ const filters = [
 
   <div class="mx-auto max-w-6xl px-5 pt-10 pb-6" data-guide>
     {/* ページ見出し */}
-    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
-      <p class="font-bold tracking-wider text-ink-950">CATEGORY GUIDE</p>
-      <p>記事 {guide.counts.post}件 / 無料資料 {guide.counts.resource}件</p>
-    </div>
+    <p class="text-xs font-bold tracking-wider text-ink-950">CATEGORY GUIDE</p>
     <h1 class="mt-3 text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{category.name}</h1>
     <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
     {category.description && <p class="mt-3 text-sm leading-relaxed text-neutral-500 whitespace-pre-line">{category.description}</p>}
-
-    <div class="mt-6">
-      <CategoryTabs current={category.name} />
-    </div>
 
     {/* いま、取り組みたいテーマは？ */}
     {
@@ -126,26 +113,18 @@ const filters = [
     }
 
     {/* 検索・絞り込み */}
-    <div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center">
-      <label class="flex flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 py-3">
+    <form data-search-form role="search" class="mt-8 flex w-full gap-2 lg:w-1/2">
+      <label class="flex min-w-0 flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 py-3">
         <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8" /><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
         <span class="sr-only">このカテゴリ内を検索</span>
         <input type="search" data-search-input placeholder="このカテゴリ内を検索　例：予算案、ROI、稟議書" class="w-full bg-transparent text-sm text-ink-950 placeholder:text-neutral-400 focus:outline-none" />
       </label>
-      <div class="flex gap-2" role="group" aria-label="形式で絞り込む">
-        {
-          filters.map((f) => (
-            <button type="button" data-filter={f.key} aria-pressed={f.key === "all" ? "true" : "false"} class="border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-ink-950 transition-colors aria-pressed:border-ink-950 aria-pressed:bg-ink-950 aria-pressed:text-white">
-              {f.label} <span class="font-normal tabular-nums">{f.count}</span>
-            </button>
-          ))
-        }
-      </div>
-    </div>
+      <button type="submit" class="shrink-0 bg-ink-950 px-5 py-3 text-sm font-bold text-white hover:opacity-90">検索する</button>
+    </form>
 
     <div class="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs">
       <p class="font-bold text-ink-950" data-status aria-live="polite">{guide.counts.all}件すべてを表示</p>
-      <p class="text-neutral-500">テーマ別に表示 / 記事・無料資料</p>
+      <p class="text-neutral-500">記事 {guide.counts.post}件 / 無料資料 {guide.counts.resource}件</p>
     </div>
 
     {/* テーマ（サブカテゴリ）ごとのブロック */}
@@ -195,12 +174,12 @@ const filters = [
 </BaseLayout>
 
 <script>
-  // 「すべて／記事／無料資料」の切り替え・カテゴリ内検索・「もっと見る」の制御。
-  // 絞り込み中（「すべて」以外を選ぶ／キーワードを入れる）は、「もっと見る」で隠れている分も含めて条件に合う全件を表示する。
+  // カテゴリ内検索・「もっと見る」の制御。
+  // キーワードを入れている間は、「もっと見る」で隠れている分も含めて条件に合う全件を表示する。
   const root = document.querySelector<HTMLElement>("[data-guide]");
   if (root) {
     const input = root.querySelector<HTMLInputElement>("[data-search-input]");
-    const filterButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-filter]"));
+    const form = root.querySelector<HTMLFormElement>("[data-search-form]");
     const sections = Array.from(root.querySelectorAll<HTMLElement>("[data-section]"));
     const status = root.querySelector<HTMLElement>("[data-status]");
     const empty = root.querySelector<HTMLElement>("[data-empty]");
@@ -209,7 +188,7 @@ const filters = [
     const hrefOf = (el: HTMLElement) => (el.matches("a") ? el.getAttribute("href") : el.querySelector("a")?.getAttribute("href")) || "";
     const allCount = new Set(Array.from(root.querySelectorAll<HTMLElement>("[data-item]")).map(hrefOf)).size;
 
-    let kind = "all";
+    const kind: string = "all"; // 形式の絞り込みボタンは廃止（常に記事・資料の両方を対象）
     let query = "";
 
     function render() {
@@ -247,13 +226,11 @@ const filters = [
       if (empty) empty.hidden = !active || matched.size > 0;
     }
 
-    filterButtons.forEach((button) =>
-      button.addEventListener("click", () => {
-        kind = button.dataset.filter || "all";
-        filterButtons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-        render();
-      }),
-    );
+    form?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      query = input?.value || "";
+      render();
+    });
     input?.addEventListener("input", () => {
       query = input.value;
       render();
