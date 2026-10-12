@@ -28,8 +28,6 @@ const searchText = (item: { title: string; description: string }) => `${item.tit
 // 「まずはこの記事から」はサブカテゴリのブロックだけ（「その他」は全件を同じ形の行で並べる）
 const featuredPost = !isOthers ? section.posts[0] : undefined;
 const listPosts = featuredPost ? section.posts.slice(1) : section.posts;
-// 記事が1件だけのときは、空いた横幅を埋めるために代表記事にサムネイルを付ける
-const showFeaturedThumb = !!featuredPost && section.posts.length === 1 && !!featuredPost.thumbnail;
 // 最初から見えている記事の数（代表記事を含めて CATEGORY_SECTION_POST_LIMIT 件）
 const visiblePostRows = Math.max(0, CATEGORY_SECTION_POST_LIMIT - (featuredPost ? 1 : 0));
 const extraPostCount = Math.max(0, listPosts.length - visiblePostRows);
@@ -68,11 +66,6 @@ const countLabel =
 
           {featuredPost && (
             <a href={featuredPost.href} data-item data-kind="post" data-search={searchText(featuredPost)} class="group mt-4 flex items-start gap-5 border-b border-neutral-300 pb-6">
-              {showFeaturedThumb && (
-                <span class="hidden aspect-video w-56 shrink-0 overflow-hidden bg-neutral-100 sm:block">
-                  <img src={featuredPost.thumbnail} alt="" loading="lazy" class="h-full w-full object-cover" />
-                </span>
-              )}
               <span class="min-w-0 flex-1">
                 <span class="flex items-center gap-2">
                   <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
