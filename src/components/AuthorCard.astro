@@ -11,13 +11,15 @@ import { toRouteSlug } from "@/lib/routeSlug";
 
 interface Props {
   author: Author;
+  /** false にすると紹介文（執筆者紹介文）を出さない（ブログ記事ページで使用） */
+  showBio?: boolean;
 }
 
-const { author } = Astro.props;
+const { author, showBio = true } = Astro.props;
 const authorHref = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
 ---
 
-<div class="mt-12 rounded-2xl border border-neutral-100 bg-white p-6 sm:p-8">
+<div class="mt-12 border border-neutral-200 bg-white p-6 sm:p-8">
   <p class="text-xs font-bold text-brand-600">この記事の執筆者</p>
 
   <div class="mt-4 flex items-center gap-4">
@@ -47,7 +49,7 @@ const authorHref = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
   </div>
 
   {
-    author.bio && (
+    showBio && author.bio && (
       <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-600">{author.bio}</p>
     )
   }
