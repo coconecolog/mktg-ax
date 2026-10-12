@@ -97,12 +97,10 @@ export const SUBCATEGORY_PROP = {
   representativeResource: "代表資料",
   // 記事一覧の下に出す関連ツールのリンク。ツールDBへのリレーション（複数可）
   tools: "ツール",
-  // サムネイル画像が未設定の記事の、自動生成サムネイルの背景（マスターカテゴリDBの同名プロパティと同じ使い方）。
-  // 「背景画像ファイル名」= public/images/category-backgrounds/ にアップロードした画像のファイル名（テキスト）
-  // 「テーマカラー」= 画像が無いときの背景色（セレクト。Notion標準の色）
-  // どちらも未設定のサブカテゴリは、親カテゴリの背景を使う。
+  // サムネイル画像が未設定の記事の、自動生成サムネイルの背景画像（マスターカテゴリDBの同名プロパティと同じ使い方）。
+  // public/images/category-backgrounds/ にアップロードした画像のファイル名（テキスト）。
+  // 未設定なら背景色を自動で決める（「並び順」が奇数のサブカテゴリは黒、偶数は白。DBへの入力は不要）。
   backgroundImage: "背景画像ファイル名",
-  themeColor: "テーマカラー",
 };
 
 // 「マスタータグ」DB（記事DB・資料DBの「タグ」リレーション先）自体のプロパティ名。
@@ -523,6 +521,9 @@ const CATEGORY_COLOR_GRADIENTS = {
   purple: ["#5c5c5c", "#1a1a1a"],
   pink: ["#5c5c5c", "#1a1a1a"],
   red: ["#5c5c5c", "#1a1a1a"],
+  // サブカテゴリの自動配色（2026-10-12〜）: 並び順が奇数のサブカテゴリは黒、偶数は白（fetch-notion.mjs参照）
+  black: ["#1c1d21", "#0b0b12"],
+  white: ["#ffffff", "#f2f2f2"],
 };
 
 function escapeXml(text) {
@@ -721,7 +722,9 @@ function pickReadableTextColor(dataUri) {
 export async function generateFallbackThumbnail(idHint, background, title, subtitle) {
   try {
 const { dataUri, colorKey } = background || {};
-const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
+const isLight = !dataUri && colorKey === "white";
+const textFill = dataUri ? pickReadableTextColor(dataUri) : isLight ? "#0b0b12" : "#ffffff";
+const decoFill = isLight ? "#000000" : "#ffffff";
 
     // サブタイトルを上・小さめ、メインタイトルを下・大きめに表示する。
     const titleFontSize = 66;
@@ -774,8 +777,8 @@ const textFill = dataUri ? pickReadableTextColor(dataUri) : "#ffffff";
     </linearGradient>
   </defs>
   <rect width="1200" height="675" fill="url(#grad-${idHint})" />
-  <circle cx="1080" cy="80" r="220" fill="#ffffff" opacity="0.08" />
-  <circle cx="1160" cy="600" r="140" fill="#ffffff" opacity="0.06" />`;
+  <circle cx="1080" cy="80" r="220" fill="${decoFill}" opacity="${isLight ? "0.04" : "0.08"}" />
+  <circle cx="1160" cy="600" r="140" fill="${decoFill}" opacity="${isLight ? "0.03" : "0.06"}" />`;
         })();
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">

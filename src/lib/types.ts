@@ -103,8 +103,6 @@ export interface Subcategory {
   toolIds: string[];
   /** 自動生成サムネイルの背景画像ファイル名（public/images/category-backgrounds/ 配下）。未設定なら空文字 */
   backgroundImageFilename?: string;
-  /** 自動生成サムネイルの背景色（「テーマカラー」）。未設定ならnull */
-  themeColor?: string | null;
 }
 
 // マスタータグDB（Notion）1件分。記事DB・資料DBの「タグ」リレーション先そのもの。

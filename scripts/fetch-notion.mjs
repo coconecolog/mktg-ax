@@ -217,7 +217,6 @@ async function fetchSubcategories(token) {
       representativeResourceId: getRelationIds(page, SUBCATEGORY_PROP.representativeResource)[0] || null,
       toolIds: getRelationIds(page, SUBCATEGORY_PROP.tools),
       backgroundImageFilename: getRichTextPlain(page, SUBCATEGORY_PROP.backgroundImage).trim(),
-      themeColor: getSelectColor(page, SUBCATEGORY_PROP.themeColor),
     });
   }
 
@@ -401,17 +400,14 @@ async function main() {
     const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
     categoryBackgroundMap.set(c.name, { dataUri, colorKey: c.themeColor });
   }
-  // 自動生成サムネイルの背景は、サブカテゴリ単位（2026-10-12〜）。サブカテゴリに背景画像・テーマカラーが
-  // どちらも無ければ、親カテゴリの背景を使う。
+  // 自動生成サムネイルの背景は、サブカテゴリ単位（2026-10-12〜）。「背景画像ファイル名」があればその画像、
+  // 無ければ「並び順」が奇数のサブカテゴリは黒、偶数は白にする（並び順が未設定なら、親カテゴリ内の並びで数える）。
   const subcategoryById = new Map(subcategories.map((s) => [s.id, s]));
   const subcategoryBackgroundMap = new Map();
   for (const s of subcategories) {
     const dataUri = await resolveCategoryBackgroundDataUri(s.backgroundImageFilename);
-    if (dataUri || s.themeColor) {
-      subcategoryBackgroundMap.set(s.id, { dataUri, colorKey: s.themeColor || "default" });
-    } else if (s.category && categoryBackgroundMap.has(s.category)) {
-      subcategoryBackgroundMap.set(s.id, categoryBackgroundMap.get(s.category));
-    }
+    const position = s.order ?? subcategories.filter((x) => x.category === s.category).indexOf(s) + 1;
+    subcategoryBackgroundMap.set(s.id, { dataUri, colorKey: position % 2 === 0 ? "white" : "black" });
   }
   // 記事のカテゴリは、サブカテゴリの親カテゴリから決める（重複なし・サブカテゴリの指定順）。
   // 記事DBに旧「カテゴリ」プロパティが残っていれば、移行期間の保険としてそれも足す（削除済みなら何もしない）。
