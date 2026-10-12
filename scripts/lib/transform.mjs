@@ -580,6 +580,8 @@ const IMAGE_MIME_BY_EXT = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
+  // 2026-10-12追加: サブカテゴリの背景画像（Figmaから書き出したSVG）
+  ".svg": "image/svg+xml",
 };
 
 /**
@@ -601,7 +603,7 @@ export async function resolveCategoryBackgroundDataUri(filename) {
   const ext = path.extname(trimmed).toLowerCase();
   const mime = IMAGE_MIME_BY_EXT[ext];
   if (!mime) {
-    console.warn(`  [notion] 背景画像ファイル名「${trimmed}」の拡張子が非対応です（png/jpg/jpeg/webpのみ）。`);
+    console.warn(`  [notion] 背景画像ファイル名「${trimmed}」の拡張子が非対応です（png/jpg/jpeg/webp/svgのみ）。`);
     categoryBackgroundCache.set(trimmed, null);
     return null;
   }
@@ -638,6 +640,14 @@ const GENERATED_THUMBNAIL_OUT_DIR = path.resolve(process.cwd(), "public/images/g
 // 安全側として従来通り白を返す。
 function pickReadableTextColor(dataUri) {
   try {
+    // SVGの背景（2026-10-12〜）: 先頭の全面の四角（width="1200" height="675"）の色で判定する。
+    // 白（#fff系）なら黒文字、それ以外（#1C1C20など）なら白文字。
+    if (dataUri.startsWith("data:image/svg+xml")) {
+      const svg = Buffer.from(dataUri.split(",")[1], "base64").toString("utf-8");
+      const bg = svg.match(/<rect[^>]*width="1200"[^>]*height="675"[^>]*fill="([^"]+)"/i)?.[1]?.toLowerCase() || "";
+      const isWhite = ["white", "#fff", "#ffffff"].includes(bg) || /^#f[0-9a-f]f[0-9a-f]f[0-9a-f]$/.test(bg);
+      return isWhite ? "#1c1c20" : "#ffffff";
+    }
     const base64 = dataUri.split(",")[1];
     const buf = Buffer.from(base64, "base64");
     if (buf.length < 8 || buf.readUInt32BE(0) !== 0x89504e47) return "#ffffff";
@@ -726,41 +736,33 @@ const isLight = !dataUri && colorKey === "white";
 const textFill = dataUri ? pickReadableTextColor(dataUri) : isLight ? "#0b0b12" : "#ffffff";
 const decoFill = isLight ? "#000000" : "#ffffff";
 
-    // サブタイトルを上・小さめ、メインタイトルを下・大きめに表示する。
-    const titleFontSize = 66;
-    const titleLineHeight = 82;
-    // キャンバス幅1200px・左右余白72pxずつを踏まえた「行が使い切れる最大幅」を文字数換算で算出。
-    // （以前は10/16という固定値で、フォントサイズに対して余白を広く取りすぎ、
-    //   本来まだ入るはずの1〜2文字だけが次の行に落ちる不自然な改行になっていた）
-    const titleWrapWidth = 12;
-    const subtitleFontSize = 54;
-    const subtitleLineHeight = 70;
-    const subtitleWrapWidth = 15;
-    const blockGap = 20;
+    // 2026-10-12〜: サブカテゴリの背景画像（右側に図、上下に罫線とロゴ）の左側の空きに文字を置く。
+    // ① サムネ用サブタイトル（小さめ・1行）→ ② サムネ用タイトル（大きめ・最大3行）。
+    // 文字は x=56〜620 に収め、右側の図（x≒650〜）と上下の罫線（y=88・597）にかからないようにする。
+    const textX = 56;
+    const subtitleFontSize = 30;
+    const titleFontSize = 54;
+    const titleLineHeight = 72;
+    const subtitleWrapWidth = 18; // 全角換算の文字数（564px ÷ 30px ≒ 18）
+    const titleWrapWidth = 10; // 全角換算の文字数（564px ÷ 54px ≒ 10）
 
     const titleLines = wrapText(title, titleWrapWidth, 3);
-    const subtitleLines = subtitle ? wrapText(subtitle, subtitleWrapWidth, 2) : [];
+    const subtitleLines = subtitle ? wrapText(subtitle, subtitleWrapWidth, 1) : [];
 
-    const blockHeight =
-      (subtitleLines.length > 0 ? subtitleLines.length * subtitleLineHeight + blockGap : 0) +
-      titleLines.length * titleLineHeight;
-    let cursorY = (675 - blockHeight) / 2 + 40;
+    // タイトルの行数に応じて、文字のまとまりが上下の罫線の間（y=88〜597）の中央付近に来るようにする
+    const subtitleBlock = subtitleLines.length > 0 ? subtitleFontSize + 28 : 0;
+    const blockHeight = subtitleBlock + titleLines.length * titleLineHeight;
+    let cursorY = Math.max(150, (88 + 597) / 2 - blockHeight / 2);
 
-    cursorY += subtitleLines.length > 0 ? subtitleLineHeight * 0.75 : titleLineHeight * 0.75;
     const subtitleTspans = subtitleLines
-      .map((line) => {
-        const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
-        cursorY += subtitleLineHeight;
-        return tspan;
-      })
+      .map((line) => `<tspan x="${textX}" y="${(cursorY + subtitleFontSize).toFixed(1)}">${escapeXml(line)}</tspan>`)
       .join("");
+    cursorY += subtitleBlock;
 
-    if (subtitleLines.length > 0) cursorY += blockGap - subtitleLineHeight + titleLineHeight * 0.75;
     const titleTspans = titleLines
       .map((line) => {
-        const tspan = `<tspan x="72" y="${cursorY.toFixed(1)}">${escapeXml(line)}</tspan>`;
         cursorY += titleLineHeight;
-        return tspan;
+        return `<tspan x="${textX}" y="${(cursorY - (titleLineHeight - titleFontSize)).toFixed(1)}">${escapeXml(line)}</tspan>`;
       })
       .join("");
 
@@ -783,7 +785,7 @@ const decoFill = isLight ? "#000000" : "#ffffff";
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   ${backgroundMarkup}
-  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="700" fill="${textFill}" fill-opacity="0.9">${subtitleTspans}</text>` : ""}
+  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="500" fill="${textFill}">${subtitleTspans}</text>` : ""}
    <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="${textFill}">${titleTspans}</text>
 </svg>`;
 

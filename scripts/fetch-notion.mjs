@@ -395,11 +395,7 @@ async function main() {
   const subcategories = await fetchSubcategories(token);
   const tags = await fetchTags(token, linkMap);
   const authors = await fetchAuthors(token);
-  const categoryBackgroundMap = new Map();
-  for (const c of categories) {
-    const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
-    categoryBackgroundMap.set(c.name, { dataUri, colorKey: c.themeColor });
-  }
+  // カテゴリの「背景画像ファイル名」「テーマカラー」はサムネイルに使わない（2026-10-12〜、サブカテゴリ単位に変更）。
   // 自動生成サムネイルの背景は、サブカテゴリ単位（2026-10-12〜）。「背景画像ファイル名」があればその画像、
   // 無ければ「並び順」が奇数のサブカテゴリは黒、偶数は白にする（並び順が未設定なら、親カテゴリ内の並びで数える）。
   const subcategoryById = new Map(subcategories.map((s) => [s.id, s]));
@@ -479,20 +475,16 @@ async function main() {
     }
     const ctaToolId = ctaToolProp?.type === "relation" ? ctaToolProp.relation?.[0]?.id ?? null : null;
 
-    // 「サムネイル画像」に実ファイルがアップロードされていればそれを優先。
-    // 未設定の場合は、カテゴリのテーマカラー＋「サムネ用タイトル/サブタイトル」から自動生成する。
-    const thumbnailSourceUrl = getFirstFileUrl(page, PROP.thumbnail);
-    let thumbnail = thumbnailSourceUrl ? await downloadImage(thumbnailSourceUrl, `thumb-${page.id}`) : null;
-    if (!thumbnail) {
-      const thumbnailTitle = getRichTextPlain(page, PROP.thumbnailTitle).trim() || title;
-      const thumbnailSubtitle = getRichTextPlain(page, PROP.thumbnailSubtitle).trim();
-      // 背景は最初のサブカテゴリのもの（サブカテゴリ側に無ければ親カテゴリのもの）。
-      // サブカテゴリ未設定の記事は、旧「カテゴリ」の背景 → それも無ければ既定色。
-      const background =
-        subcategoryIds.map((id) => subcategoryBackgroundMap.get(id)).find(Boolean) ||
-        categoryBackgroundMap.get(category) || { dataUri: null, colorKey: "default" };
-      thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
-    }
+    // サムネイル（記事のファーストビュー・一覧カード）は全記事、自動生成に統一する（2026-10-12〜）。
+    // 記事DBの「サムネイル画像」プロパティは使わない。
+    // 背景 = 最初のサブカテゴリの「背景画像ファイル名」（public/images/category-backgrounds/ のSVG等）。
+    //        未設定なら、サブカテゴリの並び順が奇数は黒・偶数は白の無地。サブカテゴリ自体が無い記事は既定のグレー。
+    // 文字 = ①「サムネ用サブタイトル」（小）＋②「サムネ用タイトル」（大。空欄なら記事タイトル）を左側に配置。
+    const thumbnailTitle = getRichTextPlain(page, PROP.thumbnailTitle).trim() || title;
+    const thumbnailSubtitle = getRichTextPlain(page, PROP.thumbnailSubtitle).trim();
+    const background =
+      subcategoryIds.map((id) => subcategoryBackgroundMap.get(id)).find(Boolean) || { dataUri: null, colorKey: "default" };
+    const thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
