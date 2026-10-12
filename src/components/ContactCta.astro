@@ -1,28 +1,42 @@
 ---
-// トップページと共通の「お問い合わせ」CTAブロック。他ページでも再利用する。
-// heading/descriptionは呼び出し側で文言を変えられるように任意指定可（未指定ならトップページと同じ文言）。
+// 「ご要望・ご質問」CTA（トップページ04と同じデザイン・文言）。
+// 記事・ライブラリ・ツール・サービスなど、トップ以外の全ページ末尾で共通利用する。
+// 文言は src/data/home.ts の HOME_REQUEST を編集すれば、トップと全ページに反映される。
+// heading/description は個別に変えたいときだけ指定（通常は未指定）。
+import { HOME_REQUEST } from "@/data/home";
+
 interface Props {
   heading?: string;
   description?: string;
 }
 
-const {
-  heading = "自社のマーケティング課題について相談したい方へ",
-  description = "現状の課題整理から施策の優先順位づけまで、まずはお気軽にご相談ください。",
-} = Astro.props;
+const { heading = HOME_REQUEST.heading, description = HOME_REQUEST.description } = Astro.props;
 ---
 
-<section class="py-16">
-  <div class="mx-auto max-w-6xl px-5">
-    <div class="bg-ink-950 px-6 py-16 text-center md:px-16">
-      <h2 class="text-2xl font-bold tracking-tight text-white md:text-3xl">
-        {heading}
-      </h2>
-      <p class="mx-auto mt-4 max-w-2xl text-white/60">
-        {description}
-      </p>
-      <a href="/contact" class="mt-8 inline-block bg-white px-8 py-3 text-sm font-bold text-ink-950 hover:bg-neutral-200">
-        お問い合わせはこちら
+<section class="border-t border-neutral-200">
+  <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
+    <p class="text-xs font-bold text-neutral-500">{HOME_REQUEST.eyebrow}</p>
+    <div class="mt-4 grid gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+      <div>
+        <h2 class="text-2xl font-extrabold tracking-tight md:text-[2rem]">{heading}</h2>
+        <p class="mt-5 max-w-2xl text-sm leading-[1.9] text-neutral-700">{description}</p>
+        <ul class="mt-6 space-y-2 text-sm text-neutral-700">
+          {
+            HOME_REQUEST.examples.map((ex) => (
+              <li class="flex items-start gap-3">
+                <span class="mt-[0.55em] h-1.5 w-1.5 shrink-0 bg-ink-950" aria-hidden="true" />
+                <span>{ex}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <a
+        href={HOME_REQUEST.link.href}
+        class="inline-flex items-center gap-4 self-start border border-ink-950 bg-ink-950 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800 md:self-auto"
+      >
+        {HOME_REQUEST.link.label}
+        <span aria-hidden="true">→</span>
       </a>
     </div>
   </div>
