@@ -113,7 +113,7 @@ export const HOME_LATEST = {
   subHeadingLines: ["作り方から、", "使い続ける方法まで。"],
   description: "判断に必要な考え方と、実際の手順を解説します。資料やツールと合わせて活用してください。",
   count: 3,
-  allLink: { label: "記事をすべて見る", href: "/library/blog" },
+  allLink: { label: "記事をすべて見る", href: "/library?type=post" },
 };
 
 // ------------------------------------------------------------
