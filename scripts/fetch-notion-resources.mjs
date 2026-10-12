@@ -22,6 +22,7 @@ import {
   getCheckbox,
   getDateISO,
   getNumber,
+  getRelationIds,
   resolveSlug,
   makeAnchorFactory,
   transformBlocks,
@@ -98,6 +99,8 @@ async function main() {
     const tags = await getRelationNames(token, page, RESOURCE_PROP.tags);
     const mainTag = await getFirstRelationName(token, page, RESOURCE_PROP.mainTag);
     const category = await getFirstRelationName(token, page, RESOURCE_PROP.category);
+    // サブカテゴリは名前に解決せず、マスターサブカテゴリDBのページIDのまま持つ（複数選択可。2026-10-12追加）。
+    const subcategoryIds = getRelationIds(page, RESOURCE_PROP.subcategory);
     // 執筆者は「執筆者リスト」DBとのリレーション（単一選択想定）。記事DBと同じ考え方。
     const author = await getFirstRelationName(token, page, RESOURCE_PROP.author);
     const publishedAt = getDateISO(page, RESOURCE_PROP.publishedAt) || page.created_time;
@@ -146,6 +149,7 @@ async function main() {
       tags,
       mainTag,
       category,
+      subcategoryIds,
       author,
       targetToc,
       publishedAt,

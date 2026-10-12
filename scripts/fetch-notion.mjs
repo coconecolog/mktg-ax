@@ -4,7 +4,7 @@
 //
 // 実行方法: npm run fetch-notion （npm run build の中で自動的に呼ばれます）
 // 必要な環境変数: NOTION_TOKEN, NOTION_DATABASE_ID
-// 任意の環境変数: NOTION_CATEGORIES_DATABASE_ID・NOTION_TAGS_DATABASE_ID・NOTION_AUTHORS_DATABASE_ID
+// 任意の環境変数: NOTION_CATEGORIES_DATABASE_ID・NOTION_SUBCATEGORIES_DATABASE_ID・NOTION_TAGS_DATABASE_ID・NOTION_AUTHORS_DATABASE_ID
 //   （いずれも未設定でもビルドは止まらず、対応する機能が空になるだけ）
 
 import fs from "node:fs/promises";
@@ -19,6 +19,7 @@ import {
 import {
   PROP,
   CATEGORY_PROP,
+  SUBCATEGORY_PROP,
   TAG_PROP,
   AUTHOR_PROP,
   POST_STATUS,
@@ -30,6 +31,7 @@ import {
   getNumber,
   getDateISO,
   getFirstFileUrl,
+  getRelationIds,
   resolveSlug,
   makeAnchorFactory,
   transformBlocks,
@@ -60,7 +62,7 @@ async function writeEmptyCache(reason) {
   await fs.writeFile(
     CACHE_FILE,
     JSON.stringify(
-      { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], authors: [], error: reason },
+      { generatedAt: new Date().toISOString(), posts: [], categories: [], subcategories: [], tags: [], authors: [], error: reason },
       null,
       2,
     ),
@@ -159,6 +161,68 @@ async function fetchCategories(token, linkMap) {
   withSlug.sort((a, b) => collator.compare(a.representativeSlug, b.representativeSlug));
 
   return [...withOrder, ...withSlug, ...withoutSlug];
+}
+
+/**
+ * マスターサブカテゴリDB（記事DB・資料DBの「サブカテゴリ」リレーション先）を取得する（2026-10-12追加）。
+ * NOTION_SUBCATEGORIES_DATABASE_ID が未設定の場合は空配列を返す（カテゴリページは全件が「その他」にまとまって表示されるだけで、ビルドは止まらない）。
+ * 記事・資料・ツールは名前ではなくページIDで突き合わせる（サイト側でidと照合する）。
+ */
+async function fetchSubcategories(token) {
+  const databaseId = process.env.NOTION_SUBCATEGORIES_DATABASE_ID;
+  if (!databaseId) {
+    console.warn(
+      "[fetch-notion] NOTION_SUBCATEGORIES_DATABASE_ID が未設定のため、サブカテゴリは空のまま続行します。",
+    );
+    return [];
+  }
+
+  console.log("[fetch-notion] サブカテゴリ一覧を取得中…");
+  const dataSourceId = await resolveDataSourceId(token, databaseId);
+  const rawPages = await queryAllPages(token, dataSourceId, {});
+
+  const subcategories = [];
+  const usedSlugs = new Set();
+  for (const page of rawPages) {
+    const name = getTitleText(page, SUBCATEGORY_PROP.name);
+    if (!name) continue; // 空行は無視する
+    const category = await getFirstRelationName(token, page, SUBCATEGORY_PROP.category);
+    if (!category) {
+      console.warn(`[fetch-notion] サブカテゴリ「${name}」に親カテゴリが未設定です（どのカテゴリページにも表示されません）。`);
+    }
+    // アンカー用Slug。カテゴリ・タグのSlugと同じルール（半角英小文字・数字・ハイフンのみ）。
+    // アンカーはページ内で一意であればよいが、ライブラリページからのリンクの分かりやすさのため全体で重複を禁止する。
+    const slugRaw = getRichTextPlain(page, SUBCATEGORY_PROP.slug).trim().toLowerCase();
+    let slug = null;
+    if (!slugRaw) {
+      console.warn(`[fetch-notion] サブカテゴリ「${name}」にSlugが未設定です（アンカーが番号になります）。`);
+    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugRaw)) {
+      console.warn(`[fetch-notion] サブカテゴリ「${name}」のSlug「${slugRaw}」は使えない文字を含みます（半角英小文字・数字・ハイフンのみ）。無視します。`);
+    } else if (usedSlugs.has(slugRaw)) {
+      console.warn(`[fetch-notion] サブカテゴリ「${name}」のSlug「${slugRaw}」は他のサブカテゴリと重複しています。無視します。`);
+    } else {
+      slug = slugRaw;
+      usedSlugs.add(slugRaw);
+    }
+
+    subcategories.push({
+      id: page.id,
+      name,
+      slug,
+      category,
+      order: getNumber(page, SUBCATEGORY_PROP.order),
+      summary: getRichTextPlain(page, SUBCATEGORY_PROP.summary).trim(),
+      description: getRichTextPlain(page, SUBCATEGORY_PROP.description).trim(),
+      representativePostId: getRelationIds(page, SUBCATEGORY_PROP.representativePost)[0] || null,
+      representativeResourceId: getRelationIds(page, SUBCATEGORY_PROP.representativeResource)[0] || null,
+      toolIds: getRelationIds(page, SUBCATEGORY_PROP.tools),
+    });
+  }
+
+  // 「並び順」（小さい順）。未設定はNotion取得順のまま末尾へ。
+  const withOrder = subcategories.filter((s) => s.order != null).sort((a, b) => a.order - b.order);
+  const withoutOrder = subcategories.filter((s) => s.order == null);
+  return [...withOrder, ...withoutOrder];
 }
 
 /**
@@ -327,6 +391,7 @@ async function main() {
 
   // 自動生成サムネイルの背景をカテゴリ名から引けるように、記事処理より先にカテゴリ一覧を取得しておく。
   const categories = await fetchCategories(token, linkMap);
+  const subcategories = await fetchSubcategories(token);
   const tags = await fetchTags(token, linkMap);
   const authors = await fetchAuthors(token);
   const categoryBackgroundMap = new Map();
@@ -353,7 +418,9 @@ async function main() {
       const previousPost = previousPostsById.get(page.id);
       if (previousPost) {
         console.log(`  - ${title}（編集中のため前回公開時点の内容を維持）`);
-        posts.push(previousPost);
+        // サブカテゴリ（表示場所の分類）だけは、編集中でもNotionの現在の値を反映する。
+        // 2026-10-12のサブカテゴリ導入前のスナップショットにはこの値が無いため、編集中の記事が「その他」に落ちないようにする目的。
+        posts.push({ ...previousPost, subcategoryIds: getRelationIds(page, PROP.subcategory) });
       } else {
         console.warn(
           `  - ${title}（ステータスが「${POST_STATUS.editing}」ですが公開履歴が無いためスキップします。一度「${POST_STATUS.published}」にしてから編集中にしてください）`,
@@ -372,6 +439,8 @@ async function main() {
     // 単一バッジ表示用に先頭1件を category としても残す。
     const categories = await getRelationNames(token, page, PROP.category);
     const category = categories[0] || null;
+    // サブカテゴリは名前に解決せず、マスターサブカテゴリDBのページIDのまま持つ（複数選択可）。
+    const subcategoryIds = getRelationIds(page, PROP.subcategory);
     // 執筆者は「執筆者リスト」DBとのリレーション（単一選択想定）。複数選択されていても先頭1件だけを使う。
     const author = await getFirstRelationName(token, page, PROP.author);
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
@@ -421,6 +490,7 @@ async function main() {
       tags,
       category,
       categories,
+      subcategoryIds,
       author,
       keyPoints,
       ctaResourceId,
@@ -444,7 +514,7 @@ async function main() {
   }
 
   await fs.mkdir(CACHE_DIR, { recursive: true });
-  const output = { generatedAt: new Date().toISOString(), posts, categories, tags, authors };
+  const output = { generatedAt: new Date().toISOString(), posts, categories, subcategories, tags, authors };
   await fs.writeFile(CACHE_FILE, JSON.stringify(output, null, 2));
 
   // 今回の結果を「次回、編集中の記事が参照する前回公開時点のスナップショット」として保存する。
@@ -452,7 +522,7 @@ async function main() {
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(output, null, 2));
 
   console.log(
-    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件・タグ${tags.length}件・執筆者${authors.length}件を .notion-cache/posts.json に書き出しました。`,
+    `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件・サブカテゴリ${subcategories.length}件・タグ${tags.length}件・執筆者${authors.length}件を .notion-cache/posts.json に書き出しました。`,
   );
 }
 
