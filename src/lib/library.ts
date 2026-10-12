@@ -235,10 +235,22 @@ export function getCategoryGuide(categoryName: string): CategoryGuide {
   const belongs = (item: LibraryItem) =>
     item.categories.includes(categoryName) || item.subcategoryIds.some((id) => subIds.has(id));
 
-  const items = getLibraryItems("all").filter(belongs);
+  // サブカテゴリの「代表記事」「代表資料」に選んだものは、記事・資料側に「サブカテゴリ」が付いていなくても
+  // そのテーマに表示する（代表に選んだのに出てこない、を防ぐ）。
+  const pinnedIds = new Map<string, Set<string>>();
+  for (const sub of subcategories) {
+    for (const id of [sub.representativePostId, sub.representativeResourceId]) {
+      if (!id) continue;
+      if (!pinnedIds.has(id)) pinnedIds.set(id, new Set());
+      pinnedIds.get(id)!.add(sub.id);
+    }
+  }
+  const sectionIdsOf = (item: LibraryItem) => [...item.subcategoryIds, ...(pinnedIds.get(item.id) ?? [])];
+
+  const items = getLibraryItems("all").filter((item) => belongs(item) || pinnedIds.has(item.id));
 
   const sections: CategorySection[] = subcategories.map((sub, i) => {
-    const inSection = items.filter((item) => item.subcategoryIds.includes(sub.id));
+    const inSection = items.filter((item) => sectionIdsOf(item).includes(sub.id));
     return {
       subcategory: sub,
       anchor: getSubcategoryAnchor(sub),
@@ -252,7 +264,7 @@ export function getCategoryGuide(categoryName: string): CategoryGuide {
     };
   });
 
-  const others = items.filter((item) => !item.subcategoryIds.some((id) => subIds.has(id)));
+  const others = items.filter((item) => !sectionIdsOf(item).some((id) => subIds.has(id)));
   if (others.length > 0) {
     sections.push({
       subcategory: null,
