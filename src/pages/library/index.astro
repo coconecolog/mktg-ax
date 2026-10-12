@@ -7,6 +7,7 @@
 // 旧URL（/library/2・/library/blog・/library/resources）は public/_redirects でここへ301転送している。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
+import ContactCta from "@/components/ContactCta.astro";
 import { getLibraryItems } from "@/lib/library";
 import { getAllCategories, getCategoryPath, getCategorySlug, getSubcategoriesByCategory, getSubcategoryPath } from "@/lib/posts";
 import { LIBRARY_PAGE_SIZE } from "@/consts";
@@ -175,6 +176,8 @@ const breadcrumbItems = [
       <nav data-pager aria-label="ページ送り" class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm"></nav>
     </section>
   </div>
+
+  <ContactCta />
 </BaseLayout>
 
 <script>
