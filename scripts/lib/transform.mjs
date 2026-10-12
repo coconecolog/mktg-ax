@@ -18,6 +18,8 @@ export const PROP = {
   // カテゴリは「マスターカテゴリ」DBとのリレーションプロパティ（複数選択可）。
   // 値の解決には getRelationNames（notion-client.mjs）を使う。
   category: "カテゴリ",
+  // 2026-10-12追加: マスターサブカテゴリDBとのリレーション（複数選択可）
+  subcategory: "サブカテゴリ",
   publishedAt: "公開日",
   updatedAt: "更新日",
   // 通常は未入力のままでOK。ここに画像をアップロードした記事だけ、その画像がサムネイルとして
@@ -70,6 +72,30 @@ export const CATEGORY_PROP = {
   // 2026-09-25追加: カテゴリページのURL用英字Slug（テキスト。半角英小文字・数字・ハイフンのみ）。
   // 未設定・不正・重複の場合は従来どおりカテゴリ名そのものがURLになる（タグの「Slug」と同じ考え方）。
   slug: "Slug",
+};
+
+// 2026-10-12追加: 「マスターサブカテゴリ」DB（記事DB・資料DBの「サブカテゴリ」リレーション先）自体のプロパティ名。
+// カテゴリページ・ライブラリページで、カテゴリの中をテーマ（サブカテゴリ）ごとに分けて表示するために使う。
+// サブカテゴリ専用のページ（URL）は作らず、カテゴリページ内のアンカー（#Slug）で各テーマへ移動する。
+export const SUBCATEGORY_PROP = {
+  // タイトル列。サブカテゴリ名（例: 方向性を決める）
+  name: "サブカテゴリ",
+  // 親カテゴリ。マスターカテゴリDBへのリレーション（1件だけ選ぶ）
+  category: "カテゴリ",
+  // カテゴリページ内のアンカー用英字Slug（テキスト。半角英小文字・数字・ハイフンのみ）。未設定なら #sub-01 のような番号になる
+  slug: "Slug",
+  // カテゴリ内での表示順（数値、小さい順）
+  order: "並び順",
+  // カードに出す短い説明（テキスト。例: 投資の根拠・配分・費用の目安）
+  summary: "要約",
+  // 各テーマの見出し下に出す「ここでできること」（テキスト）
+  description: "説明文",
+  // 「まずはこの記事から」に出す記事。記事DBへのリレーション（1件）。未設定なら最新の記事
+  representativePost: "代表記事",
+  // 右側「資料で実践する」に大きく出す資料。資料DBへのリレーション（1件）。未設定なら最新の資料
+  representativeResource: "代表資料",
+  // 記事一覧の下に出す関連ツールのリンク。ツールDBへのリレーション（複数可）
+  tools: "ツール",
 };
 
 // 「マスタータグ」DB（記事DB・資料DBの「タグ」リレーション先）自体のプロパティ名。
@@ -178,6 +204,16 @@ export function getCheckbox(page, name) {
 }
 
 /** 数値プロパティを取得する。未入力・プロパティ自体が無い場合は null を返す。 */
+/**
+ * relation型プロパティの関連ページIDを、名前に解決せずにそのまま配列で返す（APIを呼ばない）。
+ * サブカテゴリのように「名前ではなくIDで突き合わせたい」リレーションに使う。プロパティが無い・型が違う場合は空配列。
+ */
+export function getRelationIds(page, name) {
+  const prop = getProperty(page, name);
+  if (!prop || prop.type !== "relation") return [];
+  return (prop.relation || []).map((r) => r.id).filter(Boolean);
+}
+
 export function getNumber(page, name) {
   const prop = getProperty(page, name);
   if (!prop || prop.type !== "number") return null;
@@ -1002,6 +1038,8 @@ export const RESOURCE_PROP = {
   // 値の解決には getRelationNames / getFirstRelationName（notion-client.mjs）を使う。
   mainTag: "メインタグ",
   category: "カテゴリ",
+  // 2026-10-12追加: マスターサブカテゴリDBとのリレーション（複数選択可）。記事DBのPROP.subcategoryと同じ考え方。
+  subcategory: "サブカテゴリ",
   // 「執筆者リスト」DBとのリレーションプロパティ（単一選択想定）。記事DBのPROP.authorと同じ考え方。
   author: "執筆者",
   publishedAt: "公開日",
