@@ -79,7 +79,7 @@ const countLabel =
                   <span class="text-xs text-neutral-500">まずはこの記事から</span>
                 </span>
                 <span class="mt-3 block text-lg font-bold leading-relaxed text-ink-950 group-hover:underline sm:text-xl">{featuredPost.title}</span>
-                {featuredPost.description && <span class="mt-2 block line-clamp-2 text-sm text-neutral-500">{featuredPost.description}</span>}
+                {featuredPost.description && <span class="mt-2 line-clamp-2 text-sm text-neutral-500">{featuredPost.description}</span>}
               </span>
               <span aria-hidden="true" class="mt-8 shrink-0 text-lg text-ink-950 transition-transform group-hover:translate-x-1">→</span>
             </a>
@@ -124,17 +124,18 @@ const countLabel =
 
         {/* 右: 資料で実践する / 関連テーマも活用する */}
         {section.resources.length > 0 ? (
-          <div data-column="resource" class="min-w-0">
+          <div data-column="resource" class="flex min-w-0 flex-col">
             <p class="text-sm font-bold text-ink-950">資料で実践する</p>
-            <div class="mt-4 bg-neutral-100 p-5">
-              <a href={featuredResource.href} data-item data-kind="resource" data-search={searchText(featuredResource)} class="group block">
+            <div class="mt-4 flex flex-1 flex-col bg-neutral-100 p-5">
+              <a href={featuredResource.href} data-item data-kind="resource" data-search={searchText(featuredResource)} class="group flex flex-1 flex-col">
                 <span class="block aspect-video overflow-hidden bg-white">
                   <img src={featuredResource.thumbnail || DEFAULT_OG_IMAGE} alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                 </span>
-                <span class="mt-4 inline-flex items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">無料資料</span>
+                <span class="mt-4 inline-flex w-fit items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">無料資料</span>
                 <span class="mt-3 block text-lg font-bold leading-snug text-ink-950">{featuredResource.title}</span>
-                {featuredResource.description && <span class="mt-2 block line-clamp-3 text-sm leading-relaxed text-neutral-600">{featuredResource.description}</span>}
-                <span class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white">
+                {featuredResource.description && <span class="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-600">{featuredResource.description}</span>}
+                <span aria-hidden="true" class="block min-h-5 flex-1"></span>
+                <span class="mt-auto flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white">
                   資料を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
                 </span>
               </a>

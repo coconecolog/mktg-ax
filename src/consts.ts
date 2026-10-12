@@ -68,7 +68,7 @@ export const CATEGORY_TAG_PAGE_SIZE = 6;
 
 // カテゴリページ（2026-10-12リニューアル）で、各サブカテゴリに最初から表示する記事・資料の件数。
 // これを超えた分は「記事をもっと見る」「資料をもっと見る」ボタンで開く（ページ番号のページネーションは使わない）。
-export const CATEGORY_SECTION_POST_LIMIT = 5;
+export const CATEGORY_SECTION_POST_LIMIT = 4; // まずはこの記事から1件＋3件
 export const CATEGORY_SECTION_RESOURCE_LIMIT = 1;
 
 // タグページで1ページに表示する記事数（カテゴリページとは別に4件区切りにしたいため分けている）
