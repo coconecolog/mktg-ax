@@ -38,7 +38,7 @@ const jsonLd = faqSchema ? [resourceSchema, faqSchema] : resourceSchema;
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: "無料資料・eBook", href: "/library/resources" },
+  { name: "無料資料・eBook", href: "/library?type=resource" },
   { name: resource.title, href: `/resources/${resource.slug}` },
 ];
 
