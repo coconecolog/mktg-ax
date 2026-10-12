@@ -7,7 +7,9 @@ const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/resources.json");
 function loadCache(): ResourcesCache {
   try {
     const raw = fs.readFileSync(CACHE_PATH, "utf-8");
-    return JSON.parse(raw) as ResourcesCache;
+    const parsed = JSON.parse(raw) as ResourcesCache;
+    // サブカテゴリ（2026-10-12追加）は、古いキャッシュに耐えるようにする
+    return { ...parsed, resources: (parsed.resources || []).map((r) => ({ ...r, subcategoryIds: r.subcategoryIds || [] })) };
   } catch {
     console.warn(
       "[resources] .notion-cache/resources.json が見つかりません。先に `npm run fetch-notion-resources` を実行してください。空のデータで続行します。",

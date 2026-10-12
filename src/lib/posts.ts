@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { toRouteSlug } from "./routeSlug";
-import type { Author, BlockNode, Category, Post, PostsCache, Tag, TocItem } from "./types";
+import type { Author, BlockNode, Category, Post, PostsCache, Subcategory, Tag, TocItem } from "./types";
 
 const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/posts.json");
 
@@ -19,6 +19,8 @@ function loadCache(): PostsCache {
       // 「公開後の編集中」スナップショットなど、このフィールドが無い古いデータにも耐える
       ctaResourceId: p.ctaResourceId ?? null,
       ctaToolId: p.ctaToolId ?? null,
+      // サブカテゴリ（2026-10-12追加）
+      subcategoryIds: p.subcategoryIds || [],
     }));
     // カテゴリの英字Slug（2026-09-25追加）も、古いキャッシュ（未生成のもの）に耐えるようにする
     const categories = (parsed.categories || []).map((c) => ({ ...c, blocks: c.blocks || [], slug: c.slug ?? null }));
@@ -31,12 +33,14 @@ function loadCache(): PostsCache {
     }));
     // 執筆者一覧（執筆者リストDB）も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
     const authors = parsed.authors || [];
-    return { ...parsed, posts, categories, tags, authors };
+    // サブカテゴリ一覧（マスターサブカテゴリDB。2026-10-12追加）も、古いキャッシュに耐えるようにする
+    const subcategories = (parsed.subcategories || []).map((s) => ({ ...s, toolIds: s.toolIds || [] }));
+    return { ...parsed, posts, categories, subcategories, tags, authors };
   } catch {
     console.warn(
       "[posts] .notion-cache/posts.json が見つかりません。先に `npm run fetch-notion` を実行してください。空のデータで続行します。",
     );
-    return { generatedAt: new Date().toISOString(), posts: [], categories: [], tags: [], authors: [] };
+    return { generatedAt: new Date().toISOString(), posts: [], categories: [], subcategories: [], tags: [], authors: [] };
   }
 }
 
@@ -107,6 +111,33 @@ export function getCategorySlug(name: string): string {
 /** カテゴリページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /blog/category/strategy */
 export function getCategoryPath(name: string): string {
   return `/blog/category/${encodeURIComponent(getCategorySlug(name))}`;
+}
+
+/** マスターサブカテゴリDBの全サブカテゴリ（「並び順」の小さい順）。 */
+export function getAllSubcategories(): Subcategory[] {
+  return cache.subcategories || [];
+}
+
+/** 指定カテゴリを親に持つサブカテゴリ（「並び順」の小さい順）。 */
+export function getSubcategoriesByCategory(categoryName: string): Subcategory[] {
+  return getAllSubcategories().filter((s) => s.category === categoryName);
+}
+
+/**
+ * カテゴリページ内での、サブカテゴリのアンカー名（# は含まない）。
+ * 「Slug」があればそれを、無ければ親カテゴリ内の並び順から sub-01, sub-02 … を使う。
+ */
+export function getSubcategoryAnchor(sub: Subcategory): string {
+  if (sub.slug) return sub.slug;
+  const siblings = sub.category ? getSubcategoriesByCategory(sub.category) : [sub];
+  const index = siblings.findIndex((s) => s.id === sub.id);
+  return `sub-${String(index + 1).padStart(2, "0")}`;
+}
+
+/** サブカテゴリへのリンク（親カテゴリページ＋アンカー）。親カテゴリ未設定ならnull。 */
+export function getSubcategoryPath(sub: Subcategory): string | null {
+  if (!sub.category) return null;
+  return `${getCategoryPath(sub.category)}#${getSubcategoryAnchor(sub)}`;
 }
 
 /** 指定カテゴリに属する記事（記事側の「カテゴリ」リレーションは複数選択可なので、いずれか1つでも一致すれば対象）。 */

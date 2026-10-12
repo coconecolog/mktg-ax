@@ -46,6 +46,8 @@ export interface Post {
   category: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決した全カテゴリ名（複数選択可）。カテゴリページの絞り込みはこちらを使う。 */
   categories: string[];
+  /** 「サブカテゴリ」リレーション（マスターサブカテゴリDB）のページID（複数可）。Subcategory.id と突き合わせる。古いキャッシュではundefined */
+  subcategoryIds?: string[];
   /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
   author: string | null;
   /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
@@ -77,6 +79,28 @@ export interface Category {
   order: number | null;
   /** カテゴリページ本文（Notion側で「説明文」より下に書かれた解説記事）のブロック。カテゴリページ下部に表示する。 */
   blocks: BlockNode[];
+}
+
+// マスターサブカテゴリDB（Notion）1件分（2026-10-12追加）。記事DB・資料DBの「サブカテゴリ」リレーション先そのもの。
+// 専用ページは作らず、親カテゴリのページ内でテーマごとのブロックとして表示する（アンカーは getSubcategoryAnchor()）。
+export interface Subcategory {
+  id: string;
+  name: string;
+  /** アンカー用の英字Slug。未設定・不正ならnull（親カテゴリ内の並び順から sub-01 のような番号を使う） */
+  slug: string | null;
+  /** 親カテゴリ名（「カテゴリ」リレーションの先頭1件）。未設定ならnull */
+  category: string | null;
+  order: number | null;
+  /** カード用の短い説明（「要約」） */
+  summary: string;
+  /** 「ここでできること」（「説明文」） */
+  description: string;
+  /** 「代表記事」リレーションのページID（Post.id と突き合わせる） */
+  representativePostId: string | null;
+  /** 「代表資料」リレーションのページID（Resource.id と突き合わせる） */
+  representativeResourceId: string | null;
+  /** 「ツール」リレーションのページID（Tool.id と突き合わせる） */
+  toolIds: string[];
 }
 
 // マスタータグDB（Notion）1件分。記事DB・資料DBの「タグ」リレーション先そのもの。
@@ -112,6 +136,8 @@ export interface PostsCache {
   generatedAt: string;
   posts: Post[];
   categories: Category[];
+  /** 2026-10-12追加。古いキャッシュではundefined */
+  subcategories?: Subcategory[];
   tags: Tag[];
   authors: Author[];
   error?: string;
@@ -142,6 +168,8 @@ export interface Resource {
   mainTag: string | null;
   /** 「マスターカテゴリ」DBとのリレーションから解決したカテゴリ名（未設定ならnull） */
   category: string | null;
+  /** 「サブカテゴリ」リレーション（マスターサブカテゴリDB）のページID（複数可）。古いキャッシュではundefined */
+  subcategoryIds?: string[];
   /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
   author: string | null;
   /** 「ターゲット・目次」を1行ずつに分割した配列。1行目を見出し、2行目以降を箇条書きとして表示する。 */
