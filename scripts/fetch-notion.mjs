@@ -216,6 +216,8 @@ async function fetchSubcategories(token) {
       representativePostId: getRelationIds(page, SUBCATEGORY_PROP.representativePost)[0] || null,
       representativeResourceId: getRelationIds(page, SUBCATEGORY_PROP.representativeResource)[0] || null,
       toolIds: getRelationIds(page, SUBCATEGORY_PROP.tools),
+      backgroundImageFilename: getRichTextPlain(page, SUBCATEGORY_PROP.backgroundImage).trim(),
+      themeColor: getSelectColor(page, SUBCATEGORY_PROP.themeColor),
     });
   }
 
@@ -399,6 +401,23 @@ async function main() {
     const dataUri = await resolveCategoryBackgroundDataUri(c.backgroundImageFilename);
     categoryBackgroundMap.set(c.name, { dataUri, colorKey: c.themeColor });
   }
+  // 自動生成サムネイルの背景は、サブカテゴリ単位（2026-10-12〜）。サブカテゴリに背景画像・テーマカラーが
+  // どちらも無ければ、親カテゴリの背景を使う。
+  const subcategoryById = new Map(subcategories.map((s) => [s.id, s]));
+  const subcategoryBackgroundMap = new Map();
+  for (const s of subcategories) {
+    const dataUri = await resolveCategoryBackgroundDataUri(s.backgroundImageFilename);
+    if (dataUri || s.themeColor) {
+      subcategoryBackgroundMap.set(s.id, { dataUri, colorKey: s.themeColor || "default" });
+    } else if (s.category && categoryBackgroundMap.has(s.category)) {
+      subcategoryBackgroundMap.set(s.id, categoryBackgroundMap.get(s.category));
+    }
+  }
+  // 記事のカテゴリは、サブカテゴリの親カテゴリから決める（重複なし・サブカテゴリの指定順）。
+  // 記事DBに旧「カテゴリ」プロパティが残っていれば、移行期間の保険としてそれも足す（削除済みなら何もしない）。
+  const categoriesFromSubcategories = (subcategoryIds) =>
+    subcategoryIds.map((id) => subcategoryById.get(id)?.category).filter(Boolean);
+  const unique = (names) => [...new Set(names)];
 
   const posts = [];
   for (const page of rawPages) {
@@ -420,7 +439,9 @@ async function main() {
         console.log(`  - ${title}（編集中のため前回公開時点の内容を維持）`);
         // サブカテゴリ（表示場所の分類）だけは、編集中でもNotionの現在の値を反映する。
         // 2026-10-12のサブカテゴリ導入前のスナップショットにはこの値が無いため、編集中の記事が「その他」に落ちないようにする目的。
-        posts.push({ ...previousPost, subcategoryIds: getRelationIds(page, PROP.subcategory) });
+        const subcategoryIds = getRelationIds(page, PROP.subcategory);
+        const categories = unique([...categoriesFromSubcategories(subcategoryIds), ...(previousPost.categories || [])]);
+        posts.push({ ...previousPost, subcategoryIds, categories, category: categories[0] || null });
       } else {
         console.warn(
           `  - ${title}（ステータスが「${POST_STATUS.editing}」ですが公開履歴が無いためスキップします。一度「${POST_STATUS.published}」にしてから編集中にしてください）`,
@@ -437,10 +458,11 @@ async function main() {
     const tags = await getRelationNames(token, page, PROP.tags);
     // カテゴリは複数選択可のリレーション。全件を categories に保持しつつ、
     // 単一バッジ表示用に先頭1件を category としても残す。
-    const categories = await getRelationNames(token, page, PROP.category);
-    const category = categories[0] || null;
     // サブカテゴリは名前に解決せず、マスターサブカテゴリDBのページIDのまま持つ（複数選択可）。
     const subcategoryIds = getRelationIds(page, PROP.subcategory);
+    const legacyCategories = await getRelationNames(token, page, PROP.category);
+    const categories = unique([...categoriesFromSubcategories(subcategoryIds), ...legacyCategories]);
+    const category = categories[0] || null;
     // 執筆者は「執筆者リスト」DBとのリレーション（単一選択想定）。複数選択されていても先頭1件だけを使う。
     const author = await getFirstRelationName(token, page, PROP.author);
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
@@ -468,8 +490,11 @@ async function main() {
     if (!thumbnail) {
       const thumbnailTitle = getRichTextPlain(page, PROP.thumbnailTitle).trim() || title;
       const thumbnailSubtitle = getRichTextPlain(page, PROP.thumbnailSubtitle).trim();
-      // 記事に複数カテゴリが設定されている場合も、他のカテゴリ表示と同じく最初の1件を使う。
-      const background = categoryBackgroundMap.get(category) || { dataUri: null, colorKey: "default" };
+      // 背景は最初のサブカテゴリのもの（サブカテゴリ側に無ければ親カテゴリのもの）。
+      // サブカテゴリ未設定の記事は、旧「カテゴリ」の背景 → それも無ければ既定色。
+      const background =
+        subcategoryIds.map((id) => subcategoryBackgroundMap.get(id)).find(Boolean) ||
+        categoryBackgroundMap.get(category) || { dataUri: null, colorKey: "default" };
       thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
     }
 

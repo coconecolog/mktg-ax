@@ -88,6 +88,16 @@ async function main() {
   console.log("[fetch-notion-resources] 記事間リンク用のマップを作成中…");
   const linkMap = await buildNotionLinkMap(token);
 
+  // 資料のカテゴリは、サブカテゴリの親カテゴリから決める（2026-10-12〜）。サブカテゴリ一覧は、
+  // 直前に実行される fetch-notion.mjs が .notion-cache/posts.json に書き出したものを使う（Notionへの再問い合わせはしない）。
+  let subcategoryParent = new Map();
+  try {
+    const postsCache = JSON.parse(await fs.readFile(path.join(CACHE_DIR, "posts.json"), "utf-8"));
+    subcategoryParent = new Map((postsCache.subcategories || []).map((s) => [s.id, s.category]));
+  } catch {
+    console.warn("[fetch-notion-resources] .notion-cache/posts.json が無いため、サブカテゴリからカテゴリを決められません（先に fetch-notion を実行してください）。");
+  }
+
   const resources = [];
   for (const page of rawPages) {
     const title = getTitleText(page, RESOURCE_PROP.title) || "(無題)";
@@ -98,9 +108,13 @@ async function main() {
     // 値には関連ページのIDしか入っていないため、関連ページを取得して名前に解決する。
     const tags = await getRelationNames(token, page, RESOURCE_PROP.tags);
     const mainTag = await getFirstRelationName(token, page, RESOURCE_PROP.mainTag);
-    const category = await getFirstRelationName(token, page, RESOURCE_PROP.category);
     // サブカテゴリは名前に解決せず、マスターサブカテゴリDBのページIDのまま持つ（複数選択可。2026-10-12追加）。
     const subcategoryIds = getRelationIds(page, RESOURCE_PROP.subcategory);
+    // カテゴリ = 最初のサブカテゴリの親カテゴリ。資料DBに旧「カテゴリ」プロパティが残っていれば、
+    // サブカテゴリ未設定の資料だけ移行期間の保険としてそれを使う（削除済みなら何もしない）。
+    const category =
+      subcategoryIds.map((id) => subcategoryParent.get(id)).find(Boolean) ||
+      (await getFirstRelationName(token, page, RESOURCE_PROP.category));
     // 執筆者は「執筆者リスト」DBとのリレーション（単一選択想定）。記事DBと同じ考え方。
     const author = await getFirstRelationName(token, page, RESOURCE_PROP.author);
     const publishedAt = getDateISO(page, RESOURCE_PROP.publishedAt) || page.created_time;
