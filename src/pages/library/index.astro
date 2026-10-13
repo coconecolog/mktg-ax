@@ -107,7 +107,7 @@ const breadcrumbItems = [
               {
                 filters.map((f) => (
                   <button type="button" data-type={f.key} aria-pressed={f.key === "all" ? "true" : "false"} class="border border-neutral-300 bg-white px-3.5 py-2 text-xs font-bold text-ink-950 transition-colors aria-pressed:border-ink-950 aria-pressed:bg-ink-950 aria-pressed:text-white">
-                    {f.label} <span class="font-normal tabular-nums">{f.count}</span>
+                    {f.label} <span data-count class="font-normal tabular-nums">{f.count}</span>
                   </button>
                 ))
               }
@@ -282,12 +282,20 @@ const breadcrumbItems = [
       const words = normalize(state.q).split(/\s+/).filter(Boolean);
       const categoryName = categorySelect.selectedOptions[0]?.dataset.name || "";
 
-      const matched = rows.filter((row) => {
-        if (state.type !== "all" && row.dataset.kind !== state.type) return false;
+      // カテゴリとキーワードで絞り込んだ結果（形式はまだ絞らない）。形式ボタンの件数はここから数える
+      const base = rows.filter((row) => {
         if (categoryName && !(row.dataset.categories || "").split("|").includes(categoryName)) return false;
         const text = searchIndex.get(row) || "";
         return words.every((w) => text.includes(w));
       });
+      typeButtons.forEach((button) => {
+        const type = button.dataset.type || "all";
+        const count = type === "all" ? base.length : base.filter((row) => row.dataset.kind === type).length;
+        const counter = button.querySelector<HTMLElement>("[data-count]");
+        if (counter) counter.textContent = String(count);
+      });
+
+      const matched = base.filter((row) => state.type === "all" || row.dataset.kind === state.type);
       matched.sort((a, b) => (state.sort === "old" ? time(a) - time(b) : time(b) - time(a)));
 
       const totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
