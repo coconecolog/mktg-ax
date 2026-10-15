@@ -71,8 +71,9 @@ export const CATEGORY_TAG_PAGE_SIZE = 6;
 export const CATEGORY_SECTION_POST_LIMIT = 4; // まずはこの記事から1件＋3件
 export const CATEGORY_SECTION_RESOURCE_LIMIT = 1;
 
-// タグページで1ページに表示する記事数（カテゴリページとは別に4件区切りにしたいため分けている）
-export const TAG_PAGE_SIZE = 4;
+// タグページ（2026-10-15リニューアル）の「〇〇に関する記事・資料」で、1ページに表示する記事数。
+// URLは /blog/tag/{slug} の1つだけで、ページ送りはページ内のJSで行う（全記事のリンクはHTMLに入っている）。
+export const TAG_PAGE_SIZE = 3;
 
 // ライブラリ（記事・資料統合）ページで1ページに表示する件数
 export const LIBRARY_PAGE_SIZE = 8;
