@@ -4,8 +4,9 @@
 // 目印コメントで挟んで毎回書き直す（何度実行しても重複しない）。
 //
 // 対象: マスタータグDBに英字Slugが設定されているタグのうち、旧URL（タグ名そのもの）と新URLが異なるもの。
-// 旧URLは、タグ本体・「ブログ記事」「無料資料」タブ・ページネーション（/2, /3…）をすべて個別に転送する
-// （Cloudflare Pagesの静的リダイレクトは上限2,000行。動的リダイレクト（*）は上限100行のため使わない）。
+// 2026-10-15のタグページリニューアルでタグページは1URL（/blog/tag/{slug}）だけになったため、転送するのはタグ本体の1本のみ。
+// 旧URLの「ブログ記事」「無料資料」タブ・ページネーション（/blog, /resources, /2 …）は、public/_redirects の
+// 共通ルール（/blog/tag/:tag/… → /blog/tag/:tag）でいったんタグ本体の旧URLに寄せ、そこからこのファイルの行で英字URLへ転送される。
 // 日本語URLは「そのままの文字」と「%エンコード」の2通りを書く（どちらで届いても一致するように）。
 import fs from "node:fs";
 import path from "node:path";
@@ -29,27 +30,16 @@ if (!postsCache) {
   process.exit(0);
 }
 
-// src/consts.ts の TAG_PAGE_SIZE を読む（タグページの1ページあたり件数。ページネーションの転送本数の計算に使う）
-const consts = fs.readFileSync(path.join(ROOT, "src/consts.ts"), "utf-8");
-const sizeMatch = consts.match(/export const TAG_PAGE_SIZE\s*=\s*(\d+)/);
-if (!sizeMatch) throw new Error("[tag-redirects] src/consts.ts から TAG_PAGE_SIZE を読み取れませんでした。");
-const pageSize = Number(sizeMatch[1]);
-
-// 実際にページが生成されるタグ（記事・資料のいずれかに使われているタグ）ごとの件数
-const counts = new Map(); // name -> { post, resource }
-const bump = (name, kind) => {
-  const c = counts.get(name) || { post: 0, resource: 0 };
-  c[kind] += 1;
-  counts.set(name, c);
-};
-for (const p of postsCache.posts || []) for (const t of p.tags || []) bump(t, "post");
-for (const r of resourcesCache?.resources || []) for (const t of r.tags || []) bump(t, "resource");
+// 実際にページが生成されるタグ（記事・資料のいずれかに使われているタグ）
+const usedNames = new Set();
+for (const p of postsCache.posts || []) for (const t of p.tags || []) usedNames.add(t);
+for (const r of resourcesCache?.resources || []) for (const t of r.tags || []) usedNames.add(t);
 
 const slugByName = new Map((postsCache.tags || []).filter((t) => t.slug).map((t) => [t.name, t.slug]));
 
 const lines = [];
 const missingSlug = [];
-for (const [name, c] of counts) {
+for (const name of usedNames) {
   const slug = slugByName.get(name);
   if (!slug) {
     missingSlug.push(name);
@@ -58,22 +48,11 @@ for (const [name, c] of counts) {
   const oldSeg = name.replaceAll("/", "／"); // routeSlug.ts の toRouteSlug() と同じ変換
   if (oldSeg === slug) continue;
 
-  const pages = (n) => Math.max(1, Math.ceil(n / pageSize));
-  const variants = [
-    { suffix: "", n: c.post + c.resource },
-    { suffix: "/blog", n: c.post },
-    { suffix: "/resources", n: c.resource },
-  ];
-  for (const { suffix, n } of variants) {
-    for (let page = 1; page <= pages(n); page++) {
-      const tail = `${suffix}${page === 1 ? "" : `/${page}`}`;
-      const to = `/blog/tag/${slug}${tail}`;
-      const fromRaw = `/blog/tag/${oldSeg}${tail}`;
-      const fromEnc = `/blog/tag/${encodeURIComponent(oldSeg)}${tail}`;
-      lines.push(`${fromRaw} ${to} 301`);
-      if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
-    }
-  }
+  const to = `/blog/tag/${slug}`;
+  const fromRaw = `/blog/tag/${oldSeg}`;
+  const fromEnc = `/blog/tag/${encodeURIComponent(oldSeg)}`;
+  lines.push(`${fromRaw} ${to} 301`);
+  if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
 }
 
 const redirectsPath = path.join(ROOT, "dist/_redirects");
