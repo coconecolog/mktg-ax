@@ -1,0 +1,236 @@
+---
+// タグページ（2026-10-15リニューアル）の解説エリア。マスタータグDBのページ本文（Notionブロック）を、
+// タグページ用のデザインで表示する。記事ページ等の NotionBlocks（.prose-notion）とは見た目を分けている。
+//
+// Notionでの書き方と表示:
+// ・見出し2 … セクション見出し（ページ上部のリンク列・右カラム「このページの内容」にも自動で並ぶ）
+// ・段落 … 本文
+// ・表 … 見出し行は灰色背景、1列目は太字
+// ・コールアウトに「A → B → C」と矢印で区切った1行だけを書く … 灰色の帯の工程図（例: S 市場を分ける → T 狙う顧客を選ぶ → P 違いを決める）
+// ・上記以外のコールアウト … 灰色の背景ボックス（中の箇条書きは「・」付きの小さめの文字）
+// ・見出し3 … 上に区切り線の付いた小見出し（「BtoBで使うときのポイント」のような並び）
+// ・トグル／トグル見出し … 「Q. 質問」＋回答を開いた状態で表示（よくある質問）。FAQの構造化データは従来どおり出力
+// ・それ以外（画像・番号付きリストなど）… 記事と同じ表示（NotionBlocks）
+import type { BlockNode, RichTextItem } from "@/lib/types";
+import RichText from "./RichText.astro";
+import NotionBlocks from "./NotionBlocks.astro";
+
+interface Props {
+  blocks: BlockNode[];
+}
+
+const { blocks } = Astro.props;
+
+const plain = (items: RichTextItem[] | undefined) => (items || []).map((r) => r.text).join("").trim();
+
+type Section = { heading: BlockNode | null; body: BlockNode[] };
+
+// 見出し2ごとにセクションへ分ける（見出し2より前のブロックは、見出し無しのセクションにまとめる）
+const sections: Section[] = [];
+for (const block of blocks) {
+  if (block.type === "heading_2") {
+    // トグル見出し2の場合は、中身（子ブロック）をそのセクションの本文として扱う
+    sections.push({ heading: block, body: block.toggleable && block.children ? [...block.children] : [] });
+  } else if (sections.length === 0) {
+    sections.push({ heading: null, body: [block] });
+  } else {
+    sections[sections.length - 1].body.push(block);
+  }
+}
+
+const isFlow = (block: BlockNode) => {
+  if (block.type !== "callout" || (block.children && block.children.length > 0)) return false;
+  const text = plain(block.richText);
+  return text.includes("→") && text.length <= 120 && !text.includes("\n");
+};
+const flowSteps = (block: BlockNode) =>
+  plain(block.richText)
+    .split(/\s*→\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const isQa = (block: BlockNode) => block.type === "toggle" || (block.toggleable === true && block.type.startsWith("heading_"));
+const questionText = (block: BlockNode) => `Q. ${plain(block.richText).replace(/^Q[.．:：]?\s*/i, "")}`;
+
+const isBullet = (b: BlockNode) => b.type === "bulleted_list_item";
+const LIST_TYPES = new Set(["bulleted_list_item", "numbered_list_item", "to_do"]);
+
+// 連続する同じ種類のリスト項目は1つのまとまり（配列）にして、1つの<ul>/<ol>で表示する
+type Unit = BlockNode | BlockNode[];
+function toUnits(body: BlockNode[]): Unit[] {
+  const units: Unit[] = [];
+  for (const block of body) {
+    const last = units[units.length - 1];
+    if (LIST_TYPES.has(block.type) && Array.isArray(last) && last[0].type === block.type) last.push(block);
+    else units.push(LIST_TYPES.has(block.type) ? [block] : block);
+  }
+  return units;
+}
+---
+
+<div class="tag-body">
+  {
+    sections.map((section) => (
+      <section class={section.heading ? "mt-16 first:mt-0" : ""}>
+        {section.heading && (
+          <h2 id={section.heading.anchor} class="scroll-mt-24 text-[1.6rem] font-bold leading-snug tracking-tight text-ink-950">
+            <RichText items={section.heading.richText} />
+          </h2>
+        )}
+        {toUnits(section.body).map((unit, unitIndex, units) => {
+          if (Array.isArray(unit)) {
+            return (
+              <div class="prose-notion mt-4 text-[15px]!">
+                <NotionBlocks blocks={unit} />
+              </div>
+            );
+          }
+          const block = unit;
+          const prev = units[unitIndex - 1];
+          if (block.type === "paragraph") {
+            if (!plain(block.richText)) return null;
+            return (
+              <p class="mt-4 text-[15px] leading-[1.9] text-neutral-700">
+                <RichText items={block.richText} />
+              </p>
+            );
+          }
+
+          if (block.type === "heading_3" && !block.toggleable) {
+            return (
+              <h3 id={block.anchor} class="mt-6 scroll-mt-24 border-t border-neutral-300 pt-6 text-base font-bold text-ink-950">
+                <RichText items={block.richText} />
+              </h3>
+            );
+          }
+
+          if (block.type === "heading_4" && !block.toggleable) {
+            return (
+              <h4 id={block.anchor} class="mt-6 scroll-mt-24 text-[15px] font-bold text-ink-950">
+                <RichText items={block.richText} />
+              </h4>
+            );
+          }
+
+          if (isQa(block)) {
+            return (
+              <div class={`border-t border-neutral-300 py-6 ${prev && !Array.isArray(prev) && isQa(prev) ? "" : "mt-6"}`}>
+                <p class="text-[15px] font-bold leading-relaxed text-ink-950">{questionText(block)}</p>
+                {block.children && block.children.length > 0 && (
+                  <div class="mt-3 space-y-3 text-[15px] leading-[1.9] text-neutral-700">
+                    <NotionBlocks blocks={block.children} />
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (isFlow(block)) {
+            const steps = flowSteps(block);
+            return (
+              <div class="mt-6 flex flex-col gap-2 bg-neutral-100 px-6 py-5 text-sm font-bold text-ink-950 sm:flex-row sm:items-center sm:justify-between">
+                {steps.map((step, i) => (
+                  <>
+                    {i > 0 && <span aria-hidden="true" class="text-neutral-500 sm:px-2">→</span>}
+                    <span>{step}</span>
+                  </>
+                ))}
+              </div>
+            );
+          }
+
+          if (block.type === "callout") {
+            const children = block.children || [];
+            const bulletsOnly = children.length > 0 && children.every(isBullet);
+            return (
+              <div class="mt-6 bg-neutral-100 px-6 py-5 text-sm leading-relaxed text-neutral-700">
+                {plain(block.richText) && (
+                  <p>
+                    <RichText items={block.richText} />
+                  </p>
+                )}
+                {bulletsOnly ? (
+                  <ul class={`space-y-3 ${plain(block.richText) ? "mt-3" : ""}`}>
+                    {children.map((item) => (
+                      <li class="flex gap-1">
+                        <span aria-hidden="true">・</span>
+                        <span>
+                          <RichText items={item.richText} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  children.length > 0 && (
+                    <div class="prose-notion mt-3 text-sm!">
+                      <NotionBlocks blocks={children} />
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          }
+
+          if (block.type === "table") {
+            const rows = block.rows || [];
+            const headerRow = block.hasColumnHeader ? rows[0] : null;
+            const bodyRows = block.hasColumnHeader ? rows.slice(1) : rows;
+            return (
+              <div class="mt-6 overflow-x-auto">
+                <table class="w-full min-w-[520px] border-collapse text-sm">
+                  {headerRow && (
+                    <thead>
+                      <tr class="border-y border-neutral-300 bg-neutral-100">
+                        {headerRow.cells.map((cell) => (
+                          <th scope="col" class="px-4 py-4 text-left align-top text-[13px] font-bold text-ink-950">
+                            <RichText items={cell} />
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                  )}
+                  <tbody>
+                    {bodyRows.map((row, rowIndex) => (
+                      <tr class={`border-b border-neutral-300 ${!headerRow && rowIndex === 0 ? "border-t" : ""}`}>
+                        {row.cells.map((cell, cellIndex) =>
+                          cellIndex === 0 ? (
+                            <th scope="row" class="px-4 py-4 text-left align-top font-bold whitespace-nowrap text-ink-950">
+                              <RichText items={cell} />
+                            </th>
+                          ) : (
+                            <td class="px-4 py-4 align-top leading-relaxed text-neutral-700">
+                              <RichText items={cell} />
+                            </td>
+                          ),
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+
+          // それ以外は記事と同じ表示
+          return (
+            <div class="prose-notion mt-5 text-[15px]!">
+              <NotionBlocks blocks={[block]} />
+            </div>
+          );
+        })}
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  /* 本文中のリンクは、記事本文（.prose-notion）と同じブラウザ標準のリンク色にそろえる */
+  .tag-body :global(a) {
+    color: #0000ee;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .tag-body :global(a:visited) {
+    color: #551a8b;
+  }
+</style>
