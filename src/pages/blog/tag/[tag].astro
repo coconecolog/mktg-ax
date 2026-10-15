@@ -123,7 +123,7 @@ const breadcrumbItems = [
     {
       definition ? (
         <div class="mt-8 border-y border-ink-950 py-6">
-          <p class="max-w-4xl text-[15px] leading-[2] whitespace-pre-line text-ink-950">{definition}</p>
+          <p class="text-[15px] leading-[2] whitespace-pre-line text-ink-950">{definition}</p>
         </div>
       ) : (
         <div class="mt-8 border-t border-ink-950" />
@@ -203,7 +203,7 @@ const breadcrumbItems = [
       </section>
 
       {/* 右カラム */}
-      <aside class="mt-14 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
+      <aside class="mt-14 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start">
         {
           headings.length > 0 && (
             <nav aria-label="このページの内容" class="hidden lg:block">
@@ -224,7 +224,7 @@ const breadcrumbItems = [
 
         {
           latestResource && (
-            <div class={headings.length > 0 ? "lg:mt-24" : ""}>
+            <div class={headings.length > 0 ? "lg:mt-10" : ""}>
               <p class="text-sm font-bold text-ink-950">資料で実践する</p>
               <div class="mt-3 bg-neutral-100 p-5">
                     {/* 表紙（資料名から白黒で生成。PDFのキャプチャは使わない） */}
@@ -265,7 +265,7 @@ const breadcrumbItems = [
 
         {
           sidebarTags.length > 0 && (
-            <div class="mt-14">
+            <div class="mt-10">
               <BlogSidebar showSearch={false} categories={[]} popularPosts={[]} tags={sidebarTags} />
             </div>
           )
