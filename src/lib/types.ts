@@ -113,7 +113,10 @@ export interface Tag {
   slug: string | null;
   /** タグページ専用のtitleタグ（「| MKTG.AX」は含まない）。未設定ならnull。 */
   seoTitle: string | null;
+  /** 「説明文」。タグページのH1直下に出す「〇〇とは」の定義文（200〜500字想定） */
   description: string;
+  /** 「ディスクリプション」（2026-10-15追加）。タグページのmeta description。未入力・古いキャッシュでは空文字かundefined */
+  metaDescription?: string;
   representativeSlug: string | null;
   /** タグページ本文（Notion側で「説明文」より下に書かれた解説文）のブロック。タグページ下部に表示する。 */
   blocks: BlockNode[];
