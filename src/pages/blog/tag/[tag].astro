@@ -5,8 +5,8 @@
 //             構造化データ（CollectionPage＋DefinedTerm＋ItemList、本文にFAQがあればFAQPage）
 //   UX       … 記事ページのタグから来た人が、そのタグの記事をすぐ探せるよう、記事一覧を上に置く
 // 構成: パンくず → H1「〇〇とは？」＋定義文 → ページ内リンク列 →
-//       左: 「〇〇に関する記事・資料」（記事を新しい順、TAG_PAGE_SIZE件ずつページ内JSでページ送り）→ 解説エリア（TagBody）
-//       右: このページの内容（本文の見出し2）→ 資料で実践する（このタグの資料）
+//       左: 「〇〇に関する記事・資料」（記事・資料を新しい順。形式の絞り込みとTAG_PAGE_SIZE件ずつのページ送りはページ内JS）→ 解説エリア（TagBody）
+//       右: このページの内容（本文の見出し2）→ 資料で実践する（このタグの最新資料1件）→ タグ一覧（BlogSidebar）
 // URLは /blog/tag/{slug} の1つだけ（ライブラリページと同じ扱い）。旧URL（/blog・/resources タブ、/2 などのページ送り）は
 // public/_redirects でこのページへ301転送している。
 // 記事のラベルは自動: 記事の「サブカテゴリ」名（無ければ先頭のカテゴリ名）。
@@ -15,7 +15,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import TagBody from "@/components/TagBody.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import { getAllSubcategories, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
+import BlogSidebar from "@/components/BlogSidebar.astro";
+import { getAllSubcategories, getAllTags, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
 import { autoLinkRelatedTerms } from "@/lib/relatedTermLinks";
@@ -41,9 +42,17 @@ const posts = items.filter((item) => item.kind === "post");
 const resourceItems = items.filter((item) => item.kind === "resource");
 const resourceBySlug = new Map(getAllResources().map((r) => [r.slug, r]));
 const resources = resourceItems.map((item) => resourceBySlug.get(item.slug)).filter((r) => !!r);
+// 右カラムに出す資料は最新の1件だけ（一覧の「無料資料」で全件を見られる）
+const latestResource = resources[0];
+const filters = [
+  { key: "all", label: "すべて", count: items.length },
+  { key: "post", label: "記事", count: posts.length },
+  { key: "resource", label: "無料資料", count: resourceItems.length },
+];
+const sidebarTags = getAllTags();
 
 const subcategoryName = new Map(getAllSubcategories().map((s) => [s.id, s.name]));
-const labelOf = (item: (typeof posts)[number]) =>
+const labelOf = (item: (typeof items)[number]) =>
   item.subcategoryIds.map((id) => subcategoryName.get(id)).find(Boolean) || item.categories[0] || "";
 
 const formatDate = (iso: string) =>
@@ -140,33 +149,55 @@ const breadcrumbItems = [
         </p>
 
         {
-          posts.length > 0 ? (
+          items.length > 0 ? (
             <>
-              <p class="mt-8 border-b border-neutral-300 pb-4 text-sm font-bold text-ink-950">記事で理解する｜記事{posts.length}件</p>
-              <ul data-list>
-                {posts.map((item, i) => (
-                  <li data-row hidden={i >= TAG_PAGE_SIZE} class="border-b border-neutral-300">
-                    <a href={item.href} class="group grid grid-cols-1 gap-3 py-7 sm:grid-cols-[100px_minmax(0,1fr)] sm:gap-6">
+              <div class="mt-6 flex flex-wrap items-center gap-3 bg-neutral-100 px-4 py-4 sm:px-5" role="group" aria-label="形式で絞り込む">
+                <span class="text-xs font-bold text-ink-950">形式</span>
+                <div class="flex flex-wrap gap-1.5">
+                  {filters.map((f) => (
+                    <button type="button" data-type={f.key} aria-pressed={f.key === "all" ? "true" : "false"} class="border border-neutral-300 bg-white px-3.5 py-2 text-xs font-bold text-ink-950 transition-colors aria-pressed:border-ink-950 aria-pressed:bg-ink-950 aria-pressed:text-white">
+                      {f.label} <span class="font-normal tabular-nums">{f.count}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ul data-list class="mt-6 border-t border-neutral-300">
+                {items.map((item, i) => (
+                  <li data-row data-kind={item.kind} hidden={i >= TAG_PAGE_SIZE} class={`border-b border-neutral-300 ${item.kind === "resource" ? "bg-neutral-100" : ""}`}>
+                    <a href={item.href} class="group grid grid-cols-1 gap-3 px-3 py-7 sm:grid-cols-[100px_minmax(0,1fr)] sm:gap-6">
                       <span class="flex gap-3 text-xs leading-relaxed text-neutral-500 sm:block">
                         <span class="block tabular-nums">{formatDate(item.publishedAt)}</span>
-                        <span class="block">読了{item.readMinutes}分</span>
+                        <span class="block">{item.kind === "post" ? `読了${item.readMinutes}分` : item.fileExt ? `${item.fileExt}資料` : "無料資料"}</span>
                       </span>
                       <span class="min-w-0">
-                        {labelOf(item) && <span class="block text-xs text-neutral-500">{labelOf(item)}</span>}
+                        <span class="flex flex-wrap items-center gap-2">
+                          {item.kind === "post" ? (
+                            <span class="inline-flex items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
+                          ) : (
+                            <span class="inline-flex items-center bg-ink-950 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">無料資料</span>
+                          )}
+                          {labelOf(item) && <span class="text-xs text-neutral-500">{labelOf(item)}</span>}
+                        </span>
                         <span class="mt-2 block text-base font-bold leading-relaxed text-ink-950 group-hover:underline sm:text-[17px]">{item.title}</span>
                         {item.description && <span class="mt-2 line-clamp-2 block text-[13px] leading-relaxed text-neutral-500">{item.description}</span>}
-                        <span class="mt-3 flex items-center gap-1 text-xs font-bold text-ink-950">
-                          記事を読む<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
-                        </span>
+                        {item.kind === "post" ? (
+                          <span class="mt-3 flex items-center gap-1 text-xs font-bold text-ink-950">
+                            記事を読む<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                          </span>
+                        ) : (
+                          <span class="mt-3 flex w-fit items-center gap-4 bg-ink-950 px-4 py-2.5 text-xs font-bold text-white">
+                            資料を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                          </span>
+                        )}
                       </span>
                     </a>
                   </li>
                 ))}
               </ul>
-              <nav data-pager aria-label="記事のページ送り" class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm" />
+              <nav data-pager aria-label="記事・資料のページ送り" class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm" />
             </>
           ) : (
-            <p class="mt-8 border-t border-neutral-300 py-8 text-sm text-neutral-500">このタグの記事はまだありません。</p>
+            <p class="mt-8 border-t border-neutral-300 py-8 text-sm text-neutral-500">このタグの記事・資料はまだありません。</p>
           )
         }
       </section>
@@ -192,19 +223,17 @@ const breadcrumbItems = [
         }
 
         {
-          resources.length > 0 && (
+          latestResource && (
             <div class={headings.length > 0 ? "lg:mt-24" : ""}>
-              <p class="text-sm font-bold text-ink-950">資料で実践する｜{resources.length}件</p>
+              <p class="text-sm font-bold text-ink-950">資料で実践する</p>
               <div class="mt-3 bg-neutral-100 p-5">
-                {resources.map((r, i) => (
-                  <div class={i > 0 ? "mt-8 border-t border-neutral-300 pt-8" : ""}>
                     {/* 表紙（資料名から白黒で生成。PDFのキャプチャは使わない） */}
-                    <a href={`/resources/${r.slug}`} class="flex aspect-square flex-col bg-ink-950 p-5 text-white" aria-hidden="true" tabindex="-1">
+                    <a href={`/resources/${latestResource.slug}`} class="flex aspect-square flex-col bg-ink-950 p-5 text-white" aria-hidden="true" tabindex="-1">
                       <span class="flex items-start justify-between gap-3 text-[10px] font-bold">
-                        <span class="text-neutral-300">{r.category || "無料資料"}</span>
+                        <span class="text-neutral-300">{latestResource.category || "無料資料"}</span>
                         <span class="tracking-wide">MKTG.AX</span>
                       </span>
-                      <span class="mt-5 line-clamp-3 text-xl font-bold leading-snug">{r.title}</span>
+                      <span class="mt-5 line-clamp-3 text-xl font-bold leading-snug">{latestResource.title}</span>
                       <svg viewBox="0 0 240 70" class="mt-auto w-full" fill="none" aria-hidden="true">
                         <line x1="0" y1="35" x2="240" y2="35" stroke="#525252" stroke-width="1" />
                         <line x1="120" y1="0" x2="120" y2="70" stroke="#525252" stroke-width="1" />
@@ -212,26 +241,32 @@ const breadcrumbItems = [
                         <rect x="183" y="8" width="10" height="10" fill="white" />
                         <rect x="46" y="50" width="6" height="6" stroke="white" stroke-width="1" />
                       </svg>
-                      <span class="mt-4 block min-h-[1em] text-[10px] text-neutral-300">{r.homeCatch || ""}</span>
+                      <span class="mt-4 block min-h-[1em] text-[10px] text-neutral-300">{latestResource.homeCatch || ""}</span>
                     </a>
-                    <p class="mt-4 text-xs text-neutral-500">無料資料　/　{formatDate(r.publishedAt)}</p>
+                    <p class="mt-4 text-xs text-neutral-500">無料資料　/　{formatDate(latestResource.publishedAt)}</p>
                     <p class="mt-2 text-lg font-bold leading-snug text-ink-950">
-                      <a href={`/resources/${r.slug}`} class="hover:underline">{r.title}</a>
+                      <a href={`/resources/${latestResource.slug}`} class="hover:underline">{latestResource.title}</a>
                     </p>
-                    {r.description && <p class="mt-3 line-clamp-4 text-[13px] leading-relaxed whitespace-pre-line text-neutral-600">{r.description}</p>}
-                    {splitContents(r.contents).length > 0 && (
+                    {latestResource.description && <p class="mt-3 line-clamp-4 text-[13px] leading-relaxed whitespace-pre-line text-neutral-600">{latestResource.description}</p>}
+                    {splitContents(latestResource.contents).length > 0 && (
                       <ul class="mt-4 space-y-1 text-xs text-neutral-500">
-                        {splitContents(r.contents).map((c) => (
+                        {splitContents(latestResource.contents).map((c) => (
                           <li>・{c}</li>
                         ))}
                       </ul>
                     )}
-                    <a href={`/resources/${r.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
+                    <a href={`/resources/${latestResource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
                       資料を見る<span aria-hidden="true">→</span>
                     </a>
-                  </div>
-                ))}
               </div>
+            </div>
+          )
+        }
+
+        {
+          sidebarTags.length > 0 && (
+            <div class="mt-14">
+              <BlogSidebar showSearch={false} categories={[]} popularPosts={[]} tags={sidebarTags} />
             </div>
           )
         }
@@ -252,15 +287,26 @@ const breadcrumbItems = [
 </BaseLayout>
 
 <script>
-  // 「〇〇に関する記事・資料」のページ送り（全記事のリンクはHTMLに入っていて、表示だけを切り替える）
+  // 「〇〇に関する記事・資料」の形式の絞り込み（すべて／記事／無料資料）とページ送り。全件のリンクはHTMLに入っていて、表示だけを切り替える
   const root = document.querySelector<HTMLElement>("[data-tag-articles]");
   const pager = root?.querySelector<HTMLElement>("[data-pager]");
   if (root && pager) {
     const pageSize = Number(root.dataset.pageSize) || 3;
     const rows = Array.from(root.querySelectorAll<HTMLElement>("[data-row]"));
-    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+    const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-type]"));
     const heading = root.querySelector<HTMLElement>("h2");
     let current = 1;
+    let type = "all";
+    let totalPages = 1;
+
+    typeButtons.forEach((b) =>
+      b.addEventListener("click", () => {
+        type = b.dataset.type || "all";
+        typeButtons.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        current = 1;
+        render();
+      }),
+    );
 
     const button = (label: string, page: number, opts: { current?: boolean; aria?: string; wide?: boolean } = {}) => {
       const b = document.createElement("button");
@@ -280,8 +326,12 @@ const breadcrumbItems = [
     };
 
     function render() {
+      const matched = rows.filter((row) => type === "all" || row.dataset.kind === type);
+      totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+      current = Math.min(current, totalPages);
       const start = (current - 1) * pageSize;
-      rows.forEach((row, i) => (row.hidden = i < start || i >= start + pageSize));
+      const visible = new Set(matched.slice(start, start + pageSize));
+      rows.forEach((row) => (row.hidden = !visible.has(row)));
       pager!.replaceChildren();
       if (totalPages <= 1) return;
       if (current > 1) pager!.append(button("← 前へ", current - 1, { wide: true }));
