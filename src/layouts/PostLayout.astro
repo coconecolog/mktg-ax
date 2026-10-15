@@ -3,7 +3,7 @@ import BaseLayout from "./BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
-import BlogSidebar from "@/components/BlogSidebar.astro";
+import SideNav from "@/components/SideNav.astro";
 import AuthorCard from "@/components/AuthorCard.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import ResourceCta from "@/components/ResourceCta.astro";
@@ -11,7 +11,7 @@ import ToolCta from "@/components/ToolCta.astro";
 import { getResourceById } from "@/lib/resources";
 import { getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
-import { buildToc, getAllTags, getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
+import { buildToc, getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
 import { getLibraryItemsByCategory } from "@/lib/library";
 import { autoLinkTagKeywords } from "@/lib/tagKeywordLinks";
 import type { Post } from "@/lib/types";
@@ -29,7 +29,6 @@ const faqSchema = buildFaqSchema(post.blocks);
 // 本文中のタグ名（サイト内の全タグ）を、タグごとに最初の1箇所だけタグページへのリンクにする（src/lib/tagKeywordLinks.ts）。
 const bodyBlocks = autoLinkTagKeywords(post.blocks);
 
-const tags = getAllTags();
 const author = post.author ? getAuthorByName(post.author) : undefined;
 
 // 記事DBの「CTA資料」に値がある記事だけ、資料DLのCTAを出す。値が無い、または資料が非公開で
@@ -54,9 +53,6 @@ const breadcrumbItems = [
   { name: post.title, href: `/blog/${post.slug}` },
 ];
 
-// 右カラムの目次（H2のみ・01からの連番）。
-const sidebarToc = toc.map((h2, i) => ({ ...h2, no: String(i + 1).padStart(2, "0") }));
-const ctaCover = ctaResource ? ctaResource.thumbnail || ctaResource.coverImage : null;
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
@@ -197,55 +193,8 @@ const dateLabel = (iso: string) =>
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">
-        <div class="space-y-10">
-          {
-            ctaResource && (
-              <div>
-                <p class="text-sm font-bold text-ink-950">この記事に関連する資料</p>
-                <div class="mt-3 bg-neutral-100 p-5">
-                  {ctaCover && (
-                    <a href={`/resources/${ctaResource.slug}`} class="block" aria-hidden="true" tabindex="-1">
-                      <img src={ctaCover} alt="" class="w-full border border-neutral-200 bg-white" loading="lazy" />
-                    </a>
-                  )}
-                  <p class="mt-4 text-xs font-bold text-neutral-500">無料資料</p>
-                  <p class="mt-2 text-base font-extrabold leading-snug text-ink-950">
-                    <a href={`/resources/${ctaResource.slug}`} class="text-ink-950 no-underline hover:underline">{ctaResource.title}</a>
-                  </p>
-                  {ctaResource.contents && <p class="mt-3 text-xs font-bold leading-relaxed text-ink-950">{ctaResource.contents}</p>}
-                  {ctaResource.homeCatch && <p class="mt-3 text-xs leading-relaxed text-neutral-600">{ctaResource.homeCatch}</p>}
-                  {ctaResource.description && (
-                    <p class="mt-3 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-neutral-600">{ctaResource.description}</p>
-                  )}
-                  <a href={`/resources/${ctaResource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800">
-                    資料を見る
-                    <span aria-hidden="true">→</span>
-                  </a>
-                </div>
-              </div>
-            )
-          }
-
-          {
-            sidebarToc.length > 0 && (
-              <nav aria-label="目次" class="hidden border-t-2 border-ink-950 pt-5 lg:block">
-                <p class="text-sm font-bold text-ink-950">目次</p>
-                <ol class="mt-4 space-y-3 text-sm">
-                  {sidebarToc.map((h2) => (
-                    <li>
-                      <a href={`#${h2.anchor}`} class="flex gap-3 text-neutral-500 no-underline hover:text-ink-950">
-                        <span class="shrink-0 tabular-nums text-neutral-400">{h2.no}</span>
-                        <span>{h2.text}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            )
-          }
-
-          <BlogSidebar showSearch={false} categories={[]} popularPosts={[]} tags={tags} />
-        </div>
+        {/* 右カラム（タグページと共通。目次 → 関連する資料）。2026-10-15にタグ一覧を削除 */}
+        <SideNav toc={toc.map((h2) => ({ anchor: h2.anchor, text: h2.text }))} resource={ctaResource} />
       </aside>
     </div>
   </article>
