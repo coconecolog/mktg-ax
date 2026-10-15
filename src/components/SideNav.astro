@@ -1,0 +1,68 @@
+---
+// 記事ページ・タグページ共通の右カラム（2026-10-15統一）。
+// 上から「目次」（ページ内の見出し2・01からの連番。PCのみ表示）→ 薄い区切り線 →「関連する資料」（1件）。
+// 表紙は資料の表紙画像（PDF1ページ目のキャプチャ）。画像が無い資料は資料名から白黒で生成する。
+import type { Resource } from "@/lib/types";
+
+interface Props {
+  toc: { anchor: string; text: string }[];
+  resource?: Resource;
+}
+
+const { toc, resource } = Astro.props;
+const cover = resource ? resource.thumbnail || resource.coverImage : null;
+---
+
+<div>
+  {
+    toc.length > 0 && (
+      <nav aria-label="目次" class="hidden border-t-2 border-ink-950 pt-5 lg:block">
+        <p class="text-sm font-bold text-ink-950">目次</p>
+        <ol class="mt-4 space-y-3 text-sm">
+          {toc.map((h, i) => (
+            <li>
+              <a href={`#${h.anchor}`} class="flex gap-3 text-neutral-500 no-underline hover:text-ink-950">
+                <span class="shrink-0 tabular-nums text-neutral-400">{String(i + 1).padStart(2, "0")}</span>
+                <span>{h.text}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )
+  }
+
+  {
+    resource && (
+      <div class={toc.length > 0 ? "lg:mt-8 lg:border-t lg:border-neutral-300 lg:pt-6" : ""}>
+        <p class="text-sm font-bold text-ink-950">関連する資料</p>
+        <div class="mt-3 bg-neutral-100 p-5">
+          <a href={`/resources/${resource.slug}`} class="block" aria-hidden="true" tabindex="-1">
+            {cover ? (
+              <img src={cover} alt="" class="w-full border border-neutral-200 bg-white" loading="lazy" />
+            ) : (
+              <span class="flex aspect-[4/3] flex-col bg-ink-950 p-5 text-white">
+                <span class="flex items-start justify-between gap-3 text-[10px] font-bold">
+                  <span class="text-neutral-300">{resource.category || "無料資料"}</span>
+                  <span class="tracking-wide">MKTG.AX</span>
+                </span>
+                <span class="mt-4 line-clamp-3 text-lg font-bold leading-snug">{resource.title}</span>
+                {resource.homeCatch && <span class="mt-auto block text-[10px] text-neutral-300">{resource.homeCatch}</span>}
+              </span>
+            )}
+          </a>
+          <p class="mt-4 text-xs font-bold text-neutral-500">無料資料</p>
+          <p class="mt-2 text-base font-extrabold leading-snug text-ink-950">
+            <a href={`/resources/${resource.slug}`} class="text-ink-950 no-underline hover:underline">{resource.title}</a>
+          </p>
+          {resource.contents && <p class="mt-3 text-xs font-bold leading-relaxed text-ink-950">{resource.contents}</p>}
+          {resource.description && <p class="mt-3 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-neutral-600">{resource.description}</p>}
+          <a href={`/resources/${resource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800">
+            資料を見る
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    )
+  }
+</div>
