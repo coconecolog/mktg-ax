@@ -6,7 +6,7 @@
 //   UX       … 記事ページのタグから来た人が、そのタグの記事をすぐ探せるよう、記事一覧を上に置く
 // 構成: パンくず → H1「〇〇とは？」＋定義文 → ページ内リンク列 →
 //       左: 「〇〇に関する記事・資料」（記事・資料を新しい順。形式の絞り込みとTAG_PAGE_SIZE件ずつのページ送りはページ内JS）→ 解説エリア（TagBody）
-//       右: このページの内容（本文の見出し2）→ 資料で実践する（このタグの最新資料1件）→ タグ一覧（BlogSidebar）
+//       右: SideNav（記事ページと共通。目次＝「記事・資料」＋本文の見出し2 → 関連する資料＝このタグの最新資料1件）→ タグ一覧（BlogSidebar）
 // URLは /blog/tag/{slug} の1つだけ（ライブラリページと同じ扱い）。旧URL（/blog・/resources タブ、/2 などのページ送り）は
 // public/_redirects でこのページへ301転送している。
 // 記事のラベルは自動: 記事の「サブカテゴリ」名（無ければ先頭のカテゴリ名）。
@@ -16,6 +16,7 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import TagBody from "@/components/TagBody.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import BlogSidebar from "@/components/BlogSidebar.astro";
+import SideNav from "@/components/SideNav.astro";
 import { getAllSubcategories, getAllTags, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
@@ -58,12 +59,6 @@ const labelOf = (item: (typeof items)[number]) =>
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo" }).replaceAll("/", ".");
 
-// 「内容物」（例: 5つのステップ＋記入例付きワークシート）を箇条書き用に分ける
-const splitContents = (text: string | undefined) =>
-  (text || "")
-    .split(/\r?\n|[＋+／]/)
-    .map((s) => s.replace(/^[・\-\s]+/, "").trim())
-    .filter(Boolean);
 
 // ---- 解説エリア（マスタータグDBのページ本文） ----
 // 「似た用語との違い」「関連用語」の用語名は、同名のタグページがあれば自動でリンクする
@@ -73,7 +68,7 @@ const headings = bodyBlocks
   .filter((b) => b.type === "heading_2" && b.anchor && plain(b.richText))
   .map((b) => ({ anchor: b.anchor as string, text: plain(b.richText) }));
 
-// 右カラム「このページの内容」用の短い見出し（先頭のタグ名と「の・と・を・について」等を省く）
+// 右カラム「目次」用の短い見出し（先頭のタグ名と「の・と・を・について」等を省く）
 const shortLabel = (text: string) => {
   if (!text.startsWith(tagName)) return text;
   const rest = text.slice(tagName.length).replace(/^(について|に関する|における|との|の|と|を|が|は|で)/, "").trim();
@@ -82,6 +77,8 @@ const shortLabel = (text: string) => {
 
 const ARTICLES_ANCHOR = "articles";
 const articlesHeading = `${tagName}に関する記事・資料`;
+// 右カラムの目次。ページの並びどおり「記事・資料」→ 解説エリアの見出し2
+const sideToc = [{ anchor: ARTICLES_ANCHOR, text: shortLabel(articlesHeading) }, ...headings.map((h) => ({ anchor: h.anchor, text: shortLabel(h.text) }))];
 
 // ---- SEO ----
 // titleタグ。マスタータグDBの「SEOタイトル」を使う（末尾の「 | MKTG.AX」はSEO.astroが自動で付ける）。
@@ -204,64 +201,8 @@ const breadcrumbItems = [
 
       {/* 右カラム */}
       <aside class="mt-14 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start">
-        {
-          headings.length > 0 && (
-            <nav aria-label="このページの内容" class="hidden lg:block">
-              <p class="text-sm font-bold text-ink-950">このページの内容</p>
-              <ol class="mt-4 space-y-4 text-[13px]">
-                {[...headings.map((h) => ({ anchor: h.anchor, text: shortLabel(h.text) })), { anchor: ARTICLES_ANCHOR, text: "詳しく学ぶ記事・資料" }].map((h, i) => (
-                  <li>
-                    <a href={`#${h.anchor}`} class="flex gap-4 text-ink-950 hover:underline">
-                      <span class="shrink-0 tabular-nums text-neutral-400">{String(i + 1).padStart(2, "0")}</span>
-                      <span>{h.text}</span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          )
-        }
-
-        {
-          latestResource && (
-            <div class={headings.length > 0 ? "lg:mt-10" : ""}>
-              <p class="text-sm font-bold text-ink-950">資料で実践する</p>
-              <div class="mt-3 bg-neutral-100 p-5">
-                    {/* 表紙（資料名から白黒で生成。PDFのキャプチャは使わない） */}
-                    <a href={`/resources/${latestResource.slug}`} class="flex aspect-square flex-col bg-ink-950 p-5 text-white" aria-hidden="true" tabindex="-1">
-                      <span class="flex items-start justify-between gap-3 text-[10px] font-bold">
-                        <span class="text-neutral-300">{latestResource.category || "無料資料"}</span>
-                        <span class="tracking-wide">MKTG.AX</span>
-                      </span>
-                      <span class="mt-5 line-clamp-3 text-xl font-bold leading-snug">{latestResource.title}</span>
-                      <svg viewBox="0 0 240 70" class="mt-auto w-full" fill="none" aria-hidden="true">
-                        <line x1="0" y1="35" x2="240" y2="35" stroke="#525252" stroke-width="1" />
-                        <line x1="120" y1="0" x2="120" y2="70" stroke="#525252" stroke-width="1" />
-                        <rect x="79" y="22" width="6" height="6" stroke="white" stroke-width="1" />
-                        <rect x="183" y="8" width="10" height="10" fill="white" />
-                        <rect x="46" y="50" width="6" height="6" stroke="white" stroke-width="1" />
-                      </svg>
-                      <span class="mt-4 block min-h-[1em] text-[10px] text-neutral-300">{latestResource.homeCatch || ""}</span>
-                    </a>
-                    <p class="mt-4 text-xs text-neutral-500">無料資料　/　{formatDate(latestResource.publishedAt)}</p>
-                    <p class="mt-2 text-lg font-bold leading-snug text-ink-950">
-                      <a href={`/resources/${latestResource.slug}`} class="hover:underline">{latestResource.title}</a>
-                    </p>
-                    {latestResource.description && <p class="mt-3 line-clamp-4 text-[13px] leading-relaxed whitespace-pre-line text-neutral-600">{latestResource.description}</p>}
-                    {splitContents(latestResource.contents).length > 0 && (
-                      <ul class="mt-4 space-y-1 text-xs text-neutral-500">
-                        {splitContents(latestResource.contents).map((c) => (
-                          <li>・{c}</li>
-                        ))}
-                      </ul>
-                    )}
-                    <a href={`/resources/${latestResource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
-                      資料を見る<span aria-hidden="true">→</span>
-                    </a>
-              </div>
-            </div>
-          )
-        }
+        {/* 右カラム（記事ページと共通。目次 → 関連する資料）＋タグ一覧 */}
+        <SideNav toc={sideToc} resource={latestResource} />
 
         {
           sidebarTags.length > 0 && (
