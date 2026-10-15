@@ -272,6 +272,7 @@ async function fetchTags(token, linkMap) {
       console.warn(`[fetch-notion] タグ「${name}」にSEOタイトルが未設定です（仮のタイトルになります）。`);
     }
     const description = getRichTextPlain(page, TAG_PROP.description);
+    const metaDescription = getRichTextPlain(page, TAG_PROP.metaDescription).trim();
     const representativeSlugRaw = resolveRepresentativeSlug(
       page,
       TAG_PROP.representativeSlug,
@@ -287,6 +288,7 @@ async function fetchTags(token, linkMap) {
       slug,
       seoTitle,
       description,
+      metaDescription,
       representativeSlug: representativeSlugRaw || null,
       blocks,
     });
