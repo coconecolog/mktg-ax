@@ -11,6 +11,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import CategorySectionBlock from "@/components/CategorySectionBlock.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
+import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
 import { getCategoryGuide } from "@/lib/library";
 import { buildCollectionPageSchema, buildFaqSchema } from "@/lib/schema";
@@ -28,7 +29,6 @@ const { category } = Astro.props as { category: Category };
 const guide = getCategoryGuide(category.name);
 const themeSections = guide.sections.filter((s) => s.subcategory !== null);
 const categoryPath = getCategoryPath(category.name);
-const otherCategories = getAllCategories().filter((c) => c.name !== category.name);
 
 // 資料が無いテーマの右側に出す「関連テーマも活用する」のリンク（同じカテゴリ内で資料があるテーマ。最大3件）
 const sectionsWithResources = themeSections.filter((s) => s.resources.length > 0);
@@ -151,26 +151,8 @@ const breadcrumbItems = [
     }
   </div>
 
-  {/* ほかのテーマ（ほかのカテゴリ） */}
-  {
-    otherCategories.length > 0 && (
-      <section class="mt-10 bg-neutral-100">
-        <div class="mx-auto max-w-6xl px-5 py-12">
-          <h2 class="text-lg font-bold text-ink-950">{category.name}とつながる、ほかのテーマ</h2>
-          <ul class="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
-            {otherCategories.map((c) => (
-              <li class="border-b border-neutral-300">
-                <a href={getCategoryPath(c.name)} class="group block py-4">
-                  <span class="block text-sm font-bold text-ink-950 group-hover:underline">{c.name} →</span>
-                  {c.description && <span class="mt-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-500">{c.description}</span>}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    )
-  }
+  {/* フッター手前の共通ブロック（カテゴリ一覧・タグ一覧 → ご要望・ご質問）。2026-10-15に「ほかのテーマ」から差し替え */}
+  <ContactCta />
 </BaseLayout>
 
 <script>
