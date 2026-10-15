@@ -18,5 +18,12 @@
 /blog/category/:cat/resources   /blog/category/:cat 301
 /blog/category/:cat/resources/* /blog/category/:cat 301
 /blog/category/:cat/:page       /blog/category/:cat 301
+# 2026-10-15 タグページのリニューアルで廃止したURLの301リダイレクト（末尾スラッシュ統一ルールより前に書くこと）
+# タグ: ページ送り（/2…）・「ブログ記事」「無料資料」タブは、タグページ本体（/blog/tag/{slug}）1ページに統合
+/blog/tag/:tag/blog        /blog/tag/:tag 301
+/blog/tag/:tag/blog/*      /blog/tag/:tag 301
+/blog/tag/:tag/resources   /blog/tag/:tag 301
+/blog/tag/:tag/resources/* /blog/tag/:tag 301
+/blog/tag/:tag/:page       /blog/tag/:tag 301
 # 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（Cloudflare Pages）
 /*/ /:splat 301
