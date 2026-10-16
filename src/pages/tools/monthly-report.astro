@@ -130,7 +130,7 @@ const faqItems = [
         </div>
       </div>
 
-      <details class="mt-6 rounded-xl bg-neutral-50 px-4 py-3">
+      <details open class="mt-6 rounded-xl bg-neutral-50 px-4 py-3">
         <summary class="cursor-pointer text-sm font-bold text-ink-950">月別のリード数の計画（任意）</summary>
         <p class="mt-2 text-xs text-neutral-500">空欄の月は、年間の計画から入力済みの月を引いた残りを等分します。すべて空欄なら12等分です。</p>
         <div id="plan-monthly" class="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6"></div>
@@ -140,7 +140,7 @@ const faqItems = [
     <!-- STEP 2 今月の数字 -->
     <div class="mr-step mt-6 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
       <h2 class="text-lg font-bold text-ink-950"><span class="mr-step-no">STEP 2</span>毎月の数字</h2>
-      <p class="mt-1 text-xs text-neutral-500">報告する月を選んで、その月の数字を入れます。前の月を直したいときも、ここで月を選びます。</p>
+      <p class="mt-1 text-xs text-neutral-500">報告する月（ふつうは今月）を選んで、その月1か月分の数字を入れます。前の月を直したいときも、ここで月を選びます。</p>
 
       <div class="mt-5 mr-field">
         <span class="mr-label">報告する月</span>
@@ -159,6 +159,7 @@ const faqItems = [
         <div class="mr-field">
           <label class="mr-label" for="m-dealAmt">新規の商談金額</label>
           <div class="mr-unit"><input id="m-dealAmt" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+          <span class="mr-help">その月の新規の商談（新規の商談数の分）の金額の合計</span>
         </div>
         <div class="mr-field">
           <label class="mr-label" for="m-wins">受注数</label>
@@ -167,6 +168,7 @@ const faqItems = [
         <div class="mr-field">
           <label class="mr-label" for="m-winAmt">受注金額</label>
           <div class="mr-unit"><input id="m-winAmt" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+          <span class="mr-help">その月に受注した商談（受注数の分）の金額の合計</span>
         </div>
         <div class="mr-field">
           <label class="mr-label" for="m-lost">失注数</label>
@@ -175,6 +177,7 @@ const faqItems = [
         <div class="mr-field">
           <label class="mr-label" for="m-lostAmt">失注金額</label>
           <div class="mr-unit"><input id="m-lostAmt" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+          <span class="mr-help">わからないときは「平均受注単価×失注数」を入れてください（0にすると受注率が高く出すぎます）</span>
         </div>
         <div class="mr-field">
           <label class="mr-label" for="m-open">月末に進行中の商談金額</label>
@@ -324,6 +327,7 @@ const faqItems = [
   .mr-report .r-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0b0b12; padding-bottom: 7px; }
   .mr-report .r-title { font-size: 22px; font-weight: 800; }
   .mr-report .r-sub { font-size: 11px; color: #525252; margin-top: 2px; }
+  .mr-report .r-src { font-size: 10.5px; color: #0b0b12; font-weight: 700; margin-top: 2px; }
   .mr-report .r-meta { font-size: 10.5px; color: #525252; text-align: right; }
   .mr-report .r-top { display: grid; grid-template-columns: 1fr 1.08fr; gap: 12px; margin-top: 9px; }
   .mr-report .r-box { border: 1px solid #e5e5e5; border-radius: 8px; padding: 9px 12px; }
@@ -731,13 +735,43 @@ const faqItems = [
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" font-family="Noto Sans JP, sans-serif">${grid}${bars}<polyline points="${planPts}" fill="none" stroke="#9ca3af" stroke-width="1.5"/><polyline points="${actPts}" fill="none" stroke="#0b0b12" stroke-width="2.5"/>${dots}${fc}${labels}${endLabels}</svg>`;
   }
 
+  /** 報告書のもとにしたデータの月（例：2026年9月〜11月の3か月分。4月〜8月は数字なし） */
+  function dataRangeLabel(index: number): string {
+    const p = data.plan;
+    const entered = data.months.slice(0, index + 1).flatMap((m, i) => (isMonthEntered(m) ? [i] : []));
+    if (entered.length === 0) return "";
+    const name = (i: number) => `${monthOf(p, i).month}月`;
+    const first = entered[0];
+    const contiguous = entered.length === entered[entered.length - 1] - first + 1;
+    const range = contiguous
+      ? `${monthLabel(p, first)}${entered.length > 1 ? `〜${name(entered[entered.length - 1])}` : ""}`
+      : entered.map((i, k) => (k === 0 ? monthLabel(p, i) : name(i))).join("・");
+    const missing = Array.from({ length: index + 1 }, (_, i) => i).filter((i) => !entered.includes(i));
+    const missingText = missing.length
+      ? `。${contiguousLabel(missing, name)}は数字なし（0として計算）`
+      : "";
+    return `もとにしたデータ：${range}の${entered.length}か月分${missingText}`;
+  }
+  function contiguousLabel(idx: number[], name: (i: number) => string): string {
+    const parts: string[] = [];
+    let start = idx[0];
+    for (let k = 1; k <= idx.length; k++) {
+      if (k === idx.length || idx[k] !== idx[k - 1] + 1) {
+        const end = idx[k - 1];
+        parts.push(start === end ? name(start) : `${name(start)}〜${name(end)}`);
+        start = idx[k];
+      }
+    }
+    return parts.join("・");
+  }
+
   function reportHtml(r: Report | null, problems: string[]): string {
     const p = data.plan;
     const today = new Date();
     const made = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
     const head = `<div class="r-head">
         <div><p class="r-title">マーケティング月次報告　${r ? esc(r.label) : ""}</p>
-        <p class="r-sub">期間 ${esc(monthLabel(p, 0))}〜${esc(monthLabel(p, 11))}${r ? `（${r.monthNo}か月目）` : ""}・数字はすべてマーケ起点</p></div>
+        <p class="r-sub">期間 ${esc(monthLabel(p, 0))}〜${esc(monthLabel(p, 11))}${r ? `（${r.monthNo}か月目）` : ""}・数字はすべてマーケ起点</p>${r ? `<p class="r-src">${esc(dataRangeLabel(r.index))}</p>` : ""}</div>
         <div class="r-meta">作成日 ${made}<br />単位：万円・件</div>
       </div>`;
     const footLeft = (extra: string) =>
