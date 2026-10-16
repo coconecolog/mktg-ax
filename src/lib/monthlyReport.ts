@@ -58,7 +58,7 @@ export interface ReportData {
   plan: Plan;
   months: MonthActual[];
   reportIndex: number;
-  actions: { stage: string; items: ActionItem[] };
+  actions: { stage: string; items: ActionItem[]; free: string };
   texts: ReportTexts;
   email?: string;
 }
@@ -108,7 +108,7 @@ export function emptyData(today = new Date()): ReportData {
     },
     months: Array.from({ length: 12 }, emptyMonth),
     reportIndex: 0,
-    actions: { stage: "", items: [] },
+    actions: { stage: "", items: [], free: "" },
     texts: emptyTexts(),
   };
 }
@@ -150,15 +150,19 @@ export function normalizeData(raw: any): ReportData {
   const items = Array.isArray(raw.actions?.items)
     ? raw.actions.items
         .filter((a: any) => a && typeof a.text === "string")
-        .slice(0, 3)
-        .map((a: any) => ({ text: a.text, checked: a.checked !== false }))
+        .slice(0, 10)
+        .map((a: any) => ({ text: a.text, checked: a.checked === true }))
     : [];
   return {
     v: DATA_VERSION,
     plan,
     months,
     reportIndex: Math.min(11, Math.max(0, num(raw.reportIndex) ?? 0)),
-    actions: { stage: typeof raw.actions?.stage === "string" ? raw.actions.stage : "", items },
+    actions: {
+      stage: typeof raw.actions?.stage === "string" ? raw.actions.stage : "",
+      items,
+      free: typeof raw.actions?.free === "string" ? raw.actions.free : "",
+    },
     texts: {
       issue: editable(raw.texts?.issue),
       deadline: editable(raw.texts?.deadline),
@@ -382,19 +386,37 @@ export function landingTrend(data: ReportData): (number | null)[] {
 
 // ---- 打ち手の候補・一文 ----
 
+/** 打ち手の候補（足りない段階ごとに5つ。読者は3つまで選び、言葉を直せる。ほかに自由記入1つ） */
+export const MAX_ACTIONS = 3;
 export const ACTION_CANDIDATES: Record<StageKey | "ok", string[]> = {
   leads: [
-    "成果の出ているチャネルに予算を寄せる",
-    "次の展示会・セミナーを前倒しする",
-    "事例や資料など、問い合わせにつながるページを増やす",
+    "成果の出ているチャネル・施策に予算を寄せる",
+    "新しいチャネル・施策を小さく試す",
+    "訴求・ターゲット設定を見直す",
+    "サイトの問い合わせ・資料請求の導線を見直す",
+    "資料やセミナーなど、リード獲得のコンテンツ・施策を増やす",
   ],
   dealRate: [
-    "営業に渡す条件を営業と見直す",
-    "渡してから連絡するまでの期限を営業と確かめる",
-    "対象外の業種・規模からのリードを減らす",
+    "営業に渡す条件と、渡してから連絡するまでのタイミングを営業と調整する",
+    "商談にならなかった理由を営業から集める",
+    "すぐ商談にならないリードに定期的に情報を送る",
+    "休眠リードに再び連絡して商談の機会をつくる",
+    "顧客の課題を改めて営業と認識を合わせる",
   ],
-  winRate: ["失注の理由を営業から集める", "商談で使う事例・比較資料を用意する", "狙う業種・規模を絞る"],
-  unitPrice: ["単価の高い業種・規模に予算を寄せる", "上位の製品や大口の事例を発信する"],
+  winRate: [
+    "失注の理由を営業から集める",
+    "商談で使う事例・比較資料を用意する",
+    "受注した顧客の共通点を洗い出し、ターゲットを見直す",
+    "決裁者向けの資料（効果・投資対効果）を用意する",
+    "競合との違いを伝えるメッセージを見直す",
+  ],
+  unitPrice: [
+    "単価の高い顧客の共通点を洗い出し、ターゲットを見直す",
+    "既存顧客にアップセル・クロスセルを案内する",
+    "導入効果を金額で示す資料を用意する",
+    "値引きが前提にならないよう、価値・効果を伝える",
+    "単価の高い業種・規模に予算を寄せる",
+  ],
   ok: ["今の配分を続ける"],
 };
 
