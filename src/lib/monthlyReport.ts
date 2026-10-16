@@ -4,6 +4,9 @@
 
 export const DATA_VERSION = 1;
 
+/** 実績の受注率に切り替える、決着した商談（受注＋失注）の件数 */
+export const SETTLED_THRESHOLD = 10;
+
 export interface Plan {
   startYear: number; // 期首の年
   startMonth: number; // 期首月（1〜12）
@@ -224,7 +227,8 @@ export interface Report {
   open: number;
   openExpected: number;
   futureNew: number;
-  futureMonths: number; // 「期内に受注できる新規分」に数えた月の数
+  futureMonths: number;
+  deadlineIndex: number; // 期内に受注できる商談の期限の月（0始まり。報告月以前なら挽回できる月がない） // 「期内に受注できる新規分」に数えた月の数
   landing: number;
   target: number;
   ratio: number;
@@ -262,15 +266,17 @@ export function computeReport(data: ReportData, index = data.reportIndex): Repor
     planLeadsCum += planLeads[i];
   }
 
-  // 受注率：決着した商談（受注＋失注）が3件たまるまでは計画、以降は累計の実績（金額ベース）
+  // 受注率：決着した商談（受注＋失注）が10件たまるまでは計画、以降は累計の実績（金額ベース）。
+  // 実績の受注率は「進行中の商談」にだけ使う。期内に受注できる新規分は計画の受注率で計算する。
   const settled = cum.wins + cum.lost;
-  const useActual = settled >= 3 && cum.winAmt + cum.lostAmt > 0;
+  const useActual = settled >= SETTLED_THRESHOLD && cum.winAmt + cum.lostAmt > 0;
+  const planWinRate = plan.winRate || 0;
   const winRateUsed = useActual ? cum.winAmt / (cum.winAmt + cum.lostAmt) : plan.winRate || 0;
 
   const open = v0(months[idx].open);
   const openExpected = open * winRateUsed;
 
-  // 期内に受注できる新規分：残りの月のうち、期末まで「平均期間」以上ある月の計画の商談金額×受注率
+  // 期内に受注できる新規分：残りの月のうち、期末まで「平均期間」以上ある月の計画の商談金額×計画の受注率
   const cycle = Math.max(0, plan.cycle ?? 0);
   let futurePlan = 0;
   let futureMonths = 0;
@@ -280,7 +286,9 @@ export function computeReport(data: ReportData, index = data.reportIndex): Repor
       futureMonths++;
     }
   }
-  const futureNew = futurePlan * winRateUsed;
+  const futureNew = futurePlan * planWinRate;
+  // 期限の月（この月までの商談なら期内に受注できる）＝期末−平均期間
+  const deadlineIndex = Math.floor(11 - cycle);
 
   const landing = cum.winAmt + openExpected + futureNew;
   const target = plan.target || 0;
@@ -294,7 +302,7 @@ export function computeReport(data: ReportData, index = data.reportIndex): Repor
   const stages: StageResult[] = [
     stage("leads", cum.leads, planLeadsCum),
     stage("dealRate", cum.leads > 0 ? cum.deals / cum.leads : null, plan.dealRate || 0, cum.leads > 0 ? undefined : "リードがまだありません"),
-    stage("winRate", useActual ? winRateUsed : null, plan.winRate || 0, useActual ? undefined : `決着した商談が${settled}件（3件で判定）`),
+    stage("winRate", useActual ? winRateUsed : null, plan.winRate || 0, useActual ? undefined : `決着した商談が${settled}件（${SETTLED_THRESHOLD}件で判定）`),
     stage("unitPrice", cum.wins > 0 ? cum.winAmt / cum.wins : null, plan.avgDeal || 0, cum.wins > 0 ? undefined : "受注がまだありません"),
   ];
 
@@ -302,7 +310,7 @@ export function computeReport(data: ReportData, index = data.reportIndex): Repor
   const lowest = judged.length > 0 ? judged.reduce((a, b) => ((b.ratio as number) < (a.ratio as number) ? b : a)) : null;
   const weakIsBelowLine = !!lowest && (lowest.ratio as number) < 0.9;
   // すべて90%以上でも着地見込みが計画に届かないときは、いちばん低い段階を原因として扱う
-  const weakStage = lowest && (weakIsBelowLine || ratio < 1) ? lowest : null;
+  const weakStage = lowest && (weakIsBelowLine || (ratio < 1 && (lowest.ratio as number) < 1)) ? lowest : null;
 
   const cur = months[idx];
   const prev = idx > 0 ? months[idx - 1] : null;
@@ -328,6 +336,7 @@ export function computeReport(data: ReportData, index = data.reportIndex): Repor
     openExpected,
     futureNew,
     futureMonths,
+    deadlineIndex,
     landing,
     target,
     ratio,
@@ -390,19 +399,46 @@ export function fmtPct(r: number, digits = 0): string {
   return `${(r * 100).toFixed(digits)}%`;
 }
 
-/** 経営陣に説明するときの一文 */
-export function buildSentence(r: Report, actions: string[]): string {
-  const landing = fmtMan(r.landing);
-  const act = actions.length > 0 ? actions.map((a) => `「${a}」`).join("") : "打ち手";
-  const stageName = r.weakStage ? r.weakStage.name : "";
-  let s: string;
+/** 結論の文（3行）。plan は月名・単価・率の計算に使う。 */
+export function buildSentence(r: Report, actions: string[], plan: Plan): string {
+  const known = r.cum.winAmt + r.openExpected;
+  const perDeal = (plan.avgDeal || 0) * (plan.winRate || 0);
+  const dealRate = plan.dealRate || 0;
+  const monthName = (i: number) => `${monthOf(plan, i).month}月`;
+  const canRecover = r.deadlineIndex > r.index;
+
+  // 1行目：見込み
+  const l1 =
+    r.futureNew > 0
+      ? `期末の着地見込みは${fmtMan(r.landing)}（計画比${fmtPct(r.ratio)}）。うち受注済みと進行中の商談で${fmtMan(known)}、残り${fmtMan(r.futureNew)}はこれからの商談次第です。`
+      : `期末の着地見込みは${fmtMan(r.landing)}（計画比${fmtPct(r.ratio)}）。すべて受注済みと進行中の商談によるものです。`;
+
+  // 2行目：差と必要量
+  let l2: string;
+  const lateNote = r.deadlineIndex < 11 ? `${monthName(r.deadlineIndex + 1)}以降の商談は期内の受注に間に合いません。` : "";
   if (r.ratio >= 1) {
-    s = `期末の売上は${landing}の見込みで、計画どおりです。今の配分を続けます。`;
-  } else if (r.ratio >= 0.9) {
-    s = `期末の売上は${landing}の見込みで、計画に${fmtMan(r.shortfall)}足りません。原因は${stageName}です。${act}で取り戻します。`;
+    const rest = Math.max(0, r.target - known);
+    if (rest <= 0 || !canRecover || perDeal <= 0) {
+      l2 = "受注済みと進行中の商談で、計画に届く見込みです。";
+    } else {
+      l2 = `残りは${monthName(r.deadlineIndex)}までの商談${Math.ceil(rest / perDeal)}件で届きます。`;
+    }
+  } else if (!canRecover || perDeal <= 0) {
+    l2 = `期内の挽回は難しく、差${fmtMan(r.shortfall)}は来期の計画で扱います。`;
   } else {
-    s = `期末の売上は${landing}の見込みで、計画に${fmtMan(r.shortfall)}足りません。原因は${stageName}です。${act}を行い、来月の報告で結果をお伝えします。`;
+    const deals = Math.ceil(r.shortfall / perDeal);
+    const leads = dealRate > 0 ? Math.ceil(deals / dealRate) : null;
+    l2 = `計画まで${fmtMan(r.shortfall)}。取り戻すには、${monthName(r.deadlineIndex)}までに商談をあと${deals}件${
+      leads !== null ? `（リードで${leads}件）` : ""
+    }。${lateNote}`;
   }
-  if (r.revenue) s += `全社の売上のうち、マーケ起点は${fmtPct(r.revenue.share)}です。`;
-  return s;
+
+  // 3行目：打ち手
+  const act = actions.length > 0 ? actions.map((a) => `「${a}」`).join("") : "打ち手";
+  let l3 = r.weakStage
+    ? `${r.weakStage.name}が計画を下回っているため、${act}を行います。`
+    : "すべての段階が計画の90%以上のため、今の配分を続けます。";
+  if (r.revenue) l3 += `全社の売上のうち、マーケ起点は${fmtPct(r.revenue.share)}です。`;
+
+  return [l1, l2, l3].join("\n");
 }
