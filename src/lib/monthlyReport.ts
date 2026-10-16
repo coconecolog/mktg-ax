@@ -37,13 +37,29 @@ export interface ActionItem {
   checked: boolean;
 }
 
+export interface EditableText {
+  text: string;
+  edited: boolean; // true＝読者が手で直した（自動の文で上書きしない）
+}
+
+/** 報告書の文（課題・期限は自動で作り、読者が直せる。お願いは任意の手入力） */
+export interface ReportTexts {
+  issue: EditableText;
+  deadline: EditableText;
+  ask: string;
+}
+
+export function emptyTexts(): ReportTexts {
+  return { issue: { text: "", edited: false }, deadline: { text: "", edited: false }, ask: "" };
+}
+
 export interface ReportData {
   v: number;
   plan: Plan;
   months: MonthActual[];
   reportIndex: number;
   actions: { stage: string; items: ActionItem[] };
-  sentence: { text: string; edited: boolean };
+  texts: ReportTexts;
   email?: string;
 }
 
@@ -93,7 +109,7 @@ export function emptyData(today = new Date()): ReportData {
     months: Array.from({ length: 12 }, emptyMonth),
     reportIndex: 0,
     actions: { stage: "", items: [] },
-    sentence: { text: "", edited: false },
+    texts: emptyTexts(),
   };
 }
 
@@ -102,6 +118,11 @@ const num = (v: unknown): number | null => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
+
+const editable = (v: any): EditableText => ({
+  text: typeof v?.text === "string" ? v.text : "",
+  edited: v?.edited === true,
+});
 
 /** PDFや保存データから読み込んだ値を、欠けや型の崩れがあっても使える形に整える。 */
 export function normalizeData(raw: any): ReportData {
@@ -138,9 +159,10 @@ export function normalizeData(raw: any): ReportData {
     months,
     reportIndex: Math.min(11, Math.max(0, num(raw.reportIndex) ?? 0)),
     actions: { stage: typeof raw.actions?.stage === "string" ? raw.actions.stage : "", items },
-    sentence: {
-      text: typeof raw.sentence?.text === "string" ? raw.sentence.text : "",
-      edited: raw.sentence?.edited === true,
+    texts: {
+      issue: editable(raw.texts?.issue),
+      deadline: editable(raw.texts?.deadline),
+      ask: typeof raw.texts?.ask === "string" ? raw.texts.ask : "",
     },
     email: typeof raw.email === "string" ? raw.email : undefined,
   };
@@ -399,46 +421,179 @@ export function fmtPct(r: number, digits = 0): string {
   return `${(r * 100).toFixed(digits)}%`;
 }
 
-/** 結論の文（3行）。plan は月名・単価・率の計算に使う。 */
-export function buildSentence(r: Report, actions: string[], plan: Plan): string {
+/** 段階の値の表示（件／％／万円） */
+export function fmtStageValue(key: StageKey, v: number | null): string {
+  if (v === null) return "—";
+  if (key === "leads") return `${Math.round(v).toLocaleString("ja-JP")}件`;
+  if (key === "unitPrice") return fmtMan(v);
+  return `${(v * 100).toFixed(1)}%`;
+}
+
+export interface TwoLine {
+  main: string; // 太字の1行（読者が直せる）
+  sub: string; // 補足の1行（自動）
+}
+
+/** 課題：足りない段階（結論の文の3行目の前半） */
+export function buildIssue(r: Report): TwoLine {
+  const w = r.weakStage;
+  if (!w) return { main: "すべての段階が計画の90%以上で、計画どおり", sub: "" };
+  return {
+    main: `${w.name}が計画を下回っている`,
+    sub: `累計 ${fmtStageValue(w.key, w.actual)}／計画 ${fmtStageValue(w.key, w.plan)}（達成率${w.ratio === null ? "—" : fmtPct(w.ratio)}）`,
+  };
+}
+
+/** 期限：差と必要量（結論の文の2行目）。必要な商談件数＝差÷（計画の平均受注単価×計画の受注率）、リード＝商談÷計画の商談化率 */
+export function buildDeadline(r: Report, plan: Plan): TwoLine {
   const known = r.cum.winAmt + r.openExpected;
   const perDeal = (plan.avgDeal || 0) * (plan.winRate || 0);
   const dealRate = plan.dealRate || 0;
   const monthName = (i: number) => `${monthOf(plan, i).month}月`;
   const canRecover = r.deadlineIndex > r.index;
-
-  // 1行目：見込み
-  const l1 =
-    r.futureNew > 0
-      ? `期末の着地見込みは${fmtMan(r.landing)}（計画比${fmtPct(r.ratio)}）。うち受注済みと進行中の商談で${fmtMan(known)}、残り${fmtMan(r.futureNew)}はこれからの商談次第です。`
-      : `期末の着地見込みは${fmtMan(r.landing)}（計画比${fmtPct(r.ratio)}）。すべて受注済みと進行中の商談によるものです。`;
-
-  // 2行目：差と必要量
-  let l2: string;
   const lateNote = r.deadlineIndex < 11 ? `${monthName(r.deadlineIndex + 1)}以降の商談は期内の受注に間に合いません。` : "";
+
   if (r.ratio >= 1) {
     const rest = Math.max(0, r.target - known);
-    if (rest <= 0 || !canRecover || perDeal <= 0) {
-      l2 = "受注済みと進行中の商談で、計画に届く見込みです。";
-    } else {
-      l2 = `残りは${monthName(r.deadlineIndex)}までの商談${Math.ceil(rest / perDeal)}件で届きます。`;
-    }
-  } else if (!canRecover || perDeal <= 0) {
-    l2 = `期内の挽回は難しく、差${fmtMan(r.shortfall)}は来期の計画で扱います。`;
-  } else {
-    const deals = Math.ceil(r.shortfall / perDeal);
-    const leads = dealRate > 0 ? Math.ceil(deals / dealRate) : null;
-    l2 = `計画まで${fmtMan(r.shortfall)}。取り戻すには、${monthName(r.deadlineIndex)}までに商談をあと${deals}件${
-      leads !== null ? `（リードで${leads}件）` : ""
-    }。${lateNote}`;
+    if (rest <= 0 || !canRecover || perDeal <= 0) return { main: "受注済みと進行中の商談で、計画に届く見込み", sub: "" };
+    return {
+      main: `残りは${monthName(r.deadlineIndex)}までの商談${Math.ceil(rest / perDeal)}件で届く`,
+      sub: `受注済みと進行中の商談で${fmtMan(known)}。${lateNote}`,
+    };
   }
+  if (!canRecover || perDeal <= 0) {
+    return { main: `期内の挽回は難しく、差${fmtMan(r.shortfall)}は来期の計画で扱う`, sub: "" };
+  }
+  const deals = Math.ceil(r.shortfall / perDeal);
+  const leads = dealRate > 0 ? Math.ceil(deals / dealRate) : null;
+  return {
+    main: `${monthName(r.deadlineIndex)}までに商談をあと${deals}件${leads !== null ? `（リードで${leads}件）` : ""}`,
+    sub: `計画まで${fmtMan(r.shortfall)}。${lateNote}`,
+  };
+}
 
-  // 3行目：打ち手
-  const act = actions.length > 0 ? actions.map((a) => `「${a}」`).join("") : "打ち手";
-  let l3 = r.weakStage
-    ? `${r.weakStage.name}が計画を下回っているため、${act}を行います。`
-    : "すべての段階が計画の90%以上のため、今の配分を続けます。";
-  if (r.revenue) l3 += `全社の売上のうち、マーケ起点は${fmtPct(r.revenue.share)}です。`;
+// ---- 予実表・推移グラフ ----
 
-  return [l1, l2, l3].join("\n");
+export interface PlanByMonth {
+  leads: number[];
+  deals: number[];
+  dealAmt: number[];
+  wins: number[];
+  winAmt: number[];
+}
+
+/**
+ * 月別の計画。受注は「計画の商談が平均期間のあとに受注になる」として月にずらす。
+ * 期首の数か月は前期の商談からの受注（前期も同じ計画だったとみなす）で埋め、合計は年間の受注金額目標に合わせる。
+ */
+export function planByMonth(plan: Plan): PlanByMonth {
+  const leads = planLeadsByMonth(plan);
+  const deals = leads.map((l) => l * (plan.dealRate || 0));
+  const dealAmt = deals.map((d) => d * (plan.avgDeal || 0));
+  const lag = Math.min(11, Math.max(0, Math.round(plan.cycle ?? 0)));
+  const weights = Array.from({ length: 12 }, (_, j) => dealAmt[(j - lag + 12) % 12]);
+  const total = weights.reduce((a, b) => a + b, 0);
+  const target = plan.target || 0;
+  const winAmt = weights.map((w) => (total > 0 ? (target * w) / total : target / 12));
+  const wins = winAmt.map((a) => (plan.avgDeal ? a / plan.avgDeal : 0));
+  return { leads, deals, dealAmt, wins, winAmt };
+}
+
+export type RowKind = "count" | "amount" | "rate" | "unit";
+export interface TableRow {
+  key: string;
+  name: string;
+  kind: RowKind;
+  stage?: StageKey; // 段階の行（達成率の判定・足りない段階の強調に使う）
+  month: { actual: number | null; plan: number | null; ratio: number | null; prev: number | null };
+  cum: { actual: number | null; plan: number | null; ratio: number | null; note?: string };
+  annual: { plan: number | null; progress: number | null };
+}
+
+const div = (a: number, b: number): number | null => (b > 0 ? a / b : null);
+
+/** 予実表の行（今月・累計・年間）。 */
+export function buildTable(data: ReportData, r: Report): TableRow[] {
+  const { plan, months } = data;
+  const idx = r.index;
+  const pm = planByMonth(plan);
+  const sum = (arr: number[], to: number) => arr.slice(0, to + 1).reduce((a, b) => a + b, 0);
+  const total = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+  const cur = months[idx];
+  const prev = idx > 0 && isMonthEntered(months[idx - 1]) ? months[idx - 1] : null;
+  const c = r.cum;
+
+  const flow = (key: string, name: string, kind: RowKind, field: keyof MonthActual, planArr: number[], cumActual: number, stage?: StageKey): TableRow => {
+    const a = v0(cur[field]);
+    const p = planArr[idx];
+    const cp = sum(planArr, idx);
+    const ap = total(planArr);
+    return {
+      key,
+      name,
+      kind,
+      stage,
+      month: { actual: a, plan: p, ratio: div(a, p), prev: prev ? v0(prev[field]) : null },
+      cum: { actual: cumActual, plan: cp, ratio: div(cumActual, cp) },
+      annual: { plan: ap, progress: div(cumActual, ap) },
+    };
+  };
+
+  const stageOf = (k: StageKey) => r.stages.find((s) => s.key === k)!;
+  const rate = (
+    key: string,
+    name: string,
+    kind: RowKind,
+    stage: StageKey,
+    mActual: number | null,
+    mPrev: number | null,
+    planV: number,
+  ): TableRow => {
+    const s = stageOf(stage);
+    return {
+      key,
+      name,
+      kind,
+      stage,
+      month: { actual: mActual, plan: planV, ratio: mActual !== null ? div(mActual, planV) : null, prev: mPrev },
+      cum: { actual: s.actual, plan: planV, ratio: s.ratio, note: s.ratio === null ? s.note : undefined },
+      annual: { plan: planV, progress: null },
+    };
+  };
+
+  const monthWinRate = (m: MonthActual) => div(v0(m.winAmt), v0(m.winAmt) + v0(m.lostAmt));
+  return [
+    flow("leads", "リード数", "count", "leads", pm.leads, c.leads, "leads"),
+    flow("deals", "商談数", "count", "deals", pm.deals, c.deals),
+    rate("dealRate", "商談化率", "rate", "dealRate", div(v0(cur.deals), v0(cur.leads)), prev ? div(v0(prev.deals), v0(prev.leads)) : null, plan.dealRate || 0),
+    flow("dealAmt", "商談金額", "amount", "dealAmt", pm.dealAmt, c.dealAmt),
+    flow("wins", "受注数", "count", "wins", pm.wins, c.wins),
+    flow("winAmt", "受注金額", "amount", "winAmt", pm.winAmt, c.winAmt),
+    rate("winRate", "受注率", "rate", "winRate", monthWinRate(cur), prev ? monthWinRate(prev) : null, plan.winRate || 0),
+    rate("unitPrice", "受注単価", "unit", "unitPrice", div(v0(cur.winAmt), v0(cur.wins)), prev ? div(v0(prev.winAmt), v0(prev.wins)) : null, plan.avgDeal || 0),
+  ];
+}
+
+/** 推移グラフ用：受注金額の累計（実績・計画）と月の受注金額。 */
+export function cumulativeSeries(data: ReportData, r: Report) {
+  const pm = planByMonth(data.plan);
+  let a = 0;
+  let p = 0;
+  const actualCum: (number | null)[] = [];
+  const planCum: number[] = [];
+  const monthly: (number | null)[] = [];
+  for (let i = 0; i < 12; i++) {
+    p += pm.winAmt[i];
+    planCum.push(p);
+    if (i <= r.index) {
+      const v = v0(data.months[i].winAmt);
+      a += v;
+      actualCum.push(a);
+      monthly.push(v);
+    } else {
+      actualCum.push(null);
+      monthly.push(null);
+    }
+  }
+  return { actualCum, planCum, monthly };
 }
