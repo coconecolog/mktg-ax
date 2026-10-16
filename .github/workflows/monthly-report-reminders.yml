@@ -1,0 +1,40 @@
+name: マーケ月次報告メーカー お知らせメール
+
+# 毎日 日本時間 9:07 に、報告日の3営業日前・当日の登録者へお知らせメールを送る。
+# 使うSecrets（リポジトリの Settings → Secrets and variables → Actions）:
+#   MKTG_AX_SUPABASE_URL, MKTG_AX_SUPABASE_SERVICE_ROLE_KEY,
+#   MKTG_AX_RESEND_API_KEY, MKTG_AX_RESEND_FROM_ADDRESS, MKTG_AX_PUBLIC_SITE_URL（既存）
+on:
+  schedule:
+    - cron: "7 0 * * *" # UTC 0:07 = 日本時間 9:07
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "送らずに、送る予定だけ表示する"
+        type: boolean
+        default: true
+
+concurrency:
+  group: monthly-report-reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: お知らせメールを送る
+        run: node scripts/send-monthly-report-reminders.mjs ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          SUPABASE_URL: ${{ secrets.MKTG_AX_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.MKTG_AX_SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.MKTG_AX_RESEND_API_KEY }}
+          RESEND_FROM_ADDRESS: ${{ secrets.MKTG_AX_RESEND_FROM_ADDRESS }}
+          PUBLIC_SITE_URL: ${{ secrets.MKTG_AX_PUBLIC_SITE_URL }}
