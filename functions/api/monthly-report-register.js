@@ -1,90 +1,71 @@
-// マーケ月次報告メーカーのお知らせメールに付ける「配信停止」リンクの遷移先。
-//   GET /api/monthly-report-unsubscribe?token=xxxxx
+// マーケ月次報告メーカー（/tools/monthly-report）の登録を受け取る Cloudflare Pages Function。
+//   POST /api/monthly-report-register   { email, reportDay, consent, website }
 //
-// 必要な環境変数（Cloudflare Pagesダッシュボード → Settings → Environment variables）:
+// サーバーに置くのは「メールアドレス」と「報告日」だけ（入力した数字は受け取らない）。
+// 同じメールアドレスで登録し直したときは、報告日を上書きし、配信停止を解除する（upsert）。
+// PDFはメールで送らない（登録が成功したら、ブラウザ側でその場でPDFを作ってダウンロードする）。
+//
+// 必要な環境変数（Cloudflare Pagesダッシュボード → Settings → Environment variables。Production/Preview両方）:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// 必要なテーブル: supabase/monthly_report_subscribers.sql
 
-function renderPage({ title, message }) {
-  return `<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="robots" content="noindex" />
-<title>${title} | MKTG.AX</title>
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background:#FAF9F9; margin:0; padding:0; }
-  .card { max-width: 480px; margin: 96px auto; background:#fff; border-radius:16px; padding:40px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align:center; }
-  h1 { font-size: 18px; color:#0b0b12; margin: 0 0 12px; }
-  p { font-size: 14px; color:#525252; line-height:1.7; }
-  a { color:#0b0b12; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <h1>${title}</h1>
-    <p>${message}</p>
-    <p><a href="/tools/monthly-report">マーケ月次報告メーカーへ</a></p>
-  </div>
-</body>
-</html>`;
+function isValidEmail(value) {
+  return typeof value === "string" && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function htmlResponse(page, status) {
-  return new Response(page, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
-}
-
-const ERROR_PAGE = { title: "エラーが発生しました", message: "しばらくしてから再度お試しください。" };
-
-export async function onRequestGet({ request, env }) {
-  const token = new URL(request.url).searchParams.get("token");
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = env;
-
-  if (!token) {
-    return htmlResponse(
-      renderPage({ title: "リンクが正しくありません", message: "配信停止用のリンクが正しくないようです。お手数ですがお問い合わせください。" }),
-      400,
-    );
+export async function onRequestPost({ request, env }) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: "リクエストの形式が不正です。" }, { status: 400 });
   }
+
+  const email = (body.email || "").toString().trim().toLowerCase();
+  const reportDay = Number(body.reportDay);
+  const consent = body.consent === true;
+  // ハニーポット（画面には見えない項目）。値が入っていたらbotとみなし、黙って成功扱いにする。
+  const honeypot = (body.website || "").toString().trim();
+  if (honeypot) return Response.json({ ok: true });
+
+  if (!isValidEmail(email) || !consent || !Number.isInteger(reportDay) || reportDay < 1 || reportDay > 31) {
+    return Response.json({ ok: false, error: "入力内容をご確認ください。" }, { status: 400 });
+  }
+
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error("[monthly-report-unsubscribe] 環境変数が設定されていません。");
-    return htmlResponse(renderPage(ERROR_PAGE), 500);
+    console.error("[monthly-report-register] 環境変数が設定されていません。Cloudflare Pagesの環境変数設定を確認してください。");
+    return Response.json({ ok: false, error: "サーバー設定エラーです。しばらくしてから再度お試しください。" }, { status: 500 });
   }
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/monthly_report_subscribers?unsubscribe_token=eq.${encodeURIComponent(token)}`,
-      {
-        method: "PATCH",
-        headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({ unsubscribed_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/monthly_report_subscribers?on_conflict=email`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
       },
-    );
+      body: JSON.stringify([
+        {
+          email,
+          report_day: reportDay,
+          consent: true,
+          unsubscribed_at: null,
+          updated_at: new Date().toISOString(),
+        },
+      ]),
+    });
+
     if (!res.ok) {
-      console.error("[monthly-report-unsubscribe] Supabaseの更新に失敗しました:", res.status, await res.text());
-      return htmlResponse(renderPage(ERROR_PAGE), 502);
+      console.error("[monthly-report-register] Supabaseへの保存に失敗しました:", res.status, await res.text());
+      return Response.json({ ok: false, error: "登録に失敗しました。時間をおいて再度お試しください。" }, { status: 502 });
     }
-    const rows = await res.json();
-    if (rows.length === 0) {
-      return htmlResponse(
-        renderPage({ title: "リンクが見つかりません", message: "このリンクはすでに無効か、正しくない可能性があります。" }),
-        404,
-      );
-    }
-    return htmlResponse(
-      renderPage({
-        title: "配信停止が完了しました",
-        message: "月次報告のお知らせメールの配信を停止しました。ツールはこれまでどおりお使いいただけます。",
-      }),
-      200,
-    );
   } catch (err) {
-    console.error("[monthly-report-unsubscribe] 処理中にエラーが発生しました:", err);
-    return htmlResponse(renderPage(ERROR_PAGE), 500);
+    console.error("[monthly-report-register] Supabaseへの保存中にエラーが発生しました:", err);
+    return Response.json({ ok: false, error: "登録に失敗しました。時間をおいて再度お試しください。" }, { status: 502 });
   }
+
+  return Response.json({ ok: true });
 }
