@@ -1,0 +1,1052 @@
+---
+// マーケ月次報告メーカー（/tools/monthly-report）
+// 仕様: Googleドライブ「MKTG.AX／共有（正本）／04_ツール仕様／マーケ月次報告メーカー 仕様」
+// - 計算はすべてブラウザ内（src/lib/monthlyReport.ts）。入力した数字はサーバーに送らない。
+// - PDF（A4横1枚）は html2canvas-pro で報告書を画像にし、pdf-lib でPDFにする。入力データはPDFの添付ファイル
+//   （mktgax-monthly-report.json）として埋め込み、次回はPDFを読み込ませて前月までの値を入れる。
+// - PDFのダウンロード時にメール登録（POST /api/monthly-report-register）。サーバーに置くのはメールアドレスと報告日だけ。
+// - ライブラリはCDNから、PDFを作る・読むときだけ読み込む（npm依存は増やさない）。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import FaqAccordion from "@/components/FaqAccordion.astro";
+import MoreExplore from "@/components/MoreExplore.astro";
+import ContactCta from "@/components/ContactCta.astro";
+import { getAllCategories, getPopularPosts } from "@/lib/posts";
+
+// 本格版（M-B-04 予実管理表＋月次・年間報告テンプレート）の案内先。資料ページのURLが決まったら差し替える。
+const FULL_VERSION_URL = "/library";
+
+const TOOL_TITLE = "マーケ月次報告メーカー";
+const TOOL_DESCRIPTION =
+  "毎月、リード・商談・受注の数字を入れるだけで、期末の着地見込みと足りない段階、打ち手、経営陣への説明の一文までそろった経営報告1枚（A4横のPDF）ができる無料ツールです。";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/monthly-report" },
+];
+
+const categories = getAllCategories();
+const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
+
+const faqItems = [
+  {
+    question: "着地見込みはどのように計算していますか？",
+    answer:
+      "受注済みの累計＋月末に進行中の商談金額×受注率＋期内に受注できる新規分 で計算しています。期内に受注できる新規分は、残りの月のうち期末まで「商談から受注までの平均期間」以上ある月の、計画の商談金額（計画のリード数×計画の商談化率×計画の平均受注単価）の合計に受注率を掛けたものです。",
+  },
+  {
+    question: "受注率は計画と実績のどちらを使いますか？",
+    answer:
+      "決着した商談（受注＋失注）が3件たまるまでは計画の受注率を、それ以降は期首からの累計の実績（受注金額÷（受注金額＋失注金額））を使います。進行中の商談を分母に入れると、受注の遅れで低く出てしまうためです。",
+  },
+  {
+    question: "「足りない段階」はどう決まりますか？",
+    answer:
+      "リード数・商談化率・受注率・受注単価の4つの段階について、期首からの累計を計画と比べた達成率を出し、いちばん低い段階を「足りない段階」にします。100%以上は達成、90%以上はやや届かない、90%未満は届かないと判定します。すべて90%以上なら「計画どおり」です。",
+  },
+  {
+    question: "入力した数字はサーバーに保存されますか？",
+    answer:
+      "いいえ。計算はすべてブラウザの中で行い、数字はサーバーに送りません。入力の途中はこのブラウザにだけ一時保存されます。翌月は、ダウンロードしたPDFを読み込ませると前月までの数字が入った状態から始められます。サーバーに置くのは、登録いただいたメールアドレスと報告日だけです。",
+  },
+  {
+    question: "PDFを読み込んでも数字が入りません。",
+    answer:
+      "PDFを別のソフトで開いて保存し直すと、埋め込んだデータが消えることがあります。その場合はお手数ですが、前月までの数字を手で入力してください（報告する月を切り替えると、その月の数字を入力できます）。",
+  },
+];
+---
+
+<BaseLayout title={TOOL_TITLE} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/monthly-report.png">
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-5xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">{TOOL_TITLE}</h1>
+    <p class="mt-3 text-neutral-500">
+      経営から「それで、売上はどうなったのか」と聞かれたときに答えられる、経営報告1枚（A4横のPDF）を作ります。期初に計画を入れ、毎月はリード・商談・受注の数字を数個入れるだけです。計算はすべてブラウザの中で行い、入力した数字はサーバーに送りません。
+    </p>
+
+    <!-- 前回のPDFを読み込む -->
+    <div class="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white p-5 md:p-6">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm font-bold text-ink-950">2か月目からは、前回のPDFを読み込む</p>
+          <p class="mt-1 text-xs text-neutral-500">このツールで作ったPDFを選ぶと、計画と前月までの数字が入ります。</p>
+        </div>
+        <label class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-ink-950 hover:border-neutral-500">
+          PDFを選ぶ
+          <input id="mr-pdf-input" type="file" accept="application/pdf,.pdf" class="sr-only" />
+        </label>
+      </div>
+      <p id="mr-load-msg" class="mt-3 hidden text-sm" role="status"></p>
+      <p class="mt-2 text-xs text-neutral-400">※PDFを別のソフトで保存し直すと、埋め込んだデータが消えることがあります。その場合は手で入力してください。</p>
+    </div>
+
+    <!-- STEP 1 計画 -->
+    <div class="mr-step mt-6 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <div class="flex items-baseline justify-between gap-3">
+        <h2 class="text-lg font-bold text-ink-950"><span class="mr-step-no">STEP 1</span>期初の計画（初回だけ）</h2>
+        <span id="mr-plan-status" class="text-xs font-bold"></span>
+      </div>
+      <p class="mt-1 text-xs text-neutral-500">金額の単位は万円です。数字はすべてマーケ起点（マーケが獲得したリードから生まれた商談・受注）で入れます。</p>
+
+      <div class="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+        <div class="mr-field">
+          <span class="mr-label">期首月</span>
+          <div class="flex gap-2">
+            <select id="plan-startYear" class="mr-input" aria-label="期首の年"></select>
+            <select id="plan-startMonth" class="mr-input" aria-label="期首の月"></select>
+          </div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-reportDay">報告日（毎月）</label>
+          <select id="plan-reportDay" class="mr-input"></select>
+          <span class="mr-help">経営に報告する日。登録すると、3営業日前と当日にお知らせメールが届きます。</span>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-target">年間の受注金額目標（マーケ起点）</label>
+          <div class="mr-unit"><input id="plan-target" class="mr-input" type="number" inputmode="decimal" min="0" step="any" placeholder="例：12000" /><span>万円</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-annualLeads">年間のリード数の計画</label>
+          <div class="mr-unit"><input id="plan-annualLeads" class="mr-input" type="number" inputmode="numeric" min="0" step="1" placeholder="例：1200" /><span>件</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-dealRate">計画の商談化率（商談÷リード）</label>
+          <div class="mr-unit"><input id="plan-dealRate" class="mr-input" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="例：20" /><span>%</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-winRate">計画の受注率（受注÷商談）</label>
+          <div class="mr-unit"><input id="plan-winRate" class="mr-input" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="例：25" /><span>%</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-avgDeal">計画の平均受注単価</label>
+          <div class="mr-unit"><input id="plan-avgDeal" class="mr-input" type="number" inputmode="decimal" min="0" step="any" placeholder="例：200" /><span>万円</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="plan-cycle">商談から受注までの平均期間</label>
+          <div class="mr-unit"><input id="plan-cycle" class="mr-input" type="number" inputmode="decimal" min="0" max="12" step="any" placeholder="例：3" /><span>か月</span></div>
+        </div>
+      </div>
+
+      <details class="mt-6 rounded-xl bg-neutral-50 px-4 py-3">
+        <summary class="cursor-pointer text-sm font-bold text-ink-950">月別のリード数の計画（任意）</summary>
+        <p class="mt-2 text-xs text-neutral-500">空欄の月は、年間の計画から入力済みの月を引いた残りを等分します。すべて空欄なら12等分です。</p>
+        <div id="plan-monthly" class="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6"></div>
+      </details>
+    </div>
+
+    <!-- STEP 2 今月の数字 -->
+    <div class="mr-step mt-6 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <h2 class="text-lg font-bold text-ink-950"><span class="mr-step-no">STEP 2</span>毎月の数字</h2>
+      <p class="mt-1 text-xs text-neutral-500">報告する月を選んで、その月の数字を入れます。前の月を直したいときも、ここで月を選びます。</p>
+
+      <div class="mt-5 mr-field">
+        <span class="mr-label">報告する月</span>
+        <div id="mr-month-chips" class="flex flex-wrap gap-2" role="radiogroup" aria-label="報告する月"></div>
+      </div>
+
+      <div class="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2" id="mr-month-form">
+        <div class="mr-field">
+          <label class="mr-label" for="m-leads">リード数</label>
+          <div class="mr-unit"><input id="m-leads" class="mr-input" type="number" inputmode="numeric" min="0" step="1" /><span>件</span></div>
+        </div>
+        <div class="mr-field sm:col-start-1">
+          <label class="mr-label" for="m-deals">新規の商談数</label>
+          <div class="mr-unit"><input id="m-deals" class="mr-input" type="number" inputmode="numeric" min="0" step="1" /><span>件</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-dealAmt">新規の商談金額</label>
+          <div class="mr-unit"><input id="m-dealAmt" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-wins">受注数</label>
+          <div class="mr-unit"><input id="m-wins" class="mr-input" type="number" inputmode="numeric" min="0" step="1" /><span>件</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-winAmt">受注金額</label>
+          <div class="mr-unit"><input id="m-winAmt" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-lost">失注数</label>
+          <div class="mr-unit"><input id="m-lost" class="mr-input" type="number" inputmode="numeric" min="0" step="1" /><span>件</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-lostAmt">失注金額</label>
+          <div class="mr-unit"><input id="m-lostAmt" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-open">月末に進行中の商談金額</label>
+          <div class="mr-unit"><input id="m-open" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+          <span class="mr-help">受注も失注もしていない、マーケ起点の商談の金額の合計</span>
+        </div>
+        <div class="mr-field">
+          <label class="mr-label" for="m-revenue">全社の売上（任意）</label>
+          <div class="mr-unit"><input id="m-revenue" class="mr-input" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+          <span class="mr-help">入れたときだけ、全社の売上のうちマーケ起点の割合を参考に出します</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 報告書 -->
+    <div class="mr-step mt-6 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+      <h2 class="text-lg font-bold text-ink-950"><span class="mr-step-no">STEP 3</span>報告書を仕上げる</h2>
+
+      <div id="mr-notice" class="mt-4 hidden rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"></div>
+
+      <div id="mr-editor" class="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <p class="text-sm font-bold text-ink-950">打ち手（3つまで）</p>
+          <p id="mr-actions-lead" class="mt-1 text-xs text-neutral-500"></p>
+          <div id="mr-actions" class="mt-3 space-y-2"></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-sm font-bold text-ink-950" for="mr-sentence">経営陣に説明するときの一文</label>
+            <button id="mr-sentence-reset" type="button" class="text-xs font-bold text-neutral-500 underline hover:text-ink-950">文を作り直す</button>
+          </div>
+          <p class="mt-1 text-xs text-neutral-500">言葉は自由に直せます。</p>
+          <textarea id="mr-sentence" rows="5" class="mr-input mt-3 leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <p class="mt-8 text-sm font-bold text-ink-950">プレビュー（A4横）</p>
+      <div id="mr-preview-wrap" class="mt-3 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
+        <div id="mr-preview-scale" style="transform-origin: top left;"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4 ダウンロード -->
+    <div class="mr-step mt-6 rounded-2xl border-2 border-ink-950 bg-white p-6 md:p-8" id="mr-download">
+      <h2 class="text-lg font-bold text-ink-950"><span class="mr-step-no">STEP 4</span>PDFをダウンロード</h2>
+
+      <form id="mr-register-form" class="mt-4 space-y-4" novalidate>
+        <p class="text-sm text-neutral-600">
+          メールアドレスを登録すると、その場でPDFをダウンロードできます。毎月の報告日の3営業日前と当日に、お知らせメールをお送りします（PDFはメールでは送りません）。
+        </p>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="mr-field">
+            <label class="mr-label" for="reg-email">メールアドレス</label>
+            <input id="reg-email" name="email" type="email" autocomplete="email" required class="mr-input" placeholder="you@example.com" />
+          </div>
+          <div class="mr-field">
+            <span class="mr-label">報告日</span>
+            <p id="reg-reportday" class="py-2 text-sm font-bold text-ink-950"></p>
+            <span class="mr-help">STEP 1 で変えられます</span>
+          </div>
+        </div>
+        <div class="hidden" aria-hidden="true">
+          <label>ウェブサイト<input type="text" name="website" id="reg-website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <label class="flex items-start gap-2 text-sm text-neutral-600">
+          <input id="reg-consent" type="checkbox" class="mt-1" />
+          <span><a href="/privacy" class="underline" target="_blank" rel="noopener">プライバシーポリシー</a>に同意して、お知らせメールを受け取る</span>
+        </label>
+        <button id="reg-submit" type="submit" class="mr-btn">登録してPDFをダウンロード</button>
+        <p id="reg-msg" class="hidden text-sm" role="status"></p>
+      </form>
+
+      <div id="mr-registered" class="mt-4 hidden space-y-3">
+        <p class="text-sm text-neutral-600">登録済み：<span id="mr-registered-email" class="font-bold text-ink-950"></span></p>
+        <button id="mr-download-btn" type="button" class="mr-btn">PDFをダウンロード</button>
+        <p id="mr-download-msg" class="hidden text-sm" role="status"></p>
+        <button id="mr-reregister" type="button" class="block text-xs text-neutral-500 underline hover:text-ink-950">別のメールアドレス・報告日で登録しなおす</button>
+      </div>
+
+      <p class="mt-6 border-t border-neutral-100 pt-4 text-xs text-neutral-500">
+        翌月は、ダウンロードしたPDFをこのページで読み込むと、前月までの数字が入った状態から始められます。PDFは保存し直さずに、そのまま保管してください。
+      </p>
+    </div>
+
+    <!-- 本格版の案内 -->
+    <div class="mt-6 rounded-2xl bg-neutral-50 p-6 md:p-8">
+      <p class="text-sm font-bold text-ink-950">施策ごとまで管理したいときは</p>
+      <p class="mt-2 text-sm text-neutral-600">
+        このツールは全体の数字だけで作る入口版です。施策ごとの費用・リード・商談・受注まで管理して、KPIの達成率やROIを月次で見たいときは、予実管理表（KPI達成率×ROI）と月次・年間報告テンプレートをお使いください。
+      </p>
+      <a href={FULL_VERSION_URL} class="mt-4 inline-flex rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-ink-950 hover:border-neutral-500">本格版の資料を見る →</a>
+    </div>
+
+    <div class="my-16 flex justify-center">
+      <a href="/tools" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
+        便利ツール一覧を見る →
+      </a>
+    </div>
+
+    <FaqAccordion items={faqItems} />
+
+    <MoreExplore
+      categories={categories}
+      popularPosts={popularPosts}
+      categoryHeading="カテゴリから探す"
+      popularHeading="💡 あわせて読みたい実践ノウハウ"
+    />
+  </section>
+
+  <ContactCta />
+</BaseLayout>
+
+<style is:global>
+  .mr-step-no { display: inline-block; margin-right: 0.6rem; font-size: 0.7rem; letter-spacing: 0.08em; color: #737373; vertical-align: 0.15em; }
+  .mr-field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .mr-label { font-size: 0.85rem; font-weight: 600; color: #404040; }
+  .mr-help { font-size: 0.72rem; color: #8a8a8a; line-height: 1.5; }
+  .mr-input { width: 100%; min-width: 0; border: 1px solid #d4d4d4; border-radius: 0.6rem; background: #fff; padding: 0.55rem 0.75rem; font-size: 0.95rem; color: #0b0b12; }
+  .mr-input:focus { outline: 2px solid #0b0b12; outline-offset: 0; border-color: #0b0b12; }
+  .mr-input.mr-invalid { border-color: #b91c1c; background: #fef2f2; }
+  .mr-unit { display: flex; align-items: center; gap: 0.5rem; }
+  .mr-unit > span { flex-shrink: 0; font-size: 0.85rem; color: #737373; min-width: 2.2em; }
+  .mr-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 0.75rem; background: #0b0b12; color: #fff; padding: 0.8rem 1.5rem; font-size: 0.95rem; font-weight: 700; }
+  .mr-btn:hover { opacity: 0.9; }
+  .mr-btn:disabled { opacity: 0.5; cursor: wait; }
+  .mr-chip { border: 1px solid #d4d4d4; border-radius: 999px; background: #fff; padding: 0.35rem 0.8rem; font-size: 0.8rem; color: #404040; }
+  .mr-chip[data-entered="1"]::after { content: " ✓"; color: #15803d; font-weight: 700; }
+  .mr-chip[aria-checked="true"] { background: #0b0b12; border-color: #0b0b12; color: #fff; }
+  .mr-chip[aria-checked="true"][data-entered="1"]::after { color: #86efac; }
+
+  /* ===== 報告書（A4横 1123×794px）。PDF化（html2canvas）のため、色は16進のみ・Tailwindのクラスは使わない ===== */
+  .mr-report { width: 1123px; height: 794px; box-sizing: border-box; padding: 34px 40px 26px; background: #ffffff; color: #0b0b12; font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; display: flex; flex-direction: column; line-height: 1.45; }
+  .mr-report * { box-sizing: border-box; }
+  .mr-report .r-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0b0b12; padding-bottom: 10px; }
+  .mr-report .r-title { font-size: 24px; font-weight: 800; letter-spacing: 0.02em; margin: 0; }
+  .mr-report .r-sub { font-size: 12px; color: #525252; margin-top: 2px; }
+  .mr-report .r-meta { font-size: 11px; color: #525252; text-align: right; }
+  .mr-report .r-body { flex: 1; display: grid; grid-template-columns: 1.08fr 1fr; gap: 22px; padding-top: 16px; min-height: 0; }
+  .mr-report .r-col { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; }
+  .mr-report .r-sec { border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px 16px; }
+  .mr-report .r-h { font-size: 12px; font-weight: 800; color: #0b0b12; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+  .mr-report .r-h .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #0b0b12; color: #ffffff; font-size: 10px; align-items: center; justify-content: center; }
+  .mr-report .r-concl { border: 2px solid #0b0b12; }
+  .mr-report .r-big { font-size: 40px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1; }
+  .mr-report .r-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .mr-report .r-muted { color: #737373; font-size: 11px; }
+  .mr-report .r-judge { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 13px; font-weight: 800; color: #ffffff; }
+  .mr-report .j-ok { background: #15803d; }
+  .mr-report .j-mid { background: #6b7280; }
+  .mr-report .j-ng { background: #b91c1c; }
+  .mr-report .j-na { background: #d4d4d4; color: #525252; }
+  .mr-report .r-trend { display: flex; align-items: flex-end; gap: 4px; height: 54px; position: relative; margin-top: 10px; border-bottom: 1px solid #d4d4d4; }
+  .mr-report .r-trend .b { flex: 1; background: #0b0b12; border-radius: 2px 2px 0 0; }
+  .mr-report .r-trend .b.e { background: #f0f0f0; }
+  .mr-report .r-trend .t { position: absolute; left: 0; right: 0; border-top: 1px dashed #b91c1c; }
+  .mr-report .r-trend-l { display: flex; gap: 4px; margin-top: 2px; }
+  .mr-report .r-trend-l span { flex: 1; text-align: center; font-size: 8px; color: #8a8a8a; }
+  .mr-report .r-stack { position: relative; display: flex; height: 26px; border-radius: 4px; overflow: visible; background: #f5f5f5; margin: 6px 0 10px; }
+  .mr-report .r-stack .s1 { background: #0b0b12; }
+  .mr-report .r-stack .s2 { background: #737373; }
+  .mr-report .r-stack .s3 { background: #c4c4c4; }
+  .mr-report .r-stack .tg { position: absolute; top: -5px; bottom: -5px; border-left: 2px solid #b91c1c; }
+  .mr-report .r-legend { display: grid; grid-template-columns: 12px 1fr auto; gap: 4px 8px; font-size: 11.5px; align-items: center; }
+  .mr-report .r-legend i { display: block; width: 10px; height: 10px; border-radius: 2px; }
+  .mr-report .r-legend b { font-weight: 700; text-align: right; }
+  .mr-report .r-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mr-report .r-kpi { background: #f7f7f7; border-radius: 8px; padding: 8px 12px; }
+  .mr-report .r-kpi .v { font-size: 20px; font-weight: 800; }
+  .mr-report .r-kpi .d { font-size: 11px; color: #525252; }
+  .mr-report .r-stage { display: grid; grid-template-columns: 64px 1fr 52px 78px; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; font-size: 11.5px; }
+  .mr-report .r-stage.weak { background: #fef2f2; outline: 2px solid #b91c1c; }
+  .mr-report .r-stage .nm { font-weight: 800; }
+  .mr-report .r-stage .bar { position: relative; height: 10px; background: #f0f0f0; border-radius: 3px; }
+  .mr-report .r-stage .bar .f { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .mr-report .r-stage .bar .l90 { position: absolute; top: -3px; bottom: -3px; border-left: 1px dashed #8a8a8a; }
+  .mr-report .r-stage .bar .l100 { position: absolute; top: -3px; bottom: -3px; border-left: 1px solid #0b0b12; }
+  .mr-report .r-stage .pc { font-weight: 800; text-align: right; font-size: 13px; }
+  .mr-report .r-stage .sub { grid-column: 2 / 5; font-size: 10px; color: #737373; margin-top: -4px; }
+  .mr-report .r-stage .r-judge { font-size: 10.5px; padding: 2px 6px; text-align: center; }
+  .mr-report .r-weak-note { font-size: 11.5px; margin-top: 6px; }
+  .mr-report .r-actions { margin: 0; padding-left: 0; list-style: none; font-size: 12.5px; }
+  .mr-report .r-actions li { display: flex; gap: 8px; padding: 3px 0; }
+  .mr-report .r-actions li::before { content: "→"; font-weight: 800; }
+  .mr-report .r-sentence { background: #0b0b12; color: #ffffff; border-radius: 10px; padding: 12px 16px; font-size: 13px; line-height: 1.7; font-weight: 600; }
+  .mr-report .r-sentence .r-h { color: #ffffff; }
+  .mr-report .r-sentence .r-h .n { background: #ffffff; color: #0b0b12; }
+  .mr-report .r-ref { font-size: 11.5px; color: #404040; background: #f7f7f7; border-radius: 8px; padding: 8px 12px; margin: 0; }
+  .mr-report .r-foot { display: flex; justify-content: space-between; font-size: 9.5px; color: #8a8a8a; border-top: 1px solid #e5e5e5; padding-top: 6px; margin-top: 10px; }
+  .mr-report .r-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #8a8a8a; font-size: 16px; text-align: center; line-height: 1.8; }
+</style>
+
+<script>
+  import {
+    ACTION_CANDIDATES,
+    DATA_VERSION,
+    MONTH_FIELDS,
+    actionStageKey,
+    buildSentence,
+    computeReport,
+    emptyData,
+    fmtMan,
+    fmtPct,
+    isMonthEntered,
+    isMonthTouched,
+    landingTrend,
+    missingPlanFields,
+    monthLabel,
+    monthOf,
+    normalizeData,
+    planLeadsByMonth,
+    type MonthActual,
+    type Report,
+    type ReportData,
+  } from "@/lib/monthlyReport";
+
+  const STORAGE_KEY = "mktgax-monthly-report-v1";
+  const REG_KEY = "mktgax-monthly-report-registered";
+  const ATTACH_NAME = "mktgax-monthly-report.json";
+  const LIB_PDF = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
+  const LIB_CANVAS = "https://cdn.jsdelivr.net/npm/html2canvas-pro@2.5.0/dist/html2canvas-pro.min.js";
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const esc = (s: string) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+
+  // ---------- 状態 ----------
+  let data: ReportData = loadDraft();
+
+  function loadDraft(): ReportData {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return normalizeData(JSON.parse(raw));
+    } catch {
+      /* 保存できない環境では何もしない */
+    }
+    return emptyData();
+  }
+  function saveDraft() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      /* noop */
+    }
+  }
+  function getRegistered(): string | null {
+    try {
+      return localStorage.getItem(REG_KEY);
+    } catch {
+      return null;
+    }
+  }
+  function setRegistered(email: string | null) {
+    try {
+      if (email) localStorage.setItem(REG_KEY, email);
+      else localStorage.removeItem(REG_KEY);
+    } catch {
+      /* noop */
+    }
+  }
+
+  // ---------- 入力欄の準備 ----------
+  const yearSel = $<HTMLSelectElement>("plan-startYear");
+  const monthSel = $<HTMLSelectElement>("plan-startMonth");
+  const daySel = $<HTMLSelectElement>("plan-reportDay");
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear - 2; y <= thisYear + 1; y++) yearSel.add(new Option(`${y}年`, String(y)));
+  for (let m = 1; m <= 12; m++) monthSel.add(new Option(`${m}月`, String(m)));
+  for (let d = 1; d <= 28; d++) daySel.add(new Option(`${d}日`, String(d)));
+  daySel.add(new Option("月末", "31"));
+
+  const reportDayLabel = (d: number) => (d >= 29 ? "毎月 月末" : `毎月 ${d}日`);
+
+  const planNum: { id: string; key: "target" | "annualLeads" | "dealRate" | "winRate" | "avgDeal" | "cycle"; pct?: boolean }[] = [
+    { id: "plan-target", key: "target" },
+    { id: "plan-annualLeads", key: "annualLeads" },
+    { id: "plan-dealRate", key: "dealRate", pct: true },
+    { id: "plan-winRate", key: "winRate", pct: true },
+    { id: "plan-avgDeal", key: "avgDeal" },
+    { id: "plan-cycle", key: "cycle" },
+  ];
+
+  const toNum = (v: string): number | null => {
+    if (v.trim() === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const showNum = (n: number | null, pct = false) => {
+    if (n === null) return "";
+    const v = pct ? Math.round(n * 100 * 1000) / 1000 : n;
+    return String(v);
+  };
+
+  function fillPlanInputs() {
+    const p = data.plan;
+    if (![...yearSel.options].some((o) => o.value === String(p.startYear))) yearSel.add(new Option(`${p.startYear}年`, String(p.startYear)));
+    yearSel.value = String(p.startYear);
+    monthSel.value = String(p.startMonth);
+    daySel.value = String(p.reportDay >= 29 ? 31 : p.reportDay);
+    for (const f of planNum) $<HTMLInputElement>(f.id).value = showNum(p[f.key], f.pct);
+    renderMonthlyPlanInputs();
+  }
+
+  function renderMonthlyPlanInputs() {
+    const box = $("plan-monthly");
+    const auto = planLeadsByMonth(data.plan);
+    box.innerHTML = data.plan.monthlyLeads
+      .map((v, i) => {
+        const { month } = monthOf(data.plan, i);
+        const ph = data.plan.annualLeads ? String(Math.round(auto[i] * 10) / 10) : "";
+        return `<label class="mr-field"><span class="mr-help">${month}月</span><input class="mr-input" data-ml="${i}" type="number" inputmode="numeric" min="0" step="1" value="${v === null ? "" : v}" placeholder="${ph}" /></label>`;
+      })
+      .join("");
+  }
+
+  function updateMonthlyPlaceholders() {
+    const auto = planLeadsByMonth(data.plan);
+    document.querySelectorAll<HTMLInputElement>("[data-ml]").forEach((el) => {
+      const i = Number(el.dataset.ml);
+      el.placeholder = data.plan.annualLeads ? String(Math.round(auto[i] * 10) / 10) : "";
+    });
+  }
+
+  yearSel.addEventListener("change", () => {
+    data.plan.startYear = Number(yearSel.value);
+    renderMonthlyPlanInputs();
+    update();
+  });
+  monthSel.addEventListener("change", () => {
+    data.plan.startMonth = Number(monthSel.value);
+    renderMonthlyPlanInputs();
+    update();
+  });
+  daySel.addEventListener("change", () => {
+    data.plan.reportDay = Number(daySel.value);
+    update();
+  });
+  for (const f of planNum) {
+    $<HTMLInputElement>(f.id).addEventListener("input", (e) => {
+      const n = toNum((e.target as HTMLInputElement).value);
+      data.plan[f.key] = n === null ? null : f.pct ? n / 100 : n;
+      if (f.key === "annualLeads") updateMonthlyPlaceholders();
+      update();
+    });
+  }
+  $("plan-monthly").addEventListener("input", (e) => {
+    const el = e.target as HTMLInputElement;
+    if (!el.dataset.ml) return;
+    data.plan.monthlyLeads[Number(el.dataset.ml)] = toNum(el.value);
+    updateMonthlyPlaceholders();
+    update();
+  });
+
+  // 毎月の数字
+  function renderMonthChips() {
+    const box = $("mr-month-chips");
+    box.innerHTML = data.months
+      .map((m, i) => {
+        const { month } = monthOf(data.plan, i);
+        const sel = i === data.reportIndex;
+        return `<button type="button" class="mr-chip" role="radio" aria-checked="${sel}" data-mi="${i}" data-entered="${isMonthEntered(m) ? 1 : 0}" title="${monthLabel(data.plan, i)}">${month}月</button>`;
+      })
+      .join("");
+  }
+  $("mr-month-chips").addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-mi]");
+    if (!btn) return;
+    data.reportIndex = Number(btn.dataset.mi);
+    fillMonthInputs();
+    update();
+  });
+
+  function fillMonthInputs() {
+    const m = data.months[data.reportIndex];
+    for (const f of MONTH_FIELDS) $<HTMLInputElement>(`m-${f}`).value = showNum(m[f]);
+  }
+  for (const f of MONTH_FIELDS) {
+    $<HTMLInputElement>(`m-${f}`).addEventListener("input", (e) => {
+      const n = toNum((e.target as HTMLInputElement).value);
+      (data.months[data.reportIndex] as MonthActual)[f] = n === null ? null : Math.max(0, n);
+      update();
+    });
+  }
+
+  // ---------- 打ち手・一文 ----------
+  function syncActions(r: Report) {
+    const key = actionStageKey(r);
+    if (data.actions.stage !== key || data.actions.items.length === 0) {
+      data.actions = { stage: key, items: ACTION_CANDIDATES[key].map((text) => ({ text, checked: true })) };
+    }
+  }
+
+  function renderActionsEditor(r: Report | null) {
+    const lead = $("mr-actions-lead");
+    const box = $("mr-actions");
+    if (!r) {
+      lead.textContent = "計画と今月の数字を入れると、足りない段階に合わせた候補が出ます。";
+      box.innerHTML = "";
+      delete box.dataset.sig;
+      return;
+    }
+    const key = actionStageKey(r);
+    lead.textContent =
+      key === "ok"
+        ? "すべての段階が90%以上です。"
+        : `足りない段階は「${r.weakStage!.name}」です。報告に載せる打ち手を選び、言葉を直せます。`;
+    // 入力中のテキストを壊さないよう、項目が変わったときだけ描き直す
+    const sig = `${key}:${data.actions.items.length}`;
+    if (box.dataset.sig === sig && box.children.length === data.actions.items.length) return;
+    box.dataset.sig = sig;
+    box.innerHTML = data.actions.items
+      .map(
+        (a, i) => `<div class="flex items-center gap-2">
+          <input type="checkbox" data-ac="${i}" ${a.checked ? "checked" : ""} aria-label="打ち手${i + 1}を報告に載せる" />
+          <input type="text" class="mr-input" data-at="${i}" value="${esc(a.text)}" aria-label="打ち手${i + 1}" />
+        </div>`,
+      )
+      .join("");
+  }
+  $("mr-actions").addEventListener("input", (e) => {
+    const el = e.target as HTMLInputElement;
+    if (el.dataset.at) data.actions.items[Number(el.dataset.at)].text = el.value;
+    if (el.dataset.ac) data.actions.items[Number(el.dataset.ac)].checked = el.checked;
+    update();
+  });
+  $("mr-actions").addEventListener("change", (e) => {
+    const el = e.target as HTMLInputElement;
+    if (el.dataset.ac) {
+      data.actions.items[Number(el.dataset.ac)].checked = el.checked;
+      update();
+    }
+  });
+
+  const sentenceEl = $<HTMLTextAreaElement>("mr-sentence");
+  sentenceEl.addEventListener("input", () => {
+    data.sentence = { text: sentenceEl.value, edited: true };
+    update(false);
+  });
+  $("mr-sentence-reset").addEventListener("click", () => {
+    data.sentence = { text: "", edited: false };
+    update();
+  });
+
+  const selectedActions = () => data.actions.items.filter((a) => a.checked && a.text.trim()).map((a) => a.text.trim());
+
+  // ---------- 報告書 ----------
+  function judgeClass(j: string | null) {
+    return j === "達成" ? "j-ok" : j === "やや届かない" ? "j-mid" : j === "届かない" ? "j-ng" : "j-na";
+  }
+
+  function stageValue(key: string, v: number | null) {
+    if (v === null) return "—";
+    if (key === "leads") return `${Math.round(v).toLocaleString("ja-JP")}件`;
+    if (key === "unitPrice") return fmtMan(v);
+    return fmtPct(v, 1);
+  }
+
+  function reportHtml(r: Report | null, problems: string[]): string {
+    const p = data.plan;
+    const today = new Date();
+    const made = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+    const head = `<div class="r-head">
+        <div><p class="r-title">マーケティング月次報告　${r ? esc(r.label) : ""}</p>
+        <p class="r-sub">期首 ${esc(monthLabel(p, 0))}〜${esc(monthLabel(p, 11))}${r ? `（${r.monthNo}か月目）` : ""}・数字はすべてマーケ起点</p></div>
+        <div class="r-meta">作成日 ${made}<br />単位：万円</div>
+      </div>`;
+    const foot = `<div class="r-foot"><span>着地見込み＝受注済みの累計＋進行中の商談×受注率＋期内に受注できる新規分　判定：100%以上＝達成／90%以上＝やや届かない／90%未満＝届かない</span><span>MKTG.AX マーケ月次報告メーカー｜mktg.ax/tools/monthly-report</span></div>`;
+    if (!r) {
+      return `<div class="mr-report">${head}<div class="r-empty">${problems.map(esc).join("<br />")}</div>${foot}</div>`;
+    }
+
+    // 1. 結論
+    const trend = landingTrend(data);
+    const tMax = Math.max(r.target, ...trend.map((v) => v ?? 0)) * 1.08 || 1;
+    const bars = trend
+      .map((v) => `<div class="b${v === null ? " e" : ""}" style="height:${v === null ? 100 : Math.max(2, (v / tMax) * 100)}%"></div>`)
+      .join("");
+    const tLine = r.target > 0 ? `<div class="t" style="bottom:${(r.target / tMax) * 100}%"></div>` : "";
+    const tLabels = Array.from({ length: 12 }, (_, i) => `<span>${monthOf(p, i).month}</span>`).join("");
+    const concl = `<div class="r-sec r-concl">
+        <p class="r-h"><span class="n">1</span>結論：期末の着地見込み</p>
+        <div class="r-row"><span class="r-big">${fmtMan(r.landing)}</span><span class="r-judge ${judgeClass(r.judge)}">${r.judge}</span></div>
+        <div class="r-row" style="margin-top:6px;font-size:13px;"><span>計画 <b>${fmtMan(r.target)}</b></span><span>計画比 <b>${fmtPct(r.ratio)}</b></span>${
+          r.shortfall > 0 ? `<span>計画まであと <b style="color:#b91c1c">${fmtMan(r.shortfall)}</b></span>` : ""
+        }</div>
+        <div class="r-trend">${bars}${tLine}</div>
+        <div class="r-trend-l">${tLabels}</div>
+        <p class="r-muted" style="margin-top:2px">各月時点の着地見込みの推移（月）。赤の点線は計画</p>
+      </div>`;
+
+    // 3. 内訳
+    const scale = Math.max(r.landing, r.target) || 1;
+    const w = (v: number) => `${(v / scale) * 100}%`;
+    const breakdown = `<div class="r-sec">
+        <p class="r-h"><span class="n">3</span>着地見込みの内訳</p>
+        <div class="r-stack"><div class="s1" style="width:${w(r.cum.winAmt)}"></div><div class="s2" style="width:${w(r.openExpected)}"></div><div class="s3" style="width:${w(r.futureNew)}"></div>${
+          r.target > 0 ? `<div class="tg" style="left:${w(r.target)}"></div>` : ""
+        }</div>
+        <div class="r-legend">
+          <i style="background:#0b0b12"></i><span>受注済み（期首からの累計 ${r.cum.wins}件）</span><b>${fmtMan(r.cum.winAmt)}</b>
+          <i style="background:#737373"></i><span>進行中の商談 ${fmtMan(r.open)} × 受注率 ${fmtPct(r.winRateUsed)}</span><b>${fmtMan(r.openExpected)}</b>
+          <i style="background:#c4c4c4"></i><span>期内に受注できる新規分（残り${r.futureMonths}か月分の計画）</span><b>${fmtMan(r.futureNew)}</b>
+        </div>
+        <p class="r-muted" style="margin-top:6px">受注率は${
+          r.winRateSource === "actual" ? `期首からの累計の実績（決着した商談 ${r.settled}件）` : `計画の値（決着した商談が3件たまるまで）`
+        }。赤の縦線は計画 ${fmtMan(r.target)}</p>
+      </div>`;
+
+    // 2. 今月のパイプライン
+    const diff = (cur: number, prev: number | null, unit: "件" | "万") => {
+      if (prev === null) return "前月比 —";
+      const d = cur - prev;
+      const sign = d > 0 ? "+" : d < 0 ? "−" : "±";
+      const body = unit === "件" ? `${Math.abs(d)}件` : fmtMan(Math.abs(d));
+      const pct = prev > 0 ? `（${d >= 0 ? "+" : "−"}${Math.round(Math.abs(d / prev) * 100)}%）` : "";
+      return `前月比 ${sign}${body}${pct}`;
+    };
+    const pipe = `<div class="r-sec">
+        <p class="r-h"><span class="n">2</span>今月のパイプライン（新規商談）</p>
+        <div class="r-kpis">
+          <div class="r-kpi"><div class="d">件数</div><div class="v">${r.pipeline.deals.toLocaleString("ja-JP")}件</div><div class="d">${diff(r.pipeline.deals, r.pipeline.prevDeals, "件")}</div></div>
+          <div class="r-kpi"><div class="d">金額</div><div class="v">${fmtMan(r.pipeline.dealAmt)}</div><div class="d">${diff(r.pipeline.dealAmt, r.pipeline.prevDealAmt, "万")}</div></div>
+        </div>
+      </div>`;
+
+    // 4. 段階の達成率
+    const BAR_MAX = 1.5;
+    const stageRows = r.stages
+      .map((s) => {
+        const isWeak = r.weakStage?.key === s.key && r.weakIsBelowLine;
+        const ratio = s.ratio;
+        const fillColor = s.judge === "達成" ? "#15803d" : s.judge === "やや届かない" ? "#6b7280" : "#b91c1c";
+        const fill =
+          ratio === null ? "" : `<div class="f" style="width:${Math.min(ratio, BAR_MAX) / BAR_MAX * 100}%;background:${fillColor}"></div>`;
+        return `<div class="r-stage${isWeak ? " weak" : ""}">
+            <span class="nm">${s.name}</span>
+            <div class="bar">${fill}<div class="l90" style="left:${(0.9 / BAR_MAX) * 100}%"></div><div class="l100" style="left:${(1 / BAR_MAX) * 100}%"></div></div>
+            <span class="pc">${ratio === null ? "—" : fmtPct(ratio)}</span>
+            <span class="r-judge ${judgeClass(s.judge)}">${s.judge ?? "判定前"}</span>
+            <span class="sub">実績 ${stageValue(s.key, s.actual)} ／ 計画 ${stageValue(s.key, s.plan)}${s.note ? `　${esc(s.note)}` : ""}</span>
+          </div>`;
+      })
+      .join("");
+    const weakNote = r.weakIsBelowLine
+      ? `足りない段階：<b style="color:#b91c1c">${r.weakStage!.name}</b>`
+      : r.weakStage
+        ? `すべて90%以上。着地見込みが計画に届かないため、いちばん低い<b>${r.weakStage.name}</b>に手を打ちます`
+        : `すべて90%以上で、<b>計画どおり</b>です`;
+    const stages = `<div class="r-sec">
+        <p class="r-h"><span class="n">4</span>段階の達成率（期首からの累計、計画比）</p>
+        ${stageRows}
+        <p class="r-weak-note">${weakNote}</p>
+      </div>`;
+
+    // 5. 打ち手
+    const acts = selectedActions();
+    const actions = `<div class="r-sec">
+        <p class="r-h"><span class="n">5</span>打ち手${r.weakStage ? `（${r.weakStage.name}）` : ""}</p>
+        <ul class="r-actions">${acts.length ? acts.map((a) => `<li><span>${esc(a)}</span></li>`).join("") : `<li><span>—</span></li>`}</ul>
+      </div>`;
+
+    // 6. 一文
+    const sentence = `<div class="r-sentence">
+        <p class="r-h"><span class="n">6</span>経営陣への説明</p>
+        <div>${esc(data.sentence.text)}</div>
+      </div>`;
+
+    // 7. 参考
+    const ref = r.revenue
+      ? `<p class="r-ref"><b>参考</b>　今月の全社の売上 ${fmtMan(r.revenue.month)}、そのうちマーケ起点（今月の受注金額 ${fmtMan(data.months[r.index].winAmt ?? 0)}）は <b>${fmtPct(r.revenue.share, 1)}</b></p>`
+      : "";
+
+    return `<div class="mr-report">${head}
+        <div class="r-body">
+          <div class="r-col">${concl}${pipe}${breakdown}${ref}</div>
+          <div class="r-col">${stages}${actions}${sentence}</div>
+        </div>${foot}</div>`;
+  }
+
+  // ---------- 描画 ----------
+  let lastReport: Report | null = null;
+
+  function problemsOf(): string[] {
+    const probs: string[] = [];
+    const miss = missingPlanFields(data.plan);
+    if (miss.length) probs.push(`STEP 1 の「${miss.join("」「")}」を入れてください。`);
+    const m = data.months[data.reportIndex];
+    if (!isMonthEntered(m)) probs.push(`STEP 2 で ${monthLabel(data.plan, data.reportIndex)} の数字を入れてください（全社の売上以外）。`);
+    return probs;
+  }
+
+  function update(regenerateSentence = true) {
+    const probs = problemsOf();
+    const r = probs.length === 0 ? computeReport(data) : null;
+    lastReport = r;
+
+    if (r) {
+      syncActions(r);
+      if (!data.sentence.edited && regenerateSentence) data.sentence.text = buildSentence(r, selectedActions());
+    }
+    if (document.activeElement !== sentenceEl) sentenceEl.value = data.sentence.text;
+    sentenceEl.disabled = !r;
+    renderActionsEditor(r);
+
+    // 注意書き
+    const notice = $("mr-notice");
+    const notes: string[] = [...probs];
+    if (r && r.missingMonths.length > 0) {
+      notes.push(`${r.missingMonths.join("・")} の数字が入っていません（0として計算しています）。前回のPDFを読み込むか、月を選んで入力してください。`);
+    }
+    notice.innerHTML = notes.map(esc).join("<br />");
+    notice.classList.toggle("hidden", notes.length === 0);
+
+    // 計画の状態
+    const ps = $("mr-plan-status");
+    const planMiss = missingPlanFields(data.plan).length;
+    ps.textContent = planMiss ? `未入力 ${planMiss}項目` : "入力済み ✓";
+    ps.style.color = planMiss ? "#b45309" : "#15803d";
+
+    renderMonthChips();
+    $("reg-reportday").textContent = reportDayLabel(data.plan.reportDay);
+    $("mr-preview-scale").innerHTML = reportHtml(r, probs);
+    fitPreview();
+    setDownloadEnabled(!!r);
+    saveDraft();
+  }
+
+  function fitPreview() {
+    const wrap = $("mr-preview-wrap");
+    const inner = $("mr-preview-scale");
+    const s = wrap.clientWidth / 1123;
+    inner.style.transform = `scale(${s})`;
+    inner.style.width = "1123px";
+    wrap.style.height = `${794 * s}px`;
+  }
+  window.addEventListener("resize", fitPreview);
+
+  function setDownloadEnabled(ok: boolean) {
+    ($("reg-submit") as HTMLButtonElement).disabled = !ok;
+    ($("mr-download-btn") as HTMLButtonElement).disabled = !ok;
+    ($("reg-submit") as HTMLButtonElement).title = ok ? "" : "STEP 1・2 の数字を入れると押せます";
+    ($("mr-download-btn") as HTMLButtonElement).title = ok ? "" : "STEP 1・2 の数字を入れると押せます";
+  }
+
+  // ---------- ライブラリ ----------
+  const loaded: Record<string, Promise<void>> = {};
+  function loadScript(src: string) {
+    if (!loaded[src]) {
+      loaded[src] = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => {
+          delete loaded[src];
+          reject(new Error(`ライブラリを読み込めませんでした: ${src}`));
+        };
+        document.head.appendChild(s);
+      });
+    }
+    return loaded[src];
+  }
+
+  // ---------- PDFを作る ----------
+  async function makePdf(): Promise<void> {
+    if (!lastReport) throw new Error("STEP 1・2 の数字を入れてください。");
+    await Promise.all([loadScript(LIB_PDF), loadScript(LIB_CANVAS)]);
+    const w = window as any;
+    const h2c = w.html2canvas?.default || w.html2canvas;
+    const PDFLib = w.PDFLib;
+
+    // 縮小表示していない報告書を画面外に置いて画像にする
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-20000px;top:0;width:1123px;height:794px;z-index:-1;";
+    holder.innerHTML = reportHtml(lastReport, []);
+    document.body.appendChild(holder);
+    let canvas: HTMLCanvasElement;
+    try {
+      if ((document as any).fonts?.ready) await (document as any).fonts.ready;
+      canvas = await h2c(holder.firstElementChild, { scale: 2, backgroundColor: "#ffffff", width: 1123, height: 794, logging: false });
+    } finally {
+      holder.remove();
+    }
+    const pngBytes = await new Promise<ArrayBuffer>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? b.arrayBuffer().then(resolve, reject) : reject(new Error("画像を作れませんでした"))), "image/png"),
+    );
+
+    const pdf = await PDFLib.PDFDocument.create();
+    const W = 841.89;
+    const H = 595.28; // A4横（pt）
+    const page = pdf.addPage([W, H]);
+    const img = await pdf.embedPng(pngBytes);
+    page.drawImage(img, { x: 0, y: 0, width: W, height: H });
+    pdf.setTitle(`マーケティング月次報告 ${lastReport.label}`);
+    pdf.setCreator("MKTG.AX マーケ月次報告メーカー（mktg.ax/tools/monthly-report）");
+    pdf.setProducer("MKTG.AX");
+    pdf.setLanguage("ja-JP");
+
+    const payload = { ...data, v: DATA_VERSION, email: getRegistered() || undefined };
+    await pdf.attach(new TextEncoder().encode(JSON.stringify(payload)), ATTACH_NAME, {
+      mimeType: "application/json",
+      description: "マーケ月次報告メーカーの入力データ（次回このPDFを読み込むと前月までの数字が入ります）",
+      creationDate: new Date(),
+      modificationDate: new Date(),
+    });
+    const bytes: Uint8Array = await pdf.save({ useObjectStreams: false });
+
+    const { year, month } = monthOf(data.plan, data.reportIndex);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `marketing-monthly-report-${year}-${String(month).padStart(2, "0")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  // ---------- PDFを読む ----------
+  async function readPdfData(file: File): Promise<any> {
+    await loadScript(LIB_PDF);
+    const PDFLib = (window as any).PDFLib;
+    const { PDFDocument, PDFName, PDFDict, PDFArray, PDFStream, decodePDFRawStream } = PDFLib;
+    const doc = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true, updateMetadata: false });
+    const names = doc.catalog.lookupMaybe(PDFName.of("Names"), PDFDict);
+    const ef = names?.lookupMaybe(PDFName.of("EmbeddedFiles"), PDFDict);
+    if (!ef) return null;
+
+    const pairs: [string, any][] = [];
+    const walk = (node: any) => {
+      const arr = node.lookupMaybe(PDFName.of("Names"), PDFArray);
+      if (arr) for (let i = 0; i + 1 < arr.size(); i += 2) pairs.push([arr.lookup(i).decodeText?.() ?? "", arr.lookup(i + 1, PDFDict)]);
+      const kids = node.lookupMaybe(PDFName.of("Kids"), PDFArray);
+      if (kids) for (let i = 0; i < kids.size(); i++) walk(kids.lookup(i, PDFDict));
+    };
+    walk(ef);
+    const hit = pairs.find(([n]) => n === ATTACH_NAME) || pairs[0];
+    if (!hit) return null;
+    const efDict = hit[1].lookupMaybe(PDFName.of("EF"), PDFDict);
+    const stream = efDict?.lookupMaybe(PDFName.of("F"), PDFStream);
+    if (!stream) return null;
+    const raw = decodePDFRawStream(stream).decode();
+    return JSON.parse(new TextDecoder().decode(raw));
+  }
+
+  const loadMsg = $("mr-load-msg");
+  function showMsg(el: HTMLElement, text: string, ok: boolean) {
+    el.textContent = text;
+    el.style.color = ok ? "#15803d" : "#b91c1c";
+    el.classList.remove("hidden");
+  }
+
+  $<HTMLInputElement>("mr-pdf-input").addEventListener("change", async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    showMsg(loadMsg, "読み込んでいます…", true);
+    try {
+      const raw = await readPdfData(file);
+      if (!raw || !raw.plan || !Array.isArray(raw.months)) {
+        showMsg(loadMsg, "このPDFには入力データが見つかりませんでした。別のソフトで保存し直したPDFは読み込めないことがあります。お手数ですが手で入力してください。", false);
+        return;
+      }
+      data = normalizeData(raw);
+      // 次の月へ進める（数字の入った最後の月の翌月）
+      let last = -1;
+      data.months.forEach((m, i) => {
+        if (isMonthTouched(m)) last = i;
+      });
+      data.reportIndex = Math.min(11, last + 1);
+      data.actions = { stage: "", items: [] };
+      data.sentence = { text: "", edited: false };
+      if (data.email && !getRegistered()) setRegistered(data.email);
+      fillPlanInputs();
+      fillMonthInputs();
+      renderRegistration();
+      update();
+      const lastLabel = last >= 0 ? monthLabel(data.plan, last) : "";
+      showMsg(
+        loadMsg,
+        last >= 0 ? `${lastLabel}までの数字を読み込みました。${monthLabel(data.plan, data.reportIndex)}の数字を入れてください。` : "計画を読み込みました。",
+        true,
+      );
+    } catch (err) {
+      console.error(err);
+      showMsg(loadMsg, "PDFを読み込めませんでした。このツールで作ったPDFか確かめてください。", false);
+    }
+  });
+
+  // ---------- 登録とダウンロード ----------
+  function renderRegistration() {
+    const email = getRegistered();
+    $("mr-register-form").classList.toggle("hidden", !!email);
+    $("mr-registered").classList.toggle("hidden", !email);
+    $("mr-registered-email").textContent = email || "";
+  }
+
+  $("mr-reregister").addEventListener("click", () => {
+    setRegistered(null);
+    renderRegistration();
+  });
+
+  $("mr-register-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("reg-msg");
+    const btn = $<HTMLButtonElement>("reg-submit");
+    const emailEl = $<HTMLInputElement>("reg-email");
+    const email = emailEl.value.trim();
+    const consent = $<HTMLInputElement>("reg-consent").checked;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailEl.classList.add("mr-invalid");
+      showMsg(msg, "メールアドレスを確かめてください。", false);
+      return;
+    }
+    emailEl.classList.remove("mr-invalid");
+    if (!consent) {
+      showMsg(msg, "プライバシーポリシーへの同意にチェックを入れてください。", false);
+      return;
+    }
+    btn.disabled = true;
+    showMsg(msg, "登録しています…", true);
+    try {
+      const res = await fetch("/api/monthly-report-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          reportDay: data.plan.reportDay,
+          consent: true,
+          website: $<HTMLInputElement>("reg-website").value,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "登録に失敗しました。時間をおいて再度お試しください。");
+      setRegistered(email);
+      showMsg(msg, "登録しました。PDFを作っています…", true);
+      await makePdf();
+      renderRegistration();
+      showMsg($("mr-download-msg"), "PDFをダウンロードしました。", true);
+    } catch (err: any) {
+      showMsg(msg, err?.message || "エラーが発生しました。", false);
+    } finally {
+      btn.disabled = !lastReport;
+    }
+  });
+
+  $("mr-download-btn").addEventListener("click", async () => {
+    const btn = $<HTMLButtonElement>("mr-download-btn");
+    const msg = $("mr-download-msg");
+    btn.disabled = true;
+    showMsg(msg, "PDFを作っています…", true);
+    try {
+      await makePdf();
+      showMsg(msg, "PDFをダウンロードしました。", true);
+    } catch (err: any) {
+      console.error(err);
+      showMsg(msg, err?.message || "PDFを作れませんでした。", false);
+    } finally {
+      btn.disabled = !lastReport;
+    }
+  });
+
+  // ---------- 初期化 ----------
+  // 下書きがなければ、今日が含まれる月を報告する月にする（期首からの月数）
+  if (!data.months.some(isMonthTouched)) {
+    const now = new Date();
+    const diff = (now.getFullYear() - data.plan.startYear) * 12 + (now.getMonth() + 1 - data.plan.startMonth) - 1;
+    data.reportIndex = Math.min(11, Math.max(0, diff));
+  }
+  fillPlanInputs();
+  fillMonthInputs();
+  renderRegistration();
+  update();
+</script>
