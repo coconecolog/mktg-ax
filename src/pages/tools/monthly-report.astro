@@ -74,10 +74,13 @@ const faqItems = [
           <p class="text-sm font-bold text-ink-950">2か月目からは、前回のPDFを読み込む</p>
           <p class="mt-1 text-xs text-neutral-500">このツールで作ったPDFを選ぶと、計画と前月までの数字が入ります。</p>
         </div>
-        <label class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-ink-950 hover:border-neutral-500">
-          PDFを選ぶ
-          <input id="mr-pdf-input" type="file" accept="application/pdf,.pdf" class="sr-only" />
-        </label>
+        <div class="flex shrink-0 items-center gap-2">
+          <label class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-ink-950 hover:border-neutral-500">
+            PDFを選ぶ
+            <input id="mr-pdf-input" type="file" accept="application/pdf,.pdf" class="sr-only" />
+          </label>
+          <button id="mr-clear" type="button" class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-bold text-neutral-500 underline hover:text-ink-950">入力をすべて消す</button>
+        </div>
       </div>
       <p id="mr-load-msg" class="mt-3 hidden text-sm" role="status"></p>
       <p class="mt-2 text-xs text-neutral-400">※PDFを別のソフトで保存し直すと、埋め込んだデータが消えることがあります。その場合は手で入力してください。</p>
@@ -200,9 +203,14 @@ const faqItems = [
 
       <div id="mr-editor" class="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
-          <p class="text-sm font-bold text-ink-950">打ち手（3つまで）</p>
+          <p class="text-sm font-bold text-ink-950">打ち手（候補から3つまで＋自由記入）</p>
           <p id="mr-actions-lead" class="mt-1 text-xs text-neutral-500"></p>
           <div id="mr-actions" class="mt-3 space-y-2"></div>
+          <div class="mr-field mt-3">
+            <label class="mr-label" for="mr-action-free">自由記入（任意）</label>
+            <input id="mr-action-free" type="text" class="mr-input" placeholder="例：11月の業界紙の広告を、事例記事の掲載に切り替える" />
+            <span class="mr-help">入れたときだけ、選んだ打ち手の下に載ります。</span>
+          </div>
         </div>
         <div class="space-y-4">
           <p class="text-xs text-neutral-500">「課題」と「期限」は数字から自動で入ります。言葉は自由に直せます（報告する月を変えると作り直します）。</p>
@@ -329,21 +337,21 @@ const faqItems = [
   .mr-report .r-sub { font-size: 11px; color: #525252; margin-top: 2px; }
   .mr-report .r-src { font-size: 10.5px; color: #0b0b12; font-weight: 700; margin-top: 2px; }
   .mr-report .r-meta { font-size: 10.5px; color: #525252; text-align: right; }
-  .mr-report .r-top { display: grid; grid-template-columns: 1fr 1.08fr; gap: 12px; margin-top: 9px; }
+  .mr-report .r-top { display: grid; grid-template-columns: minmax(0, 0.8fr) 168px minmax(0, 1.12fr); gap: 12px; margin-top: 8px; }
   .mr-report .r-box { border: 1px solid #e5e5e5; border-radius: 8px; padding: 9px 12px; }
   .mr-report .r-h { font-size: 11.5px; font-weight: 800; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
   .mr-report .r-h small { font-weight: 400; color: #737373; font-size: 10px; }
   .mr-report .r-cells { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .mr-report .r-cell { background: #f6f6f6; border-radius: 6px; padding: 4px 10px; }
+  .mr-report .r-cell { background: #f6f6f6; border-radius: 6px; padding: 4px 9px; }
   .mr-report .r-cell .l { font-size: 10px; color: #525252; font-weight: 700; }
-  .mr-report .r-cell .v { font-size: 17px; font-weight: 800; line-height: 1.25; }
+  .mr-report .r-cell .v { font-size: 16px; font-weight: 800; line-height: 1.25; }
   .mr-report .r-cell .v span { font-size: 13px; font-weight: 700; margin-left: 6px; }
-  .mr-report .r-cell .s { font-size: 10px; color: #525252; }
+  .mr-report .r-cell .s { font-size: 9.5px; color: #525252; white-space: nowrap; }
   .mr-report .r-dark { background: #0b0b12; color: #ffffff; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; }
-  .mr-report .kg { display: grid; grid-template-columns: 44px 1.35fr 0.8fr 1.1fr; row-gap: 6px; column-gap: 10px; align-items: end; }
+  .mr-report .kg { display: grid; grid-template-columns: 40px 1.45fr 0.75fr 1.15fr; row-gap: 6px; column-gap: 10px; align-items: end; }
   .mr-report .kg .rl { font-size: 10px; font-weight: 800; color: #0b0b12; background: #d4d4d4; border-radius: 3px; text-align: center; padding: 1px 0; align-self: center; }
   .mr-report .kg .kl { font-size: 10.5px; color: #bdbdbd; font-weight: 700; }
-  .mr-report .kg .kv { font-size: 20px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
+  .mr-report .kg .kv { font-size: 18px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
   .mr-report .chip { display: inline-block; border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 800; color: #ffffff; margin-left: 8px; vertical-align: 4px; }
   .mr-report .j-ok { background: #15803d; }
   .mr-report .j-mid { background: #6b7280; }
@@ -353,7 +361,7 @@ const faqItems = [
   .mr-report .r-lg { display: flex; gap: 12px; font-size: 10px; color: #d4d4d4; }
   .mr-report .r-lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
   .mr-report table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 9px; font-size: 10.5px; }
-  .mr-report th, .mr-report td { padding: 2.2px 8px; text-align: right; border-bottom: 1px solid #ececec; white-space: nowrap; }
+  .mr-report th, .mr-report td { padding: 2px 8px; text-align: right; border-bottom: 1px solid #ececec; white-space: nowrap; }
   .mr-report th { font-size: 9.5px; color: #404040; font-weight: 700; }
   .mr-report td.n, .mr-report th.n { text-align: left; font-weight: 800; }
   .mr-report tr.g th { border: 0; padding: 4px 8px; font-size: 10.5px; }
@@ -371,7 +379,17 @@ const faqItems = [
   .mr-report .tag { display: inline-block; margin-left: 6px; font-size: 9px; color: #ffffff; background: #b91c1c; border-radius: 3px; padding: 0 4px; vertical-align: 1px; }
   .mr-report .tlg { display: flex; gap: 14px; justify-content: flex-end; font-size: 9px; color: #737373; margin-top: 3px; }
   .mr-report .tlg i { display: inline-block; width: 10px; height: 9px; vertical-align: -1px; margin-right: 4px; border: 1px solid #d4d4d4; }
-  .mr-report .r-bottom { flex: 1; display: grid; grid-template-columns: 1.05fr 1fr; gap: 12px; margin-top: 9px; min-height: 0; overflow: hidden; }
+  .mr-report .r-bottom { flex: 1; display: grid; grid-template-columns: minmax(0, 0.8fr) 168px minmax(0, 1.12fr); gap: 12px; margin-top: 7px; min-height: 0; overflow: hidden; }
+  .mr-report .r-bottom .r-chart { grid-column: span 2; }
+  .mr-report .r-rates { display: flex; flex-direction: column; gap: 5px; }
+  .mr-report .r-rates .r-h { margin-bottom: 0; }
+  .mr-report .r-rc { background: #f6f6f6; border-radius: 6px; padding: 4px 9px; }
+  .mr-report .r-rc .l { font-size: 10px; color: #525252; font-weight: 700; white-space: nowrap; }
+  .mr-report .r-rc .v { font-size: 16px; font-weight: 800; line-height: 1.2; }
+  .mr-report .r-rc .s { font-size: 9.5px; color: #525252; white-space: nowrap; }
+  .mr-report .r-rc.weak { background: #fef2f2; box-shadow: inset 3px 0 0 #b91c1c; }
+  .mr-report .r-rc.weak .l { color: #b91c1c; }
+  .mr-report .r-rc .tag { margin-left: 4px; font-size: 8px; padding: 0 3px; }
   .mr-report .r-chart { display: flex; flex-direction: column; min-height: 0; }
   .mr-report .r-chart svg { flex: 1; width: 100%; min-height: 0; }
   .mr-report .lg2 { display: flex; gap: 12px; font-size: 9.5px; color: #525252; }
@@ -400,9 +418,11 @@ const faqItems = [
     emptyTexts,
     SETTLED_THRESHOLD,
     MONTH_FIELDS,
+    MAX_ACTIONS,
     actionStageKey,
     buildDeadline,
     buildIssue,
+    fmtStageValue,
     buildTable,
     cumulativeSeries,
     computeReport,
@@ -596,13 +616,17 @@ const faqItems = [
   function syncActions(r: Report) {
     const key = actionStageKey(r);
     if (data.actions.stage !== key || data.actions.items.length === 0) {
-      data.actions = { stage: key, items: ACTION_CANDIDATES[key].map((text) => ({ text, checked: true })) };
+      const list = ACTION_CANDIDATES[key];
+      // 最初は上から3つを選んだ状態にする（読者が選び直す）
+      data.actions = { stage: key, items: list.map((text, i) => ({ text, checked: i < MAX_ACTIONS })), free: data.actions.free };
     }
   }
 
   function renderActionsEditor(r: Report | null) {
     const lead = $("mr-actions-lead");
     const box = $("mr-actions");
+    freeEl.disabled = !r;
+    if (document.activeElement !== freeEl) freeEl.value = data.actions.free;
     if (!r) {
       lead.textContent = "計画と今月の数字を入れると、足りない段階に合わせた候補が出ます。";
       box.innerHTML = "";
@@ -613,30 +637,50 @@ const faqItems = [
     lead.textContent =
       key === "ok"
         ? "すべての段階が90%以上です。"
-        : `足りない段階は「${r.weakStage!.name}」です。報告に載せる打ち手を選び、言葉を直せます。`;
+        : `足りない段階は「${r.weakStage!.name}」です。報告に載せる打ち手を3つまで選び、言葉を直せます。`;
     // 入力中のテキストを壊さないよう、項目が変わったときだけ描き直す
     const sig = `${key}:${data.actions.items.length}`;
-    if (box.dataset.sig === sig && box.children.length === data.actions.items.length) return;
-    box.dataset.sig = sig;
-    box.innerHTML = data.actions.items
-      .map(
-        (a, i) => `<div class="flex items-center gap-2">
-          <input type="checkbox" data-ac="${i}" ${a.checked ? "checked" : ""} aria-label="打ち手${i + 1}を報告に載せる" />
-          <input type="text" class="mr-input" data-at="${i}" value="${esc(a.text)}" aria-label="打ち手${i + 1}" />
-        </div>`,
-      )
-      .join("");
+    if (!(box.dataset.sig === sig && box.children.length === data.actions.items.length)) {
+      box.dataset.sig = sig;
+      box.innerHTML = data.actions.items
+        .map(
+          (a, i) => `<div class="flex items-center gap-2">
+            <input type="checkbox" data-ac="${i}" ${a.checked ? "checked" : ""} aria-label="打ち手${i + 1}を報告に載せる" />
+            <input type="text" class="mr-input" data-at="${i}" value="${esc(a.text)}" aria-label="打ち手${i + 1}" />
+          </div>`,
+        )
+        .join("");
+    }
+    // 3つ選んだら、残りのチェックは押せないようにする
+    const full = data.actions.items.filter((a) => a.checked).length >= MAX_ACTIONS;
+    box.querySelectorAll<HTMLInputElement>("[data-ac]").forEach((el) => {
+      const item = data.actions.items[Number(el.dataset.ac)];
+      el.checked = item.checked;
+      el.disabled = full && !item.checked;
+    });
   }
+  const freeEl = $<HTMLInputElement>("mr-action-free");
+  freeEl.addEventListener("input", () => {
+    data.actions.free = freeEl.value;
+    update();
+  });
   $("mr-actions").addEventListener("input", (e) => {
     const el = e.target as HTMLInputElement;
-    if (el.dataset.at) data.actions.items[Number(el.dataset.at)].text = el.value;
-    if (el.dataset.ac) data.actions.items[Number(el.dataset.ac)].checked = el.checked;
-    update();
+    if (el.dataset.at) {
+      data.actions.items[Number(el.dataset.at)].text = el.value;
+      update();
+    }
   });
   $("mr-actions").addEventListener("change", (e) => {
     const el = e.target as HTMLInputElement;
     if (el.dataset.ac) {
-      data.actions.items[Number(el.dataset.ac)].checked = el.checked;
+      const item = data.actions.items[Number(el.dataset.ac)];
+      const count = data.actions.items.filter((a) => a.checked).length;
+      if (el.checked && !item.checked && count >= MAX_ACTIONS) {
+        el.checked = false;
+        return;
+      }
+      item.checked = el.checked;
       update();
     }
   });
@@ -657,7 +701,14 @@ const faqItems = [
     update();
   });
 
-  const selectedActions = () => data.actions.items.filter((a) => a.checked && a.text.trim()).map((a) => a.text.trim());
+  const selectedActions = () => {
+    const list = data.actions.items
+      .filter((a) => a.checked && a.text.trim())
+      .slice(0, MAX_ACTIONS)
+      .map((a) => a.text.trim());
+    const free = data.actions.free.trim();
+    return free ? [...list, free] : list;
+  };
 
   // ---------- 報告書 ----------
   function judgeClass(j: string | null) {
@@ -830,10 +881,25 @@ const faqItems = [
           ${gapCell}
         </div>
         ${bar}
-        <div class="r-lg"><span><i style="background:#ffffff"></i>受注済み ${fmtNum(r.cum.winAmt)}</span><span><i style="background:#a3a3a3"></i>進行中の商談×${wrLabel} ${fmtNum(r.openExpected)}</span><span><i style="background:#5b5b66"></i>期内に受注できる新規分 ${fmtNum(r.futureNew)}</span><span style="margin-left:auto">年間目標＝100%</span></div>
+        <div class="r-lg"><span><i style="background:#ffffff"></i>受注済み ${fmtNum(r.cum.winAmt)}</span><span><i style="background:#a3a3a3"></i>進行中の商談×${wrLabel} ${fmtNum(r.openExpected)}</span><span><i style="background:#5b5b66"></i>期内に受注できる新規分 ${fmtNum(r.futureNew)}</span></div>
       </div>`;
 
-    // 予実表（件数・率／金額）
+    // 率（期首からの累計で判定。月ごとの率は前の月までのリード・商談の影響で振れるため出さない）
+    const rateCard = (key: "dealRate" | "winRate") => {
+      const st = r.stages.find((x) => x.key === key)!;
+      const weak = r.weakStage?.key === key;
+      const sub =
+        st.ratio === null
+          ? key === "winRate"
+            ? `計画 ${fmtStageValue(key, st.plan)}・判定前（決着 ${r.settled}/${SETTLED_THRESHOLD}件）`
+            : `計画 ${fmtStageValue(key, st.plan)}・判定前`
+          : `計画 ${fmtStageValue(key, st.plan)}・達成率 ${pct(st.ratio)}`;
+      return `<div class="r-rc${weak ? " weak" : ""}"><p class="l">${st.name}${weak ? `<span class="tag">足りない段階</span>` : ""}</p>
+          <p class="v">${st.actual === null ? "—" : fmtStageValue(key, st.actual)}</p><p class="s">${sub}</p></div>`;
+    };
+    const rates = `<div class="r-box r-rates"><p class="r-h">率<small>期首からの累計</small></p>${rateCard("dealRate")}${rateCard("winRate")}</div>`;
+
+    // 予実表（件数・金額）
     const weakKey = r.weakStage?.key;
     const rowHtml = (x: TableRow) => {
       const weak = !!x.stage && x.stage === weakKey;
@@ -846,7 +912,7 @@ const faqItems = [
           <td class="sep pl">${cellValue(x.kind, x.annual.plan)}</td><td class="pc">${flow && x.annual.progress !== null ? `<b>${fmtPct(x.annual.progress)}</b>` : "—"}</td>
         </tr>`;
     };
-    const order1 = ["leads", "deals", "dealRate", "wins", "winRate"];
+    const order1 = ["leads", "deals", "wins"];
     const order2 = ["dealAmt", "winAmt", "unitPrice"];
     const table = `<table>
         <thead>
@@ -854,7 +920,7 @@ const faqItems = [
           <tr class="sh"><th class="n">項目</th><th class="sep">実績</th><th class="pl">計画</th><th>達成率</th><th>前月比</th><th class="sep">実績</th><th class="pl">計画</th><th>達成率</th><th class="sep pl">計画</th><th>進捗率</th></tr>
         </thead>
         <tbody>
-          <tr class="grp"><td colspan="10">件数・率</td></tr>${order1.map((k) => rowHtml(row(k))).join("")}
+          <tr class="grp"><td colspan="10">件数</td></tr>${order1.map((k) => rowHtml(row(k))).join("")}
           <tr class="grp"><td colspan="10">金額（万円）</td></tr>${order2.map((k) => rowHtml(row(k))).join("")}
         </tbody>
       </table>
@@ -885,7 +951,7 @@ const faqItems = [
     if (r.winRateSource === "plan") extras.push(`進行中の商談の受注率は、決着した商談が${SETTLED_THRESHOLD}件たまるまで計画の値。`);
 
     return `<div class="mr-report">${head}
-        <div class="r-top">${moves}${dark}</div>
+        <div class="r-top">${moves}${rates}${dark}</div>
         ${table}
         <div class="r-bottom">${chart}${issueBox}</div>
         <div class="r-foot"><span>${esc(footLeft(extras.join("")))}</span><span>MKTG.AX マーケ月次報告メーカー｜mktg.ax/tools/monthly-report</span></div>
@@ -1073,6 +1139,41 @@ const faqItems = [
     el.classList.remove("hidden");
   }
 
+  // ---------- 入力をすべて消す（2回押しで確定。登録済みのメールアドレスは残す） ----------
+  const clearBtn = $<HTMLButtonElement>("mr-clear");
+  let clearTimer: number | undefined;
+  clearBtn.addEventListener("click", () => {
+    if (clearBtn.dataset.armed !== "1") {
+      clearBtn.dataset.armed = "1";
+      clearBtn.textContent = "もう一度押すと消えます";
+      clearBtn.style.color = "#b91c1c";
+      clearTimer = window.setTimeout(() => {
+        clearBtn.dataset.armed = "";
+        clearBtn.textContent = "入力をすべて消す";
+        clearBtn.style.color = "";
+      }, 4000);
+      return;
+    }
+    window.clearTimeout(clearTimer);
+    clearBtn.dataset.armed = "";
+    clearBtn.textContent = "入力をすべて消す";
+    clearBtn.style.color = "";
+    data = emptyData();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+    const now = new Date();
+    const diff = (now.getFullYear() - data.plan.startYear) * 12 + (now.getMonth() + 1 - data.plan.startMonth) - 1;
+    data.reportIndex = Math.min(11, Math.max(0, diff));
+    $("mr-actions").dataset.sig = "";
+    fillPlanInputs();
+    fillMonthInputs();
+    update();
+    showMsg(loadMsg, "入力をすべて消しました。", true);
+  });
+
   $<HTMLInputElement>("mr-pdf-input").addEventListener("change", async (e) => {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -1092,7 +1193,7 @@ const faqItems = [
         if (isMonthTouched(m)) last = i;
       });
       data.reportIndex = Math.min(11, last + 1);
-      data.actions = { stage: "", items: [] };
+      data.actions = { stage: "", items: [], free: "" };
       data.texts = emptyTexts();
       if (data.email && !getRegistered()) setRegistered(data.email);
       fillPlanInputs();
