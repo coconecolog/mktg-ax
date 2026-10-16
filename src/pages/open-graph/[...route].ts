@@ -27,6 +27,7 @@ const pages: Record<string, PageEntry> = {
   "tools/roas-cac-simulator": { title: "広告費用対効果（ROAS/CAC）シミュレーター", description: SITE_DESCRIPTION },
   "tools/seo-aeo-aio-check": { title: "簡易SEO・AEO・AIO診断チェックリスト", description: SITE_DESCRIPTION },
   "tools/inhouse-vs-outsource": { title: "内製 vs 外注 コスト比較シミュレーター", description: SITE_DESCRIPTION },
+  "tools/monthly-report": { title: "マーケ月次報告メーカー", description: SITE_DESCRIPTION },
   resources: { title: "資料一覧", description: SITE_DESCRIPTION },
   service: { title: "サービスについて", description: SITE_DESCRIPTION },
   contact: { title: "お問い合わせ", description: SITE_DESCRIPTION },
