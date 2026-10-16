@@ -18,7 +18,7 @@ const FULL_VERSION_URL = "/library";
 
 const TOOL_TITLE = "マーケ月次報告メーカー";
 const TOOL_DESCRIPTION =
-  "毎月、リード・商談・受注の数字を入れるだけで、期末の着地見込みと足りない段階、打ち手、経営陣への説明の一文までそろった経営報告1枚（A4横のPDF）ができる無料ツールです。";
+  "毎月、リード・商談・受注の数字を入れるだけで、期末の着地見込みと足りない段階、打ち手、結論の文までそろった経営報告1枚（A4横のPDF）ができる無料ツールです。";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -33,12 +33,12 @@ const faqItems = [
   {
     question: "着地見込みはどのように計算していますか？",
     answer:
-      "受注済みの累計＋月末に進行中の商談金額×受注率＋期内に受注できる新規分 で計算しています。期内に受注できる新規分は、残りの月のうち期末まで「商談から受注までの平均期間」以上ある月の、計画の商談金額（計画のリード数×計画の商談化率×計画の平均受注単価）の合計に受注率を掛けたものです。",
+      "受注済みの累計＋月末に進行中の商談金額×受注率＋期内に受注できる新規分 で計算しています。期内に受注できる新規分は、残りの月のうち期末まで「商談から受注までの平均期間」以上ある月の、計画の商談金額（計画のリード数×計画の商談化率×計画の平均受注単価）の合計に、計画の受注率を掛けたものです。",
   },
   {
     question: "受注率は計画と実績のどちらを使いますか？",
     answer:
-      "決着した商談（受注＋失注）が3件たまるまでは計画の受注率を、それ以降は期首からの累計の実績（受注金額÷（受注金額＋失注金額））を使います。進行中の商談を分母に入れると、受注の遅れで低く出てしまうためです。",
+      "進行中の商談には、決着した商談（受注＋失注）が10件たまるまでは計画の受注率を、それ以降は期首からの累計の実績（受注金額÷（受注金額＋失注金額））を使います。進行中の商談を分母に入れると受注の遅れで低く出てしまうため、また件数が少ないと振れが大きいためです。これからの商談（期内に受注できる新規分）には、計画の受注率を使います。",
   },
   {
     question: "「足りない段階」はどう決まりますか？",
@@ -202,12 +202,9 @@ const faqItems = [
           <div id="mr-actions" class="mt-3 space-y-2"></div>
         </div>
         <div>
-          <div class="flex items-center justify-between gap-3">
-            <label class="text-sm font-bold text-ink-950" for="mr-sentence">経営陣に説明するときの一文</label>
-            <button id="mr-sentence-reset" type="button" class="text-xs font-bold text-neutral-500 underline hover:text-ink-950">文を作り直す</button>
-          </div>
-          <p class="mt-1 text-xs text-neutral-500">言葉は自由に直せます。</p>
-          <textarea id="mr-sentence" rows="5" class="mr-input mt-3 leading-relaxed"></textarea>
+          <label class="text-sm font-bold text-ink-950" for="mr-sentence">結論の文（3行）</label>
+          <p class="mt-1 text-xs text-neutral-500">数字は自動で入ります。言葉は自由に直せます（報告する月を変えると作り直します）。</p>
+          <textarea id="mr-sentence" rows="7" class="mr-input mt-3 leading-relaxed"></textarea>
         </div>
       </div>
 
@@ -313,8 +310,8 @@ const faqItems = [
   .mr-report .r-sub { font-size: 12px; color: #525252; margin-top: 2px; }
   .mr-report .r-meta { font-size: 11px; color: #525252; text-align: right; }
   .mr-report .r-body { flex: 1; display: grid; grid-template-columns: 1.08fr 1fr; gap: 22px; padding-top: 16px; min-height: 0; }
-  .mr-report .r-col { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; }
-  .mr-report .r-sec { border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px 16px; }
+  .mr-report .r-col { display: flex; flex-direction: column; gap: 11px; min-height: 0; overflow: hidden; }
+  .mr-report .r-sec { border: 1px solid #e5e5e5; border-radius: 10px; padding: 10px 16px; }
   .mr-report .r-h { font-size: 12px; font-weight: 800; color: #0b0b12; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
   .mr-report .r-h .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #0b0b12; color: #ffffff; font-size: 10px; align-items: center; justify-content: center; }
   .mr-report .r-concl { border: 2px solid #0b0b12; }
@@ -344,7 +341,7 @@ const faqItems = [
   .mr-report .r-kpi { background: #f7f7f7; border-radius: 8px; padding: 8px 12px; }
   .mr-report .r-kpi .v { font-size: 20px; font-weight: 800; }
   .mr-report .r-kpi .d { font-size: 11px; color: #525252; }
-  .mr-report .r-stage { display: grid; grid-template-columns: 64px 1fr 52px 78px; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; font-size: 11.5px; }
+  .mr-report .r-stage { display: grid; grid-template-columns: 64px 1fr 52px 78px; gap: 8px; align-items: center; padding: 4px 8px; border-radius: 6px; font-size: 11.5px; }
   .mr-report .r-stage.weak { background: #fef2f2; outline: 2px solid #b91c1c; }
   .mr-report .r-stage .nm { font-weight: 800; }
   .mr-report .r-stage .bar { position: relative; height: 10px; background: #f0f0f0; border-radius: 3px; }
@@ -358,9 +355,9 @@ const faqItems = [
   .mr-report .r-actions { margin: 0; padding-left: 0; list-style: none; font-size: 12.5px; }
   .mr-report .r-actions li { display: flex; gap: 8px; padding: 3px 0; }
   .mr-report .r-actions li::before { content: "→"; font-weight: 800; }
-  .mr-report .r-sentence { background: #0b0b12; color: #ffffff; border-radius: 10px; padding: 12px 16px; font-size: 13px; line-height: 1.7; font-weight: 600; }
-  .mr-report .r-sentence .r-h { color: #ffffff; }
-  .mr-report .r-sentence .r-h .n { background: #ffffff; color: #0b0b12; }
+  .mr-report .r-sentence { background: #0b0b12; color: #ffffff; border-radius: 10px; padding: 12px 16px; font-size: 12.5px; line-height: 1.65; font-weight: 600; }
+  .mr-report .r-sentence p { margin: 0; }
+  .mr-report .r-sentence p + p { margin-top: 6px; }
   .mr-report .r-ref { font-size: 11.5px; color: #404040; background: #f7f7f7; border-radius: 8px; padding: 8px 12px; margin: 0; }
   .mr-report .r-foot { display: flex; justify-content: space-between; font-size: 9.5px; color: #8a8a8a; border-top: 1px solid #e5e5e5; padding-top: 6px; margin-top: 10px; }
   .mr-report .r-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #8a8a8a; font-size: 16px; text-align: center; line-height: 1.8; }
@@ -370,6 +367,7 @@ const faqItems = [
   import {
     ACTION_CANDIDATES,
     DATA_VERSION,
+    SETTLED_THRESHOLD,
     MONTH_FIELDS,
     actionStageKey,
     buildSentence,
@@ -542,6 +540,7 @@ const faqItems = [
     const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-mi]");
     if (!btn) return;
     data.reportIndex = Number(btn.dataset.mi);
+    data.sentence = { text: "", edited: false };
     fillMonthInputs();
     update();
   });
@@ -612,10 +611,6 @@ const faqItems = [
     data.sentence = { text: sentenceEl.value, edited: true };
     update(false);
   });
-  $("mr-sentence-reset").addEventListener("click", () => {
-    data.sentence = { text: "", edited: false };
-    update();
-  });
 
   const selectedActions = () => data.actions.items.filter((a) => a.checked && a.text.trim()).map((a) => a.text.trim());
 
@@ -675,10 +670,10 @@ const faqItems = [
         <div class="r-legend">
           <i style="background:#0b0b12"></i><span>受注済み（期首からの累計 ${r.cum.wins}件）</span><b>${fmtMan(r.cum.winAmt)}</b>
           <i style="background:#737373"></i><span>進行中の商談 ${fmtMan(r.open)} × 受注率 ${fmtPct(r.winRateUsed)}</span><b>${fmtMan(r.openExpected)}</b>
-          <i style="background:#c4c4c4"></i><span>期内に受注できる新規分（残り${r.futureMonths}か月分の計画）</span><b>${fmtMan(r.futureNew)}</b>
+          <i style="background:#c4c4c4"></i><span>期内に受注できる新規分（残り${r.futureMonths}か月分の計画×計画の受注率）</span><b>${fmtMan(r.futureNew)}</b>
         </div>
-        <p class="r-muted" style="margin-top:6px">受注率は${
-          r.winRateSource === "actual" ? `期首からの累計の実績（決着した商談 ${r.settled}件）` : `計画の値（決着した商談が3件たまるまで）`
+        <p class="r-muted" style="margin-top:6px">進行中の商談の受注率は${
+          r.winRateSource === "actual" ? `期首からの累計の実績（決着した商談 ${r.settled}件）` : `計画の値（決着した商談が${SETTLED_THRESHOLD}件たまるまで）`
         }。赤の縦線は計画 ${fmtMan(r.target)}</p>
       </div>`;
 
@@ -735,11 +730,12 @@ const faqItems = [
         <ul class="r-actions">${acts.length ? acts.map((a) => `<li><span>${esc(a)}</span></li>`).join("") : `<li><span>—</span></li>`}</ul>
       </div>`;
 
-    // 6. 一文
-    const sentence = `<div class="r-sentence">
-        <p class="r-h"><span class="n">6</span>経営陣への説明</p>
-        <div>${esc(data.sentence.text)}</div>
-      </div>`;
+    // 6. 結論の文（見出しなし）
+    const sentence = `<div class="r-sentence">${data.sentence.text
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((l) => `<p>${esc(l)}</p>`)
+      .join("")}</div>`;
 
     // 7. 参考
     const ref = r.revenue
@@ -772,7 +768,7 @@ const faqItems = [
 
     if (r) {
       syncActions(r);
-      if (!data.sentence.edited && regenerateSentence) data.sentence.text = buildSentence(r, selectedActions());
+      if (!data.sentence.edited && regenerateSentence) data.sentence.text = buildSentence(r, selectedActions(), data.plan);
     }
     if (document.activeElement !== sentenceEl) sentenceEl.value = data.sentence.text;
     sentenceEl.disabled = !r;
