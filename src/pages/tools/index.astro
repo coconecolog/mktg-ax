@@ -1,11 +1,11 @@
 ---
+// 便利ツール一覧（/tools）。2026-10-17 Figma「便利ツール一覧 | MKTG.AX」に合わせてリニューアル。
+// ツールの文言（名前・説明・目安時間など）はこのファイルに直接書いている（Notionのツールは参照しない）。
+// ツールを増やす・文言を変えるときは、下の MAIN_TOOLS / QUICK_TOOLS を編集する。
+// アイコンは lucide（https://lucide.dev）の線画。ICONS に同じ形式で追加すれば使える。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import ToolCard from "@/components/ToolCard.astro";
-import { getAllCategories, getPopularPosts } from "@/lib/posts";
-import { getAllTools, getToolCategories } from "@/lib/tools";
 import { buildCollectionPageSchema } from "@/lib/schema";
 
 const breadcrumbItems = [
@@ -13,19 +13,110 @@ const breadcrumbItems = [
   { name: "便利ツール", href: "/tools" },
 ];
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
+// lucide アイコンの中身（<svg> の内側）。
+const ICONS: Record<string, string> = {
+  "chart-no-axes-combined":
+    '<path d="M12 16v5"/><path d="M16 14.639V21"/><path d="M20 10.656V21"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18.463V21"/><path d="M8 14.656V21"/>',
+  "scan-search":
+    '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/>',
+  "file-chart-column":
+    '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 18v-1"/><path d="M12 18v-6"/><path d="M16 18v-3"/>',
+  "list-checks":
+    '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+  calculator:
+    '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+  scale:
+    '<path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/>',
+  "chart-bar-big":
+    '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="9" height="4" rx="1"/><rect x="7" y="5" width="12" height="4" rx="1"/>',
+  "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+};
 
-// ツールはNotionのツールDB（src/lib/tools.ts）から取得する。フィルタータブは、ツールが1件以上あるカテゴリから自動で作る。
-const tools = getAllTools();
-const filterCategories = getToolCategories();
+// 計画から改善、報告まで（PDCAの3ツール）。href を null にすると「公開準備中」の表示になる。
+const MAIN_TOOLS = [
+  {
+    step: "01",
+    phase: "計画",
+    purpose: "投資の根拠をつくる",
+    icon: "chart-no-axes-combined",
+    titleLines: ["マーケティング予算", "シミュレーター"],
+    description: "今期実績と来期の施策から、予算と投資計画を組み立てます。人件費・ツール費・広告費を整理し、判断の根拠を明確に。",
+    detail: "逆算パイプライン・費用内訳・ROI試算を含む計画書を作成。",
+    note: "来期の予算策定・社内提案に",
+    href: "/tools/budget-simulator",
+  },
+  {
+    step: "02",
+    phase: "発見・改善",
+    purpose: "次に取り組む課題を見つける",
+    icon: "scan-search",
+    titleLines: ["ボトルネック", "発見ツール"],
+    description: "マーケティング活動のなかで、改善すべき箇所を見つけるためのツールです。",
+    detail: "現在、公開に向けて準備中です。",
+    note: "改善の優先順位を考えるときに",
+    href: null,
+  },
+  {
+    step: "03",
+    phase: "報告",
+    purpose: "成果と課題を伝える",
+    icon: "file-chart-column",
+    titleLines: ["マーケ月次報告", "メーカー"],
+    description: "期初の計画と、毎月のリード・商談・受注などの数値を整理。経営に伝える月次報告を、A4横のPDF 1枚にまとめます。",
+    detail: "翌月は前回のPDFを読み込み、内容を引き継いで作成できます。",
+    note: "PDF出力にはメール登録が必要",
+    href: "/tools/monthly-report",
+  },
+] as const;
 
-const pageDescription = "日々の意思決定にそのまま使える無料のマーケティング診断・シミュレーションツールを公開しています。";
+// 日々の判断に、小さなツール。
+const QUICK_TOOLS = [
+  {
+    icon: "list-checks",
+    category: "SEO・AI検索",
+    title: "簡易SEO・AEO・AIO診断チェックリスト",
+    description: "全15項目を自分でチェック。SEO・AI検索への対応状況を簡易診断します。",
+    time: "目安 2分",
+    href: "/tools/seo-aeo-aio-check",
+  },
+  {
+    icon: "calculator",
+    category: "広告の投資判断",
+    title: "広告費用対効果（ROAS/CAC）シミュレーター",
+    description: "サブスク・リピート型ビジネスのLTVから、許容CACと投資回収期間を試算します。",
+    time: "目安 1分",
+    href: "/tools/roas-cac-simulator",
+  },
+  {
+    icon: "scale",
+    category: "体制・コスト",
+    title: "内製 vs 外注 コスト比較シミュレーター",
+    description: "新規採用と、代理店・フリーランスへの外注。累計コストを比較します。",
+    time: "目安 2分",
+    href: "/tools/inhouse-vs-outsource",
+  },
+  {
+    icon: "chart-bar-big",
+    category: "広告宣伝費",
+    title: "広告宣伝費 業界ベンチマーク診断",
+    description: "業種・年間売上高・年間広告宣伝費から、同業種と比べた広告宣伝費の水準を診断します。",
+    time: "目安 1分",
+    href: "/tools/kpi-benchmark",
+  },
+] as const;
+
+const pageDescription =
+  "少人数でマーケティングを担うBtoB企業へ。計画づくりから改善点の発見、経営への報告まで、日々の判断に役立つ計算・診断ツールをまとめました。";
+
+const schemaItems = [
+  ...MAIN_TOOLS.filter((t) => t.href).map((t) => ({ href: t.href as string, title: t.titleLines.join("") })),
+  ...QUICK_TOOLS.map((t) => ({ href: t.href, title: t.title })),
+];
 const toolsSchema = buildCollectionPageSchema({
   name: "便利ツール",
   description: pageDescription,
   path: "/tools",
-  items: tools.map((t) => ({ href: t.href, title: t.title })),
+  items: schemaItems,
 });
 ---
 
@@ -38,84 +129,130 @@ const toolsSchema = buildCollectionPageSchema({
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-5xl px-5 py-12">
-    <div class="mx-auto text-center">
-      <span class="inline-block rounded-full border border-neutral-200 bg-white px-4 py-1 text-xs font-medium text-neutral-500">
-        完全無料・会員登録不要
-      </span>
-      <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-ink-950">実務の意思決定をスピードアップする計算・診断ツール</h1>
-      <p class="mt-3 text-neutral-500">入力データはサーバーに保存されません。安心してお手元の数値で試算できます。</p>
-    </div>
-
-    {
-      filterCategories.length > 0 && (
-        <div class="mt-8 flex flex-wrap justify-center gap-2" id="tool-filters">
-          <button
-            type="button"
-            data-filter="all"
-            class="tool-filter-btn rounded-full bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors"
-          >
-            すべて ({tools.length})
-          </button>
-          {filterCategories.map((name) => (
-            <button
-              type="button"
-              data-filter={name}
-              class="tool-filter-btn rounded-full border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:border-brand-300"
-            >
-              {name}
-            </button>
-          ))}
+  <div class="bg-white text-[#0c0c11]">
+    <!-- ページ導入 -->
+    <section class="mx-auto max-w-6xl px-5 pb-12 pt-12 md:pt-14">
+      <p class="text-xs font-semibold tracking-wide text-[#7b7c83]">TOOLS</p>
+      <div class="mt-5 flex flex-col gap-6 md:flex-row md:items-center md:gap-[72px]">
+        <h1 class="shrink-0 text-4xl font-bold leading-[1.3] md:w-[360px] md:text-5xl">便利ツール</h1>
+        <div class="min-w-0 flex-1">
+          <p class="text-lg font-bold md:text-[21px]">実務の意思決定を、自社の数字で。</p>
+          <p class="mt-3 text-[15px] leading-[1.9] text-[#4f5057]">
+            少人数でマーケティングを担う、BtoB企業へ。<br />
+            計画づくりから改善点の発見、経営への報告まで。<br />
+            日々の判断に役立つ計算・診断ツールをまとめました。
+          </p>
         </div>
-      )
-    }
+      </div>
+    </section>
 
-    <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3" id="tool-cards">
-      {tools.map((tool) => <ToolCard tool={tool} />)}
-    </div>
+    <!-- 計画から改善、報告まで（PDCAの3ツール） -->
+    <section class="mx-auto max-w-6xl px-5 pb-[72px]">
+      <div class="h-[2px] bg-[#0c0c11]"></div>
+      <div class="mt-[30px] flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
+        <h2 class="text-2xl font-bold md:text-[28px]">計画から改善、報告まで。</h2>
+        <p class="text-sm text-[#4f5057]">マーケティングのPDCAを支える、3つのツール</p>
+      </div>
 
-    <p class="mt-10 text-sm text-neutral-400">
-      追加してほしいツールのご要望は
-      <a href="/contact" class="text-brand-700 underline">お問い合わせ</a>よりお気軽にお寄せください。
-    </p>
+      <div class="mt-[30px] grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
+        {
+          MAIN_TOOLS.map((tool, i) => (
+            <div class="flex flex-col gap-[18px]">
+              <div class="flex items-center gap-[14px]">
+                <span class="text-[34px] leading-none text-[#7b7c83]">{tool.step}</span>
+                <div class="min-w-0 flex-1">
+                  <p class="font-bold">{tool.phase}</p>
+                  <p class="mt-[3px] text-xs text-[#4f5057]">{tool.purpose}</p>
+                </div>
+                {i < MAIN_TOOLS.length - 1 && (
+                  <svg class="hidden shrink-0 text-[#7b7c83] md:block" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
+                )}
+              </div>
 
-    <MoreExplore
-      categories={categories}
-      popularPosts={popularPosts}
-      categoryHeading="カテゴリから探す"
-      popularHeading="💡 あわせて読みたい実践ノウハウ"
-    />
-  </section>
+              <article
+                class:list={[
+                  "flex flex-1 flex-col justify-between border border-[#dedee2] md:min-h-[516px]",
+                  tool.href ? "bg-white" : "bg-[#f8f7f9]",
+                ]}
+              >
+                <div class="flex flex-col gap-5 p-7">
+                  <div class="flex items-center justify-between">
+                    <svg class="shrink-0" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[tool.icon]} />
+                    {tool.href ? (
+                      <span class="text-[11px] text-[#7b7c83]">MKTG.AX TOOLS</span>
+                    ) : (
+                      <span class="border border-[#dedee2] px-2.5 py-[5px] text-xs font-medium text-[#4f5057]">公開予定</span>
+                    )}
+                  </div>
+                  <h3 class="text-[23px] font-bold leading-[1.55]">
+                    {tool.titleLines[0]}<br />{tool.titleLines[1]}
+                  </h3>
+                  <p class="text-sm leading-[1.95] text-[#4f5057]">{tool.description}</p>
+                  <hr class="border-t border-[#dedee2]" />
+                  <p class="text-[13px] leading-[1.85] text-[#4f5057]">{tool.detail}</p>
+                </div>
+                <div class="flex flex-col gap-3 px-7 pb-7 pt-2">
+                  <p class="text-xs text-[#7b7c83]">{tool.note}</p>
+                  {tool.href ? (
+                    <a
+                      href={tool.href}
+                      class="flex h-[50px] items-center justify-between bg-[#0c0c11] px-[22px] text-sm font-bold text-white transition-colors hover:bg-neutral-800"
+                    >
+                      ツールを使う
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
+                    </a>
+                  ) : (
+                    <span class="flex h-[50px] items-center bg-[#e5e4e8] px-[22px] text-sm font-bold text-[#77777e]" aria-disabled="true">
+                      公開準備中
+                    </span>
+                  )}
+                </div>
+              </article>
+            </div>
+          ))
+        }
+      </div>
+
+      <p class="mt-[30px] text-xs leading-[1.7] text-[#7b7c83]">
+        目的に合うツールからお使いください。上記の流れは活用の目安であり、ツール間の自動データ連携を示すものではありません。
+      </p>
+    </section>
+
+    <!-- 日々の判断に、小さなツール。 -->
+    <section class="mx-auto max-w-6xl px-5 pb-16">
+      <div class="h-[2px] bg-[#0c0c11]"></div>
+      <div class="mt-[22px] flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
+        <h2 class="text-2xl font-bold md:text-[28px]">日々の判断に、小さなツール。</h2>
+        <p class="text-[13px] text-[#7b7c83]">実務の「あったらいいな」を、少しずつ。</p>
+      </div>
+
+      <ul class="mt-[22px] border-t border-[#dedee2]">
+        {
+          QUICK_TOOLS.map((tool) => (
+            <li class="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-[#dedee2] py-[25px] md:flex-nowrap">
+              <div class="flex size-14 shrink-0 items-center justify-center bg-[#f8f7f9]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[tool.icon]} />
+              </div>
+              <div class="min-w-0 flex-1 basis-[calc(100%-80px)] md:basis-auto">
+                <p class="text-[11px] font-medium text-[#7b7c83]">{tool.category}</p>
+                <a href={tool.href} class="mt-2 block text-[17px] font-bold hover:underline md:text-[19px]">{tool.title}</a>
+                <p class="mt-2 text-[13px] leading-[1.7] text-[#4f5057]">{tool.description}</p>
+              </div>
+              <span class="shrink-0 text-xs text-[#7b7c83] md:ml-0 ml-20">{tool.time}</span>
+              <a href={tool.href} class="ml-auto flex shrink-0 items-center gap-4 pl-3 text-[13px] font-bold md:ml-0" aria-label={`${tool.title}を使う`}>
+                使う
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="mt-[22px] text-xs leading-[1.9] text-[#7b7c83]">
+        計算・診断結果は、入力した前提に基づく参考情報です。社内の実績や条件に照らし合わせてご判断ください。
+      </p>
+    </section>
+  </div>
 
   <ContactCta />
 </BaseLayout>
-
-<script>
-  const filterButtons = Array.from(document.querySelectorAll(".tool-filter-btn")) as HTMLButtonElement[];
-  const cards = Array.from(document.querySelectorAll(".tool-card")) as HTMLElement[];
-
-  const activeClasses = ["bg-brand-600", "text-white"];
-  const inactiveClasses = ["border", "border-neutral-200", "text-neutral-600"];
-
-  function setActive(button: HTMLButtonElement) {
-    filterButtons.forEach((btn) => {
-      btn.classList.remove(...activeClasses, ...inactiveClasses);
-      btn.classList.add(...(btn === button ? activeClasses : inactiveClasses));
-    });
-  }
-
-  function applyFilter(key: string) {
-    cards.forEach((card) => {
-      const show = key === "all" || (card.dataset.categories || "").split("|").includes(key);
-      card.classList.toggle("hidden", !show);
-    });
-  }
-
-  filterButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.filter || "all";
-      setActive(btn);
-      applyFilter(key);
-    });
-  });
-</script>
