@@ -1,10 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FaqAccordion from "@/components/FaqAccordion.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
-import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getPopularPosts } from "@/lib/posts";
+import ToolFooter from "@/components/ToolFooter.astro";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -12,26 +9,6 @@ const breadcrumbItems = [
   { name: "広告費用対効果（ROAS/CAC）シミュレーター", href: "/tools/roas-cac-simulator" },
 ];
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
-
-const faqItems = [
-  {
-    question: "LTVはどのように計算していますか？",
-    answer:
-      "月額平均単価（ARPU）× 粗利率 ÷ 月次解約率で算出しています。解約率が低いほど、顧客一人あたりの生涯価値は大きくなります。",
-  },
-  {
-    question: "「許容上限CAC」はどうやって決めていますか？",
-    answer:
-      "一般的な目安であるLTVの1/3を許容上限CACとして表示しています。業界やビジネスモデルによって適正水準は異なるため、あくまで参考値としてご利用ください。",
-  },
-  {
-    question: "入力した数値は保存されますか？",
-    answer:
-      "いいえ。すべてブラウザ内で計算しており、サーバーへの送信・保存は行っていません。ページを閉じると入力内容は消えますが、URLをコピーしておけば同じ条件を再現できます。",
-  },
-];
 ---
 
 <BaseLayout
@@ -166,23 +143,9 @@ const faqItems = [
       </div>
     </div>
 
-    <div class="my-16 flex justify-center">
-      <a href="/tools" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
-        便利ツール一覧を見る →
-      </a>
-    </div>
-
-    <FaqAccordion items={faqItems} />
-
-    <MoreExplore
-      categories={categories}
-      popularPosts={popularPosts}
-      categoryHeading="カテゴリから探す"
-      popularHeading="💡 あわせて読みたい実践ノウハウ"
-    />
   </section>
 
-  <ContactCta />
+  <ToolFooter path="/tools/roas-cac-simulator" />
 </BaseLayout>
 
 <script>
