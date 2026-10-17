@@ -3,6 +3,7 @@
 // 構成: ヒーロー → 01 課題から探す → 02 実務で使う資料・分析ツール → 03 新着記事 → 04 ご要望・ご質問
 // ・02の資料: 資料DB「トップ掲載」（1 = 大きい枠、2・3 = 小さい枠）。空いた枠は新しい資料から自動で埋める。
 // ・03の記事: 新しい順に自動表示（件数は HOME_LATEST.count）。
+import PdcaToolCards from "@/components/PdcaToolCards.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { getLibraryItems } from "@/lib/library";
 import { getAllResources } from "@/lib/resources";
@@ -205,45 +206,18 @@ const latestPosts = getLibraryItems("post")
           </a>
         </div>
 
-        {/* 分析ツールの表（src/data/home.ts の HOME_TOOLS_TABLE） */}
-        <h2 class="mt-20 text-2xl font-extrabold tracking-tight md:text-[1.75rem]">{HOME_TOOLS_TABLE.heading}</h2>
-        <div class="mt-8">
-          <div class="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)_minmax(0,1.3fr)_110px] gap-6 border-b border-neutral-200 pb-3 text-xs text-neutral-500 md:grid">
-            <span>{HOME_TOOLS_TABLE.columns.tool}</span>
-            <span>{HOME_TOOLS_TABLE.columns.inputs}</span>
-            <span>{HOME_TOOLS_TABLE.columns.result}</span>
-            <span></span>
-          </div>
-          {HOME_TOOLS_TABLE.rows.map((row) => (
-            <div class="grid gap-4 border-b border-neutral-200 py-7 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)_minmax(0,1.3fr)_110px] md:items-center md:gap-6">
-              <div>
-                <p class="text-xs text-neutral-500">{row.purpose}</p>
-                <h3 class="mt-2 text-lg font-extrabold leading-snug md:text-xl">
-                  <a href={row.href} class="hover:underline">{row.name}</a>
-                </h3>
-              </div>
-              <div class="space-y-2">
-                {row.inputs.map((input) => (
-                  <p class="border border-neutral-200 bg-white px-3 py-2.5 text-xs text-neutral-600">{input}</p>
-                ))}
-              </div>
-              <div>
-                <p class="font-bold">{row.resultTitle}</p>
-                <p class="mt-2 text-sm leading-relaxed text-neutral-600">{row.resultDescription}</p>
-              </div>
-              <a href={row.href} class="inline-flex items-center gap-2 text-sm font-bold hover:underline md:justify-end">
-                {HOME_TOOLS_TABLE.rowCtaLabel}
-                <span aria-hidden="true">→</span>
-              </a>
-            </div>
-          ))}
-          <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <p class="text-xs text-neutral-500">{HOME_TOOLS_TABLE.note}</p>
-            <a href={HOME_TOOLS_TABLE.listLink.href} class="inline-flex items-center justify-between gap-10 self-start border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950 md:self-auto">
-              {HOME_TOOLS_TABLE.listLink.label}
-              <span aria-hidden="true">→</span>
-            </a>
-          </div>
+        {/* 便利ツール（PDCAの3ツール。文言は src/data/tools.ts の MAIN_TOOLS） */}
+        <div class="mt-20 flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
+          <h2 class="text-2xl font-extrabold tracking-tight md:text-[1.75rem]">計画から改善、報告まで。</h2>
+          <p class="text-sm text-[#4f5057]">マーケティングのPDCAを支える、3つのツール</p>
+        </div>
+        <PdcaToolCards class="mt-8 text-[#0c0c11]" />
+        <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <p class="text-xs text-neutral-500">目的に合うツールからお使いください。計算結果は入力した前提に基づきます。</p>
+          <a href="/tools" class="inline-flex items-center justify-between gap-10 self-start border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950 md:self-auto">
+            便利ツール一覧
+            <span aria-hidden="true">→</span>
+          </a>
         </div>
       </div>
     </section>
@@ -264,7 +238,6 @@ const latestPosts = getLibraryItems("post")
                   ))}
                 </p>
                 <p class="mt-4 text-sm leading-relaxed text-neutral-600">{HOME_LATEST.description}</p>
-                <a href={HOME_LATEST.allLink.href} class="mt-6 inline-block text-sm font-bold hover:underline">{HOME_LATEST.allLink.label} →</a>
               </div>
               <ul class="border-t border-neutral-200">
                 {latestPosts.map((post) => (
@@ -284,6 +257,12 @@ const latestPosts = getLibraryItems("post")
                   </li>
                 ))}
               </ul>
+            </div>
+            <div class="mt-8 flex justify-end">
+              <a href={HOME_LATEST.allLink.href} class="inline-flex items-center justify-between gap-10 border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950">
+                {HOME_LATEST.allLink.label}
+                <span aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
         </section>
