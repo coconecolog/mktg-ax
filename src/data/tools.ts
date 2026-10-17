@@ -18,6 +18,8 @@ export const ICONS: Record<string, string> = {
     '<path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/>',
   "chart-bar-big":
     '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="9" height="4" rx="1"/><rect x="7" y="5" width="12" height="4" rx="1"/>',
+  "clipboard-check":
+    '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
   "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
 };
 
@@ -60,6 +62,14 @@ export const MAIN_TOOLS = [
 
 // 日々の判断に、小さなツール。
 export const QUICK_TOOLS = [
+  {
+    icon: "clipboard-check",
+    category: "予算の判定",
+    title: "予算案チェッカー",
+    description: "生成AIで作った予算案を、人件費込みのCPL・CAC・回収期間・ROI（1年）で判定し、抜けやすいところを指摘します。",
+    time: "目安 5分",
+    href: "/tools/budget-checker",
+  },
   {
     icon: "list-checks",
     category: "SEO・AI検索",
