@@ -8,10 +8,7 @@
 // - ライブラリはCDNから、PDFを作る・読むときだけ読み込む（npm依存は増やさない）。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FaqAccordion from "@/components/FaqAccordion.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
-import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getPopularPosts } from "@/lib/posts";
+import ToolFooter from "@/components/ToolFooter.astro";
 
 // 本格版（M-B-04 予実管理表＋月次・年間報告テンプレート）の案内先。資料ページのURLが決まったら差し替える。
 const FULL_VERSION_URL = "/library";
@@ -26,36 +23,6 @@ const breadcrumbItems = [
   { name: TOOL_TITLE, href: "/tools/monthly-report" },
 ];
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
-
-const faqItems = [
-  {
-    question: "着地見込みはどのように計算していますか？",
-    answer:
-      "受注済みの累計＋月末に進行中の商談金額×受注率＋期内に受注できる新規分 で計算しています。期内に受注できる新規分は、残りの月のうち期末まで「商談から受注までの平均期間」以上ある月の、計画の商談金額（計画のリード数×計画の商談化率×計画の平均受注単価）の合計に、計画の受注率を掛けたものです。",
-  },
-  {
-    question: "受注率は計画と実績のどちらを使いますか？",
-    answer:
-      "進行中の商談には、決着した商談（受注＋失注）が10件たまるまでは計画の受注率を、それ以降は期首からの累計の実績（受注金額÷（受注金額＋失注金額））を使います。進行中の商談を分母に入れると受注の遅れで低く出てしまうため、また件数が少ないと振れが大きいためです。これからの商談（期内に受注できる新規分）には、計画の受注率を使います。",
-  },
-  {
-    question: "「足りない段階」はどう決まりますか？",
-    answer:
-      "リード数・商談化率・受注率・受注単価の4つの段階について、期首からの累計を計画と比べた達成率を出し、いちばん低い段階を「足りない段階」にします。100%以上は達成、90%以上はやや届かない、90%未満は届かないと判定します。すべて90%以上なら「計画どおり」です。",
-  },
-  {
-    question: "入力した数字はサーバーに保存されますか？",
-    answer:
-      "いいえ。計算はすべてブラウザの中で行い、数字はサーバーに送りません。入力の途中はこのブラウザにだけ一時保存されます。翌月は、ダウンロードしたPDFを読み込ませると前月までの数字が入った状態から始められます。サーバーに置くのは、登録いただいたメールアドレスと報告日だけです。",
-  },
-  {
-    question: "PDFを読み込んでも数字が入りません。",
-    answer:
-      "PDFを別のソフトで開いて保存し直すと、埋め込んだデータが消えることがあります。その場合はお手数ですが、前月までの数字を手で入力してください（報告する月を切り替えると、その月の数字を入力できます）。",
-  },
-];
 ---
 
 <BaseLayout title={TOOL_TITLE} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/monthly-report.png">
@@ -287,23 +254,9 @@ const faqItems = [
       <a href={FULL_VERSION_URL} class="mt-4 inline-flex rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-ink-950 hover:border-neutral-500">本格版の資料を見る →</a>
     </div>
 
-    <div class="my-16 flex justify-center">
-      <a href="/tools" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
-        便利ツール一覧を見る →
-      </a>
-    </div>
-
-    <FaqAccordion items={faqItems} />
-
-    <MoreExplore
-      categories={categories}
-      popularPosts={popularPosts}
-      categoryHeading="カテゴリから探す"
-      popularHeading="💡 あわせて読みたい実践ノウハウ"
-    />
   </section>
 
-  <ContactCta />
+  <ToolFooter path="/tools/monthly-report" />
 </BaseLayout>
 
 <style is:global>
