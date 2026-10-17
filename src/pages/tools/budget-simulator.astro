@@ -78,6 +78,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
           <label class="bs-field"><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="cap" /><span>万円</span></span></label>
         </section>
 
+        <p class="bs-err" id="bs-err" role="alert" hidden>未入力の項目があります。赤枠の欄を入力してください。</p>
         <button type="button" class="bs-btn" id="bs-run">計画書を作る</button>
       </div>
 
@@ -240,6 +241,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
   .bs-it input::placeholder { color: #bdbdbd; }
   .bs-add { width: 100%; border: 1px dashed #bfbfbf; border-radius: 8px; background: #fff; text-align: center; padding: 6px; color: #525252; font-size: 0.72rem; cursor: pointer; }
   .bs-add:hover { border-color: #0b0b12; color: #0b0b12; }
+  .bs-ip.bs-invalid { border-color: #b91c1c; background: #fef2f2; outline: 1px solid #b91c1c; }
+  .bs-it input.bs-invalid { border-color: #b91c1c; background: #fef2f2; outline: 1px solid #b91c1c; }
+  .bs-err { margin-top: 14px !important; font-size: 0.78rem; font-weight: 700; color: #b91c1c; }
+  .bs-err + .bs-btn { margin-top: 6px; }
   .bs-btn { display: block; width: 100%; margin-top: 14px; border: 0; border-radius: 12px; background: #0b0b12; color: #fff; padding: 0.8rem; font-size: 0.92rem; font-weight: 700; cursor: pointer; }
   .bs-btn:hover { opacity: 0.9; }
 
@@ -461,6 +466,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
     state.rows = (data.rows || []).map((r) => ({ ...r }));
     setChips("bs-stage", "data-stage", state.stage);
     renderRows();
+    checked = false;
+    document.querySelectorAll(".bs-invalid").forEach((el) => el.classList.remove("bs-invalid"));
+    $("bs-err").hidden = true;
     update();
   }
 
@@ -480,8 +488,34 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
     clearBtn.textContent = "入力をすべて消す";
     load({ stage: "growth", rows: [{ name: "施策1", kind: "def", extNow: null, labNow: null, leadNow: null, ext: null, lab: null, lead: null }] });
   });
+  // ===== 必須チェック（ボタンを押したあと、入力のたびに赤枠を付け直す） =====
+  let checked = false;
+  const blank = (el) => el.value.trim() === "" || !isFinite(Number(el.value));
+  function markInvalid() {
+    let bad = [];
+    scalarInputs.forEach((el) => {
+      if (!REQUIRED.some(([k]) => k === el.dataset.k)) return;
+      const ng = blank(el) || !(Number(el.value) > 0);
+      el.closest(".bs-ip").classList.toggle("bs-invalid", ng);
+      if (ng) bad.push(el);
+    });
+    rowsEl.querySelectorAll('input[data-f="ext"], input[data-f="lab"], input[data-f="lead"]').forEach((el) => {
+      const ng = blank(el);
+      el.classList.toggle("bs-invalid", ng);
+      if (ng) bad.push(el);
+    });
+    $("bs-err").hidden = bad.length === 0;
+    return bad;
+  }
   $("bs-run").addEventListener("click", () => {
+    checked = true;
     update();
+    const bad = markInvalid();
+    if (bad.length) {
+      bad[0].focus({ preventScroll: true });
+      bad[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     $("bs-report").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("bs-print").addEventListener("click", () => window.print());
@@ -527,6 +561,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
   ];
 
   function update() {
+    if (checked) markInvalid();
     const s = readScalars();
     const rows = state.rows;
     $("r-date").textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
