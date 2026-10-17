@@ -9,6 +9,7 @@
 // - 配色はサイト（白黒）と月次報告メーカーに合わせる。緑＝上限内／足りる、赤＝上限超え／不足。
 // - 記入例は基本モデルの成長期（3期目）。施策の「今期」は前の期の数字がないため空欄。
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
 ---
 
 <BaseLayout
@@ -190,6 +191,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
       </div>
     </div>
   </main>
+
+  <ToolFooter path="/tools/budget-simulator" />
 </BaseLayout>
 
 <style is:global>
