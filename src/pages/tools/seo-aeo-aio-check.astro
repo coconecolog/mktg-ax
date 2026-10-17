@@ -1,10 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FaqAccordion from "@/components/FaqAccordion.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
-import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getPopularPosts } from "@/lib/posts";
+import ToolFooter from "@/components/ToolFooter.astro";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -12,26 +9,6 @@ const breadcrumbItems = [
   { name: "簡易SEO・AEO・AIO診断", href: "/tools/seo-aeo-aio-check" },
 ];
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
-
-const faqItems = [
-  {
-    question: "実際のサイトをクロールして診断してくれますか？",
-    answer:
-      "いいえ。このツールはURLを入力してクロールするものではなく、15項目のチェックリストに自己申告でチェックを入れる簡易診断です。",
-  },
-  {
-    question: "AEO・AIOとSEOはどう違うのですか？",
-    answer:
-      "SEOは検索エンジンの検索結果での上位表示を目指す従来の施策です。AEO（AI検索最適化）はAIチャットの回答に引用されること、AIO/GEO（生成AI最適化）は生成AIの学習・参照のされやすさを高める施策を指します。",
-  },
-  {
-    question: "スコアが低い項目から手をつけるべきですか？",
-    answer:
-      "はい。特にAEO・AIO/GEOはまだ対応していない企業が多く、着手のインパクトが大きい傾向にあります。チェックが付かなかった項目から優先的に検討することをおすすめします。",
-  },
-];
 ---
 
 <BaseLayout
@@ -190,23 +167,9 @@ const faqItems = [
       </div>
     </div>
 
-    <div class="my-16 flex justify-center">
-      <a href="/tools" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
-        便利ツール一覧を見る →
-      </a>
-    </div>
-
-    <FaqAccordion items={faqItems} />
-
-    <MoreExplore
-      categories={categories}
-      popularPosts={popularPosts}
-      categoryHeading="カテゴリから探す"
-      popularHeading="💡 あわせて読みたい実践ノウハウ"
-    />
   </section>
 
-  <ContactCta />
+  <ToolFooter path="/tools/seo-aeo-aio-check" />
 </BaseLayout>
 
 <script>
