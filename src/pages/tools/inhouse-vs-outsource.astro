@@ -1,10 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FaqAccordion from "@/components/FaqAccordion.astro";
-import MoreExplore from "@/components/MoreExplore.astro";
-import ContactCta from "@/components/ContactCta.astro";
-import { getAllCategories, getPopularPosts } from "@/lib/posts";
+import ToolFooter from "@/components/ToolFooter.astro";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -12,26 +9,6 @@ const breadcrumbItems = [
   { name: "内製 vs 外注 コスト比較", href: "/tools/inhouse-vs-outsource" },
 ];
 
-const categories = getAllCategories();
-const popularPosts = getPopularPosts(3).map((p) => ({ slug: p.slug, title: p.title }));
-
-const faqItems = [
-  {
-    question: "内製の月次コストにはどんな費用が含まれていますか？",
-    answer:
-      "想定年収を12で割った月額に、社会保険料などの法定福利費として概算15%を上乗せして計算しています。実際にはこれ以外にも教育コストや設備費などがかかる場合があります。",
-  },
-  {
-    question: "コストが安い方を選べばよいのでしょうか？",
-    answer:
-      "必ずしもそうとは限りません。業務量の波への対応力、社内へのノウハウ蓄積、専門性の高さやスピード感など、コスト以外の観点も踏まえて判断することをおすすめします。",
-  },
-  {
-    question: "比較期間はどのくらいに設定すればよいですか？",
-    answer:
-      "一般的には12〜24ヶ月程度で比較するケースが多いですが、採用計画や契約期間に合わせて6〜36ヶ月の範囲で調整してみてください。",
-  },
-];
 ---
 
 <BaseLayout
@@ -178,23 +155,9 @@ const faqItems = [
       </div>
     </div>
 
-    <div class="my-16 flex justify-center">
-      <a href="/tools" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
-        便利ツール一覧を見る →
-      </a>
-    </div>
-
-    <FaqAccordion items={faqItems} />
-
-    <MoreExplore
-      categories={categories}
-      popularPosts={popularPosts}
-      categoryHeading="カテゴリから探す"
-      popularHeading="💡 あわせて読みたい実践ノウハウ"
-    />
   </section>
 
-  <ContactCta />
+  <ToolFooter path="/tools/inhouse-vs-outsource" />
 </BaseLayout>
 
 <script>
