@@ -1,0 +1,975 @@
+---
+// src/pages/tools/budget-checker.astro
+//
+// 予算案チェッカー（/tools/budget-checker）
+// 仕様: Googleドライブ「MKTG.AX／共有（正本）／04_ツール仕様／予算案チェッカーの仕様（budget-checker-tool-spec）」（2026-10-17）
+// 数字の定義: 同「数字の定義（KPI・予算）」。計算は src/lib/budget-calc.ts（予算シミュレーターと共通）
+// - 生成AIで作った来期の予算案を、人件費込みで判定する。計算はすべてブラウザ内。入力した数字はブラウザの外に送らない
+// - 金額は万円（時間単価だけ円）。費用＝外部費用＋人件費。人件費は総額をチャネルの時間の比で配る（最大剰余法）
+// - 入力の途中の値は localStorage に保存する（消えても動く）
+// - 記入例（テスト1）は架空の会社（基本モデル）の成長期
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
+import { metricUrl } from "@/lib/budget-calc";
+import type { MetricKey } from "@/lib/budget-calc";
+
+const def = (key: MetricKey) => metricUrl(key);
+
+// 入力B：フォーマット化用のプロンプト（仕様 7.1）
+const AI_PROMPT = `あなたは、マーケティング予算案の数字を決まった形に書き直すアシスタントです。
+
+このチャットで作った来期のマーケティング予算案（この上の会話、または下に貼る予算案）を、次のJSONの形に変換してください。
+
+ルール
+- 予算案に書かれている数字だけを使う。書かれていない数字は null にする。推測で埋めない
+- 金額の単位は万円（時間単価だけ円）。月額で書かれている費用は12倍して年額にし、notes にその旨を書く
+- 予備費・バッファ・調整枠は channels に入れず、excluded に入れる
+- ツール費・保守費など、リードを生まない費用は、それを使うチャネルの external_cost に足し、notes に書く
+- 人件費が書かれていなければ labor は空の配列にする
+- 出力はJSONのコードブロック1つだけ。説明の文は書かない
+
+{
+  "format": "mktgax-budget-v1",
+  "gross_margin_pct": 粗利率（%）,
+  "payback_years": 取り返す年数（年）,
+  "actual_deal_rate_pct": 今期の実績の商談化率（%）,
+  "actual_win_rate_pct": 今期の実績の受注率（%）,
+  "labor": [
+    { "role": "役割", "hours": 年間の時間, "hourly_yen": 時間単価（円）, "amount_man": 人件費（万円） }
+  ],
+  "sales_support_included": 営業が施策に協力する時間を人件費に含めたか（true/false/null）,
+  "channels": [
+    { "name": "チャネル名", "external_cost": 外部費用（万円・年額）, "hours": マーケがかける時間（時間／年）, "leads": リード数, "deals": 商談数, "wins": 受注数, "unit_price": 受注単価（万円） }
+  ],
+  "excluded": [
+    { "item": "除いた項目", "amount": 金額（万円）, "reason": "理由" }
+  ],
+  "notes": ["変換で行ったこと"]
+}`;
+---
+
+<BaseLayout
+  title="予算案チェッカー｜AIで作った予算案を人件費込みで判定｜MKTG.AX"
+  description="生成AIで作った来期のマーケティング予算案を、人件費込みのCPL・CAC・回収期間・ROI（1年）で判定し、AIの案で抜けやすいところを指摘する無料ツールです。結果は経営向けのA4・1枚で出せます。"
+  ogImage="/open-graph/default.png"
+>
+  <main class="bc">
+    <header class="bc-head no-print">
+      <p class="bc-eyebrow"><a href="/tools">便利ツール</a></p>
+      <h1>予算案チェッカー</h1>
+      <p class="bc-lead">生成AIで作った来期のマーケティング予算案を、人件費込みのCPL・CAC・回収期間・ROI（1年）で判定し、AIの案で抜けやすいところを指摘します。結果は回収期間を主役にした経営向けの1枚（A4）で出せます（金額は万円）。</p>
+      <p class="bc-why">AIの案は人件費が抜けがちです。架空の会社（基本モデル）の例では、人件費を入れるとCACが76→107万円、回収期間が9.1→12.8か月に変わります。</p>
+    </header>
+
+    <div class="bc-grid">
+      <!-- ===== STEP1 入力 ===== -->
+      <div class="bc-in no-print">
+        <p class="bc-step"><span>STEP1</span>予算案の数字を入れる</p>
+        <div class="bc-tools">
+          <button type="button" class="bc-link" id="bc-example">記入例を入れる</button>
+          <button type="button" class="bc-link" id="bc-clear">入力をすべて消す</button>
+        </div>
+        <p class="bc-note bc-note-r">記入例は架空の会社（基本モデル）の成長期の数字です</p>
+
+        <!-- 入力B：AIの案を読み込む -->
+        <div class="bc-ai">
+          <button type="button" class="bc-ai-toggle" id="bc-ai-toggle" aria-expanded="false" aria-controls="bc-ai-panel">
+            <span><b>AIの案を読み込む</b>AIに決まった形へ変換させて貼りつけると、下の欄に数字が入ります</span>
+            <span class="bc-ai-mark" aria-hidden="true">＋</span>
+          </button>
+          <div class="bc-ai-panel" id="bc-ai-panel" hidden>
+            <p class="bc-ai-st">1. このプロンプトをコピーして、予算案を作ったAIのチャットに貼る</p>
+            <pre class="bc-prompt" id="bc-prompt" set:text={AI_PROMPT}></pre>
+            <button type="button" class="bc-obtn bc-w" id="bc-copy">プロンプトをコピー</button>
+            <p class="bc-ai-st">2. AIが返した結果を貼りつけて読み込む</p>
+            <textarea class="bc-paste" id="bc-paste" rows="6" placeholder="AIが返したJSON（```json から ``` まで）をそのまま貼りつけます" aria-label="AIが返した結果"></textarea>
+            <button type="button" class="bc-btn bc-btn-s" id="bc-import">読み込む</button>
+            <p class="bc-msg" id="bc-ai-msg" role="status" hidden></p>
+            <p class="bc-note">読み込んだ内容はブラウザの外に送りません。読み込んだあとは、下の欄で目で見て直せます。予算案に書かれていなかった欄は黄色で示します</p>
+          </div>
+        </div>
+
+        <div class="bc-imp" id="bc-imp" hidden>
+          <p class="bc-imp-h">読み込み結果<button type="button" class="bc-del" id="bc-imp-close" aria-label="読み込み結果を閉じる">×</button></p>
+          <div id="bc-imp-body"></div>
+        </div>
+
+        <section class="bc-sec">
+          <h2 class="bc-st">1. 前提</h2>
+          <div class="bc-f">
+            <label class="bc-field"><span class="bc-lb">粗利率</span><span class="bc-ip"><input type="number" inputmode="decimal" min="0" max="100" step="0.1" data-k="margin" /><span>%</span></span></label>
+            <label class="bc-field"><span class="bc-lb">取り返す年数</span><span class="bc-ip"><input type="number" inputmode="decimal" min="0" step="0.1" data-k="years" /><span>年</span></span></label>
+            <label class="bc-field"><span class="bc-lb">今期の実績の商談化率<small>任意</small></span><span class="bc-ip"><input type="number" inputmode="decimal" min="0" max="100" step="0.1" data-k="actDeal" /><span>%</span></span></label>
+            <label class="bc-field"><span class="bc-lb">今期の実績の受注率<small>任意</small></span><span class="bc-ip"><input type="number" inputmode="decimal" min="0" max="100" step="0.1" data-k="actWin" /><span>%</span></span></label>
+          </div>
+          <p class="bc-note">取り返す年数は、獲得の費用を何年で取り返すかを自社で決める値です（小数可）。受注率は、決着した商談（受注＋失注）だけで出した率を入れます。今期の実績を入れると、許容CPLと率のチェックに使います</p>
+        </section>
+
+        <section class="bc-sec">
+          <h2 class="bc-st">2. チャネル<small>年額・最大10行</small></h2>
+          <div id="bc-rows"></div>
+          <button type="button" class="bc-add" id="bc-add">＋ チャネルを追加</button>
+          <p class="bc-note">外部費用は年額。ツール費・保守費など、リードを生まない費用も、使うチャネルに入れます。時間は、マーケがこのチャネルの施策にかける時間（年間）。集計・報告、営業との連携、予算づくりなど共通の作業は入れません。受注単価は1社あたりの年間の取引額です</p>
+        </section>
+
+        <section class="bc-sec">
+          <h2 class="bc-st">3. 人件費<small>1行＝1人またはグループ</small></h2>
+          <div id="bc-labor"></div>
+          <button type="button" class="bc-add" id="bc-labor-add">＋ 行を追加</button>
+          <label class="bc-check" id="bc-sales-wrap"><input type="checkbox" id="bc-sales" />営業が施策に協力する時間（展示会の立ち会い、事例の取材、登壇など）を含めた</label>
+          <p class="bc-note">人件費（万円）＝時間×時間単価÷10,000。時間がわからないときは人件費を直接入れます。時間には、施策の時間と共通の作業の時間をすべて含めます。チャネルごとの人件費は、この総額をチャネルの時間の比で配ります</p>
+        </section>
+      </div>
+
+      <!-- ===== STEP2 判定／STEP3 経営向けの1枚 ===== -->
+      <div class="bc-out">
+        <div class="bc-bar no-print">
+          <p class="bc-step"><span>STEP2</span>判定（入力を変えるたびに計算し直します）</p>
+          <button type="button" class="bc-obtn" id="bc-print">STEP3 経営向けの1枚を印刷／PDF</button>
+        </div>
+
+        <div class="bc-rp" id="bc-report">
+          <div class="bc-rh">
+            <div>
+              <h2 class="bc-rt">来期マーケティング予算案の判定</h2>
+              <p class="bc-rs" id="r-sub">人件費込み・金額は万円</p>
+            </div>
+            <p class="bc-rs" id="r-date"></p>
+          </div>
+
+          <p class="bc-empty" id="r-empty" hidden></p>
+
+          <div id="r-body" hidden>
+            <p class="bc-concl" id="r-concl"></p>
+
+            <div class="bc-dark">
+              <div class="bc-k">
+                <div class="bc-k-main"><p class="bc-kl">回収期間<a class="bc-def no-print" href={def("payback")}>定義</a></p><p class="bc-kv bc-big"><span id="r-payback"></span><small>か月</small></p><p class="bc-ks" id="r-payback-s"></p></div>
+                <div><p class="bc-kl">CAC<a class="bc-def no-print" href={def("cac")}>定義</a></p><p class="bc-kv"><span id="r-cac"></span><small>万円</small></p><p class="bc-ks" id="r-cac-s"></p></div>
+                <div><p class="bc-kl">ROI（1年）<a class="bc-def no-print" href={def("roi")}>定義</a></p><p class="bc-kv"><span id="r-roi"></span></p><p class="bc-ks">（受注金額×粗利率−費用）÷費用</p></div>
+                <div><p class="bc-kl">受注</p><p class="bc-kv"><span id="r-wins"></span><small>件</small></p><p class="bc-ks" id="r-wins-s"></p></div>
+              </div>
+            </div>
+
+            <div class="bc-row2">
+              <div class="bc-box">
+                <p class="bc-h"><span>費用<a class="bc-def no-print" href={def("laborCost")}>定義</a></span><small>万円</small></p>
+                <table class="bc-t">
+                  <tbody id="r-cost"></tbody>
+                </table>
+              </div>
+              <div class="bc-box">
+                <p class="bc-h"><span>上限</span><small id="r-rate-src"></small></p>
+                <table class="bc-t">
+                  <tbody>
+                    <tr><td class="n">CACの上限<a class="bc-def no-print" href={def("cacLimit")}>定義</a></td><td><span id="r-limit"></span> 万円</td></tr>
+                    <tr><td class="n">許容CPL<a class="bc-def no-print" href={def("allowableCpl")}>定義</a></td><td><span id="r-acpl"></span> 万円</td></tr>
+                  </tbody>
+                </table>
+                <p class="bc-fx" id="r-limit-s"></p>
+              </div>
+            </div>
+
+            <div class="bc-box bc-mt">
+              <p class="bc-h"><span>チャネル別<a class="bc-def no-print" href={def("cpl")}>CPL</a><a class="bc-def no-print" href={def("judgment")}>判定</a></span><small>費用合計＝外部費用＋人件費（万円）</small></p>
+              <div class="bc-tw">
+                <table class="bc-t">
+                  <thead><tr><th>チャネル</th><th>費用合計</th><th>リード</th><th>受注</th><th>CPL</th><th>CAC</th><th>回収期間</th><th>ROI（1年）</th><th class="c">判定</th></tr></thead>
+                  <tbody id="r-ch"></tbody>
+                </table>
+              </div>
+              <p class="bc-fx" id="r-ch-s"></p>
+            </div>
+
+            <div class="bc-box bc-mt bc-warn" id="r-warn-box" hidden>
+              <p class="bc-h"><span>要確認</span><small>AIの案で抜けやすいところ</small></p>
+              <ul id="r-warn"></ul>
+            </div>
+
+            <div class="bc-box bc-mt bc-say">
+              <p class="bc-h"><span>経営陣に説明するときの一文<a class="bc-def no-print" href={def("explain")}>定義</a></span></p>
+              <p id="r-say"></p>
+            </div>
+
+            <div class="bc-pre">
+              <p><b>前提</b><span id="r-pre"></span></p>
+              <p class="bc-src">指標の定義は「数字の定義（KPI・予算）」による：mktg.ax/standards/metrics（#cpl #cac #payback #roi #cac-limit #allowable-cpl #judgment）</p>
+            </div>
+          </div>
+        </div>
+
+        <a class="bc-next no-print" href="/blog/category/budget-roi">
+          <span><b>本格的な予算づくりは、年間計画シート（KPIと予算）で</b>施策×月の計画、止める基準、3つのシナリオまで、自社の数字で作れます</span>
+          <span aria-hidden="true">資料を見る →</span>
+        </a>
+        <a class="bc-next bc-next-s no-print" href="/tools/budget-simulator">
+          <span><b>目標から逆算して予算を作るなら</b>来期の売上目標から受注・商談・リード数と予算を逆算します</span>
+          <span aria-hidden="true">予算シミュレーター →</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <ToolFooter path="/tools/budget-checker" />
+</BaseLayout>
+
+<style is:global>
+  .bc { max-width: 1240px; margin: 0 auto; padding: 1.5rem 1rem 3rem; color: #0b0b12; font-variant-numeric: tabular-nums; }
+  .bc p { margin: 0; }
+  .bc-eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; color: #737373; }
+  .bc-eyebrow a { color: inherit; text-decoration: none; }
+  .bc-eyebrow a:hover { text-decoration: underline; }
+  .bc-head h1 { margin: 0.25rem 0 0.4rem; font-size: 1.7rem; font-weight: 800; line-height: 1.35; }
+  .bc-lead { color: #525252; line-height: 1.7; }
+  .bc-why { font-size: 0.82rem; color: #0b0b12; background: #f6f6f6; border-left: 3px solid #0b0b12; border-radius: 0 6px 6px 0; padding: 8px 12px; margin: 10px 0 1.25rem !important; line-height: 1.7; }
+
+  .bc-grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .bc-step { font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .bc-step span { background: #0b0b12; color: #fff; border-radius: 4px; padding: 1px 7px; font-size: 0.68rem; letter-spacing: 0.04em; }
+
+  /* ===== 入力 ===== */
+  .bc-in { border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px 16px 16px; background: #fff; min-width: 0; }
+  .bc-tools { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+  .bc-link { background: none; border: 0; padding: 0; font-size: 0.75rem; color: #525252; text-decoration: underline; cursor: pointer; }
+  .bc-link[data-armed="1"] { color: #b91c1c; font-weight: 700; }
+  .bc-note-r { text-align: right; margin-top: 2px !important; }
+  .bc-sec { border-bottom: 1px solid #ececec; padding: 12px 0 14px; }
+  .bc-sec:last-child { border-bottom: 0; padding-bottom: 0; }
+  .bc-st { font-size: 0.8rem; font-weight: 800; margin: 0 0 8px; }
+  .bc-st small { font-weight: 400; color: #8a8a8a; margin-left: 6px; font-size: 0.7rem; }
+  .bc-f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .bc-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .bc-lb { font-size: 0.72rem; font-weight: 600; color: #404040; line-height: 1.4; }
+  .bc-lb small { font-weight: 400; color: #8a8a8a; margin-left: 4px; }
+  .bc-ip { display: flex; align-items: center; gap: 6px; min-width: 0; border: 1px solid #d4d4d4; border-radius: 8px; background: #fff; padding: 0 8px; }
+  .bc-ip:focus-within { border-color: #0b0b12; outline: 1px solid #0b0b12; }
+  .bc-ip input { flex: 1 1 0; width: 0; min-width: 0; border: 0; outline: 0; background: transparent; padding: 6px 0; font-size: 0.9rem; color: #0b0b12; }
+  .bc-ip input[readonly] { color: #525252; }
+  .bc-ip > span { font-size: 0.72rem; color: #737373; flex-shrink: 0; }
+  .bc-note { font-size: 0.68rem; color: #8a8a8a; line-height: 1.55; margin-top: 6px !important; }
+  .bc-card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 8px; margin-bottom: 6px; }
+  .bc-card-h { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; }
+  .bc-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 2px 4px; font-size: 0.78rem; font-weight: 800; color: #0b0b12; background: transparent; }
+  .bc-name:hover { border-color: #e5e5e5; }
+  .bc-name:focus { border-color: #0b0b12; outline: 0; }
+  .bc-g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .bc-card .bc-lb { font-size: 0.66rem; font-weight: 400; color: #737373; }
+  .bc-card .bc-ip input { padding: 4px 0; font-size: 0.8rem; }
+  .bc-card .bc-ip > span { font-size: 0.66rem; }
+  .bc-del { border: 0; background: none; color: #8a8a8a; font-size: 0.95rem; line-height: 1; cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+  .bc-del:hover { color: #b91c1c; }
+  .bc-check { display: flex; gap: 6px; align-items: flex-start; font-size: 0.72rem; color: #404040; line-height: 1.5; margin-top: 8px; cursor: pointer; border-radius: 6px; padding: 2px 4px; }
+  .bc-check input { margin-top: 3px; flex-shrink: 0; }
+  .bc-add { width: 100%; border: 1px dashed #bfbfbf; border-radius: 8px; background: #fff; text-align: center; padding: 6px; color: #525252; font-size: 0.72rem; cursor: pointer; }
+  .bc-add:hover:not(:disabled) { border-color: #0b0b12; color: #0b0b12; }
+  .bc-add:disabled { opacity: 0.5; cursor: default; }
+  .bc-ip.bc-invalid { border-color: #b91c1c; background: #fef2f2; outline: 1px solid #b91c1c; }
+  .bc-ip.bc-null:not(.bc-invalid) { border-color: #d4a514; background: #fef9c3; }
+  .bc-check.bc-null { background: #fef9c3; }
+
+  /* 入力B */
+  .bc-ai { border: 1px solid #0b0b12; border-radius: 10px; margin-top: 10px; overflow: hidden; }
+  .bc-ai-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #fff; border: 0; padding: 10px 12px; text-align: left; font-size: 0.7rem; color: #525252; line-height: 1.5; cursor: pointer; }
+  .bc-ai-toggle b { display: block; font-size: 0.82rem; color: #0b0b12; }
+  .bc-ai-toggle:hover { background: #f6f6f6; }
+  .bc-ai-mark { font-size: 1.1rem; font-weight: 700; color: #0b0b12; flex-shrink: 0; }
+  .bc-ai-toggle[aria-expanded="true"] .bc-ai-mark { transform: rotate(45deg); }
+  .bc-ai-panel { border-top: 1px solid #e5e5e5; padding: 10px 12px 12px; }
+  .bc-ai-st { font-size: 0.72rem; font-weight: 800; margin: 4px 0 6px !important; }
+  .bc-ai-st + .bc-ai-st, .bc-w + .bc-ai-st { margin-top: 12px !important; }
+  .bc-prompt { max-height: 160px; overflow: auto; background: #f6f6f6; border-radius: 6px; padding: 8px 10px; font-size: 0.64rem; line-height: 1.55; white-space: pre-wrap; word-break: break-all; margin: 0 0 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #404040; }
+  .bc-paste { display: block; width: 100%; box-sizing: border-box; border: 1px solid #d4d4d4; border-radius: 8px; padding: 6px 8px; font-size: 0.72rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+  .bc-paste:focus { outline: 1px solid #0b0b12; border-color: #0b0b12; }
+  .bc-msg { font-size: 0.72rem; font-weight: 700; margin-top: 8px !important; line-height: 1.6; }
+  .bc-msg.ok { color: #15803d; }
+  .bc-msg.ng { color: #b91c1c; }
+  .bc-imp { border: 1px solid #d4a514; background: #fffbeb; border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 0.7rem; line-height: 1.6; color: #404040; }
+  .bc-imp-h { display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: #0b0b12; font-size: 0.75rem; }
+  .bc-imp b { display: block; margin-top: 4px; color: #0b0b12; }
+  .bc-imp ul { margin: 0; padding-left: 1.2em; }
+
+  .bc-btn { display: block; width: 100%; margin-top: 8px; border: 0; border-radius: 10px; background: #0b0b12; color: #fff; padding: 0.6rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+  .bc-btn:hover { opacity: 0.9; }
+  .bc-obtn { border: 1px solid #0b0b12; border-radius: 10px; background: #fff; padding: 6px 14px; font-weight: 700; font-size: 0.78rem; color: #0b0b12; cursor: pointer; }
+  .bc-obtn:hover { background: #0b0b12; color: #fff; }
+  .bc-w { width: 100%; }
+
+  /* ===== 判定（経営向けの1枚） ===== */
+  .bc-out { min-width: 0; }
+  .bc-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .bc-rp { border: 1px solid #e5e5e5; border-radius: 12px; padding: 22px 24px; background: #fff; font-size: 13px; line-height: 1.5; }
+  .bc-rh { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 3px solid #0b0b12; padding-bottom: 7px; }
+  .bc-rt { font-size: 20px; font-weight: 800; margin: 0; line-height: 1.35; }
+  .bc-rs { font-size: 11px; color: #525252; }
+  .bc-empty { padding: 48px 0; text-align: center; color: #8a8a8a; font-size: 14px; line-height: 1.8; }
+  .bc-concl { font-size: 14px; font-weight: 700; line-height: 1.7; margin-top: 12px !important; }
+  .bc-def { font-size: 9.5px; font-weight: 400; color: #737373; margin-left: 5px; text-decoration: underline; }
+  .bc-def:hover { color: #0b0b12; }
+  .bc-dark .bc-def { color: #bdbdbd; }
+  .bc-dark .bc-def:hover { color: #fff; }
+  .bc-dark { background: #0b0b12; color: #fff; border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
+  .bc-k { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 12px; align-items: end; }
+  .bc-k > div { min-width: 0; }
+  .bc-kl { font-size: 10.5px; color: #bdbdbd; font-weight: 700; }
+  .bc-kv { font-size: 22px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
+  .bc-kv small { font-size: 12px; margin-left: 2px; }
+  .bc-big { font-size: 38px; }
+  .bc-ks { font-size: 10px; color: #d4d4d4; line-height: 1.6; }
+  .bc-tag { white-space: nowrap; display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 10.5px; font-weight: 800; color: #fff; margin-left: 6px; vertical-align: 1px; line-height: 1.5; }
+  .bc-tag.ok { background: #15803d; }
+  .bc-tag.ng { background: #b91c1c; }
+  .bc-box { border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .bc-mt { margin-top: 12px; }
+  .bc-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+  .bc-h { font-size: 12px; font-weight: 800; margin-bottom: 6px !important; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .bc-h small { font-weight: 400; color: #737373; font-size: 10px; }
+  .bc-fx { font-size: 10px; color: #737373; margin-top: 6px !important; line-height: 1.6; }
+  .bc-tw { overflow-x: auto; }
+  .bc-t { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 2px; }
+  .bc-t th { font-size: 10px; color: #404040; font-weight: 700; text-align: right; padding: 3px 7px; border-bottom: 1px solid #0b0b12; white-space: nowrap; }
+  .bc-t td { text-align: right; padding: 3px 7px; border-bottom: 1px solid #ececec; white-space: nowrap; vertical-align: top; }
+  .bc-t th:first-child, .bc-t td:first-child { text-align: left; }
+  .bc-t td.n { font-weight: 800; white-space: normal; min-width: 7em; }
+  .bc-t td .sub { display: block; font-size: 9.5px; color: #8a8a8a; font-weight: 400; }
+  .bc-t .c { text-align: center; }
+  .bc-t tr.tot td { font-weight: 800; border-top: 1px solid #0b0b12; }
+  .bc-t tr.weak td { background: #fef2f2; }
+  .bc-t tr.weak td:first-child { box-shadow: inset 3px 0 0 #b91c1c; color: #b91c1c; }
+  .bc-t .na { color: #8a8a8a; }
+  .bc-t .bc-tag { margin-left: 0; }
+  .bc-warn { border-color: #b91c1c; background: #fef2f2; }
+  .bc-warn ul { margin: 0; padding-left: 1.2em; font-size: 11px; line-height: 1.7; color: #7f1d1d; }
+  .bc-say { background: #f6f6f6; border-color: #f6f6f6; }
+  .bc-say p:last-child { font-size: 12.5px; line-height: 1.75; }
+  .bc-pre { margin-top: 12px; border-top: 1px solid #e5e5e5; padding-top: 8px; font-size: 10.5px; line-height: 1.7; color: #404040; }
+  .bc-pre b { margin-right: 8px; color: #0b0b12; }
+  .bc-src { font-size: 10px; color: #737373; margin-top: 4px !important; }
+  .bc-next { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; border: 1px solid #0b0b12; border-radius: 12px; padding: 12px 16px; color: #0b0b12; text-decoration: none; font-size: 0.78rem; line-height: 1.6; }
+  .bc-next b { display: block; font-size: 0.9rem; }
+  .bc-next > span:last-child { white-space: nowrap; font-weight: 700; }
+  .bc-next:hover { background: #0b0b12; color: #fff; }
+  .bc-next-s { border-color: #d4d4d4; margin-top: 8px; }
+
+  @media (max-width: 860px) {
+    .bc-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .bc-rp { padding: 16px 14px; }
+    .bc-row2 { grid-template-columns: minmax(0, 1fr); }
+    .bc-k { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .bc-k-main { grid-column: 1 / -1; }
+    .bc-big { font-size: 32px; }
+    .bc-kv { font-size: 19px; }
+    .bc-rh { flex-direction: column; align-items: flex-start; }
+    .bc-next { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    header, footer, nav, .no-print { display: none !important; }
+    .bc { max-width: none; padding: 0; }
+    .bc-grid { display: block; }
+    .bc-rp { border: 0; padding: 0; zoom: 0.78; }
+    .bc-k { grid-template-columns: 1.3fr 1fr 1fr 1fr; }
+    .bc-k-main { grid-column: auto; }
+    .bc-row2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .bc-rh { flex-direction: row; align-items: flex-end; }
+    .bc-tw { overflow: visible; }
+    .bc-box, .bc-dark { break-inside: avoid; }
+    .bc-dark, .bc-tag, .bc-t tr.weak td, .bc-warn, .bc-say { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+
+<script>
+  import {
+    NA, allocateLabor, laborFromHours, monthlyGross, cpl, cac, paybackMonths, roi, cacLimit, allowableCpl,
+    judge, JUDGMENT_LABEL, fmtMan, fmt1, fmtPct, clean,
+  } from "@/lib/budget-calc";
+
+  const MAX_ROWS = 10;
+  const STORAGE_KEY = "mktgax-budget-checker-v1";
+  const FORMAT = "mktgax-budget-v1";
+  // チャネルの入力欄（キー・ラベル・単位）
+  const CH_FIELDS = [
+    ["ext", "外部費用", "万円"], ["hours", "時間", "時間"], ["leads", "リード数", "件"],
+    ["deals", "商談数", "件"], ["wins", "受注数", "件"], ["price", "受注単価", "万円"],
+  ];
+  // 入力B の channels のキー → 欄
+  const CH_JSON = { ext: "external_cost", hours: "hours", leads: "leads", deals: "deals", wins: "wins", price: "unit_price" };
+  // 基本モデル（架空の会社）の成長期の率。名前が一致するチャネルだけ比べ、それ以外は全体と比べる
+  const MODEL_RATES = {
+    "展示会": { deal: 0.10, win: 0.25 },
+    "Web広告": { deal: 0.17, win: 0.27 },
+    "自社サイト": { deal: 0.15, win: 0.33 },
+    "メール・セミナー": { deal: 0.25, win: 0.30 },
+  };
+  const MODEL_ALL = { deal: 0.15, win: 0.29 };
+  const DEFAULT_NAMES = ["展示会", "Web広告", "自社サイト", "メール・セミナー"];
+
+  // ===== 記入例（テスト1：架空の会社（基本モデル）の成長期。基本モデル_10-budget「8 人件費込みの判定」「3 チャネル別」） =====
+  const EXAMPLE = {
+    margin: 40, years: 1.5, actDeal: null, actWin: null, salesSupport: true,
+    labor: [{ role: "マーケ2名＋営業の協力", hours: null, yen: null, amount: 370 }],
+    rows: [
+      { name: "展示会", ext: 280, hours: 120, leads: 120, deals: 12, wins: 3, price: 300 },
+      { name: "Web広告", ext: 330, hours: 78, leads: 65, deals: 11, wins: 3, price: 200 },
+      { name: "自社サイト", ext: 156, hours: 184, leads: 60, deals: 9, wins: 3, price: 250 },
+      { name: "メール・セミナー", ext: 144, hours: 360, leads: 40, deals: 10, wins: 3, price: 250 },
+    ],
+    excluded: [], notes: [],
+  };
+  const emptyRow = (name) => ({ name, ext: null, hours: null, leads: null, deals: null, wins: null, price: null });
+  const emptyLabor = () => ({ role: "", hours: null, yen: null, amount: null });
+  const blankData = () => ({
+    margin: null, years: null, actDeal: null, actWin: null, salesSupport: false,
+    labor: [emptyLabor()], rows: DEFAULT_NAMES.map(emptyRow), excluded: [], notes: [],
+  });
+
+  const $ = (id) => document.getElementById(id);
+  const scalarInputs = Array.from(document.querySelectorAll(".bc-in input[data-k]"));
+  const rowsEl = $("bc-rows");
+  const laborEl = $("bc-labor");
+  const salesEl = $("bc-sales");
+
+  // nulls：入力Bで null だった欄（黄色）。キーは "s:margin" / "c:0:ext" / "l:0:hours" / "sales"
+  let state = { rows: [], labor: [], excluded: [], notes: [], nulls: new Set(), isExample: false, dirty: false };
+
+  // ===== 書式 =====
+  const num = (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(typeof v === "string" ? v.replace(/[,，\s]/g, "") : v);
+    return isFinite(n) ? n : null;
+  };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const tag = (cls, text) => `<span class="bc-tag ${cls}">${text}</span>`;
+  const judgeTag = (j) => (j === null ? `<span class="na">${NA}</span>` : tag(j === "ok" ? "ok" : "ng", JUDGMENT_LABEL[j]));
+  const v = (x) => (x === null || x === undefined ? "" : x);
+  const trim0 = (s) => s.replace(/\.0$/, "");
+  const na = (s) => (s === NA ? ` class="na"` : "");
+
+  // ===== 保存（localStorage。使えなくても動く） =====
+  function save() {
+    try {
+      const data = { ...readScalars(), salesSupport: salesEl.checked, rows: state.rows, labor: state.labor, excluded: state.excluded, notes: state.notes, nulls: [...state.nulls], isExample: state.isExample };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) { /* 保存できない環境では何もしない */ }
+  }
+  function restore() {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      return d && Array.isArray(d.rows) && Array.isArray(d.labor) ? d : null;
+    } catch (e) { return null; }
+  }
+
+  // ===== チャネルの行 =====
+  function rowHtml(r, i) {
+    const f = ([k, label, unit]) => `<label class="bc-field"><span class="bc-lb">${label}</span><span class="bc-ip" data-nk="c:${i}:${k}"><input type="number" inputmode="decimal" min="0" step="1" data-i="${i}" data-f="${k}" value="${v(r[k])}" aria-label="${esc(r.name)} ${label}" /><span>${unit}</span></span></label>`;
+    return `<div class="bc-card">
+      <div class="bc-card-h">
+        <input class="bc-name" type="text" data-i="${i}" data-f="name" value="${esc(r.name)}" aria-label="チャネル名" />
+        <button type="button" class="bc-del" data-del="${i}" aria-label="このチャネルを削除">×</button>
+      </div>
+      <div class="bc-g3">${CH_FIELDS.map(f).join("")}</div>
+    </div>`;
+  }
+  function renderRows() {
+    rowsEl.innerHTML = state.rows.map(rowHtml).join("");
+    $("bc-add").disabled = state.rows.length >= MAX_ROWS;
+    $("bc-add").textContent = state.rows.length >= MAX_ROWS ? `チャネルは${MAX_ROWS}行までです` : "＋ チャネルを追加";
+  }
+  rowsEl.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLInputElement) || t.dataset.i === undefined) return;
+    const i = Number(t.dataset.i);
+    const r = state.rows[i];
+    if (!r) return;
+    r[t.dataset.f] = t.dataset.f === "name" ? t.value : num(t.value);
+    state.nulls.delete(`c:${i}:${t.dataset.f}`);
+    edited();
+  });
+  rowsEl.addEventListener("click", (e) => {
+    const t = e.target instanceof Element ? e.target.closest("button[data-del]") : null;
+    if (!t) return;
+    const i = Number(t.dataset.del);
+    state.rows.splice(i, 1);
+    state.nulls = shiftNulls(state.nulls, "c", i);
+    renderRows();
+    edited();
+  });
+  $("bc-add").addEventListener("click", () => {
+    if (state.rows.length >= MAX_ROWS) return;
+    state.rows.push(emptyRow(`チャネル${state.rows.length + 1}`));
+    renderRows();
+    edited();
+    const names = rowsEl.querySelectorAll(".bc-name");
+    const last = names[names.length - 1];
+    if (last instanceof HTMLInputElement) { last.focus(); last.select(); }
+  });
+  // 行を消したとき、黄色の印の行番号を詰める
+  function shiftNulls(set, prefix, removed) {
+    const out = new Set();
+    set.forEach((k) => {
+      const m = k.match(/^([cl]):(\d+):(.+)$/);
+      if (!m || m[1] !== prefix) { out.add(k); return; }
+      const i = Number(m[2]);
+      if (i < removed) out.add(k);
+      else if (i > removed) out.add(`${prefix}:${i - 1}:${m[3]}`);
+    });
+    return out;
+  }
+
+  // ===== 人件費の行 =====
+  const laborComputed = (l) => (l.hours !== null && l.yen !== null ? laborFromHours(l.hours, l.yen) : null);
+  const laborValue = (l) => {
+    const c = laborComputed(l);
+    return c !== null ? c : l.amount || 0;
+  };
+  function laborHtml(l, i) {
+    const c = laborComputed(l);
+    const f = (k, unit, label) => `<label class="bc-field"><span class="bc-lb">${label}</span><span class="bc-ip" data-nk="l:${i}:${k}"><input type="number" inputmode="decimal" min="0" step="1" data-li="${i}" data-lf="${k}" value="${v(l[k])}" /><span>${unit}</span></span></label>`;
+    return `<div class="bc-card">
+      <div class="bc-card-h">
+        <input class="bc-name" type="text" data-li="${i}" data-lf="role" value="${esc(l.role)}" placeholder="役割（例：マーケ担当）" aria-label="役割" />
+        <button type="button" class="bc-del" data-ldel="${i}" aria-label="この行を削除">×</button>
+      </div>
+      <div class="bc-g3">
+        ${f("hours", "時間", "年間の時間")}
+        ${f("yen", "円", "時間単価")}
+        <label class="bc-field"><span class="bc-lb">人件費</span><span class="bc-ip" data-nk="l:${i}:amount"><input type="number" inputmode="decimal" min="0" step="1" data-li="${i}" data-lf="amount" value="${c !== null ? c : v(l.amount)}" ${c !== null ? "readonly" : ""} /><span>万円</span></span></label>
+      </div>
+    </div>`;
+  }
+  function renderLabor() {
+    laborEl.innerHTML = state.labor.map(laborHtml).join("");
+  }
+  laborEl.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLInputElement) || t.dataset.li === undefined) return;
+    const i = Number(t.dataset.li);
+    const l = state.labor[i];
+    if (!l) return;
+    const k = t.dataset.lf;
+    if (k === "role") l.role = t.value;
+    else l[k] = num(t.value);
+    if (k === "hours" || k === "yen") {
+      const amountEl = laborEl.querySelector(`input[data-li="${i}"][data-lf="amount"]`);
+      const c = laborComputed(l);
+      if (amountEl instanceof HTMLInputElement) {
+        amountEl.readOnly = c !== null;
+        amountEl.value = c !== null ? String(c) : String(v(l.amount));
+      }
+    }
+    ["hours", "yen", "amount"].forEach((x) => state.nulls.delete(`l:${i}:${x}`));
+    edited();
+  });
+  laborEl.addEventListener("click", (e) => {
+    const t = e.target instanceof Element ? e.target.closest("button[data-ldel]") : null;
+    if (!t) return;
+    const i = Number(t.dataset.ldel);
+    state.labor.splice(i, 1);
+    state.nulls = shiftNulls(state.nulls, "l", i);
+    renderLabor();
+    edited();
+  });
+  $("bc-labor-add").addEventListener("click", () => {
+    state.labor.push(emptyLabor());
+    renderLabor();
+    edited();
+    const roles = laborEl.querySelectorAll(".bc-name");
+    const last = roles[roles.length - 1];
+    if (last instanceof HTMLInputElement) last.focus();
+  });
+  salesEl.addEventListener("change", () => { state.nulls.delete("sales"); edited(); });
+
+  // ===== 1つだけの欄 =====
+  scalarInputs.forEach((el) => el.addEventListener("input", () => { state.nulls.delete(`s:${el.dataset.k}`); edited(); }));
+  function readScalars() {
+    const o = {};
+    scalarInputs.forEach((el) => { o[el.dataset.k] = num(el.value); });
+    return o;
+  }
+
+  function load(data, opts = {}) {
+    scalarInputs.forEach((el) => { const x = data[el.dataset.k]; el.value = x === null || x === undefined ? "" : String(x); });
+    state.rows = (data.rows || []).slice(0, MAX_ROWS).map((r) => ({ ...emptyRow(""), ...r }));
+    state.labor = (data.labor || []).map((l) => ({ ...emptyLabor(), ...l }));
+    state.excluded = data.excluded || [];
+    state.notes = data.notes || [];
+    state.nulls = new Set(data.nulls || []);
+    state.isExample = !!opts.isExample;
+    state.dirty = !!opts.dirty;
+    salesEl.checked = !!data.salesSupport;
+    renderRows();
+    renderLabor();
+    renderImport();
+    update();
+  }
+  function edited() {
+    state.isExample = false;
+    state.dirty = true;
+    update();
+  }
+
+  $("bc-example").addEventListener("click", () => { load(EXAMPLE, { isExample: true, dirty: true }); hideMsg(); });
+  const clearBtn = $("bc-clear");
+  let clearTimer = 0;
+  clearBtn.addEventListener("click", () => {
+    if (clearBtn.dataset.armed !== "1") {
+      clearBtn.dataset.armed = "1";
+      clearBtn.textContent = "もう一度押すと消えます";
+      clearTimeout(clearTimer);
+      clearTimer = window.setTimeout(() => { clearBtn.dataset.armed = ""; clearBtn.textContent = "入力をすべて消す"; }, 4000);
+      return;
+    }
+    clearTimeout(clearTimer);
+    clearBtn.dataset.armed = "";
+    clearBtn.textContent = "入力をすべて消す";
+    load(blankData(), {});
+    hideMsg();
+  });
+  $("bc-print").addEventListener("click", () => window.print());
+
+  // ===== 入力B：AIの案を読み込む =====
+  const aiToggle = $("bc-ai-toggle");
+  aiToggle.addEventListener("click", () => {
+    const open = aiToggle.getAttribute("aria-expanded") !== "true";
+    aiToggle.setAttribute("aria-expanded", String(open));
+    $("bc-ai-panel").hidden = !open;
+  });
+  const copyBtn = $("bc-copy");
+  copyBtn.addEventListener("click", async () => {
+    const text = $("bc-prompt").textContent || "";
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      // クリップボードAPIが使えないとき：選択してコピー
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        ta.remove();
+      } catch (e2) { ok = false; }
+    }
+    copyBtn.textContent = ok ? "コピーしました" : "コピーできませんでした。枠の中を選択してコピーしてください";
+    window.setTimeout(() => { copyBtn.textContent = "プロンプトをコピー"; }, 2500);
+  });
+
+  function showMsg(cls, html) {
+    const m = $("bc-ai-msg");
+    m.className = `bc-msg ${cls}`;
+    m.innerHTML = html;
+    m.hidden = false;
+  }
+  function hideMsg() { $("bc-ai-msg").hidden = true; }
+
+  // 最初の { から対応する } までを取り出す（文字列の中の括弧は数えない）
+  function extractJson(text) {
+    const start = text.indexOf("{");
+    if (start < 0) return null;
+    let depth = 0;
+    let inStr = false;
+    let escaped = false;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (inStr) {
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) return text.slice(start, i + 1);
+      }
+    }
+    return null;
+  }
+
+  $("bc-import").addEventListener("click", () => {
+    const text = $("bc-paste").value;
+    const json = extractJson(text);
+    if (!json) { showMsg("ng", "読み込めませんでした。AIが返した結果の { から } までを、そのまま貼りつけてください"); return; }
+    let d;
+    try { d = JSON.parse(json); } catch (e) {
+      showMsg("ng", "読み込めませんでした。JSONの形が崩れています。AIに「JSONのコードブロック1つだけで出し直して」と頼んでください");
+      return;
+    }
+    if (!d || typeof d !== "object" || d.format !== FORMAT) {
+      showMsg("ng", `読み込めませんでした。形式が違います（"format": "${FORMAT}" がありません）。上のプロンプトで変換した結果を貼りつけてください`);
+      return;
+    }
+    const nulls = new Set();
+    const pick = (x, key) => { const n = num(x); if (n === null) nulls.add(key); return n; };
+    const chans = Array.isArray(d.channels) ? d.channels : [];
+    const rows = chans.slice(0, MAX_ROWS).map((c, i) => {
+      const r = emptyRow(c && typeof c.name === "string" && c.name.trim() ? c.name.trim() : `チャネル${i + 1}`);
+      Object.entries(CH_JSON).forEach(([k, jk]) => { r[k] = pick(c ? c[jk] : null, `c:${i}:${k}`); });
+      return r;
+    });
+    const labor = (Array.isArray(d.labor) ? d.labor : []).map((l, i) => {
+      const row = { role: l && typeof l.role === "string" ? l.role : "", hours: num(l?.hours), yen: num(l?.hourly_yen), amount: num(l?.amount_man) };
+      // 人件費が出せない行だけ、空の欄を黄色にする
+      if (laborComputed(row) === null && row.amount === null) {
+        ["hours", "yen", "amount"].forEach((k) => { if (row[k] === null) nulls.add(`l:${i}:${k}`); });
+      }
+      return row;
+    });
+    const scal = {
+      margin: pick(d.gross_margin_pct, "s:margin"),
+      years: pick(d.payback_years, "s:years"),
+      actDeal: pick(d.actual_deal_rate_pct, "s:actDeal"),
+      actWin: pick(d.actual_win_rate_pct, "s:actWin"),
+    };
+    if (d.sales_support_included !== true && d.sales_support_included !== false) nulls.add("sales");
+    const excluded = (Array.isArray(d.excluded) ? d.excluded : []).filter((x) => x && typeof x === "object").map((x) => ({
+      item: typeof x.item === "string" && x.item.trim() ? x.item.trim() : "予備費", amount: num(x.amount), reason: typeof x.reason === "string" ? x.reason : "",
+    }));
+    const notes = (Array.isArray(d.notes) ? d.notes : []).filter((x) => typeof x === "string" && x.trim());
+    load({ ...scal, salesSupport: d.sales_support_included === true, rows, labor, excluded, notes, nulls: [...nulls] }, { dirty: true });
+
+    const msgs = [`読み込みました（チャネル${rows.length}行・人件費${labor.length}行）。黄色の欄は予算案に書かれていなかった数字です。`];
+    if (chans.length > MAX_ROWS) msgs.push(`チャネルが${chans.length}行あったため、11行目以降（${chans.slice(MAX_ROWS).map((c) => esc(c?.name || "名前なし")).join("・")}）は読み込んでいません。`);
+    showMsg(chans.length > MAX_ROWS ? "ng" : "ok", msgs.join("<br>"));
+  });
+
+  // 読み込み結果（excluded・notes）を欄の上に並べる
+  function renderImport() {
+    const box = $("bc-imp");
+    const ex = state.excluded;
+    const nt = state.notes;
+    if (!ex.length && !nt.length) { box.hidden = true; return; }
+    box.hidden = false;
+    $("bc-imp-body").innerHTML =
+      (ex.length ? `<b>入れなかった項目</b><ul>${ex.map((x) => `<li>${esc(x.item)}${x.amount !== null ? `（${fmtMan(x.amount)}万円）` : ""}${x.reason ? `：${esc(x.reason)}` : ""}</li>`).join("")}</ul>` : "") +
+      (nt.length ? `<b>AIが変換で行ったこと</b><ul>${nt.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
+  }
+  $("bc-imp-close").addEventListener("click", () => {
+    state.notes = [];
+    // 入れなかった項目は、要確認の指摘に使うため残す（閉じるのは表示だけ）
+    $("bc-imp").hidden = true;
+    save();
+  });
+
+  // ===== チェック（仕様 6.1） =====
+  function validate(s, rows, laborTotal) {
+    const bad = new Set(); // data-nk のキー
+    const missing = [];
+    const errors = [];
+    const neg = (x) => x !== null && x < 0;
+    if (!(s.margin > 0)) { missing.push("粗利率"); bad.add("s:margin"); }
+    if (!(s.years > 0)) { missing.push("取り返す年数"); bad.add("s:years"); }
+    ["margin", "actDeal", "actWin"].forEach((k) => { if (s[k] !== null && (s[k] < 0 || s[k] > 100)) { bad.add(`s:${k}`); errors.push("率は0〜100%で入れてください"); } });
+    if (neg(s.years)) bad.add("s:years");
+    const active = rows.map((r, i) => ({ r, i })).filter(({ r }) => CH_FIELDS.some(([k]) => r[k] !== null && r[k] !== 0));
+    if (!active.length) missing.push("チャネルの数字");
+    rows.forEach((r, i) => {
+      const nm = r.name || `${i + 1}行目`;
+      CH_FIELDS.forEach(([k]) => { if (neg(r[k])) { bad.add(`c:${i}:${k}`); errors.push(`${nm}にマイナスの数があります`); } });
+      if ((r.deals || 0) > (r.leads || 0)) { bad.add(`c:${i}:deals`); errors.push(`${nm}の商談数がリード数を超えています`); }
+      if ((r.wins || 0) > (r.deals || 0)) { bad.add(`c:${i}:wins`); errors.push(`${nm}の受注数が商談数を超えています`); }
+      if ((r.wins || 0) > 0 && !(r.price > 0)) { bad.add(`c:${i}:price`); missing.push(`${nm}の受注単価`); }
+    });
+    state.labor.forEach((l, i) => ["hours", "yen", "amount"].forEach((k) => { if (neg(l[k])) { bad.add(`l:${i}:${k}`); errors.push("人件費の欄にマイナスの数があります"); } }));
+    if (active.length && !(rows.reduce((a, r) => a + (r.wins || 0), 0) > 0)) {
+      errors.push("受注数の合計が0です。受注数を入れてください");
+      rows.forEach((r, i) => bad.add(`c:${i}:wins`));
+    }
+    const hoursSum = rows.reduce((a, r) => a + Math.max(r.hours || 0, 0), 0);
+    if (laborTotal > 0 && !(hoursSum > 0)) {
+      errors.push("人件費をチャネルに配れません。チャネルの時間を入れてください");
+      rows.forEach((r, i) => bad.add(`c:${i}:hours`));
+    }
+    return { bad, missing: [...new Set(missing)], errors: [...new Set(errors)] };
+  }
+  // 赤枠（エラー）と黄色（読み込みで null）を付け直す
+  function paint(bad) {
+    document.querySelectorAll(".bc-in [data-nk]").forEach((el) => {
+      const k = el.getAttribute("data-nk");
+      el.classList.toggle("bc-invalid", bad.has(k));
+      el.classList.toggle("bc-null", state.nulls.has(k));
+    });
+    scalarInputs.forEach((el) => {
+      const k = `s:${el.dataset.k}`;
+      const ip = el.closest(".bc-ip");
+      ip.classList.toggle("bc-invalid", bad.has(k));
+      ip.classList.toggle("bc-null", state.nulls.has(k));
+    });
+    $("bc-sales-wrap").classList.toggle("bc-null", state.nulls.has("sales"));
+  }
+
+  // ===== 計算（仕様 5.） =====
+  function compute(s, rows, laborTotal) {
+    const margin = s.margin / 100;
+    const active = rows.filter((r) => CH_FIELDS.some(([k]) => r[k] !== null && r[k] !== 0));
+    const alloc = allocateLabor(laborTotal, active.map((r) => r.hours || 0)) || active.map(() => 0);
+    const lines = active.map((r, i) => {
+      const ext = r.ext || 0;
+      const lab = alloc[i];
+      const cost = ext + lab;
+      const leads = r.leads || 0;
+      const deals = r.deals || 0;
+      const wins = r.wins || 0;
+      const revenue = wins * (r.price || 0);
+      return { r, ext, lab, cost, leads, deals, wins, revenue, cpl: cpl(cost, leads), cac: cac(cost, wins) };
+    });
+    const sum = (k) => lines.reduce((a, x) => a + x[k], 0);
+    const ext = sum("ext"), lab = sum("lab"), total = sum("cost");
+    const leads = sum("leads"), deals = sum("deals"), wins = sum("wins"), revenue = sum("revenue");
+    const avgPrice = revenue / wins; // 全体の平均単価
+    const yGross = avgPrice * margin; // 1社あたりの年間粗利
+    const mGross = monthlyGross(avgPrice, margin); // 1社あたりの月の粗利
+    const limit = cacLimit(avgPrice, margin, s.years);
+    const planDeal = leads > 0 ? deals / leads : null;
+    const planWin = deals > 0 ? wins / deals : null;
+    const useActDeal = s.actDeal !== null && s.actDeal > 0;
+    const useActWin = s.actWin !== null && s.actWin > 0;
+    const dr = useActDeal ? s.actDeal / 100 : planDeal;
+    const wr = useActWin ? s.actWin / 100 : planWin;
+    const acpl = dr !== null && wr !== null ? allowableCpl(limit, dr, wr) : null;
+    lines.forEach((x) => {
+      x.payback = paybackMonths(x.cac, mGross);
+      x.roi = roi(x.revenue, margin, x.cost);
+      x.judgment = acpl === null ? null : judge(x.cpl, acpl);
+    });
+    const allCac = cac(total, wins);
+    const all = {
+      cpl: cpl(total, leads), cac: allCac, payback: paybackMonths(allCac, mGross), roi: roi(revenue, margin, total),
+      judgment: judge(allCac, limit),
+    };
+    return { margin, lines, ext, lab, total, leads, deals, wins, revenue, avgPrice, yGross, mGross, limit, planDeal, planWin, dr, wr, useActDeal, useActWin, acpl, all };
+  }
+
+  // ===== 要確認の指摘（仕様 6.2） =====
+  function warnings(s, c, laborTotal) {
+    const w = [];
+    if (!(laborTotal > 0)) w.push("人件費が入っていません。人件費を入れないと、CAC・ROIが実際より良く見えます");
+    if (!salesEl.checked) w.push("営業が施策に協力する時間（展示会の立ち会い、事例の取材、登壇など）が入っているか確かめてください");
+    c.lines.forEach((x) => {
+      if (x.ext > 0 && !((x.r.hours || 0) > 0)) w.push(`${x.r.name}の人件費が0になります。このチャネルにかける時間を入れてください`);
+      if (x.ext > 0 && x.leads === 0) w.push(`${x.r.name}はリードを生まない費用だけです。ツール費・保守費は、使うチャネルの外部費用に入れてください`);
+    });
+    // 今期の実績と比べる（案の全体の率が実績の1.2倍を超える）
+    if (c.useActDeal && c.planDeal !== null && clean(c.planDeal) > clean((s.actDeal / 100) * 1.2)) w.push(`案の商談化率（${fmtPct(c.planDeal)}）が今期の実績（${fmtPct(s.actDeal / 100)}）より2割以上高くなっています（楽観のシナリオを超える）。根拠を確かめてください`);
+    if (c.useActWin && c.planWin !== null && clean(c.planWin) > clean((s.actWin / 100) * 1.2)) w.push(`案の受注率（${fmtPct(c.planWin)}）が今期の実績（${fmtPct(s.actWin / 100)}）より2割以上高くなっています（楽観のシナリオを超える）。根拠を確かめてください`);
+    // 今期の実績が空なら、基本モデル（架空の会社）の率と比べる（0.5倍未満か2倍超）
+    const far = (x, m) => clean(x) < clean(m * 0.5) || clean(x) > clean(m * 2);
+    c.lines.forEach((x) => {
+      const m = MODEL_RATES[(x.r.name || "").trim()] || MODEL_ALL;
+      if (!c.useActDeal && x.leads > 0 && far(x.deals / x.leads, m.deal)) w.push(`${x.r.name}の商談化率（${fmtPct(x.deals / x.leads)}）が、基本モデル（架空の会社）の${fmtPct(m.deal)}と大きく違います。根拠を確かめてください`);
+      if (!c.useActWin && x.deals > 0 && far(x.wins / x.deals, m.win)) w.push(`${x.r.name}の受注率（${fmtPct(x.wins / x.deals)}）が、基本モデル（架空の会社）の${fmtPct(m.win)}と大きく違います。根拠を確かめてください`);
+    });
+    state.excluded.forEach((x) => {
+      w.push(`${x.item}${x.amount !== null ? `（${fmtMan(x.amount)}万円）` : ""}は入れていません。期中に足りなくなったら、追加予算の稟議で扱います`);
+    });
+    return w;
+  }
+
+  // ===== 表示 =====
+  function update() {
+    const s = readScalars();
+    const rows = state.rows;
+    const laborTotal = state.labor.reduce((a, l) => a + laborValue(l), 0);
+    const chk = validate(s, rows, laborTotal);
+    // 空の必須欄は、何か入れたあとだけ赤くする
+    const bad = new Set([...chk.bad].filter((k) => state.dirty || !(k === "s:margin" || k === "s:years")));
+    paint(bad);
+    save();
+
+    $("r-date").textContent = `作成日 ${new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })}`;
+    $("r-sub").textContent = (state.isExample ? "記入例：架空の会社（基本モデル）の成長期・" : "") + "人件費込み・金額は万円";
+
+    const empty = $("r-empty");
+    const body = $("r-body");
+    if (chk.missing.length || chk.errors.length) {
+      empty.hidden = false;
+      empty.innerHTML =
+        (chk.missing.length ? `次の項目を入れると、判定が出ます<br>${chk.missing.map(esc).join("・")}` : "") +
+        (chk.errors.length ? `${chk.missing.length ? "<br><br>" : ""}${chk.errors.map(esc).join("<br>")}` : "") +
+        (state.dirty ? "" : `<br><br><small>AIの案がJSONにできるなら「AIの案を読み込む」、試すなら「記入例を入れる」</small>`);
+      body.hidden = true;
+      return;
+    }
+    empty.hidden = true;
+    body.hidden = false;
+
+    const c = compute(s, rows, laborTotal);
+    const yearsTxt = trim0(fmt1(s.years));
+    const monthsTxt = trim0(fmt1(s.years * 12));
+    const inYears = c.all.payback !== null && clean(c.all.payback) <= clean(s.years * 12);
+
+    // 結論の1行
+    $("r-concl").textContent = `人件費込みの費用${fmtMan(c.total)}万円。CACは${fmtMan(c.all.cac)}万円で、回収期間は${fmt1(c.all.payback)}か月（取り返す年数${yearsTxt}年＝${monthsTxt}か月${inYears ? "以内" : "を超える"}）。`;
+
+    // 結論のカード
+    $("r-payback").textContent = fmt1(c.all.payback);
+    $("r-payback-s").innerHTML = `取り返す年数 ${yearsTxt}年＝${monthsTxt}か月` + tag(inYears ? "ok" : "ng", inYears ? "以内" : "超える");
+    $("r-cac").textContent = fmtMan(c.all.cac);
+    $("r-cac-s").innerHTML = `CACの上限 ${fmtMan(c.limit)}万円` + (c.all.judgment === null ? "" : tag(c.all.judgment === "ok" ? "ok" : "ng", JUDGMENT_LABEL[c.all.judgment]));
+    $("r-roi").textContent = fmtPct(c.all.roi);
+    $("r-wins").textContent = fmtMan(c.wins);
+    $("r-wins-s").textContent = `受注金額 ${fmtMan(c.revenue)}万円`;
+
+    // 費用の3行
+    $("r-cost").innerHTML =
+      `<tr><td class="n">外部費用</td><td>${fmtMan(c.ext)}</td></tr>` +
+      `<tr><td class="n">人件費</td><td>${fmtMan(c.lab)}</td></tr>` +
+      `<tr class="tot"><td>合計</td><td>${fmtMan(c.total)}</td></tr>`;
+
+    // 上限
+    $("r-limit").textContent = fmtMan(c.limit);
+    $("r-acpl").textContent = fmt1(c.acpl);
+    const rateSrc = (use) => (use ? "今期の実績" : "案の全体");
+    const sameSrc = c.useActDeal === c.useActWin;
+    $("r-rate-src").textContent = sameSrc
+      ? `率は${rateSrc(c.useActDeal)}`
+      : `商談化率は${rateSrc(c.useActDeal)}・受注率は${rateSrc(c.useActWin)}`;
+    $("r-limit-s").textContent =
+      `CACの上限＝1社あたりの年間粗利${fmt1(c.yGross)}（平均単価${fmt1(c.avgPrice)}×粗利率${trim0(fmt1(s.margin))}%）×取り返す年数${yearsTxt}年。` +
+      `許容CPL＝CACの上限×商談化率${fmtPct(c.dr)}（${rateSrc(c.useActDeal)}）×受注率${fmtPct(c.wr)}（${rateSrc(c.useActWin)}）`;
+
+    // チャネル別の表
+    let html = "";
+    c.lines.forEach((x) => {
+      const cplT = fmt1(x.cpl), cacT = fmtMan(x.cac), pbT = fmt1(x.payback), roiT = fmtPct(x.roi);
+      html += `<tr${x.judgment === "over" ? ' class="weak"' : ""}>` +
+        `<td class="n">${esc(x.r.name || "（名前なし）")}</td>` +
+        `<td>${fmtMan(x.cost)}<span class="sub">${fmtMan(x.ext)}＋${fmtMan(x.lab)}</span></td>` +
+        `<td>${fmtMan(x.leads)}</td><td>${fmtMan(x.wins)}</td>` +
+        `<td${na(cplT)}>${cplT}</td><td${na(cacT)}>${cacT}</td><td${na(pbT)}>${pbT}</td><td${na(roiT)}>${roiT}</td>` +
+        `<td class="c">${judgeTag(x.judgment)}</td></tr>`;
+    });
+    html += `<tr class="tot"><td>合計</td><td>${fmtMan(c.total)}<span class="sub">${fmtMan(c.ext)}＋${fmtMan(c.lab)}</span></td>` +
+      `<td>${fmtMan(c.leads)}</td><td>${fmtMan(c.wins)}</td><td>${fmt1(c.all.cpl)}</td><td>${fmtMan(c.all.cac)}</td>` +
+      `<td>${fmt1(c.all.payback)}</td><td>${fmtPct(c.all.roi)}</td><td class="c">${judgeTag(c.all.judgment)}</td></tr>`;
+    $("r-ch").innerHTML = html;
+    $("r-ch-s").textContent =
+      `チャネルの判定は、CPLが許容CPL${fmt1(c.acpl)}万円以下なら「上限内」、超えたら「上限超え」。合計の判定は、CACがCACの上限${fmtMan(c.limit)}万円以下か。` +
+      `回収期間は、どの行も全体の1社あたりの月の粗利${fmt1(c.mGross)}万円で出します。人件費は、人件費の総額をチャネルの時間の比で配った値（万円の整数）`;
+
+    // 要確認
+    const warns = warnings(s, c, laborTotal);
+    $("r-warn-box").hidden = warns.length === 0;
+    $("r-warn").innerHTML = warns.map((w) => `<li>${esc(w)}</li>`).join("");
+
+    // 経営陣に説明するときの一文
+    $("r-say").textContent = `人件費を含めた費用は${fmtMan(c.total)}万円です。1社を獲得する費用（CAC）は${fmtMan(c.all.cac)}万円で、受注した会社の粗利で${fmt1(c.all.payback)}か月で取り返せます。`;
+
+    // 前提
+    $("r-pre").textContent =
+      `粗利率${trim0(fmt1(s.margin))}%／取り返す年数${yearsTxt}年／平均単価${fmt1(c.avgPrice)}万円（受注金額÷受注件数）／` +
+      `使った率：商談化率${fmtPct(c.dr)}（${rateSrc(c.useActDeal)}）・受注率${fmtPct(c.wr)}（${rateSrc(c.useActWin)}）／` +
+      `人件費${fmtMan(c.lab)}万円はチャネルの時間の比で配った（共通の作業の時間も、この比で配られる）／単位は万円。ROIは1年。予備費は入れない`;
+  }
+
+  // ===== 起動：保存した入力があれば戻す。なければ空の4行 =====
+  const saved = restore();
+  if (saved) load(saved, { isExample: !!saved.isExample, dirty: true });
+  else load(blankData(), {});
+</script>
