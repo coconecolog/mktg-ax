@@ -1,109 +1,17 @@
 ---
 // 便利ツール一覧（/tools）。2026-10-17 Figma「便利ツール一覧 | MKTG.AX」に合わせてリニューアル。
-// ツールの文言（名前・説明・目安時間など）はこのファイルに直接書いている（Notionのツールは参照しない）。
-// ツールを増やす・文言を変えるときは、下の MAIN_TOOLS / QUICK_TOOLS を編集する。
-// アイコンは lucide（https://lucide.dev）の線画。ICONS に同じ形式で追加すれば使える。
+// ツールの文言（名前・説明・目安時間など）は src/data/tools.ts を編集する。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
+import PdcaToolCards from "@/components/PdcaToolCards.astro";
 import { buildCollectionPageSchema } from "@/lib/schema";
+import { ICONS, MAIN_TOOLS, QUICK_TOOLS } from "@/data/tools";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "便利ツール", href: "/tools" },
 ];
-
-// lucide アイコンの中身（<svg> の内側）。
-const ICONS: Record<string, string> = {
-  "chart-no-axes-combined":
-    '<path d="M12 16v5"/><path d="M16 14.639V21"/><path d="M20 10.656V21"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18.463V21"/><path d="M8 14.656V21"/>',
-  "scan-search":
-    '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/>',
-  "file-chart-column":
-    '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 18v-1"/><path d="M12 18v-6"/><path d="M16 18v-3"/>',
-  "list-checks":
-    '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
-  calculator:
-    '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
-  scale:
-    '<path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/>',
-  "chart-bar-big":
-    '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="9" height="4" rx="1"/><rect x="7" y="5" width="12" height="4" rx="1"/>',
-  "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
-};
-
-// 計画から改善、報告まで（PDCAの3ツール）。href を null にすると「公開準備中」の表示になる。
-const MAIN_TOOLS = [
-  {
-    step: "01",
-    phase: "計画",
-    purpose: "投資の根拠をつくる",
-    icon: "chart-no-axes-combined",
-    titleLines: ["マーケティング予算", "シミュレーター"],
-    description: "今期実績と来期の施策から、予算と投資計画を組み立てます。人件費・ツール費・広告費を整理し、判断の根拠を明確に。",
-    detail: "逆算パイプライン・費用内訳・ROI試算を含む計画書を作成。",
-    note: "来期の予算策定・社内提案に",
-    href: "/tools/budget-simulator",
-  },
-  {
-    step: "02",
-    phase: "発見・改善",
-    purpose: "次に取り組む課題を見つける",
-    icon: "scan-search",
-    titleLines: ["ボトルネック", "発見ツール"],
-    description: "マーケティング活動のなかで、改善すべき箇所を見つけるためのツールです。",
-    detail: "現在、公開に向けて準備中です。",
-    note: "改善の優先順位を考えるときに",
-    href: null,
-  },
-  {
-    step: "03",
-    phase: "報告",
-    purpose: "成果と課題を伝える",
-    icon: "file-chart-column",
-    titleLines: ["マーケ月次報告", "メーカー"],
-    description: "期初の計画と、毎月のリード・商談・受注などの数値を整理。経営に伝える月次報告を、A4横のPDF 1枚にまとめます。",
-    detail: "翌月は前回のPDFを読み込み、内容を引き継いで作成できます。",
-    note: "PDF出力にはメール登録が必要",
-    href: "/tools/monthly-report",
-  },
-] as const;
-
-// 日々の判断に、小さなツール。
-const QUICK_TOOLS = [
-  {
-    icon: "list-checks",
-    category: "SEO・AI検索",
-    title: "簡易SEO・AEO・AIO診断チェックリスト",
-    description: "全15項目を自分でチェック。SEO・AI検索への対応状況を簡易診断します。",
-    time: "目安 2分",
-    href: "/tools/seo-aeo-aio-check",
-  },
-  {
-    icon: "calculator",
-    category: "広告の投資判断",
-    title: "広告費用対効果（ROAS/CAC）シミュレーター",
-    description: "サブスク・リピート型ビジネスのLTVから、許容CACと投資回収期間を試算します。",
-    time: "目安 1分",
-    href: "/tools/roas-cac-simulator",
-  },
-  {
-    icon: "scale",
-    category: "体制・コスト",
-    title: "内製 vs 外注 コスト比較シミュレーター",
-    description: "新規採用と、代理店・フリーランスへの外注。累計コストを比較します。",
-    time: "目安 2分",
-    href: "/tools/inhouse-vs-outsource",
-  },
-  {
-    icon: "chart-bar-big",
-    category: "広告宣伝費",
-    title: "広告宣伝費 業界ベンチマーク診断",
-    description: "業種・年間売上高・年間広告宣伝費から、同業種と比べた広告宣伝費の水準を診断します。",
-    time: "目安 1分",
-    href: "/tools/kpi-benchmark",
-  },
-] as const;
 
 const pageDescription =
   "少人数でマーケティングを担うBtoB企業へ。計画づくりから改善点の発見、経営への報告まで、日々の判断に役立つ計算・診断ツールをまとめました。";
@@ -154,64 +62,7 @@ const toolsSchema = buildCollectionPageSchema({
         <p class="text-sm text-[#4f5057]">マーケティングのPDCAを支える、3つのツール</p>
       </div>
 
-      <div class="mt-[30px] grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
-        {
-          MAIN_TOOLS.map((tool, i) => (
-            <div class="flex flex-col gap-[18px]">
-              <div class="flex items-center gap-[14px]">
-                <span class="text-[34px] leading-none text-[#7b7c83]">{tool.step}</span>
-                <div class="min-w-0 flex-1">
-                  <p class="font-bold">{tool.phase}</p>
-                  <p class="mt-[3px] text-xs text-[#4f5057]">{tool.purpose}</p>
-                </div>
-                {i < MAIN_TOOLS.length - 1 && (
-                  <svg class="hidden shrink-0 text-[#7b7c83] md:block" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
-                )}
-              </div>
-
-              <article
-                class:list={[
-                  "flex flex-1 flex-col justify-between border border-[#dedee2] md:min-h-[516px]",
-                  tool.href ? "bg-white" : "bg-[#f8f7f9]",
-                ]}
-              >
-                <div class="flex flex-col gap-5 p-7">
-                  <div class="flex items-center justify-between">
-                    <svg class="shrink-0" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[tool.icon]} />
-                    {tool.href ? (
-                      <span class="text-[11px] text-[#7b7c83]">MKTG.AX TOOLS</span>
-                    ) : (
-                      <span class="border border-[#dedee2] px-2.5 py-[5px] text-xs font-medium text-[#4f5057]">公開予定</span>
-                    )}
-                  </div>
-                  <h3 class="text-[23px] font-bold leading-[1.55]">
-                    {tool.titleLines[0]}<br />{tool.titleLines[1]}
-                  </h3>
-                  <p class="text-sm leading-[1.95] text-[#4f5057]">{tool.description}</p>
-                  <hr class="border-t border-[#dedee2]" />
-                  <p class="text-[13px] leading-[1.85] text-[#4f5057]">{tool.detail}</p>
-                </div>
-                <div class="flex flex-col gap-3 px-7 pb-7 pt-2">
-                  <p class="text-xs text-[#7b7c83]">{tool.note}</p>
-                  {tool.href ? (
-                    <a
-                      href={tool.href}
-                      class="flex h-[50px] items-center justify-between bg-[#0c0c11] px-[22px] text-sm font-bold text-white transition-colors hover:bg-neutral-800"
-                    >
-                      ツールを使う
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
-                    </a>
-                  ) : (
-                    <span class="flex h-[50px] items-center bg-[#e5e4e8] px-[22px] text-sm font-bold text-[#77777e]" aria-disabled="true">
-                      公開準備中
-                    </span>
-                  )}
-                </div>
-              </article>
-            </div>
-          ))
-        }
-      </div>
+      <PdcaToolCards class="mt-[30px]" />
 
       <p class="mt-[30px] text-xs leading-[1.7] text-[#7b7c83]">
         目的に合うツールからお使いください。上記の流れは活用の目安であり、ツール間の自動データ連携を示すものではありません。
