@@ -6,6 +6,7 @@
 // ✅ 調整済み：mktg.axのブログ一覧ページ（src/pages/blog/[...page].astro）が
 //   使っている import に合わせて、BaseLayoutを@/エイリアスで読み込むようにしてあります。
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
 import benchmarkData from "@/data/benchmark-data.json";
 
 const industries = benchmarkData.industries;
@@ -125,6 +126,8 @@ const SHOW_PDF_EXPORT = false;
       )}
     </section>
   </main>
+
+  <ToolFooter path="/tools/kpi-benchmark" />
 </BaseLayout>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
