@@ -1,0 +1,69 @@
+---
+// PDCAの3ツール（計画・発見/改善・報告）のカード。/tools ページとトップページで共通に使う。
+// 文言は src/data/tools.ts の MAIN_TOOLS を編集する。
+import { ICONS, MAIN_TOOLS } from "@/data/tools";
+
+interface Props {
+  class?: string;
+}
+const { class: className = "" } = Astro.props;
+---
+
+<div class:list={["grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6", className]}>
+  {
+    MAIN_TOOLS.map((tool, i) => (
+      <div class="flex flex-col gap-[18px]">
+        <div class="flex items-center gap-[14px]">
+          <span class="text-[34px] leading-none text-[#7b7c83]">{tool.step}</span>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold">{tool.phase}</p>
+            <p class="mt-[3px] text-xs text-[#4f5057]">{tool.purpose}</p>
+          </div>
+          {i < MAIN_TOOLS.length - 1 && (
+            <svg class="hidden shrink-0 text-[#7b7c83] md:block" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
+          )}
+        </div>
+
+        <article
+          class:list={[
+            "flex flex-1 flex-col justify-between border border-[#dedee2] md:min-h-[516px]",
+            tool.href ? "bg-white" : "bg-[#f8f7f9]",
+          ]}
+        >
+          <div class="flex flex-col gap-5 p-7">
+            <div class="flex items-center justify-between">
+              <svg class="shrink-0" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[tool.icon]} />
+              {tool.href ? (
+                <span class="text-[11px] text-[#7b7c83]">MKTG.AX TOOLS</span>
+              ) : (
+                <span class="border border-[#dedee2] px-2.5 py-[5px] text-xs font-medium text-[#4f5057]">公開予定</span>
+              )}
+            </div>
+            <h3 class="text-[23px] font-bold leading-[1.55]">
+              {tool.titleLines[0]}<br />{tool.titleLines[1]}
+            </h3>
+            <p class="text-sm leading-[1.95] text-[#4f5057]">{tool.description}</p>
+            <hr class="border-t border-[#dedee2]" />
+            <p class="text-[13px] leading-[1.85] text-[#4f5057]">{tool.detail}</p>
+          </div>
+          <div class="flex flex-col gap-3 px-7 pb-7 pt-2">
+            <p class="text-xs text-[#7b7c83]">{tool.note}</p>
+            {tool.href ? (
+              <a
+                href={tool.href}
+                class="flex h-[50px] items-center justify-between bg-[#0c0c11] px-[22px] text-sm font-bold text-white transition-colors hover:bg-neutral-800"
+              >
+                ツールを使う
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
+              </a>
+            ) : (
+              <span class="flex h-[50px] items-center bg-[#e5e4e8] px-[22px] text-sm font-bold text-[#77777e]" aria-disabled="true">
+                公開準備中
+              </span>
+            )}
+          </div>
+        </article>
+      </div>
+    ))
+  }
+</div>
