@@ -1,0 +1,106 @@
+---
+// ツールページ共通の下部ブロック（2026-10-17）。
+// よくある質問 → 関連資料・記事 → 便利ツール一覧ボタン → ContactCta（カテゴリ一覧・タグ一覧・ご要望・ご質問）の順に表示する。
+// 中身は src/data/tool-footer.ts の TOOL_FOOTER[path] から取る。path はツールページのURL（例: "/tools/kpi-benchmark"）。
+import { TOOL_FOOTER } from "@/data/tool-footer";
+import { buildFaqSchemaFromItems } from "@/lib/schema";
+import ContactCta from "./ContactCta.astro";
+
+interface Props {
+  path: string;
+}
+
+const { path } = Astro.props;
+const data = TOOL_FOOTER[path] ?? { faq: [], related: [] };
+const faqSchema = data.faq.length > 0 ? buildFaqSchemaFromItems(data.faq) : null;
+
+const LABEL = {
+  resource: { badge: "資料", kind: "ダウンロード資料", more: "資料を見る" },
+  post: { badge: "記事", kind: "ブログ記事", more: "記事を読む" },
+} as const;
+---
+
+{faqSchema && <script type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} />}
+
+<div class="print:hidden">
+{
+  data.faq.length > 0 && (
+    <section class="tool-footer" aria-labelledby="tool-faq-heading">
+      <div class="mx-auto max-w-6xl px-5 pt-16 md:pt-20">
+        <p class="text-xs font-bold tracking-wide text-neutral-500">FAQ</p>
+        <h2 id="tool-faq-heading" class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">
+          よくある質問
+        </h2>
+        <div class="mt-8 border-t border-ink-950">
+          {data.faq.map((item, i) => (
+            <details class="group border-b border-neutral-200" open={i === 0}>
+              <summary class="grid cursor-pointer list-none grid-cols-[1.75rem_minmax(0,1fr)_1.25rem] items-start gap-2 px-1 py-5 text-[0.95rem] font-bold leading-relaxed text-ink-950 hover:opacity-75 md:grid-cols-[2.25rem_minmax(0,1fr)_1.5rem] md:py-6 md:text-base [&::-webkit-details-marker]:hidden">
+                <span class="text-lg font-extrabold leading-snug" aria-hidden="true">Q</span>
+                <span>{item.question}</span>
+                <span class="relative mt-[0.45em] h-4 w-4 justify-self-end" aria-hidden="true">
+                  <span class="absolute left-0 top-[7px] h-0.5 w-4 bg-ink-950" />
+                  <span class="absolute left-0 top-[7px] h-0.5 w-4 rotate-90 bg-ink-950 transition-transform group-open:rotate-0" />
+                </span>
+              </summary>
+              <div class="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-2 px-1 pb-6 md:grid-cols-[2.25rem_minmax(0,1fr)] md:pb-7">
+                <span class="text-lg font-extrabold leading-snug text-neutral-400" aria-hidden="true">A</span>
+                <p class="text-sm leading-[1.9] text-neutral-600 md:text-[0.95rem]">{item.answer}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<section class="tool-footer" aria-labelledby={data.related.length > 0 ? "tool-related-heading" : undefined}>
+  <div class="mx-auto max-w-6xl px-5 pb-16 pt-16 md:pb-20 md:pt-20">
+    {
+      data.related.length > 0 && (
+        <>
+          <p class="text-xs font-bold tracking-wide text-neutral-500">関連資料・記事</p>
+          <h2 id="tool-related-heading" class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">
+            このツールとあわせて使う
+          </h2>
+          <ul class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
+            {data.related.map((item) => (
+              <li>
+                <a href={item.href}
+                  class="group flex h-full flex-col border border-neutral-200 bg-white p-6 text-ink-950 no-underline transition-colors hover:border-ink-950 md:min-h-[236px] md:p-8"
+                >
+                  <span
+                    class={`self-start px-3 py-0.5 text-xs font-bold tracking-wider ${
+                      item.type === "resource" ? "bg-ink-950 text-white" : "border border-ink-950 text-ink-950"
+                    }`}
+                  >
+                    {LABEL[item.type].badge}
+                  </span>
+                  <span class="mt-4 text-lg font-bold leading-relaxed md:text-[1.2rem]">{item.title}</span>
+                  <span class="mt-2 text-xs text-neutral-400">{LABEL[item.type].kind}</span>
+                  <span class="min-h-6 flex-1" aria-hidden="true" />
+                  <span class="flex items-center justify-between border-t border-neutral-200 pt-5 text-sm font-bold">
+                    {LABEL[item.type].more}
+                    <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    <div class={`${data.related.length > 0 ? "mt-14" : ""} flex justify-center`}>
+      <a href="/tools"
+        class="inline-flex w-full items-center justify-center gap-5 bg-ink-950 px-7 py-4 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800 sm:w-auto"
+      >
+        便利ツール一覧を見る
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<ContactCta />
+</div>
