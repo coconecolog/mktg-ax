@@ -1,0 +1,1541 @@
+---
+// src/pages/tools/kpi-check.astro
+//
+// KPI運用チェッカー（/tools/kpi-check）
+// 仕様: Googleドライブ「MKTG.AX／共有（正本）／04_ツール仕様／KPI運用チェッカー 仕様」（2026-10-18）
+// 計算: src/lib/kpiCheck.ts（CACの上限・許容CPLは src/lib/budget-calc.ts と共通）
+// - 初回：KPIツリーと施策を入れると、妥当性を9項目で判定する。PDFはA4横3ページ（判定／ツリーと目標／経営との合意）
+// - 毎月：実績と実施したことを入れると、達成・未達、次の打ち手（出典つき）、撤退の判断を出す。PDFはA4横1ページ
+// - 計算はすべてブラウザ内。入力データはPDFの添付ファイル（mktgax-kpi-check.json）に埋め込み、次回はPDFを読み込む
+// - PDFのダウンロード時にメール登録（POST /api/kpi-check-register）。サーバーに置くのはメールアドレスと管理日だけ
+// - PDFは html2canvas-pro で各ページを画像にし、pdf-lib でPDFにする（月次報告メーカーと同じ。CDNから、使うときだけ読み込む）
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
+
+const TOOL_TITLE = "KPI運用チェッカー";
+const TOOL_DESCRIPTION =
+  "KPIツリーと施策を入れると目標の妥当性を判定し、毎月は実績を入れると達成・未達、次の打ち手（出典つき）、撤退の判断を出す無料ツールです。結果はA4横のPDFで出せます。";
+---
+
+<BaseLayout title={`${TOOL_TITLE}｜KPIの妥当性と月次の打ち手・撤退を判定｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-check.png">
+  <main class="kc">
+    <header class="kc-head">
+      <p class="kc-eyebrow"><a href="/tools">便利ツール</a></p>
+      <h1>{TOOL_TITLE}</h1>
+      <p class="kc-lead">KPIツリーと施策を入れると、目標の妥当性を判定します。毎月は実績と実施したことを入れると、達成・未達、次の打ち手、撤退の判断を出します（金額は万円）。計算はすべてブラウザの中で行い、入力した数字はサーバーに送りません。</p>
+    </header>
+
+    <div class="kc-bar">
+      <div class="kc-mode" role="tablist" aria-label="使い方">
+        <button type="button" role="tab" id="kc-tab-first" data-mode="first">初回<small>KPIツリーを判定する</small></button>
+        <button type="button" role="tab" id="kc-tab-monthly" data-mode="monthly">毎月<small>実績を判定する</small></button>
+      </div>
+      <div class="kc-load">
+        <label class="kc-obtn">前回のPDFを読み込む<input id="kc-pdf-input" type="file" accept="application/pdf,.pdf" class="kc-sr" /></label>
+        <p class="kc-note" id="kc-load-note">このツールで作ったPDFを選ぶと、目標と前月までの実績が入ります</p>
+        <p class="kc-msg" id="kc-load-msg" role="status" hidden></p>
+      </div>
+    </div>
+
+    <div class="kc-grid">
+      <!-- ===== 入力 ===== -->
+      <div class="kc-in">
+        <div class="kc-tools">
+          <button type="button" class="kc-link" id="kc-example">記入例を入れる</button>
+          <button type="button" class="kc-link" id="kc-clear">入力をすべて消す</button>
+        </div>
+        <p class="kc-note kc-note-r">記入例は架空の会社の数字です（11月まで入っています）</p>
+
+        <!-- 初回 -->
+        <div id="kc-in-first">
+          <div class="kc-sec">
+            <p class="kc-step"><span>STEP1</span>期間とKPIツリーの目標</p>
+            <div class="kc-f3">
+              <div class="kc-field"><label class="kc-lb" for="p-period">期間</label><div class="kc-ip"><select id="p-period" data-p="plan.period" data-t="sel"></select></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-start">期首</label><div class="kc-ip"><select id="p-start" data-t="start"></select></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-day">管理日</label><div class="kc-ip"><select id="p-day" data-p="plan.manageDay" data-t="day"></select></div></div>
+            </div>
+            <p class="kc-note">期間は、KPIツリーの目標の期間です。管理日は毎月の数字を入れる日で、登録すると3営業日前と当日にお知らせメールが届きます</p>
+            <div class="kc-f2 kc-mt8">
+              <div class="kc-field"><label class="kc-lb" for="p-sales">売上目標（マーケ経由）</label><div class="kc-ip"><input id="p-sales" data-p="plan.sales" inputmode="decimal" /><span>万円</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-price">平均単価</label><div class="kc-ip"><input id="p-price" data-p="plan.price" inputmode="decimal" /><span>万円</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-wins">受注数</label><div class="kc-ip"><input id="p-wins" data-p="plan.wins" inputmode="decimal" /><span>件</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-winRate">受注率</label><div class="kc-ip"><input id="p-winRate" data-p="plan.winRate" inputmode="decimal" /><span>%</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-deals">商談数</label><div class="kc-ip"><input id="p-deals" data-p="plan.deals" inputmode="decimal" /><span>件</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-dealRate">商談化率</label><div class="kc-ip"><input id="p-dealRate" data-p="plan.dealRate" inputmode="decimal" /><span>%</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-leads">リード数</label><div class="kc-ip"><input id="p-leads" data-p="plan.leads" inputmode="decimal" /><span>件</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-cycle">商談から受注までの平均期間</label><div class="kc-ip"><input id="p-cycle" data-p="plan.cycle" inputmode="decimal" /><span>か月</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-margin">粗利率<small>任意</small></label><div class="kc-ip"><input id="p-margin" data-p="plan.margin" inputmode="decimal" /><span>%</span></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-years">取り返す年数<small>任意</small></label><div class="kc-ip"><input id="p-years" data-p="plan.years" inputmode="decimal" /><span>年</span></div></div>
+            </div>
+            <p class="kc-note">粗利率と取り返す年数を入れると、CACの上限と許容CPLを計算し、CPLの上限の初期値に入れます</p>
+          </div>
+
+          <div class="kc-sec">
+            <p class="kc-step"><span>STEP2</span>実施する施策とKPIの目標</p>
+            <div class="kc-chips" id="kc-mchips-on"></div>
+            <div id="kc-cards"></div>
+          </div>
+
+          <div class="kc-sec">
+            <p class="kc-step"><span>STEP3</span>経営との合意<small>PDFの合意用の1枚に入ります</small></p>
+            <div class="kc-f2">
+              <div class="kc-field"><label class="kc-lb" for="p-decider">判断する人</label><div class="kc-ip"><input id="p-decider" data-p="plan.decider" data-t="text" maxlength="40" placeholder="例：営業本部長" /></div></div>
+              <div class="kc-field"><label class="kc-lb" for="p-review">振り返りの日</label><div class="kc-ip"><input id="p-review" data-p="plan.review" data-t="text" maxlength="40" placeholder="例：毎月10日の経営会議" /></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 毎月 -->
+        <div id="kc-in-monthly" hidden>
+          <div class="kc-sec">
+            <p class="kc-step"><span>STEP1</span>報告する月</p>
+            <div class="kc-chips" id="kc-month-chips"></div>
+            <p class="kc-note">枠の月は入力済みです。押すとその月の数字を見直せます</p>
+          </div>
+          <div class="kc-sec">
+            <p class="kc-step"><span>STEP2</span>施策ごとの実績<small id="kc-month-sub"></small></p>
+            <p class="kc-note kc-mb8">件数で入れてください。率とCPLはツールが計算します</p>
+            <div id="kc-mcards"></div>
+          </div>
+          <div class="kc-sec">
+            <p class="kc-step"><span>STEP3</span>全体<small id="kc-common-sub"></small></p>
+            <div class="kc-f2" id="kc-common"></div>
+            <p class="kc-note">受注率は決着した商談（受注＋失注）だけで出し、決着が10件たまってから判定します。営業に渡した数が空のときは「営業に渡せる割合」を判定しません</p>
+          </div>
+        </div>
+
+        <!-- 登録・ダウンロード -->
+        <div class="kc-sec kc-dl">
+          <p class="kc-step"><span id="kc-dl-step">STEP4</span>PDFをダウンロード</p>
+          <form id="kc-reg-form" novalidate>
+            <p class="kc-note kc-mb8">メールアドレスを登録すると、その場でPDFをダウンロードできます（PDFはメールでは送りません）。管理日を決めた場合は、3営業日前と当日にお知らせメールが届きます。</p>
+            <div class="kc-field"><label class="kc-lb" for="reg-email">メールアドレス</label><div class="kc-ip"><input id="reg-email" type="email" autocomplete="email" data-skip="1" placeholder="you@example.com" /></div></div>
+            <p class="kc-note">管理日：<b id="reg-day"></b>（STEP1で変えられます）</p>
+            <div class="kc-hp" aria-hidden="true"><label>ウェブサイト<input type="text" id="reg-website" tabindex="-1" autocomplete="off" data-skip="1" /></label></div>
+            <label class="kc-check"><input id="reg-consent" type="checkbox" data-skip="1" /><span><a href="/privacy" target="_blank" rel="noopener">プライバシーポリシー</a>に同意して、お知らせメールを受け取る</span></label>
+            <button type="submit" class="kc-btn" id="reg-submit">登録してPDFをダウンロード</button>
+            <p class="kc-msg" id="reg-msg" role="status" hidden></p>
+          </form>
+          <div id="kc-registered" hidden>
+            <p class="kc-note">登録済み：<b id="kc-reg-email"></b></p>
+            <button type="button" class="kc-btn" id="kc-download">PDFをダウンロード</button>
+            <p class="kc-msg" id="kc-dl-msg" role="status" hidden></p>
+            <button type="button" class="kc-link kc-mt8" id="kc-reregister">別のメールアドレス・管理日で登録しなおす</button>
+          </div>
+          <p class="kc-note kc-mt8" id="kc-dl-what"></p>
+          <p class="kc-note">※PDFを別のソフトで保存し直すと、埋め込んだデータが消えることがあります（その場合は手で入力してください）。メンバーとの共有はPDFを渡して行えます。</p>
+        </div>
+      </div>
+
+      <!-- ===== 結果 ===== -->
+      <div class="kc-out">
+        <div id="kc-out-first">
+          <div class="kc-panel">
+            <p class="kc-ph">妥当性の判定<small>9項目</small></p>
+            <div id="kc-first"></div>
+          </div>
+          <div class="kc-panel">
+            <p class="kc-ph">KPIツリーと施策の目標<small id="kc-tree-sub"></small></p>
+            <div id="kc-tree"></div>
+          </div>
+        </div>
+        <div id="kc-out-monthly" hidden>
+          <div class="kc-panel">
+            <p class="kc-ph"><span id="kc-m-title">今月の判定</span><small>件数が少ないKPI（◇）は直近3か月の合計</small></p>
+            <div id="kc-m-table"></div>
+          </div>
+          <div class="kc-panel">
+            <p class="kc-ph">次の打ち手と、前月に実施したことの効果</p>
+            <div id="kc-m-actions"></div>
+          </div>
+          <div class="kc-panel">
+            <p class="kc-ph">撤退の判断<small>判定する月以降、開始月からの累計</small></p>
+            <div id="kc-m-exit"></div>
+          </div>
+          <div class="kc-panel">
+            <p class="kc-ph">月次報告メーカーに写す数字<small>同じ順番・同じ名前</small></p>
+            <div id="kc-m-copy"></div>
+            <a class="kc-next" href="/tools/monthly-report"><span><b>経営への報告は、マーケ月次報告メーカーで</b>この数字を写すと、期末の着地見込みまでそろった報告1枚を作れます</span><span aria-hidden="true">月次報告メーカー →</span></a>
+          </div>
+          <div class="kc-panel">
+            <p class="kc-ph"><span>AIに相談するプロンプト</span><button type="button" class="kc-obtn kc-obtn-s" id="kc-copy-prompt">コピー</button></p>
+            <pre class="kc-prompt" id="kc-prompt"></pre>
+            <p class="kc-note">数字と判定だけが入ります。会社名・顧客名は入りません。お使いのAIのチャットに貼ってください（このサイトではAIを使いません）</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <ToolFooter path="/tools/kpi-check" />
+</BaseLayout>
+
+<style is:global>
+  .kc { max-width: 1240px; margin: 0 auto; padding: 1.5rem 1rem 3rem; color: #0b0b12; font-variant-numeric: tabular-nums; }
+  .kc p { margin: 0; }
+  .kc-eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; color: #737373; }
+  .kc-eyebrow a { color: inherit; text-decoration: none; }
+  .kc-eyebrow a:hover { text-decoration: underline; }
+  .kc-head h1 { margin: 0.25rem 0 0.4rem; font-size: 1.7rem; font-weight: 800; line-height: 1.35; }
+  .kc-lead { color: #525252; line-height: 1.7; }
+  .kc-sr { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .kc-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+  .kc-bar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 16px 0 18px; }
+  .kc-mode { display: flex; border: 1px solid #0b0b12; border-radius: 10px; overflow: hidden; }
+  .kc-mode button { border: 0; background: #fff; padding: 8px 18px; font-size: 0.9rem; font-weight: 700; color: #0b0b12; cursor: pointer; line-height: 1.35; text-align: center; }
+  .kc-mode button small { display: block; font-weight: 400; font-size: 0.68rem; opacity: 0.75; }
+  .kc-mode button[aria-selected="true"] { background: #0b0b12; color: #fff; }
+  .kc-load { text-align: right; max-width: 440px; }
+  .kc-load .kc-note { margin-top: 4px !important; }
+
+  .kc-grid { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .kc-step { font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 8px !important; flex-wrap: wrap; }
+  .kc-step span { background: #0b0b12; color: #fff; border-radius: 4px; padding: 1px 7px; font-size: 0.68rem; letter-spacing: 0.04em; }
+  .kc-step small { font-weight: 400; color: #8a8a8a; font-size: 0.7rem; }
+
+  /* 入力 */
+  .kc-in { border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px 16px 16px; background: #fff; min-width: 0; }
+  .kc-tools { display: flex; justify-content: flex-end; gap: 12px; }
+  .kc-link { background: none; border: 0; padding: 0; font-size: 0.75rem; color: #525252; text-decoration: underline; cursor: pointer; text-align: left; }
+  .kc-link[data-armed="1"] { color: #b91c1c; font-weight: 700; }
+  .kc-note-r { text-align: right; margin-top: 2px !important; }
+  .kc-sec { border-bottom: 1px solid #ececec; padding: 12px 0 14px; }
+  .kc-sec:last-child { border-bottom: 0; padding-bottom: 0; }
+  .kc-f2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kc-f3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .kc-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kc-lb { font-size: 0.72rem; font-weight: 600; color: #404040; line-height: 1.4; }
+  .kc-lb small { font-weight: 400; color: #8a8a8a; margin-left: 4px; }
+  .kc-ip { display: flex; align-items: center; gap: 6px; min-width: 0; border: 1px solid #d4d4d4; border-radius: 8px; background: #fff; padding: 0 8px; }
+  .kc-ip:focus-within { border-color: #0b0b12; outline: 1px solid #0b0b12; }
+  .kc-ip input, .kc-ip select, .kc-ip textarea { flex: 1 1 0; width: 0; min-width: 0; border: 0; outline: 0; background: transparent; padding: 6px 0; font-size: 0.9rem; color: #0b0b12; font-family: inherit; }
+  .kc-ip textarea { resize: vertical; min-height: 3.2em; font-size: 0.8rem; line-height: 1.55; }
+  .kc-ip input[readonly] { color: #525252; }
+  .kc-ip > span { font-size: 0.72rem; color: #737373; flex-shrink: 0; }
+  .kc-ip.kc-bad { border-color: #b91c1c; background: #fef2f2; }
+  .kc-note { font-size: 0.68rem; color: #8a8a8a; line-height: 1.55; margin-top: 6px !important; }
+  .kc-note b { color: #0b0b12; }
+  .kc-mt8 { margin-top: 8px !important; }
+  .kc-mb8 { margin-bottom: 8px !important; margin-top: 0 !important; }
+  .kc-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+  .kc-chip { border: 1px solid #d4d4d4; border-radius: 999px; background: #fff; padding: 3px 11px; font-size: 0.75rem; color: #525252; cursor: pointer; }
+  .kc-chip:hover { border-color: #0b0b12; color: #0b0b12; }
+  .kc-chip[aria-pressed="true"] { background: #0b0b12; border-color: #0b0b12; color: #fff; }
+  .kc-chip.done { border-color: #0b0b12; color: #0b0b12; font-weight: 700; }
+  .kc-chip.cur { background: #0b0b12; border-color: #0b0b12; color: #fff; }
+  .kc-card { border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 8px; background: #fff; }
+  .kc-card > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.82rem; font-weight: 800; }
+  .kc-card > summary::-webkit-details-marker { display: none; }
+  .kc-card > summary small { font-weight: 400; color: #8a8a8a; font-size: 0.68rem; text-align: right; }
+  .kc-card[open] > summary small .kc-sum { display: none; }
+  .kc-card-b { padding: 0 10px 10px; }
+  .kc-kh, .kc-kr { display: grid; grid-template-columns: minmax(0, 1fr) 104px 58px; gap: 6px; align-items: center; }
+  .kc-kh { font-size: 0.62rem; color: #8a8a8a; padding-bottom: 2px; }
+  .kc-kr { font-size: 0.75rem; padding: 3px 0; border-top: 1px dashed #ececec; }
+  .kc-kr .kc-ip input { padding: 3px 0; font-size: 0.8rem; }
+  .kc-kr .kc-ip > span { font-size: 0.64rem; }
+  .kc-kr small { color: #8a8a8a; font-size: 0.62rem; display: block; }
+  .kc-kr.kc-other { grid-template-columns: minmax(0, 1fr) 104px 58px; }
+  .kc-yn { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: #525252; cursor: pointer; }
+  .kc-oname { display: flex; gap: 4px; align-items: center; }
+  .kc-del { border: 0; background: none; color: #8a8a8a; font-size: 0.9rem; line-height: 1; cursor: pointer; padding: 2px; flex-shrink: 0; }
+  .kc-del:hover { color: #b91c1c; }
+  .kc-add { width: 100%; border: 1px dashed #bfbfbf; border-radius: 8px; background: #fff; text-align: center; padding: 5px; color: #525252; font-size: 0.72rem; cursor: pointer; margin-top: 6px; }
+  .kc-add:hover { border-color: #0b0b12; color: #0b0b12; }
+  .kc-sub { border: 1px solid #ececec; border-radius: 8px; padding: 6px 10px; margin-top: 8px; font-size: 0.72rem; }
+  .kc-sub > summary { cursor: pointer; font-weight: 700; color: #404040; }
+  .kc-sub > summary small { font-weight: 400; color: #8a8a8a; margin-left: 4px; }
+  .kc-mg { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+  .kc-mg label { display: flex; flex-direction: column; font-size: 0.6rem; color: #737373; text-align: center; gap: 1px; }
+  .kc-mg input { width: 100%; box-sizing: border-box; border: 1px solid #d4d4d4; border-radius: 6px; padding: 2px 4px; font-size: 0.75rem; text-align: right; }
+  .kc-mg input:focus { outline: 1px solid #0b0b12; border-color: #0b0b12; }
+  .kc-mgl { font-size: 0.68rem; color: #404040; margin-top: 8px !important; font-weight: 600; }
+  .kc-sumok { color: #15803d; }
+  .kc-sumng { color: #b91c1c; font-weight: 700; }
+  .kc-check { display: flex; gap: 6px; align-items: flex-start; font-size: 0.72rem; color: #404040; line-height: 1.5; margin-top: 8px; cursor: pointer; }
+  .kc-check input { margin-top: 3px; flex-shrink: 0; }
+  .kc-check a { color: inherit; }
+  .kc-btn { display: block; width: 100%; margin-top: 10px; border: 0; border-radius: 10px; background: #0b0b12; color: #fff; padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+  .kc-btn:hover:not(:disabled) { opacity: 0.9; }
+  .kc-btn:disabled { opacity: 0.4; cursor: default; }
+  .kc-obtn { position: relative; display: inline-block; border: 1px solid #0b0b12; border-radius: 10px; background: #fff; padding: 7px 14px; font-weight: 700; font-size: 0.8rem; color: #0b0b12; cursor: pointer; }
+  .kc-obtn:hover { background: #0b0b12; color: #fff; }
+  .kc-obtn-s { padding: 2px 12px; font-size: 0.72rem; border-radius: 8px; }
+  .kc-msg { font-size: 0.72rem; font-weight: 700; margin-top: 8px !important; line-height: 1.6; }
+  .kc-msg.ok { color: #15803d; }
+  .kc-msg.ng { color: #b91c1c; }
+  .kc-before { font-size: 0.72rem; color: #737373; padding: 0 10px 10px; }
+
+  /* 結果 */
+  .kc-out { min-width: 0; }
+  .kc-panel { border: 1px solid #e5e5e5; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; background: #fff; }
+  .kc-ph { font-size: 1rem; font-weight: 800; margin-bottom: 10px !important; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .kc-ph small { font-size: 0.72rem; font-weight: 400; color: #737373; }
+  .kc-empty { padding: 28px 0; text-align: center; color: #8a8a8a; font-size: 0.85rem; line-height: 1.8; }
+  .kc-sum3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .kc-sum3 div { border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; }
+  .kc-sum3 b { font-size: 1.4rem; margin-right: 4px; }
+  .kc-s-ok { background: #f0fdf4; color: #166534; }
+  .kc-s-check { background: #fefce8; color: #854d0e; }
+  .kc-s-fix { background: #fef2f2; color: #991b1b; }
+  .kc-jg { font-size: 0.75rem; font-weight: 800; color: #525252; margin: 12px 0 2px !important; letter-spacing: 0.04em; }
+  .kc-jr { display: grid; grid-template-columns: 20px minmax(0, 1fr) 92px; gap: 8px; padding: 7px 0; border-top: 1px solid #f0f0f0; align-items: start; font-size: 0.82rem; }
+  .kc-jr .n { color: #8a8a8a; font-size: 0.75rem; }
+  .kc-jr .t { font-weight: 700; }
+  .kc-jr .r { color: #525252; font-size: 0.75rem; margin-top: 2px !important; line-height: 1.65; }
+  .kc-jr .r a { color: #0b0b12; }
+  .kc-bd { display: block; text-align: center; border-radius: 999px; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; white-space: nowrap; }
+  .kc-b-ok { background: #dcfce7; color: #166534; }
+  .kc-b-check, .kc-b-near { background: #fef9c3; color: #854d0e; }
+  .kc-b-fix, .kc-b-ng { background: #fee2e2; color: #991b1b; }
+  .kc-b-na, .kc-b-pending, .kc-b-unmeasured, .kc-b-empty, .kc-b-none, .kc-b-skip, .kc-b-ref, .kc-b-notyet { background: #f0f0f0; color: #525252; }
+  .kc-tw { overflow-x: auto; }
+  .kc-t { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .kc-t th { font-size: 0.68rem; color: #525252; font-weight: 600; text-align: right; padding: 5px 6px; border-bottom: 1px solid #0b0b12; white-space: nowrap; }
+  .kc-t td { padding: 5px 6px; border-bottom: 1px solid #f0f0f0; text-align: right; white-space: nowrap; }
+  .kc-t th:first-child, .kc-t td:first-child { text-align: left; white-space: normal; }
+  .kc-t td.plan { background: #f6f6f6; color: #525252; }
+  .kc-t td.act { font-weight: 700; }
+  .kc-t tr.grp td { font-weight: 800; border-bottom: 1px solid #d4d4d4; padding-top: 10px; background: #fff; }
+  .kc-t tr.grp td small { font-weight: 400; color: #8a8a8a; font-size: 0.68rem; margin-left: 4px; }
+  .kc-t tr.first td { background: #fef2f2; }
+  .kc-t tr.first td.plan { background: #fde8e8; }
+  .kc-t td .nt { display: block; font-size: 0.62rem; color: #8a8a8a; font-weight: 400; }
+  .kc-t td.sub { padding-left: 16px; color: #525252; }
+  .kc-tag { display: inline-block; font-size: 0.6rem; font-weight: 700; background: #b91c1c; color: #fff; border-radius: 4px; padding: 0 5px; margin-left: 4px; vertical-align: 1px; white-space: nowrap; }
+  .c-ok { color: #15803d; } .c-near { color: #737373; } .c-ng { color: #b91c1c; }
+  .kc-legend { font-size: 0.66rem; color: #8a8a8a; margin-top: 8px !important; line-height: 1.6; }
+  .kc-act { border-top: 1px solid #f0f0f0; padding: 10px 0; }
+  .kc-act:first-child { border-top: 0; padding-top: 0; }
+  .kc-act-h { font-size: 0.82rem; font-weight: 800; }
+  .kc-act-h small { font-weight: 400; color: #737373; margin-left: 6px; }
+  .kc-act-box { border-left: 3px solid #0b0b12; background: #f6f6f6; border-radius: 0 6px 6px 0; padding: 7px 12px; margin-top: 6px !important; font-size: 0.8rem; line-height: 1.7; }
+  .kc-basis { font-size: 0.66rem; color: #8a8a8a; margin-top: 3px !important; line-height: 1.55; }
+  .kc-basis a { color: inherit; }
+  .kc-none { font-size: 0.75rem; color: #737373; margin-top: 4px !important; }
+  .kc-fx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; font-size: 0.75rem; }
+  .kc-fx div { border: 1px solid #ececec; border-radius: 8px; padding: 7px 10px; line-height: 1.6; }
+  .kc-fx b { display: block; font-size: 0.66rem; color: #737373; font-weight: 600; }
+  .kc-exit { border: 2px solid #b91c1c; border-radius: 10px; padding: 9px 14px; font-size: 0.82rem; line-height: 1.7; margin-bottom: 8px; }
+  .kc-exit b { color: #b91c1c; }
+  .kc-exit-s { font-size: 0.75rem; color: #525252; line-height: 1.8; }
+  .kc-copy { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font-size: 0.75rem; }
+  .kc-copy div { border: 1px solid #e5e5e5; border-radius: 8px; padding: 6px 8px; min-width: 0; }
+  .kc-copy small { display: block; color: #737373; font-size: 0.65rem; }
+  .kc-copy b { font-size: 0.95rem; }
+  .kc-prompt { background: #f6f6f6; border-radius: 8px; padding: 10px 12px; font-size: 0.7rem; line-height: 1.65; white-space: pre-wrap; word-break: break-all; color: #404040; max-height: 220px; overflow: auto; margin: 0; font-family: inherit; }
+  .kc-next { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; border: 1px solid #d4d4d4; border-radius: 12px; padding: 10px 14px; color: #0b0b12; text-decoration: none; font-size: 0.75rem; line-height: 1.6; }
+  .kc-next b { display: block; font-size: 0.85rem; }
+  .kc-next > span:last-child { white-space: nowrap; font-weight: 700; }
+  .kc-next:hover { background: #0b0b12; color: #fff; border-color: #0b0b12; }
+
+  @media (max-width: 860px) {
+    .kc-grid { grid-template-columns: minmax(0, 1fr); }
+    .kc-load { text-align: left; }
+  }
+  @media (max-width: 640px) {
+    .kc-copy { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kc-fx { grid-template-columns: minmax(0, 1fr); }
+    .kc-jr { grid-template-columns: 16px minmax(0, 1fr) 80px; }
+    .kc-next { flex-direction: column; align-items: flex-start; }
+    .kc-panel { padding: 14px 12px; }
+  }
+  @media print {
+    header, footer, nav { display: none !important; }
+  }
+
+  /* ===== PDF（A4横 1123×794px）。html2canvas で画像にするため、色は16進のみ ===== */
+  .kp { width: 1123px; height: 794px; background: #ffffff; padding: 30px 36px 24px; position: relative; overflow: hidden; box-sizing: border-box; color: #0b0b12; font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  .kp * { box-sizing: border-box; }
+  .kp p { margin: 0; }
+  .kp-h { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0b0b12; padding-bottom: 8px; margin-bottom: 14px; }
+  .kp-h h2 { margin: 0; font-size: 21px; font-weight: 800; line-height: 1.3; }
+  .kp-h p { font-size: 11px; color: #525252; text-align: right; line-height: 1.5; }
+  .kp-fit { width: 100%; }
+  .kp-f { position: absolute; left: 36px; right: 36px; bottom: 14px; display: flex; justify-content: space-between; font-size: 9.5px; color: #8a8a8a; border-top: 1px solid #ececec; padding-top: 5px; }
+  .kp-c2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+  .kp-c2m { display: grid; grid-template-columns: 1.12fr 1fr; gap: 20px; }
+  .kp-c3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .kp-bx { border: 1px solid #e5e5e5; border-radius: 8px; padding: 9px 11px; }
+  .kp-bxh { font-size: 12px; font-weight: 800; margin-bottom: 5px !important; display: flex; justify-content: space-between; gap: 6px; }
+  .kp-bxh small { font-weight: 400; color: #737373; font-size: 9.5px; text-align: right; }
+  .kp-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 4px; }
+  .kp-sum div { border-radius: 8px; padding: 7px 10px; font-size: 11px; }
+  .kp-sum b { font-size: 20px; margin-right: 4px; }
+  .kp-s-ok { background: #f0fdf4; color: #166534; }
+  .kp-s-check { background: #fefce8; color: #854d0e; }
+  .kp-s-fix { background: #fef2f2; color: #991b1b; }
+  .kp-jg { font-size: 10.5px; font-weight: 800; color: #525252; margin: 6px 0 1px !important; }
+  .kp-jr { display: grid; grid-template-columns: 16px minmax(0, 1fr) 82px; gap: 6px; padding: 4px 0; border-top: 1px solid #f0f0f0; font-size: 11px; align-items: start; }
+  .kp-jr .n { color: #8a8a8a; }
+  .kp-jr .t { font-weight: 700; }
+  .kp-jr .r { color: #525252; font-size: 10px; line-height: 1.45; }
+  .kp-bd { display: block; text-align: center; border-radius: 999px; font-size: 9.5px; font-weight: 700; padding: 1px 4px; white-space: nowrap; }
+  .kp-b-ok { background: #dcfce7; color: #166534; }
+  .kp-b-check, .kp-b-near { background: #fef9c3; color: #854d0e; }
+  .kp-b-fix, .kp-b-ng { background: #fee2e2; color: #991b1b; }
+  .kp-b-na, .kp-b-pending, .kp-b-unmeasured, .kp-b-empty, .kp-b-none, .kp-b-skip, .kp-b-ref, .kp-b-notyet { background: #f0f0f0; color: #525252; }
+  .kp-fix { background: #fef2f2; border-radius: 6px; padding: 6px 10px; font-size: 11px; line-height: 1.6; margin-top: 4px; }
+  .kp-fix b { color: #991b1b; }
+  .kp-tree { display: flex; align-items: center; margin: 2px 0 12px; }
+  .kp-node { border: 1.5px solid #0b0b12; border-radius: 8px; padding: 5px 10px; text-align: center; min-width: 100px; }
+  .kp-node small { display: block; font-size: 9.5px; color: #737373; }
+  .kp-node b { font-size: 16px; }
+  .kp-node.dark { background: #0b0b12; color: #ffffff; }
+  .kp-node.dark small { color: #d4d4d4; }
+  .kp-arr { font-size: 9.5px; color: #525252; text-align: center; width: 76px; line-height: 1.3; }
+  .kp-arr b { display: block; font-size: 15px; color: #0b0b12; }
+  .kp-t { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .kp-t th { font-size: 9px; color: #525252; font-weight: 600; text-align: right; padding: 2px 5px; border-bottom: 1px solid #0b0b12; white-space: nowrap; }
+  .kp-t td { padding: 2.5px 5px; border-bottom: 1px solid #f0f0f0; text-align: right; white-space: nowrap; }
+  .kp-t th:first-child, .kp-t td:first-child { text-align: left; white-space: normal; }
+  .kp-t td.plan { background: #f6f6f6; color: #525252; }
+  .kp-t td.act { font-weight: 700; }
+  .kp-t tr.grp td { font-weight: 800; border-bottom: 1px solid #d4d4d4; padding-top: 5px; }
+  .kp-t tr.first td { background: #fef2f2; }
+  .kp-t tr.first td.plan { background: #fde8e8; }
+  .kp-tag { display: inline-block; font-size: 8.5px; font-weight: 700; background: #b91c1c; color: #ffffff; border-radius: 3px; padding: 0 4px; margin-left: 3px; }
+  .kp .c-ok { color: #15803d; } .kp .c-near { color: #737373; } .kp .c-ng { color: #b91c1c; }
+  .kp-note { font-size: 9.5px; color: #8a8a8a; margin-top: 4px !important; line-height: 1.5; }
+  .kp-ab { border-left: 3px solid #0b0b12; padding: 3px 0 3px 10px; margin-bottom: 8px; }
+  .kp-ab .k { font-size: 11.5px; font-weight: 800; }
+  .kp-ab .a { font-size: 10.5px; line-height: 1.5; margin-top: 1px !important; }
+  .kp-ab .s { font-size: 8.5px; color: #8a8a8a; margin-top: 1px !important; line-height: 1.35; }
+  .kp-ab .e { font-size: 9.5px; color: #404040; background: #f6f6f6; border-radius: 4px; padding: 2px 6px; margin-top: 3px !important; line-height: 1.45; }
+  .kp-ab .x { font-size: 10.5px; color: #737373; }
+  .kp-exit { border: 2px solid #b91c1c; border-radius: 8px; padding: 6px 10px; font-size: 10.5px; line-height: 1.55; margin-bottom: 5px; }
+  .kp-exit b { color: #b91c1c; }
+  .kp-exit-s { font-size: 10px; color: #525252; line-height: 1.6; }
+  .kp-agree { display: grid; grid-template-columns: 160px minmax(0, 1fr); border-top: 2px solid #0b0b12; }
+  .kp-agree > div { padding: 10px 14px; border-bottom: 1px solid #e5e5e5; font-size: 12.5px; line-height: 1.7; }
+  .kp-agree > div:nth-child(odd) { background: #f6f6f6; font-weight: 800; font-size: 12px; }
+  .kp-sign { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 22px; font-size: 11.5px; }
+  .kp-sign div { border-bottom: 1px solid #0b0b12; padding: 20px 0 4px; color: #525252; }
+  .kp.dense .kp-t { font-size: 9.5px; }
+  .kp.dense .kp-t td { padding: 1.5px 4px; }
+  .kp.dense .kp-ab { margin-bottom: 5px; }
+  .kp.dense .kp-ab .a { font-size: 9.5px; }
+  .kp.xdense .kp-t { font-size: 8.5px; }
+  .kp.xdense .kp-t td { padding: 1px 4px; }
+  .kp.xdense .kp-bd { font-size: 8px; padding: 0 3px; }
+  .kp.xdense .kp-ab { margin-bottom: 4px; }
+  .kp.xdense .kp-ab .a { font-size: 9px; }
+  .kp.xdense .kp-ab .s, .kp.xdense .kp-ab .e { font-size: 8px; }
+</style>
+
+<script>
+  import {
+    COMMON_KPIS,
+    FIRST_GROUPS,
+    FIRST_LABEL,
+    MEASURES,
+    MEASURE_IDS,
+    MONTH_LABEL,
+    PERIODS,
+    SOURCES,
+    computeMonth,
+    costOf,
+    cplCapOf,
+    emptyData,
+    exampleData,
+    firstJudgments,
+    fmtCount,
+    fmtMan1,
+    fmtNum,
+    fmtPct0,
+    formatValue,
+    changeCell,
+    hasParts,
+    isMonthEntered,
+    leadKpi,
+    limitsOf,
+    manageDayLabel,
+    missingTree,
+    monthLabel,
+    monthLabelLong,
+    monthOf,
+    monthlyTargetOf,
+    normalizeData,
+    periodLabel,
+    periodMonths,
+    rangeLabel,
+    selectedMeasures,
+    smallKpis,
+    targetCplOf,
+    type FirstItem,
+    type KcData,
+    type MeasureId,
+    type MonthReport,
+  } from "@/lib/kpiCheck";
+
+  const STORAGE_KEY = "mktgax-kpi-check-v1";
+  const REG_KEY = "mktgax-kpi-check-registered";
+  const ATTACH_NAME = "mktgax-kpi-check.json";
+  const LIB_PDF = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
+  const LIB_CANVAS = "https://cdn.jsdelivr.net/npm/html2canvas-pro@2.5.0/dist/html2canvas-pro.min.js";
+  const FOOT = "KPI運用チェッカー｜MKTG.AX　mktg.ax/tools/kpi-check";
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const esc = (s: unknown) =>
+    String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+
+  // ---------- 保存 ----------
+  function loadDraft(): KcData {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return normalizeData(JSON.parse(raw));
+    } catch {
+      /* noop */
+    }
+    return emptyData();
+  }
+  function saveDraft() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      /* noop */
+    }
+  }
+  function getRegistered(): string | null {
+    try {
+      return localStorage.getItem(REG_KEY);
+    } catch {
+      return null;
+    }
+  }
+  function setRegistered(email: string | null) {
+    try {
+      if (email) localStorage.setItem(REG_KEY, email);
+      else localStorage.removeItem(REG_KEY);
+    } catch {
+      /* noop */
+    }
+  }
+
+  let data: KcData = loadDraft();
+  const openCards = new Set<string>();
+
+  // ---------- 値の読み書き（data-p のパス） ----------
+  function getAt(path: string): any {
+    return path.split(".").reduce((o: any, k) => (o == null ? undefined : o[k]), data as any);
+  }
+  function setAt(path: string, v: any) {
+    const ks = path.split(".");
+    let o: any = data;
+    for (let n = 0; n < ks.length - 1; n++) {
+      const k = ks[n];
+      if (Array.isArray(o[k]) && (ks[n + 1] ?? "").match(/^\d+$/)) while (o[k].length < 12) o[k].push(null);
+      o = o[k];
+    }
+    o[ks[ks.length - 1]] = v;
+  }
+  function parseNum(s: string): { v: number | null; bad: boolean } {
+    const t = s.replace(/[０-９．－]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[,，\s]/g, "").replace(/ー/g, "-");
+    if (t === "") return { v: null, bad: false };
+    const n = Number(t);
+    return isFinite(n) && n >= 0 ? { v: n, bad: false } : { v: null, bad: true };
+  }
+  const numStr = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
+
+  // ---------- 入力欄を作る ----------
+  function numInput(path: string, unit: string, opts: { ph?: string; ro?: boolean; label?: string } = {}) {
+    const v = getAt(path);
+    return `<div class="kc-ip"><input data-p="${path}" inputmode="decimal" value="${esc(numStr(v))}"${opts.ph ? ` placeholder="${esc(opts.ph)}"` : ""}${opts.ro ? " readonly" : ""}${opts.label ? ` aria-label="${esc(opts.label)}"` : ""} /><span>${unit}</span></div>`;
+  }
+  const monthOptions = (sel: number, from = 0) =>
+    Array.from({ length: 12 - from }, (_, k) => k + from)
+      .map((i) => `<option value="${i}"${i === sel ? " selected" : ""}>${esc(monthLabelLong(data.plan, i))}</option>`)
+      .join("");
+
+  function fillStatic() {
+    const p = data.plan;
+    $<HTMLSelectElement>("p-period").innerHTML = PERIODS.map((x) => `<option value="${x.key}"${x.key === p.period ? " selected" : ""}>${x.label}</option>`).join("");
+    const nowY = new Date().getFullYear();
+    const starts: string[] = [];
+    for (let y = nowY - 2; y <= nowY + 1; y++)
+      for (let m = 1; m <= 12; m++) starts.push(`<option value="${y}-${m}"${y === p.startYear && m === p.startMonth ? " selected" : ""}>${y}年${m}月</option>`);
+    if (p.startYear < nowY - 2 || p.startYear > nowY + 1) starts.unshift(`<option value="${p.startYear}-${p.startMonth}" selected>${p.startYear}年${p.startMonth}月</option>`);
+    $<HTMLSelectElement>("p-start").innerHTML = starts.join("");
+    const days = [null, ...Array.from({ length: 28 }, (_, i) => i + 1), 31];
+    $<HTMLSelectElement>("p-day").innerHTML = days
+      .map((d) => `<option value="${d === null ? "" : d}"${d === p.manageDay ? " selected" : ""}>${manageDayLabel(d)}</option>`)
+      .join("");
+    document.querySelectorAll<HTMLInputElement>("#kc-in-first input[data-p]").forEach((el) => {
+      const v = getAt(el.dataset.p!);
+      el.value = el.dataset.t === "text" ? v || "" : numStr(v);
+      el.closest(".kc-ip")?.classList.remove("kc-bad");
+    });
+  }
+
+  function measureSummary(id: MeasureId): string {
+    const mp = data.plan.measures[id];
+    const n = MEASURES[id].kpis.filter((k) => mp.kpis[k.key].target !== null).length + mp.others.filter((o) => o.target !== null).length;
+    const c = costOf(mp);
+    const exitIdx = mp.exitAfter === null ? null : mp.start + mp.exitAfter;
+    const parts = [`KPI ${n}`];
+    if (c !== null) parts.push(`費用 ${fmtNum(c, 1)}万円`);
+    if (exitIdx !== null && exitIdx <= 11) parts.push(`撤退判定 ${monthLabel(data.plan, exitIdx)}`);
+    return parts.join("・");
+  }
+
+  function renderFirstCards() {
+    const p = data.plan;
+    $("kc-mchips-on").innerHTML = MEASURE_IDS.map(
+      (id) => `<button type="button" class="kc-chip" data-toggle="${id}" aria-pressed="${p.measures[id].on}">${p.measures[id].on ? "✓ " : ""}${esc(MEASURES[id].short)}</button>`,
+    ).join("");
+    const n = periodMonths(p.period);
+    const { allowCpl } = limitsOf(p);
+    const cards = selectedMeasures(p).map((id) => {
+      const def = MEASURES[id];
+      const mp = p.measures[id];
+      const base = `plan.measures.${id}`;
+      const rows = def.kpis
+        .map((k) => {
+          const unit = k.kind === "rate" || k.kind === "ref" ? "%" : k.kind === "cpl" ? "万円" : "件";
+          const hint = k.lead ? "<small>＝この施策のリード数</small>" : k.kind === "ref" ? "<small>判定には使いません</small>" : k.kind === "cpl" ? "<small>空なら 費用÷リード目標</small>" : "";
+          const ph = k.kind === "cpl" ? (() => {
+            const c = costOf(mp);
+            const lt = mp.kpis[leadKpi(id).key].target;
+            return c !== null && lt ? fmtMan1(c / lt) : "";
+          })() : "";
+          return `<div class="kc-kr"><span>${esc(k.label)}${hint}</span>${numInput(`${base}.kpis.${k.key}.target`, unit, { ph, label: `${def.short} ${k.label}の目標` })}<label class="kc-yn"><input type="checkbox" data-p="${base}.kpis.${k.key}.measurable" data-t="bool"${mp.kpis[k.key].measurable ? " checked" : ""} />はい</label></div>`;
+        })
+        .join("");
+      const others = mp.others
+        .map(
+          (o, j) =>
+            `<div class="kc-kr kc-other"><span class="kc-oname"><span class="kc-ip"><input data-p="${base}.others.${j}.name" data-t="text" maxlength="30" value="${esc(o.name)}" placeholder="その他のKPIの名前" aria-label="その他のKPIの名前" /></span><button type="button" class="kc-del" data-del-other="${id}:${j}" aria-label="削除">×</button></span>${numInput(`${base}.others.${j}.target`, "件", { label: "その他のKPIの目標" })}<label class="kc-yn"><input type="checkbox" data-p="${base}.others.${j}.measurable" data-t="bool"${o.measurable ? " checked" : ""} />はい</label></div>`,
+        )
+        .join("");
+      const partsOn = hasParts(mp.parts);
+      const cap = cplCapOf(p, id);
+      const capPh = !mp.cplCapTouched && allowCpl !== null ? fmtMan1(Math.round(allowCpl * 10) / 10) : "";
+      const exitIdx = mp.exitAfter === null ? null : mp.start + mp.exitAfter;
+      const exitOpts = [`<option value=""${mp.exitAfter === null ? " selected" : ""}>決めない</option>`]
+        .concat(
+          Array.from({ length: 11 }, (_, k) => k + 1).map((k) => {
+            const idx = mp.start + k;
+            const lab = idx <= 11 ? monthLabel(p, idx) : "期間の外";
+            return `<option value="${k}"${mp.exitAfter === k ? " selected" : ""}>開始から${k}か月後（${lab}）</option>`;
+          }),
+        )
+        .join("");
+      // 月別の目標（件数のKPI）
+      let monthly = "";
+      if (n > 1) {
+        const targets = def.kpis
+          .filter((k) => (k.kind === "count" || k.kind === "level") && mp.kpis[k.key].target !== null)
+          .map((k) => ({ label: k.label, path: `${base}.kpis.${k.key}`, target: mp.kpis[k.key].target!, monthly: mp.kpis[k.key].monthly, kind: k.kind }))
+          .concat(mp.others.filter((o) => o.target !== null).map((o) => ({ label: o.name || "その他のKPI", path: `${base}.others.${mp.others.indexOf(o)}`, target: o.target!, monthly: o.monthly, kind: "count" as const })));
+        const blocks = targets
+          .map((t) => {
+            const entered = t.monthly.slice(0, n).some((v) => v !== null && v !== undefined);
+            const sum = t.monthly.slice(0, n).reduce((s: number, v) => s + (v || 0), 0);
+            const sumLine =
+              t.kind === "level"
+                ? ""
+                : entered
+                  ? `<span class="${Math.abs(sum - t.target) < 1e-6 ? "kc-sumok" : "kc-sumng"}">合計 ${fmtCount(sum)}／目標 ${fmtCount(t.target)}${Math.abs(sum - t.target) < 1e-6 ? " ✓" : "（合っていません）"}</span>`
+                  : `<span>未入力（各月 ${fmtCount(t.target / n)}）</span>`;
+            const cells = Array.from({ length: n }, (_, i) => {
+              const v = t.monthly[i];
+              const ph = entered ? "0" : fmtCount(t.kind === "level" ? t.target : t.target / n);
+              return `<label>${esc(monthLabel(p, i))}<input data-p="${t.path}.monthly.${i}" inputmode="decimal" value="${esc(numStr(v ?? null))}" placeholder="${esc(ph)}" /></label>`;
+            }).join("");
+            return `<p class="kc-mgl">${esc(t.label)}　<small>${sumLine}</small></p><div class="kc-mg">${cells}</div>`;
+          })
+          .join("");
+        monthly = `<details class="kc-sub" data-sub="${id}-monthly"${openCards.has(`${id}-monthly`) ? " open" : ""}><summary>月別の目標<small>任意。入れないと期間の月数で均等に割ります</small></summary>${blocks || '<p class="kc-note">件数のKPIの目標を入れると、ここで月ごとに分けられます</p>'}</details>`;
+      }
+      return `<details class="kc-card" data-card="${id}"${openCards.has(id) ? " open" : ""}>
+        <summary>${esc(def.name)}<small><span class="kc-sum">${esc(measureSummary(id))}　</span>開く・閉じる</small></summary>
+        <div class="kc-card-b">
+          <div class="kc-kh"><span>KPI（上から順に判定します）</span><span>目標（期間）</span><span>今取れている</span></div>
+          ${rows}${others}
+          <button type="button" class="kc-add" data-add-other="${id}">＋ その他のKPIを足す</button>
+          <div class="kc-f2 kc-mt8">
+            <div class="kc-field"><span class="kc-lb">費用（期間の合計）<small>任意</small></span>${numInput(`${base}.cost`, "万円", { ro: partsOn, label: `${def.short}の費用` })}</div>
+            <div class="kc-field"><span class="kc-lb">CPLの上限<small>撤退の線</small></span>${numInput(`${base}.cplCap`, "万円", { ph: capPh, label: `${def.short}のCPLの上限` })}</div>
+            <div class="kc-field"><span class="kc-lb">開始月</span><div class="kc-ip"><select data-p="${base}.start" data-t="int" aria-label="${esc(def.short)}の開始月">${monthOptions(mp.start)}</select></div></div>
+            <div class="kc-field"><span class="kc-lb">撤退を判定する月</span><div class="kc-ip"><select data-p="${base}.exitAfter" data-t="intnull" aria-label="${esc(def.short)}の撤退を判定する月">${exitOpts}</select></div></div>
+          </div>
+          <p class="kc-note">${cap !== null && !mp.cplCapTouched && allowCpl !== null ? `CPLの上限は、許容CPL（${fmtMan1(Math.round(allowCpl * 10) / 10)}万円）を初期値にしています。直せます。` : "CPLの上限は、粗利率と取り返す年数を入れると許容CPLが初期値に入ります。"}${exitIdx !== null && exitIdx <= 11 ? `撤退は${monthLabel(p, exitIdx)}から毎月判定します。` : ""}</p>
+          <details class="kc-sub" data-sub="${id}-parts"${openCards.has(`${id}-parts`) || partsOn ? " open" : ""}><summary>費用の内訳<small>任意。入れると合計は内訳の合計になります</small></summary>
+            <div class="kc-f3 kc-mt8">
+              <div class="kc-field"><span class="kc-lb">外部に払う費用</span>${numInput(`${base}.parts.ext`, "万円")}</div>
+              <div class="kc-field"><span class="kc-lb">人件費</span>${numInput(`${base}.parts.labor`, "万円", { ph: "0でも可" })}</div>
+              <div class="kc-field"><span class="kc-lb">ツール代</span>${numInput(`${base}.parts.tool`, "万円")}</div>
+            </div>
+          </details>
+          ${monthly}
+        </div>
+      </details>`;
+    });
+    // 共通（リードになった後）
+    const cm = p.commonMeasurable;
+    const common = `<details class="kc-card" data-card="common"${openCards.has("common") ? " open" : ""}>
+      <summary>共通（リードになった後）<small>全体で1組　開く・閉じる</small></summary>
+      <div class="kc-card-b">
+        <div class="kc-kh"><span>KPI</span><span>目標</span><span>今取れている</span></div>
+        <div class="kc-kr"><span>営業に渡せる割合<small>任意</small></span>${numInput("plan.handoffTarget", "%", { label: "営業に渡せる割合の目標" })}<label class="kc-yn"><input type="checkbox" data-p="plan.commonMeasurable.handoffRate" data-t="bool"${cm.handoffRate ? " checked" : ""} />はい</label></div>
+        <div class="kc-kr"><span>商談化率<small>STEP1の値</small></span><div class="kc-ip"><input readonly value="${esc(numStr(p.dealRate))}" aria-label="商談化率" /><span>%</span></div><label class="kc-yn"><input type="checkbox" data-p="plan.commonMeasurable.dealRate" data-t="bool"${cm.dealRate ? " checked" : ""} />はい</label></div>
+        <div class="kc-kr"><span>受注率<small>STEP1の値</small></span><div class="kc-ip"><input readonly value="${esc(numStr(p.winRate))}" aria-label="受注率" /><span>%</span></div><label class="kc-yn"><input type="checkbox" data-p="plan.commonMeasurable.winRate" data-t="bool"${cm.winRate ? " checked" : ""} />はい</label></div>
+      </div>
+    </details>`;
+    $("kc-cards").innerHTML = (cards.length ? cards.join("") : '<p class="kc-note kc-mb8">実施する施策を選んでください</p>') + common;
+  }
+
+  function renderMonthlyInputs() {
+    const p = data.plan;
+    const i = data.reportIndex;
+    $("kc-month-chips").innerHTML = Array.from({ length: 12 }, (_, k) => {
+      const cls = k === i ? "kc-chip cur" : isMonthEntered(data, k) ? "kc-chip done" : "kc-chip";
+      return `<button type="button" class="${cls}" data-month="${k}">${esc(monthLabel(p, k))}</button>`;
+    }).join("");
+    $("kc-month-sub").textContent = `${monthLabelLong(p, i)}の1か月分`;
+    $("kc-common-sub").textContent = `マーケ経由・${monthLabel(p, i)}`;
+    const sel = selectedMeasures(p);
+    if (!sel.length) {
+      $("kc-mcards").innerHTML = '<p class="kc-note">「初回」で実施する施策を選ぶと、ここに入力欄が出ます</p>';
+    } else {
+      $("kc-mcards").innerHTML = sel
+        .map((id) => {
+          const def = MEASURES[id];
+          const mp = p.measures[id];
+          const base = `months.${i}.m.${id}`;
+          if (i < mp.start)
+            return `<details class="kc-card" open><summary>${esc(def.name)}<small>開始前</small></summary><p class="kc-before">${esc(monthLabel(p, mp.start))}に開始する施策です</p></details>`;
+          const mm = data.months[i].m[id];
+          const fields = def.fields
+            .map((f) => `<div class="kc-field"><span class="kc-lb">${esc(f.label)}</span>${numInput(`${base}.f.${f.key}`, f.unit, { label: `${def.short} ${f.label}` })}</div>`)
+            .join("");
+          const others = mp.others
+            .map((o, j) => (o.target === null ? "" : `<div class="kc-field"><span class="kc-lb">${esc(o.name || "その他のKPI")}</span>${numInput(`${base}.others.${j}`, "件")}</div>`))
+            .join("");
+          const partsOn = hasParts(mm.parts);
+          const did = `<div class="kc-field kc-mt8"><span class="kc-lb">今月実施したこと<small>来月の結果画面に、数字の変化と並べて出します</small></span><div class="kc-ip"><textarea data-p="${base}.did" data-t="text" maxlength="300" rows="2" aria-label="${esc(def.short)}で今月実施したこと">${esc(mm.did)}</textarea></div></div>`;
+          const key = `m-${id}`;
+          return `<details class="kc-card" data-card="${key}"${openCards.has(key) || !openCards.has(`${key}-closed`) ? " open" : ""}>
+            <summary>${esc(def.name)}<small>開く・閉じる</small></summary>
+            <div class="kc-card-b">
+              <div class="kc-f2">${fields}${others}
+                <div class="kc-field"><span class="kc-lb">費用<small>任意</small></span>${numInput(`${base}.cost`, "万円", { ro: partsOn })}</div>
+              </div>
+              <details class="kc-sub" data-sub="${key}-parts"${openCards.has(`${key}-parts`) || partsOn ? " open" : ""}><summary>費用の内訳<small>任意</small></summary>
+                <div class="kc-f3 kc-mt8">
+                  <div class="kc-field"><span class="kc-lb">外部に払う費用</span>${numInput(`${base}.parts.ext`, "万円")}</div>
+                  <div class="kc-field"><span class="kc-lb">人件費</span>${numInput(`${base}.parts.labor`, "万円", { ph: "0でも可" })}</div>
+                  <div class="kc-field"><span class="kc-lb">ツール代</span>${numInput(`${base}.parts.tool`, "万円")}</div>
+                </div>
+              </details>
+              ${did}
+            </div>
+          </details>`;
+        })
+        .join("");
+    }
+    const c = `months.${i}.c`;
+    $("kc-common").innerHTML = [
+      ["deals", "商談数", "件"],
+      ["dealAmt", "商談金額", "万円"],
+      ["wins", "受注数", "件"],
+      ["winAmt", "受注金額", "万円"],
+      ["losses", "失注数", "件"],
+      ["lossAmt", "失注金額", "万円"],
+      ["handoff", "営業に渡した数<small>任意</small>", "件"],
+    ]
+      .map(([k, l, u]) => `<div class="kc-field"><span class="kc-lb">${l}</span>${numInput(`${c}.${k}`, u, { label: l.replace(/<[^>]+>/g, "") })}</div>`)
+      .join("");
+  }
+
+  // ---------- 結果（初回） ----------
+  const badge = (prefix: string, status: string, label: string) => `<span class="${prefix}-bd ${prefix}-b-${status}">${esc(label)}</span>`;
+
+  function firstItemsHtml(items: FirstItem[], prefix: "kc" | "kp") {
+    let html = "";
+    let g = "";
+    for (const it of items) {
+      if (it.group !== g) {
+        g = it.group;
+        html += `<p class="${prefix}-jg">${esc(FIRST_GROUPS[it.group])}</p>`;
+      }
+      const link = it.link ? (prefix === "kc" ? `。<a href="${it.link.href}">${esc(it.link.label)}</a>` : `。${esc(it.link.label)}（mktg.ax${esc(it.link.href)}）`) : "";
+      html += `<div class="${prefix}-jr"><span class="n">${it.no}</span><div><p class="t">${esc(it.title)}</p><p class="r">${esc(it.reason)}${link}</p></div>${badge(prefix, it.status, FIRST_LABEL[it.status])}</div>`;
+    }
+    return html;
+  }
+  function counts(items: FirstItem[]) {
+    return { ok: items.filter((x) => x.status === "ok").length, check: items.filter((x) => x.status === "check").length, fix: items.filter((x) => x.status === "fix").length };
+  }
+
+  function treeRows(prefix: "kc" | "kp") {
+    const p = data.plan;
+    const n = periodMonths(p.period);
+    const small = new Set(smallKpis(p).map((s) => s.replace(/（.*$/, "")));
+    const mark = (name: string) => (small.has(name) ? "○" : "");
+    const rows: string[] = [];
+    const r = (a: string, b: string, c: string, d: string, sub = false) => `<tr><td${sub ? ' class="sub"' : ""}>${a}</td><td>${b}</td><td>${c}</td><td>${d}</td></tr>`;
+    rows.push(r("<b>売上（マーケ経由）</b>", p.sales === null ? "—" : `${fmtNum(p.sales)}万円`, p.sales === null ? "—" : `${fmtNum(p.sales / n, 1)}万円`, ""));
+    rows.push(r("受注数／受注率", `${fmtCount(p.wins)}件／${p.winRate === null ? "—" : fmtNum(p.winRate, 1) + "%"}`, p.wins === null ? "—" : `${fmtCount(p.wins / n)}件`, mark("受注数")));
+    rows.push(r("商談数／商談化率", `${fmtCount(p.deals)}件／${p.dealRate === null ? "—" : fmtNum(p.dealRate, 1) + "%"}`, p.deals === null ? "—" : `${fmtCount(p.deals / n)}件`, mark("商談数")));
+    rows.push(r("リード数", `${fmtCount(p.leads)}件`, p.leads === null ? "—" : `${fmtCount(p.leads / n)}件`, ""));
+    for (const id of selectedMeasures(p)) {
+      const k = leadKpi(id);
+      const kp = p.measures[id].kpis[k.key];
+      const name = `${MEASURES[id].short}の${k.label}`;
+      let monthTxt = "—";
+      if (kp.target !== null) {
+        const entered = kp.monthly.slice(0, n).some((v) => v !== null && v !== undefined);
+        if (entered) {
+          const nz = kp.monthly.slice(0, n).map((v, i) => ({ v: v || 0, i })).filter((x) => x.v > 0);
+          monthTxt = nz.length <= 3 ? nz.map((x) => `${monthLabel(p, x.i)} ${fmtCount(x.v)}`).join("・") + "件" : "月別に入力";
+        } else monthTxt = `${fmtCount(kp.target / n)}件`;
+      }
+      rows.push(r(`${esc(MEASURES[id].short)}：${esc(k.label)}`, kp.target === null ? "—" : `${fmtCount(kp.target)}件`, esc(monthTxt), mark(name), true));
+    }
+    return `<table class="${prefix}-t"><tr><th>KPI</th><th>目標（${esc(periodLabel(p.period))}）</th><th>月の目標</th><th>3か月合計で判定</th></tr>${rows.join("")}</table>`;
+  }
+
+  function renderFirst() {
+    const p = data.plan;
+    const items = firstJudgments(p);
+    const c = counts(items);
+    const miss = missingTree(p);
+    const intro =
+      miss.length === 7 && !selectedMeasures(p).length
+        ? '<p class="kc-empty">左の欄にKPIツリーの目標と施策を入れると、ここに判定が出ます。<br />「記入例を入れる」で動きを試せます。</p>'
+        : "";
+    $("kc-first").innerHTML =
+      intro ||
+      `<div class="kc-sum3"><div class="kc-s-ok"><b>${c.ok}</b>問題なし</div><div class="kc-s-check"><b>${c.check}</b>確認が必要</div><div class="kc-s-fix"><b>${c.fix}</b>直す</div></div>` +
+        firstItemsHtml(items, "kc");
+    $("kc-tree-sub").textContent = `期間：${periodLabel(p.period)}（期首 ${p.startYear}年${p.startMonth}月）`;
+    $("kc-tree").innerHTML = `<div class="kc-tw">${treeRows("kc")}</div>`;
+  }
+
+  // ---------- 結果（毎月） ----------
+  let lastMonth: MonthReport | null = null;
+  function ratioClass(r: number | null) {
+    if (r === null) return "";
+    return r >= 1 - 1e-9 ? "c-ok" : r >= 0.9 - 1e-9 ? "c-near" : "c-ng";
+  }
+  function monthTableHtml(r: MonthReport, prefix: "kc" | "kp") {
+    const rows: string[] = [];
+    const pdf = prefix === "kp";
+    for (const m of r.measures) {
+      const exitIdx = m.id !== "common" ? data.plan.measures[m.id].start : 0;
+      rows.push(`<tr class="grp"><td colspan="${pdf ? 5 : 6}">${esc(m.name)}${!m.started ? `<small>${esc(monthLabel(data.plan, exitIdx))}から</small>` : ""}</td></tr>`);
+      if (!m.started) continue;
+      if (!m.rows.length) rows.push(`<tr><td colspan="${pdf ? 5 : 6}" class="sub">目標の入ったKPIがありません</td></tr>`);
+      for (const row of m.rows) {
+        const tag = row.actionShown ? `<span class="${prefix}-tag">打ち手</span>` : "";
+        const label = `${esc(row.label)}${row.window ? " ◇" : ""}${tag}${row.note && !pdf ? `<span class="nt">${esc(row.note)}</span>` : row.note && pdf && row.status === "pending" ? `（${esc(row.note)}）` : ""}`;
+        const tgt = row.status === "pending" && row.target === null ? "—" : formatValue(row.vkind, row.target);
+        rows.push(
+          `<tr${row.first ? ' class="first"' : ""}><td>${label}</td><td class="plan">${tgt}</td><td class="act">${formatValue(row.vkind, row.actual)}</td><td class="${ratioClass(row.ratio)}">${row.ratio === null ? "—" : fmtPct0(row.ratio)}</td>${pdf ? "" : `<td>${changeCell(row.vkind, row.prev, row.cur)}</td>`}<td>${badge(prefix, row.status, MONTH_LABEL[row.status])}</td></tr>`,
+        );
+      }
+    }
+    return `<table class="${prefix}-t"><tr><th>KPI</th><th>目標</th><th>実績</th><th>達成率</th>${pdf ? "" : "<th>前月比</th>"}<th style="text-align:center">判定</th></tr>${rows.join("")}</table>`;
+  }
+  const srcText = (keys: string[], link: boolean) =>
+    keys.map((k) => (link ? `<a href="${SOURCES[k].url}" target="_blank" rel="noopener">出典${k}：${esc(SOURCES[k].name)}</a>` : `出典${k} ${esc(SOURCES[k].name)}`)).join("／");
+
+  function actionsHtml(r: MonthReport) {
+    const blocks: string[] = [];
+    for (const m of r.measures) {
+      if (!m.started) continue;
+      const parts: string[] = [];
+      for (const pk of m.picks) {
+        const val = `${formatValue(pk.vkind, pk.actual)}${pk.vkind === "cpl" ? "万円" : ""}／目標${formatValue(pk.vkind, pk.target)}${pk.vkind === "cpl" ? "万円" : ""}`;
+        if (!pk.items) {
+          parts.push(`<p class="kc-act-h">${esc(m.name)}｜${esc(pk.label)}<small>${esc(val)}</small></p><p class="kc-none">打ち手なし（判定のみ）。裏づけのある打ち手が見つかりしだい足します</p>`);
+          continue;
+        }
+        parts.push(
+          `<p class="kc-act-h">${esc(m.name)}｜${esc(pk.label)}<small>${esc(val)}</small></p>` +
+            pk.items.map((it) => `<p class="kc-act-box">${esc(it.text)}</p><p class="kc-basis">裏づけ：${esc(it.basis)}（${srcText(it.src, true)}）</p>`).join(""),
+        );
+      }
+      if (m.effect) {
+        parts.push(
+          `<div class="kc-fx"><div><b>${esc(m.effect.prevLabel)}に実施したこと</b>${m.effect.did ? esc(m.effect.did) : "記入なし"}</div><div><b>数字の変化（前月比）</b>${m.effect.changes.length ? m.effect.changes.map(esc).join("<br />") : "前月の数字がありません"}</div></div>`,
+        );
+      }
+      if (parts.length) blocks.push(`<div class="kc-act">${m.picks.length ? "" : `<p class="kc-act-h">${esc(m.name)}<small>届かないKPIはありません</small></p>`}${parts.join("")}</div>`);
+    }
+    return blocks.length ? blocks.join("") : '<p class="kc-none">「届かない」のKPIはありません。今の打ち手を続けます。</p>';
+  }
+
+  function exitHtml(r: MonthReport, prefix: "kc" | "kp") {
+    const strong = r.exits.filter((e) => e.status === "exit");
+    const rest = r.exits.filter((e) => e.status !== "exit");
+    const box = strong.map((e) => `<div class="${prefix}-exit"><b>${esc(e.name)}：撤退を検討</b>（${esc(e.fromLabel)}から判定）<br />${esc(e.reason)}</div>`).join("");
+    const lines = rest
+      .map((e) => (e.status === "keep" ? `${esc(e.name)}：続ける（${esc(e.reason.replace(/^.*?累計　/, ""))}）` : `${esc(e.name)}：${esc(e.reason)}`))
+      .join("<br />");
+    if (!box && !lines) return `<p class="${prefix === "kc" ? "kc-none" : "kp-exit-s"}">撤退を判定する施策はありません（費用と撤退を判定する月を入れた施策が対象です）</p>`;
+    return box + (lines ? `<p class="${prefix}-exit-s">${lines}</p>` : "");
+  }
+
+  function copyHtml(r: MonthReport) {
+    const c = r.copy;
+    const cell = (l: string, v: string) => `<div><small>${l}</small>${v}</div>`;
+    const cnt = (v: number | null) => (v === null ? "—" : `<b>${fmtNum(v)}</b> 件`);
+    const man = (v: number | null) => (v === null ? "—" : `<b>${fmtNum(v, 1)}</b> 万円`);
+    const cost = c.hasParts
+      ? cell("外部に払う費用", man(c.ext)) + cell("人件費", man(c.labor))
+      : cell("費用（合計）", man(c.costTotal) + '<br /><span class="kc-note">内訳を入れると分けて出します</span>');
+    return `<div class="kc-copy">${cell("リード数", cnt(c.leads))}${cell("商談数", cnt(c.deals))}${cell("商談金額", man(c.dealAmt))}${cell("受注数", cnt(c.wins))}${cell("受注金額", man(c.winAmt))}${cell("失注数", cnt(c.losses))}${cell("失注金額", man(c.lossAmt))}${cost}</div>`;
+  }
+
+  function renderMonthly() {
+    const p = data.plan;
+    const i = data.reportIndex;
+    $("kc-m-title").textContent = `${monthLabelLong(p, i)}の判定`;
+    if (!selectedMeasures(p).length) {
+      lastMonth = null;
+      const msg = '<p class="kc-empty">「初回」でKPIツリーと施策を入れると、毎月の判定ができます。</p>';
+      $("kc-m-table").innerHTML = msg;
+      ["kc-m-actions", "kc-m-exit", "kc-m-copy"].forEach((x) => ($(x).innerHTML = ""));
+      $("kc-prompt").textContent = "";
+      return;
+    }
+    const r = computeMonth(data, i);
+    lastMonth = r;
+    $("kc-m-table").innerHTML =
+      `<div class="kc-tw">${monthTableHtml(r, "kc")}</div><p class="kc-legend">達成＝100%以上、やや届かない＝90%以上、届かない＝90%未満（CPLは目標÷実績）。うすい赤＝施策の中で上から最初に「届かない」になったKPI。「打ち手」＝打ち手を出したKPI</p>`;
+    $("kc-m-actions").innerHTML = actionsHtml(r);
+    $("kc-m-exit").innerHTML = exitHtml(r, "kc");
+    $("kc-m-copy").innerHTML = copyHtml(r);
+    $("kc-prompt").textContent = r.prompt;
+  }
+
+  // ---------- PDF のページ ----------
+  function pageWrap(inner: string, title: string, sub: string, pageNo: string, extraClass = "") {
+    return `<div class="kp ${extraClass}"><div class="kp-h"><h2>${esc(title)}</h2><p>${sub}</p></div><div class="kp-fit">${inner}</div><div class="kp-f"><span>${esc(FOOT)}　※このPDFを次回読み込むと、目標と実績が入ります</span><span>${pageNo}</span></div></div>`;
+  }
+  function firstPages(): string[] {
+    const p = data.plan;
+    const items = firstJudgments(p);
+    const c = counts(items);
+    const today = new Date();
+    const sub = `期間：${esc(periodLabel(p.period))}（期首 ${p.startYear}年${p.startMonth}月）<br />作成日：${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+    const fixes = items.filter((x) => x.status === "fix");
+    const checks = items.filter((x) => x.status === "check");
+    const right =
+      `<div class="kp-bx" style="border-color:#b91c1c"><p class="kp-bxh" style="color:#991b1b">直すところ<small>${fixes.length}件</small></p>${fixes.length ? fixes.map((f) => `<div class="kp-fix"><b>${f.no}. ${esc(f.title)}</b><br />${esc(f.fix || f.reason)}</div>`).join("") : '<p class="kp-note">ありません</p>'}</div>` +
+      `<div class="kp-bx" style="margin-top:12px"><p class="kp-bxh">確認するところ<small>${checks.length}件</small></p>${checks.length ? checks.map((f) => `<p style="font-size:10.5px;line-height:1.6;margin-top:3px"><b>${f.no}. ${esc(f.title)}</b>　${esc(f.reason)}${f.link ? `（${esc(f.link.label)}：mktg.ax${esc(f.link.href)}）` : ""}</p>`).join("") : '<p class="kp-note">ありません</p>'}</div>` +
+      `<div class="kp-bx" style="margin-top:12px"><p class="kp-bxh">判定の基準</p><p style="font-size:9.5px;line-height:1.7;color:#525252">逆算：入力と検算の差が±5%以内なら問題なし<br />率：基本モデル（成長期）商談化率15%・受注率29%の半分未満または2倍超で確認<br />件数が少ないKPI：月の目標10件未満は直近3か月の合計で判定<br />許容CPL＝CACの上限×商談化率×受注率　CACの上限＝平均単価×粗利率×取り返す年数</p></div>`;
+    const page1 = pageWrap(
+      `<div class="kp-c2"><div><div class="kp-sum"><div class="kp-s-ok"><b>${c.ok}</b>問題なし</div><div class="kp-s-check"><b>${c.check}</b>確認が必要</div><div class="kp-s-fix"><b>${c.fix}</b>直す</div></div>${firstItemsHtml(items, "kp")}</div><div>${right}</div></div>`,
+      "KPIツリーの妥当性の判定",
+      sub,
+      "1 / 3",
+    );
+
+    // 2ページ目：ツリーと施策ごとの目標
+    const n = periodMonths(p.period);
+    const node = (label: string, v: string, dark = false) => `<div class="kp-node${dark ? " dark" : ""}"><small>${label}</small><b>${v}</b></div>`;
+    const arr = (t: string) => `<div class="kp-arr">${t}<b>→</b></div>`;
+    const sel = selectedMeasures(p);
+    const leadList = sel.map((id) => `${esc(MEASURES[id].short)} ${fmtCount(p.measures[id].kpis[leadKpi(id).key].target)}件`).join("<br />");
+    const tree = `<div class="kp-tree">${node("売上（マーケ経由）", fmtNum(p.sales), true)}${arr(`÷平均単価 ${fmtNum(p.price)}`)}${node("受注数", `${fmtCount(p.wins)}件`)}${arr(`÷受注率 ${fmtNum(p.winRate, 1)}%`)}${node("商談数", `${fmtCount(p.deals)}件`)}${arr(`÷商談化率 ${fmtNum(p.dealRate, 1)}%`)}${node("リード数", `${fmtCount(p.leads)}件`)}<div class="kp-arr" style="width:36px">＝</div><div style="font-size:10.5px;line-height:1.6">${leadList}</div></div>`;
+    const smallSet = new Set(smallKpis(p).map((s) => s.replace(/（.*$/, "")));
+    const card = (id: MeasureId) => {
+      const def = MEASURES[id];
+      const mp = p.measures[id];
+      const cost = costOf(mp);
+      const cap = cplCapOf(p, id);
+      const exitIdx = mp.exitAfter === null ? null : mp.start + mp.exitAfter;
+      const meta = [cost !== null ? `費用${fmtNum(cost, 1)}` : "", cap !== null ? `CPL上限${fmtMan1(cap)}` : "", exitIdx !== null && exitIdx <= 11 && cost !== null ? `撤退判定${monthLabel(p, exitIdx)}` : ""]
+        .filter(Boolean)
+        .join("・");
+      const rows = def.kpis
+        .filter((k) => mp.kpis[k.key].target !== null)
+        .map((k) => {
+          const kp = mp.kpis[k.key];
+          const unit = k.kind === "rate" || k.kind === "ref" ? "%" : "";
+          let m = "—";
+          if (k.kind === "count" || k.kind === "level") {
+            const entered = kp.monthly.slice(0, n).some((v) => v !== null && v !== undefined);
+            if (entered) {
+              const nz = kp.monthly.slice(0, n).map((v, i) => ({ v: v || 0, i })).filter((x) => x.v > 0);
+              m = nz.length <= 2 ? nz.map((x) => `${monthLabel(p, x.i)} ${fmtCount(x.v)}`).join("・") : "月別";
+            } else m = fmtCount(monthlyTargetOf(k.kind, kp.target, kp.monthly, p, 0));
+          }
+          const sm = smallSet.has(`${def.short}の${k.label}`) ? " ◇" : "";
+          const ms = kp.measurable ? "" : " ※";
+          return `<tr><td>${esc(k.label)}${ms}</td><td>${k.kind === "cpl" ? fmtMan1(kp.target) : fmtNum(kp.target, unit ? 1 : 0)}${unit}</td><td>${esc(m)}${sm}</td></tr>`;
+        })
+        .concat(
+          mp.others
+            .filter((o) => o.target !== null)
+            .map((o) => `<tr><td>その他：${esc(o.name || "その他のKPI")}${o.measurable ? "" : " ※"}</td><td>${fmtNum(o.target)}</td><td>${fmtCount(monthlyTargetOf("count", o.target, o.monthly, p, 0))}</td></tr>`),
+        )
+        .join("");
+      const t = targetCplOf(p, id);
+      return `<div class="kp-bx"><p class="kp-bxh">${esc(def.short)}<small>${esc(meta)}</small></p><table class="kp-t"><tr><th>KPI</th><th>目標</th><th>月</th></tr>${rows}</table>${t !== null ? `<p class="kp-note">目標のCPL ${fmtMan1(t)}万円</p>` : ""}</div>`;
+    };
+    const cm = p.commonMeasurable;
+    const common = `<div class="kp-bx"><p class="kp-bxh">共通（リードになった後）</p><table class="kp-t"><tr><th>KPI</th><th>目標</th><th>月</th></tr>
+      <tr><td>営業に渡せる割合${cm.handoffRate ? "" : " ※"}</td><td>${p.handoffTarget === null ? "—" : fmtNum(p.handoffTarget, 1) + "%"}</td><td>—</td></tr>
+      <tr><td>商談化率／商談数${cm.dealRate ? "" : " ※"}</td><td>${fmtNum(p.dealRate, 1)}%／${fmtCount(p.deals)}件</td><td>${p.deals === null ? "—" : fmtCount(p.deals / n)}${smallSet.has("商談数") ? " ◇" : ""}</td></tr>
+      <tr><td>受注率／受注数${cm.winRate ? "" : " ※"}</td><td>${fmtNum(p.winRate, 1)}%／${fmtCount(p.wins)}件</td><td>${p.wins === null ? "—" : fmtCount(p.wins / n)}${smallSet.has("受注数") ? " ◇" : ""}</td></tr></table></div>`;
+    const cards = sel.map(card).concat(common);
+    const page2 = pageWrap(
+      `${tree}<div class="kp-c3">${cards.join("")}</div><p class="kp-note" style="margin-top:8px">◇＝月の目標が10件未満（直近3か月の合計で判定）　※＝今は取れていない数字　金額は万円</p>`,
+      "KPIツリーと施策ごとの目標",
+      `期間：${esc(periodLabel(p.period))}（期首 ${p.startYear}年${p.startMonth}月）<br />単位：万円`,
+      "2 / 3",
+      sel.length > 5 ? "dense" : "",
+    );
+
+    // 3ページ目：経営との合意
+    const { cacLimit: lim, allowCpl } = limitsOf(p);
+    const totalCost = sel.reduce((s, id) => s + (costOf(p.measures[id]) || 0), 0);
+    const leadsTxt = sel
+      .map((id) => {
+        const k = leadKpi(id);
+        const t = targetCplOf(p, id);
+        return `${esc(MEASURES[id].short)}＝${esc(k.label)}${fmtCount(p.measures[id].kpis[k.key].target)}件${t !== null ? `・CPL${fmtMan1(t)}万円` : ""}`;
+      })
+      .join("、");
+    const exitTxt = sel
+      .map((id) => {
+        const mp = p.measures[id];
+        const cap = cplCapOf(p, id);
+        const idx = mp.exitAfter === null ? null : mp.start + mp.exitAfter;
+        if (costOf(mp) === null) return `${esc(MEASURES[id].short)}：費用なし（撤退の判断なし）`;
+        if (idx === null || idx > 11) return `${esc(MEASURES[id].short)}：判定する月なし`;
+        return `${esc(MEASURES[id].short)}：${monthLabel(p, idx)}から（CPL上限${cap === null ? "未入力" : fmtMan1(cap) + "万円"}）`;
+      })
+      .join("　");
+    const costTxt =
+      totalCost > 0
+        ? `合計${fmtNum(totalCost, 1)}万円${lim !== null ? `　CACの上限${fmtNum(lim)}万円（粗利率${fmtNum(p.margin, 1)}%・${fmtNum(p.years, 1)}年で取り返す）` : ""}${allowCpl !== null ? `　許容CPL${fmtMan1(allowCpl)}万円` : ""}`
+        : "費用は入っていません";
+    const partsRows = sel.filter((id) => hasParts(p.measures[id].parts));
+    const partsTxt = partsRows.length
+      ? "<br />" +
+        partsRows
+          .map((id) => {
+            const pp = p.measures[id].parts;
+            return `${esc(MEASURES[id].short)}：外部${fmtNum(pp.ext || 0, 1)}・人件費${fmtNum(pp.labor || 0, 1)}・ツール${fmtNum(pp.tool || 0, 1)}`;
+          })
+          .join("　")
+      : "";
+    const page3 = pageWrap(
+      `<div class="kp-agree">
+        <div>判断する人</div><div>${esc(p.decider) || "（未記入）"}</div>
+        <div>振り返りの日</div><div>${esc(p.review) || "（未記入）"}（管理日：${esc(manageDayLabel(p.manageDay))}に数字を入れる）</div>
+        <div>見る指標</div><div><b>売上（マーケ経由）${fmtNum(p.sales)}万円</b>　受注${fmtCount(p.wins)}件・商談${fmtCount(p.deals)}件・リード${fmtCount(p.leads)}件<br />施策ごと：${leadsTxt || "—"}</div>
+        <div>判定の線</div><div>実績÷目標が100%以上＝達成、90%以上＝やや届かない、90%未満＝届かない（CPLは目標÷実績）<br />月の目標が10件未満のKPIは直近3か月の合計で判定する。受注率は決着した商談が10件たまってから判定する</div>
+        <div>撤退の基準</div><div>判定する月以降、開始月からの累計で、施策のCPLが上限を超え、かつリード数が目標の90%未満なら撤退を検討する<br />${exitTxt || "—"}</div>
+        <div>費用の目安</div><div>${costTxt}${partsTxt}</div>
+      </div><div class="kp-sign"><div>判断する人</div><div>マーケ責任者</div></div>`,
+      "KPIの運用についての合意",
+      sub,
+      "3 / 3",
+    );
+    return [page1, page2, page3];
+  }
+
+  function monthPage(r: MonthReport): string {
+    const p = data.plan;
+    const nRows = r.measures.reduce((s, m) => s + 1 + (m.started ? m.rows.length : 0), 0);
+    const density = nRows > 34 ? "xdense" : nRows > 26 ? "dense" : "";
+    const acts: string[] = [];
+    for (const m of r.measures) {
+      if (!m.started) continue;
+      for (const pk of m.picks) {
+        if (!pk.items) {
+          acts.push(`<div class="kp-ab"><p class="k">${esc(m.name)}｜${esc(pk.label)}</p><p class="x">打ち手なし（判定のみ）</p></div>`);
+          continue;
+        }
+        const eff =
+          m.effect && (m.effect.did || m.effect.changes.length)
+            ? `<p class="e">${esc(m.effect.prevLabel)}に実施：${esc(m.effect.did || "記入なし")}${m.effect.changes.length ? ` → ${m.effect.changes.map(esc).join("、")}` : ""}</p>`
+            : "";
+        const srcs = Array.from(new Set(pk.items.flatMap((x) => x.src)));
+        acts.push(`<div class="kp-ab"><p class="k">${esc(m.name)}｜${esc(pk.label)}</p><p class="a">${pk.items.map((x) => esc(x.text)).join("／")}</p><p class="s">${srcText(srcs, false)}</p>${eff}</div>`);
+      }
+    }
+    const inner = `<div class="kp-c2m">
+      <div><p class="kp-bxh">1. KPIごとの達成・未達<small>◇＝直近3か月の合計</small></p>${monthTableHtml(r, "kp")}<p class="kp-note">達成＝100%以上　やや届かない＝90%以上　届かない＝90%未満（CPLは目標÷実績）。うすい赤＝施策の中で上から最初に「届かない」になったKPI</p></div>
+      <div><p class="kp-bxh">2. 次の打ち手と、前月に実施したことの効果</p>${acts.join("") || '<p class="kp-note">「届かない」のKPIはありません</p>'}
+        <p class="kp-bxh" style="margin-top:10px">3. 撤退の判断</p>${exitHtml(r, "kp")}</div>
+    </div>`;
+    const sub = `運用：${esc(rangeLabel(p))}（${r.index + 1}か月目）<br />判断する人：${esc(p.decider || "—")}　振り返りの日：${esc(p.review || "—")}`;
+    return pageWrap(inner, `KPIの運用｜${r.label}`, sub, "1 / 1", density);
+  }
+
+  // ---------- 描画 ----------
+  function renderMode() {
+    const first = data.mode === "first";
+    $("kc-tab-first").setAttribute("aria-selected", String(first));
+    $("kc-tab-monthly").setAttribute("aria-selected", String(!first));
+    $("kc-in-first").hidden = !first;
+    $("kc-in-monthly").hidden = first;
+    $("kc-out-first").hidden = !first;
+    $("kc-out-monthly").hidden = first;
+  }
+  function canDownload(): boolean {
+    if (data.mode === "first") return missingTree(data.plan).length === 0 && selectedMeasures(data.plan).length > 0;
+    return selectedMeasures(data.plan).length > 0 && isMonthEntered(data, data.reportIndex);
+  }
+  function renderDownload() {
+    const ok = canDownload();
+    const first = data.mode === "first";
+    ($("reg-submit") as HTMLButtonElement).disabled = !ok;
+    ($("kc-download") as HTMLButtonElement).disabled = !ok;
+    $("kc-dl-step").textContent = "STEP4";
+    $("reg-day").textContent = manageDayLabel(data.plan.manageDay);
+    $("kc-dl-what").textContent = first
+      ? ok
+        ? "初回のPDF（A4横・3ページ：妥当性の判定／KPIツリーと施策の目標／経営との合意用の1枚）をダウンロードします。"
+        : "STEP1の目標をすべて入れ、施策を1つ以上選ぶとダウンロードできます。"
+      : ok
+        ? `${monthLabelLong(data.plan, data.reportIndex)}のPDF（A4横・1ページ）をダウンロードします。翌月はこのPDFを読み込んでください。`
+        : "この月の実績を入れるとダウンロードできます。";
+    const email = getRegistered();
+    $("kc-reg-form").hidden = !!email;
+    $("kc-registered").hidden = !email;
+    $("kc-reg-email").textContent = email || "";
+  }
+
+  function renderAll() {
+    renderMode();
+    fillStatic();
+    renderFirstCards();
+    renderMonthlyInputs();
+    update();
+  }
+  function update() {
+    if (data.mode === "first") renderFirst();
+    else renderMonthly();
+    renderDownload();
+    saveDraft();
+  }
+
+  // ---------- 入力の受け取り ----------
+  const root = document.querySelector(".kc") as HTMLElement;
+  let reRenderTimer: number | undefined;
+  root.addEventListener("input", (e) => {
+    const el = e.target as HTMLInputElement;
+    const path = el.dataset?.p;
+    if (!path || el.dataset.skip) return;
+    const t = el.dataset.t;
+    if (t === "text") setAt(path, el.value);
+    else if (t === "bool") setAt(path, el.checked);
+    else if (t === "sel" || t === "day" || t === "start" || t === "int" || t === "intnull") return; // change で受ける
+    else {
+      const { v, bad } = parseNum(el.value);
+      el.closest(".kc-ip")?.classList.toggle("kc-bad", bad);
+      if (bad) return;
+      setAt(path, v);
+      if (/\.cplCap$/.test(path)) setAt(path.replace(/cplCap$/, "cplCapTouched"), v !== null);
+    }
+    update();
+    // 目標や費用が変わると、カードの見出し・月別の目標の合計・初期値の表示が変わるので、入力が止まってから描き直す
+    if (data.mode === "first" && /^plan\./.test(path)) {
+      window.clearTimeout(reRenderTimer);
+      reRenderTimer = window.setTimeout(() => {
+        const active = document.activeElement as HTMLInputElement | null;
+        const ap = active?.dataset?.p;
+        const pos = active && "selectionStart" in active ? active.selectionStart : null;
+        renderFirstCards();
+        if (ap) {
+          const again = document.querySelector<HTMLInputElement>(`[data-p="${ap}"]`);
+          if (again) {
+            again.focus();
+            try {
+              if (pos !== null) again.setSelectionRange(pos, pos);
+            } catch {
+              /* noop */
+            }
+          }
+        }
+      }, 700);
+    }
+  });
+  root.addEventListener("change", (e) => {
+    const el = e.target as HTMLInputElement | HTMLSelectElement;
+    const path = (el as HTMLElement).dataset?.p;
+    const t = (el as HTMLElement).dataset?.t;
+    if ((el as HTMLElement).dataset?.t === "start") {
+      const [y, m] = el.value.split("-").map(Number);
+      data.plan.startYear = y;
+      data.plan.startMonth = m;
+      renderAll();
+      return;
+    }
+    if (!path) return;
+    if (t === "bool") {
+      setAt(path, (el as HTMLInputElement).checked);
+      update();
+      return;
+    }
+    if (t === "sel") setAt(path, el.value);
+    else if (t === "day") setAt(path, el.value === "" ? null : Number(el.value));
+    else if (t === "int") setAt(path, Number(el.value));
+    else if (t === "intnull") setAt(path, el.value === "" ? null : Number(el.value));
+    else return;
+    renderFirstCards();
+    renderMonthlyInputs();
+    update();
+  });
+  root.addEventListener("toggle", (e) => {
+    const d = e.target as HTMLDetailsElement;
+    const key = d.dataset?.card || d.dataset?.sub;
+    if (!key) return;
+    if (d.open) {
+      openCards.add(key);
+      openCards.delete(`${key}-closed`);
+    } else {
+      openCards.delete(key);
+      openCards.add(`${key}-closed`);
+    }
+  }, true);
+  root.addEventListener("click", (e) => {
+    const el = (e.target as HTMLElement).closest("button") as HTMLButtonElement | null;
+    if (!el) return;
+    if (el.dataset.mode) {
+      data.mode = el.dataset.mode as KcData["mode"];
+      if (data.mode === "monthly") renderMonthlyInputs();
+      renderMode();
+      update();
+      return;
+    }
+    if (el.dataset.toggle) {
+      const id = el.dataset.toggle as MeasureId;
+      data.plan.measures[id].on = !data.plan.measures[id].on;
+      if (data.plan.measures[id].on) openCards.add(id);
+      renderFirstCards();
+      renderMonthlyInputs();
+      update();
+      return;
+    }
+    if (el.dataset.addOther) {
+      const id = el.dataset.addOther as MeasureId;
+      const list = data.plan.measures[id].others;
+      if (list.length >= 5) return;
+      list.push({ name: "", target: null, monthly: [], measurable: true });
+      renderFirstCards();
+      update();
+      return;
+    }
+    if (el.dataset.delOther) {
+      const [id, j] = el.dataset.delOther.split(":");
+      data.plan.measures[id as MeasureId].others.splice(Number(j), 1);
+      data.months.forEach((m) => m.m[id as MeasureId].others.splice(Number(j), 1));
+      renderFirstCards();
+      renderMonthlyInputs();
+      update();
+      return;
+    }
+    if (el.dataset.month) {
+      data.reportIndex = Number(el.dataset.month);
+      renderMonthlyInputs();
+      update();
+      return;
+    }
+  });
+
+  // ---------- 記入例・すべて消す ----------
+  $("kc-example").addEventListener("click", () => {
+    const mode = data.mode;
+    data = exampleData();
+    data.mode = mode;
+    openCards.clear();
+    renderAll();
+    showMsg($("kc-load-msg"), "記入例を入れました（架空の会社。4月〜11月の実績つき）。", true);
+  });
+  const clearBtn = $<HTMLButtonElement>("kc-clear");
+  let clearTimer: number | undefined;
+  clearBtn.addEventListener("click", () => {
+    if (clearBtn.dataset.armed !== "1") {
+      clearBtn.dataset.armed = "1";
+      clearBtn.textContent = "もう一度押すと消えます";
+      clearTimer = window.setTimeout(() => {
+        clearBtn.dataset.armed = "";
+        clearBtn.textContent = "入力をすべて消す";
+      }, 4000);
+      return;
+    }
+    window.clearTimeout(clearTimer);
+    clearBtn.dataset.armed = "";
+    clearBtn.textContent = "入力をすべて消す";
+    data = emptyData();
+    openCards.clear();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+    renderAll();
+    showMsg($("kc-load-msg"), "入力をすべて消しました。", true);
+  });
+
+  // ---------- プロンプトのコピー ----------
+  $("kc-copy-prompt").addEventListener("click", async () => {
+    const text = $("kc-prompt").textContent || "";
+    const btn = $<HTMLButtonElement>("kc-copy-prompt");
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch {
+        /* noop */
+      }
+      ta.remove();
+    }
+    btn.textContent = "コピーしました";
+    window.setTimeout(() => (btn.textContent = "コピー"), 2000);
+  });
+
+  // ---------- ライブラリ ----------
+  const loaded: Record<string, Promise<void>> = {};
+  function loadScript(src: string) {
+    if (!loaded[src]) {
+      loaded[src] = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => {
+          delete loaded[src];
+          reject(new Error("PDFの部品を読み込めませんでした。通信を確かめて、もう一度お試しください。"));
+        };
+        document.head.appendChild(s);
+      });
+    }
+    return loaded[src];
+  }
+
+  // ---------- PDFを作る ----------
+  /** 本文が下の帯（フッター）にかかるときは、本文だけ縮めてA4の1ページに収める */
+  function fitPage(pageEl: HTMLElement) {
+    const fit = pageEl.querySelector<HTMLElement>(".kp-fit");
+    if (!fit) return;
+    const avail = 794 - fit.offsetTop - 34;
+    const h = fit.scrollHeight;
+    if (h <= avail) return;
+    const s = Math.max(0.6, avail / h);
+    const w = fit.clientWidth;
+    fit.style.width = `${w / s}px`;
+    fit.style.transform = `scale(${s})`;
+    fit.style.transformOrigin = "top left";
+  }
+
+  async function renderPages(pages: string[]): Promise<ArrayBuffer[]> {
+    const w = window as any;
+    const h2c = w.html2canvas?.default || w.html2canvas;
+    const out: ArrayBuffer[] = [];
+    if ((document as any).fonts?.ready) await (document as any).fonts.ready;
+    for (const html of pages) {
+      const holder = document.createElement("div");
+      holder.style.cssText = "position:fixed;left:-20000px;top:0;width:1123px;height:794px;z-index:-1;";
+      holder.innerHTML = html;
+      document.body.appendChild(holder);
+      fitPage(holder.firstElementChild as HTMLElement);
+      try {
+        const canvas: HTMLCanvasElement = await h2c(holder.firstElementChild, { scale: 2, backgroundColor: "#ffffff", width: 1123, height: 794, logging: false });
+        out.push(
+          await new Promise<ArrayBuffer>((resolve, reject) =>
+            canvas.toBlob((b) => (b ? b.arrayBuffer().then(resolve, reject) : reject(new Error("画像を作れませんでした"))), "image/png"),
+          ),
+        );
+      } finally {
+        holder.remove();
+      }
+    }
+    return out;
+  }
+
+  async function makePdf(): Promise<void> {
+    if (!canDownload()) throw new Error("入力が足りません。");
+    await Promise.all([loadScript(LIB_PDF), loadScript(LIB_CANVAS)]);
+    const PDFLib = (window as any).PDFLib;
+    const first = data.mode === "first";
+    let pages: string[];
+    let title: string;
+    let fileName: string;
+    if (first) {
+      pages = firstPages();
+      title = `KPIツリーの妥当性の判定（期首 ${data.plan.startYear}年${data.plan.startMonth}月）`;
+      fileName = `kpi-check-plan-${data.plan.startYear}-${String(data.plan.startMonth).padStart(2, "0")}.pdf`;
+    } else {
+      const r = computeMonth(data, data.reportIndex);
+      pages = [monthPage(r)];
+      const { year, month } = monthOf(data.plan, data.reportIndex);
+      title = `KPIの運用 ${r.label}`;
+      fileName = `kpi-check-${year}-${String(month).padStart(2, "0")}.pdf`;
+    }
+    const images = await renderPages(pages);
+    const pdf = await PDFLib.PDFDocument.create();
+    for (const png of images) {
+      const page = pdf.addPage([841.89, 595.28]); // A4横（pt）
+      const img = await pdf.embedPng(png);
+      page.drawImage(img, { x: 0, y: 0, width: 841.89, height: 595.28 });
+    }
+    pdf.setTitle(title);
+    pdf.setCreator("MKTG.AX KPI運用チェッカー（mktg.ax/tools/kpi-check）");
+    pdf.setProducer("MKTG.AX");
+    pdf.setLanguage("ja-JP");
+    const payload = { ...data, v: data.v, email: getRegistered() || undefined };
+    await pdf.attach(new TextEncoder().encode(JSON.stringify(payload)), ATTACH_NAME, {
+      mimeType: "application/json",
+      description: "KPI運用チェッカーの入力データ（次回このPDFを読み込むと、目標と前月までの実績が入ります）",
+      creationDate: new Date(),
+      modificationDate: new Date(),
+    });
+    const bytes: Uint8Array = await pdf.save({ useObjectStreams: false });
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  // ---------- PDFを読む ----------
+  async function readPdfData(file: File): Promise<any> {
+    await loadScript(LIB_PDF);
+    const { PDFDocument, PDFName, PDFDict, PDFArray, PDFStream, decodePDFRawStream } = (window as any).PDFLib;
+    const doc = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true, updateMetadata: false });
+    const names = doc.catalog.lookupMaybe(PDFName.of("Names"), PDFDict);
+    const ef = names?.lookupMaybe(PDFName.of("EmbeddedFiles"), PDFDict);
+    if (!ef) return null;
+    const pairs: [string, any][] = [];
+    const walk = (node: any) => {
+      const arr = node.lookupMaybe(PDFName.of("Names"), PDFArray);
+      if (arr) for (let i = 0; i + 1 < arr.size(); i += 2) pairs.push([arr.lookup(i).decodeText?.() ?? "", arr.lookup(i + 1, PDFDict)]);
+      const kids = node.lookupMaybe(PDFName.of("Kids"), PDFArray);
+      if (kids) for (let i = 0; i < kids.size(); i++) walk(kids.lookup(i, PDFDict));
+    };
+    walk(ef);
+    const hit = pairs.find(([n]) => n === ATTACH_NAME);
+    if (!hit) return null;
+    const stream = hit[1].lookupMaybe(PDFName.of("EF"), PDFDict)?.lookupMaybe(PDFName.of("F"), PDFStream);
+    if (!stream) return null;
+    return JSON.parse(new TextDecoder().decode(decodePDFRawStream(stream).decode()));
+  }
+
+  function showMsg(el: HTMLElement, text: string, ok: boolean) {
+    el.textContent = text;
+    el.className = `kc-msg ${ok ? "ok" : "ng"}`;
+    el.hidden = false;
+  }
+
+  function currentIndex(): number {
+    const now = new Date();
+    const diff = (now.getFullYear() - data.plan.startYear) * 12 + (now.getMonth() + 1 - data.plan.startMonth) - 1;
+    return Math.min(11, Math.max(0, diff));
+  }
+
+  $<HTMLInputElement>("kc-pdf-input").addEventListener("change", async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const msg = $("kc-load-msg");
+    showMsg(msg, "読み込んでいます…", true);
+    try {
+      const raw = await readPdfData(file);
+      if (!raw || !raw.plan || !Array.isArray(raw.months)) {
+        showMsg(msg, "このPDFには入力データが見つかりませんでした。別のソフトで保存し直したPDFは読み込めないことがあります。お手数ですが手で入力してください。", false);
+        return;
+      }
+      data = normalizeData(raw);
+      let last = -1;
+      for (let k = 0; k < 12; k++) if (isMonthEntered(data, k)) last = k;
+      data.mode = "monthly";
+      data.reportIndex = last >= 0 ? Math.min(11, last + 1) : currentIndex();
+      if (data.email && !getRegistered()) setRegistered(data.email);
+      openCards.clear();
+      renderAll();
+      showMsg(
+        msg,
+        last >= 0
+          ? `${monthLabel(data.plan, last)}までの実績を読み込みました。${monthLabel(data.plan, data.reportIndex)}の数字を入れてください。`
+          : `目標を読み込みました。${monthLabel(data.plan, data.reportIndex)}の数字を入れてください。`,
+        true,
+      );
+    } catch (err) {
+      console.error(err);
+      showMsg(msg, "PDFを読み込めませんでした。このツールで作ったPDFか確かめてください。", false);
+    }
+  });
+
+  // ---------- 登録とダウンロード ----------
+  $("kc-reregister").addEventListener("click", () => {
+    setRegistered(null);
+    renderDownload();
+  });
+  $("kc-reg-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("reg-msg");
+    const btn = $<HTMLButtonElement>("reg-submit");
+    const emailEl = $<HTMLInputElement>("reg-email");
+    const email = emailEl.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailEl.closest(".kc-ip")?.classList.add("kc-bad");
+      showMsg(msg, "メールアドレスを確かめてください。", false);
+      return;
+    }
+    emailEl.closest(".kc-ip")?.classList.remove("kc-bad");
+    if (!$<HTMLInputElement>("reg-consent").checked) {
+      showMsg(msg, "プライバシーポリシーへの同意にチェックを入れてください。", false);
+      return;
+    }
+    btn.disabled = true;
+    showMsg(msg, "登録しています…", true);
+    try {
+      const res = await fetch("/api/kpi-check-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, manageDay: data.plan.manageDay, consent: true, website: $<HTMLInputElement>("reg-website").value }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "登録に失敗しました。時間をおいて再度お試しください。");
+      setRegistered(email);
+      showMsg(msg, "登録しました。PDFを作っています…", true);
+      await makePdf();
+      renderDownload();
+      showMsg($("kc-dl-msg"), "PDFをダウンロードしました。", true);
+    } catch (err: any) {
+      showMsg(msg, err?.message || "エラーが発生しました。", false);
+    } finally {
+      btn.disabled = !canDownload();
+    }
+  });
+  $("kc-download").addEventListener("click", async () => {
+    const btn = $<HTMLButtonElement>("kc-download");
+    const msg = $("kc-dl-msg");
+    btn.disabled = true;
+    showMsg(msg, "PDFを作っています…", true);
+    try {
+      await makePdf();
+      showMsg(msg, "PDFをダウンロードしました。", true);
+    } catch (err: any) {
+      console.error(err);
+      showMsg(msg, err?.message || "PDFを作れませんでした。", false);
+    } finally {
+      btn.disabled = !canDownload();
+    }
+  });
+
+  // ---------- 初期化 ----------
+  if (!data.months.some((_, k) => isMonthEntered(data, k))) data.reportIndex = currentIndex();
+  renderAll();
+</script>
