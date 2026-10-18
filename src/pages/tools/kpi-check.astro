@@ -413,6 +413,21 @@ const TOOL_DESCRIPTION =
   .kp-agree > div:nth-child(odd) { background: #f6f6f6; font-weight: 800; font-size: 12px; }
   .kp-sign { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 22px; font-size: 11.5px; }
   .kp-sign div { border-bottom: 1px solid #0b0b12; padding: 20px 0 4px; color: #525252; }
+  .kp-c2e { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; align-items: start; }
+  /* 毎月のPDF：本文は12px（9pt）以上。出典・凡例・フッターだけ小さく */
+  .kp.km .kp-h p { font-size: 12px; }
+  .kp.km .kp-bxh { font-size: 13px; }
+  .kp.km .kp-t { font-size: 12px; }
+  .kp.km .kp-t th { font-size: 10px; }
+  .kp.km .kp-t td { padding: 1.5px 5px; }
+  .kp.km .kp-t tr.grp td { padding-top: 4px; }
+  .kp.km .kp-bd { font-size: 12px; padding: 0 6px; }
+  .kp.km .kp-tag { font-size: 10px; }
+  .kp.km .kp-ab { margin-bottom: 7px; }
+  .kp.km .kp-ab .k { font-size: 12.5px; }
+  .kp.km .kp-ab .a, .kp.km .kp-ab .x, .kp.km .kp-ab .e { font-size: 12px; }
+  .kp.km .kp-ab .s { font-size: 9.5px; }
+  .kp.km .kp-exit, .kp.km .kp-exit-s { font-size: 12px; }
   .kp.dense .kp-t { font-size: 9.5px; }
   .kp.dense .kp-t td { padding: 1.5px 4px; }
   .kp.dense .kp-ab { margin-bottom: 5px; }
@@ -779,7 +794,7 @@ const TOOL_DESCRIPTION =
     const r = (a: string, b: string, c: string, d: string, sub = false) => `<tr><td${sub ? ' class="sub"' : ""}>${a}</td><td>${b}</td><td>${c}</td><td>${d}</td></tr>`;
     rows.push(r("<b>売上（マーケ経由）</b>", p.sales === null ? "—" : `${fmtNum(p.sales)}万円`, p.sales === null ? "—" : `${fmtNum(p.sales / n, 1)}万円`, ""));
     rows.push(r("受注数／受注率", `${fmtCount(p.wins)}件／${p.winRate === null ? "—" : fmtNum(p.winRate, 1) + "%"}`, p.wins === null ? "—" : `${fmtCount(p.wins / n)}件`, mark("受注数")));
-    rows.push(r("商談数／商談化率", `${fmtCount(p.deals)}件／${p.dealRate === null ? "—" : fmtNum(p.dealRate, 1) + "%"}`, p.deals === null ? "—" : `${fmtCount(p.deals / n)}件`, mark("商談数")));
+    rows.push(r("商談数／商談化率", `${fmtCount(p.deals)}件／${p.dealRate === null ? "—" : fmtNum(p.dealRate, 1) + "%"}`, p.deals === null ? "—" : `${fmtCount(p.deals / n)}件`, "○"));
     rows.push(r("リード数", `${fmtCount(p.leads)}件`, p.leads === null ? "—" : `${fmtCount(p.leads / n)}件`, ""));
     for (const id of selectedMeasures(p)) {
       const k = leadKpi(id);
@@ -821,10 +836,10 @@ const TOOL_DESCRIPTION =
     if (r === null) return "";
     return r >= 1 - 1e-9 ? "c-ok" : r >= 0.9 - 1e-9 ? "c-near" : "c-ng";
   }
-  function monthTableHtml(r: MonthReport, prefix: "kc" | "kp") {
+  function monthTableHtml(r: MonthReport, prefix: "kc" | "kp", measures = r.measures) {
     const rows: string[] = [];
     const pdf = prefix === "kp";
-    for (const m of r.measures) {
+    for (const m of measures) {
       const exitIdx = m.id !== "common" ? data.plan.measures[m.id].start : 0;
       rows.push(`<tr class="grp"><td colspan="${pdf ? 5 : 6}">${esc(m.name)}${!m.started ? `<small>${esc(monthLabel(data.plan, exitIdx))}から</small>` : ""}</td></tr>`);
       if (!m.started) continue;
@@ -928,7 +943,7 @@ const TOOL_DESCRIPTION =
     const right =
       `<div class="kp-bx" style="border-color:#b91c1c"><p class="kp-bxh" style="color:#991b1b">直すところ<small>${fixes.length}件</small></p>${fixes.length ? fixes.map((f) => `<div class="kp-fix"><b>${f.no}. ${esc(f.title)}</b><br />${esc(f.fix || f.reason)}</div>`).join("") : '<p class="kp-note">ありません</p>'}</div>` +
       `<div class="kp-bx" style="margin-top:12px"><p class="kp-bxh">確認するところ<small>${checks.length}件</small></p>${checks.length ? checks.map((f) => `<p style="font-size:10.5px;line-height:1.6;margin-top:3px"><b>${f.no}. ${esc(f.title)}</b>　${esc(f.reason)}${f.link ? `（${esc(f.link.label)}：mktg.ax${esc(f.link.href)}）` : ""}</p>`).join("") : '<p class="kp-note">ありません</p>'}</div>` +
-      `<div class="kp-bx" style="margin-top:12px"><p class="kp-bxh">判定の基準</p><p style="font-size:9.5px;line-height:1.7;color:#525252">逆算：入力と検算の差が±5%以内なら問題なし<br />率：基本モデル（成長期）商談化率15%・受注率29%の半分未満または2倍超で確認<br />件数が少ないKPI：月の目標10件未満は直近3か月の合計で判定<br />許容CPL＝CACの上限×商談化率×受注率　CACの上限＝平均単価×粗利率×取り返す年数</p></div>`;
+      `<div class="kp-bx" style="margin-top:12px"><p class="kp-bxh">判定の基準</p><p style="font-size:9.5px;line-height:1.7;color:#525252">逆算・施策のリード合計：差が±5%以内なら問題なし<br />率：基本モデル（成長期）商談化率15%・受注率29%の半分未満または2倍超で確認<br />件数が少ないKPI：月の目標10件未満は直近3か月の合計で判定（商談化率は常に3か月の合計）<br />許容CPL＝CACの上限×商談化率×受注率　CACの上限＝平均単価×粗利率×取り返す年数</p></div>`;
     const page1 = pageWrap(
       `<div class="kp-c2"><div><div class="kp-sum"><div class="kp-s-ok"><b>${c.ok}</b>問題なし</div><div class="kp-s-check"><b>${c.check}</b>確認が必要</div><div class="kp-s-fix"><b>${c.fix}</b>直す</div></div>${firstItemsHtml(items, "kp")}</div><div>${right}</div></div>`,
       "KPIツリーの妥当性の判定",
@@ -982,7 +997,7 @@ const TOOL_DESCRIPTION =
     const cm = p.commonMeasurable;
     const common = `<div class="kp-bx"><p class="kp-bxh">共通（リードになった後）</p><table class="kp-t"><tr><th>KPI</th><th>目標</th><th>月</th></tr>
       <tr><td>営業に渡せる割合${cm.handoffRate ? "" : " ※"}</td><td>${p.handoffTarget === null ? "—" : fmtNum(p.handoffTarget, 1) + "%"}</td><td>—</td></tr>
-      <tr><td>商談化率／商談数${cm.dealRate ? "" : " ※"}</td><td>${fmtNum(p.dealRate, 1)}%／${fmtCount(p.deals)}件</td><td>${p.deals === null ? "—" : fmtCount(p.deals / n)}${smallSet.has("商談数") ? " ◇" : ""}</td></tr>
+      <tr><td>商談化率／商談数${cm.dealRate ? "" : " ※"}</td><td>${fmtNum(p.dealRate, 1)}%／${fmtCount(p.deals)}件</td><td>${p.deals === null ? "—" : fmtCount(p.deals / n)} ◇</td></tr>
       <tr><td>受注率／受注数${cm.winRate ? "" : " ※"}</td><td>${fmtNum(p.winRate, 1)}%／${fmtCount(p.wins)}件</td><td>${p.wins === null ? "—" : fmtCount(p.wins / n)}${smallSet.has("受注数") ? " ◇" : ""}</td></tr></table></div>`;
     const cards = sel.map(card).concat(common);
     const page2 = pageWrap(
@@ -1032,7 +1047,7 @@ const TOOL_DESCRIPTION =
         <div>判断する人</div><div>${esc(p.decider) || "（未記入）"}</div>
         <div>振り返りの日</div><div>${esc(p.review) || "（未記入）"}（管理日：${esc(manageDayLabel(p.manageDay))}に数字を入れる）</div>
         <div>見る指標</div><div><b>売上（マーケ経由）${fmtNum(p.sales)}万円</b>　受注${fmtCount(p.wins)}件・商談${fmtCount(p.deals)}件・リード${fmtCount(p.leads)}件<br />施策ごと：${leadsTxt || "—"}</div>
-        <div>判定の線</div><div>実績÷目標が100%以上＝達成、90%以上＝やや届かない、90%未満＝届かない（CPLは目標÷実績）<br />月の目標が10件未満のKPIは直近3か月の合計で判定する。受注率は決着した商談が10件たまってから判定する</div>
+        <div>判定の線</div><div>実績÷目標が100%以上＝達成、90%以上＝やや届かない、90%未満＝届かない（CPLは目標÷実績）<br />月の目標が10件未満のKPIと商談化率は、直近3か月の合計で判定する。受注率は決着した商談が10件たまってから判定する</div>
         <div>撤退の基準</div><div>判定する月以降、開始月からの累計で、施策のCPLが上限を超え、かつリード数が目標の90%未満なら撤退を検討する<br />${exitTxt || "—"}</div>
         <div>費用の目安</div><div>${costTxt}${partsTxt}</div>
       </div><div class="kp-sign"><div>判断する人</div><div>マーケ責任者</div></div>`,
@@ -1043,10 +1058,11 @@ const TOOL_DESCRIPTION =
     return [page1, page2, page3];
   }
 
-  function monthPage(r: MonthReport): string {
-    const p = data.plan;
-    const nRows = r.measures.reduce((s, m) => s + 1 + (m.started ? m.rows.length : 0), 0);
-    const density = nRows > 34 ? "xdense" : nRows > 26 ? "dense" : "";
+  // 毎月のPDF。本文は12px（＝9pt。A4横の1123pxが297mm）以上。1枚に収まらなければ縮めずにページを分け、
+  // 1枚目（以降）に達成・未達の表、続くページに打ち手と撤退の判断を置く
+  const COL_GAP = 20;
+  const COL_W = (1123 - 72 - COL_GAP) / 2;
+  function monthActionBlocks(r: MonthReport): string[] {
     const acts: string[] = [];
     for (const m of r.measures) {
       if (!m.started) continue;
@@ -1063,13 +1079,87 @@ const TOOL_DESCRIPTION =
         acts.push(`<div class="kp-ab"><p class="k">${esc(m.name)}｜${esc(pk.label)}</p><p class="a">${pk.items.map((x) => esc(x.text)).join("／")}</p><p class="s">${srcText(srcs, false)}</p>${eff}</div>`);
       }
     }
-    const inner = `<div class="kp-c2m">
-      <div><p class="kp-bxh">1. KPIごとの達成・未達<small>◇＝直近3か月の合計</small></p>${monthTableHtml(r, "kp")}<p class="kp-note">達成＝100%以上　やや届かない＝90%以上　届かない＝90%未満（CPLは目標÷実績）。うすい赤＝施策の中で上から最初に「届かない」になったKPI</p></div>
-      <div><p class="kp-bxh">2. 次の打ち手と、前月に実施したことの効果</p>${acts.join("") || '<p class="kp-note">「届かない」のKPIはありません</p>'}
-        <p class="kp-bxh" style="margin-top:10px">3. 撤退の判断</p>${exitHtml(r, "kp")}</div>
-    </div>`;
+    return acts;
+  }
+  const H_TABLE = '<p class="kp-bxh">1. KPIごとの達成・未達<small>◇＝直近3か月の合計</small></p>';
+  const LEGEND = '<p class="kp-note">達成＝100%以上　やや届かない＝90%以上　届かない＝90%未満（CPLは目標÷実績）。うすい赤＝施策の中で上から最初に「届かない」になったKPI</p>';
+  const H_ACT = '<p class="kp-bxh">2. 次の打ち手と、前月に実施したことの効果</p>';
+  const H_EXIT = '<p class="kp-bxh" style="margin-top:10px">3. 撤退の判断</p>';
+  const NO_ACT = '<p class="kp-note">「届かない」のKPIはありません</p>';
+
+  /** 画面の外に置いて高さを測る */
+  function probe(htmls: string[], width: number): number[] {
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-20000px;top:0;z-index:-1;";
+    holder.innerHTML = `<div class="kp km" style="height:auto"><div style="width:${width}px">${htmls.map((h) => `<div class="kp-probe" style="display:flow-root">${h}</div>`).join("")}</div></div>`;
+    document.body.appendChild(holder);
+    const hs = Array.from(holder.querySelectorAll<HTMLElement>(".kp-probe")).map((e) => e.offsetHeight);
+    holder.remove();
+    return hs;
+  }
+  /** ページの本文が縮めずに収まるか（収まる高さも返す） */
+  function pageFits(html: string): { fits: boolean; avail: number } {
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-20000px;top:0;width:1123px;height:794px;z-index:-1;";
+    holder.innerHTML = html;
+    document.body.appendChild(holder);
+    const fit = holder.querySelector<HTMLElement>(".kp-fit")!;
+    const avail = 794 - fit.offsetTop - 34;
+    const fits = fit.scrollHeight <= avail;
+    holder.remove();
+    return { fits, avail };
+  }
+  /** ブロックを、高さ avail の列に順に詰める */
+  function pack(blocks: string[], heights: number[], avail: number): string[][] {
+    const cols: string[][] = [[]];
+    let h = 0;
+    blocks.forEach((b, k) => {
+      if (h > 0 && h + heights[k] > avail) {
+        cols.push([]);
+        h = 0;
+      }
+      cols[cols.length - 1].push(b);
+      h += heights[k];
+    });
+    return cols;
+  }
+
+  function monthPages(r: MonthReport): string[] {
+    const p = data.plan;
+    const title = `KPIの運用｜${r.label}`;
     const sub = `運用：${esc(rangeLabel(p))}（${r.index + 1}か月目）<br />判断する人：${esc(p.decider || "—")}　振り返りの日：${esc(p.review || "—")}`;
-    return pageWrap(inner, `KPIの運用｜${r.label}`, sub, "1 / 1", density);
+    const acts = monthActionBlocks(r);
+    const exit = exitHtml(r, "kp");
+
+    // 1枚：左に表、右に打ち手と撤退
+    const single = pageWrap(
+      `<div class="kp-c2m"><div>${H_TABLE}${monthTableHtml(r, "kp")}${LEGEND}</div><div>${H_ACT}${acts.join("") || NO_ACT}${H_EXIT}${exit}</div></div>`,
+      title,
+      sub,
+      "1 / 1",
+      "km",
+    );
+    const one = pageFits(single);
+    if (one.fits) return [single];
+
+    // 2枚以上：表を2列に詰め、続くページに打ち手と撤退を2列に詰める
+    const [hHead, hLegend] = probe([H_TABLE, LEGEND], COL_W);
+    const tBlocks = r.measures.map((m) => monthTableHtml(r, "kp", [m]));
+    const tCols = pack(tBlocks, probe(tBlocks, COL_W), one.avail - hHead - hLegend - 4);
+    const aBlocks = [H_ACT, ...(acts.length ? acts : [NO_ACT]), `${H_EXIT}${exit}`];
+    const aCols = pack(aBlocks, probe(aBlocks, COL_W), one.avail - 4);
+
+    const bodies: string[] = [];
+    for (let k = 0; k < tCols.length; k += 2) {
+      const last = k + 2 >= tCols.length;
+      const legendCol = tCols[k + 1] ? 1 : 0;
+      const cols = [tCols[k], tCols[k + 1] || []].map((c, n) => `<div>${c.join("")}${last && n === legendCol ? LEGEND : ""}</div>`);
+      bodies.push(`${H_TABLE}<div class="kp-c2e">${cols.join("")}</div>`);
+    }
+    for (let k = 0; k < aCols.length; k += 2) {
+      bodies.push(`<div class="kp-c2e"><div>${aCols[k].join("")}</div><div>${(aCols[k + 1] || []).join("")}</div></div>`);
+    }
+    return bodies.map((b, k) => pageWrap(b, title, sub, `${k + 1} / ${bodies.length}`, "km"));
   }
 
   // ---------- 描画 ----------
@@ -1374,7 +1464,7 @@ const TOOL_DESCRIPTION =
       fileName = `kpi-check-plan-${data.plan.startYear}-${String(data.plan.startMonth).padStart(2, "0")}.pdf`;
     } else {
       const r = computeMonth(data, data.reportIndex);
-      pages = [monthPage(r)];
+      pages = monthPages(r);
       const { year, month } = monthOf(data.plan, data.reportIndex);
       title = `KPIの運用 ${r.label}`;
       fileName = `kpi-check-${year}-${String(month).padStart(2, "0")}.pdf`;
