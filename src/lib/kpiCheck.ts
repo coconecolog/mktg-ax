@@ -661,7 +661,12 @@ export const TREE_LABEL: Record<(typeof TREE_FIELDS)[number], string> = {
 export const missingTree = (plan: Plan): string[] => TREE_FIELDS.filter((k) => plan[k] === null || plan[k] === 0).map((k) => TREE_LABEL[k]);
 
 const pctDiff = (input: number, calc: number) => (input - calc) / calc;
-const signedPct = (r: number) => `${r >= 0 ? "+" : "−"}${fmtNum(Math.abs(r) * 100, 1)}%`;
+/** ±5%の境目のすぐ外（5.04%など）が「5%」と見えないよう、そのときだけ小数2けた */
+const signedPct = (r: number) => {
+  const v = Math.abs(r) * 100;
+  const digits = Math.abs(v - RECALC_TOLERANCE * 100) < 0.05 && Math.abs(v - RECALC_TOLERANCE * 100) > 1e-9 ? 2 : 1;
+  return `${r >= 0 ? "+" : "−"}${fmtNum(v, digits)}%`;
+};
 
 /** 小さい月の目標（10件未満）を持つKPIの名前 */
 export function smallKpis(plan: Plan): string[] {
@@ -740,8 +745,10 @@ export function firstJudgments(plan: Plan): FirstItem[] {
       items.push({ no: 2, group: "A", title: "施策のリード目標の合計がツリーと合うか", status: "fix", reason: `${names}の目標が入っていません`, fix: `${names}の目標を入れます` });
     } else if (plan.leads === null) {
       items.push({ no: 2, group: "A", title: "施策のリード目標の合計がツリーと合うか", status: "na", reason: `${expr}＝${fmtNum(sum)}件。ツリーのリード数を入れると判定します` });
-    } else if (Math.round(clean(sum)) === Math.round(clean(plan.leads))) {
-      items.push({ no: 2, group: "A", title: "施策のリード目標の合計がツリーと合うか", status: "ok", reason: `${expr}＝${fmtNum(sum)}件。ツリーのリード数と合っています` });
+    } else if (plan.leads > 0 && Math.abs(pctDiff(sum, plan.leads)) <= RECALC_TOLERANCE + 1e-9) {
+      const d = sum - plan.leads;
+      const diff = Math.round(clean(d)) === 0 ? "合っています" : `との差は${fmtNum(Math.abs(d))}件（${signedPct(pctDiff(sum, plan.leads))}）で、±5%以内です`;
+      items.push({ no: 2, group: "A", title: "施策のリード目標の合計がツリーと合うか", status: "ok", reason: `${expr}＝${fmtNum(sum)}件。ツリーのリード数${fmtNum(plan.leads)}件${diff}` });
     } else {
       const d = sum - plan.leads;
       items.push({
@@ -749,7 +756,7 @@ export function firstJudgments(plan: Plan): FirstItem[] {
         group: "A",
         title: "施策のリード目標の合計がツリーと合うか",
         status: "fix",
-        reason: `${expr}＝${fmtNum(sum)}件。ツリーのリード数${fmtNum(plan.leads)}件より${fmtNum(Math.abs(d))}件${d > 0 ? "多い" : "少ない"}です`,
+        reason: `${expr}＝${fmtNum(sum)}件。ツリーのリード数${fmtNum(plan.leads)}件より${fmtNum(Math.abs(d))}件${d > 0 ? "多く" : "少なく"}（${plan.leads > 0 ? signedPct(pctDiff(sum, plan.leads)) : "—"}）、±5%を超えています`,
         fix: `施策の合計${fmtNum(sum)}件とツリーの${fmtNum(plan.leads)}件が${fmtNum(Math.abs(d))}件ずれています。施策の目標を${d > 0 ? "減らす" : "増やす"}か、ツリーのリード数を${fmtNum(sum)}件に直します`,
       });
     }
@@ -809,7 +816,7 @@ export function firstJudgments(plan: Plan): FirstItem[] {
       group: "B",
       title: "月の目標が10件未満のKPI",
       status: "ok",
-      reason: small.length ? `${small.join("・")}は、直近3か月の合計で判定します` : "ありません（すべて月ごとに判定します）",
+      reason: `${small.length ? `${small.join("・")}は、直近3か月の合計で判定します。` : ""}商談化率は、件数にかかわらず直近3か月の合計で判定します`,
     });
   }
 
@@ -1211,7 +1218,15 @@ function commonRows(d: KcData, i: number): KpiRow[] {
   const leadMonthT = plan.leads !== null ? plan.leads / n : null;
   const smallLeads = leadMonthT !== null && leadMonthT > 0 && clean(leadMonthT) < SMALL_THRESHOLD;
 
-  const rateRow = (key: CommonKey, label: string, target: number | null, num: (j: number) => number | null, den: (j: number) => number | null): KpiRow => {
+  const rateRow = (
+    key: CommonKey,
+    label: string,
+    target: number | null,
+    num: (j: number) => number | null,
+    den: (j: number) => number | null,
+    alwaysWindow = false,
+  ): KpiRow => {
+    const useWindow = alwaysWindow || smallLeads;
     const at = (j: number) => {
       const a = num(j);
       const b = den(j);
@@ -1221,7 +1236,7 @@ function commonRows(d: KcData, i: number): KpiRow[] {
       key: `common.${key}`,
       label,
       vkind: "rate",
-      window: smallLeads,
+      window: useWindow,
       target: target === null ? null : target / 100,
       actual: null,
       ratio: null,
@@ -1230,9 +1245,10 @@ function commonRows(d: KcData, i: number): KpiRow[] {
       cur: at(i),
       hasAction: !!ACTIONS[`common.${key}`],
     };
-    if (smallLeads) {
+    if (useWindow) {
       if (!windowReady) {
         row.status = "pending";
+        row.note = i < WINDOW - 1 ? `${monthLabel(plan, WINDOW - 1)}から判定` : "3か月の数字がそろうと判定";
         return row;
       }
       const a = sumOver(win, num);
@@ -1261,9 +1277,9 @@ function commonRows(d: KcData, i: number): KpiRow[] {
     }
     rows.push(row);
   }
-  // 商談化率＝商談数÷リード数
+  // 商談化率＝商談数÷リード数。リードが商談になるまで時間がかかり、展示会の月はリードだけ増えるため、件数にかかわらず常に直近3か月の合計で判定
   {
-    const row = rateRow("dealRate", "商談化率", plan.dealRate, (j) => c(j).deals, leadsAt);
+    const row = rateRow("dealRate", "商談化率", plan.dealRate, (j) => c(j).deals, leadsAt, true);
     if (row.status !== "pending") {
       if (row.actual === null) row.status = plan.commonMeasurable.dealRate ? "empty" : "unmeasured";
       else if (row.target === null) row.status = "none";
