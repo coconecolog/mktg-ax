@@ -47,7 +47,10 @@ const { class: className = "" } = Astro.props;
             <p class="text-[13px] leading-[1.85] text-[#4f5057]">{tool.detail}</p>
           </div>
           <div class="flex flex-col gap-3 px-7 pb-7 pt-2">
-            <p class="text-xs text-[#7b7c83]">{tool.note}</p>
+            <div class="flex flex-col gap-1">
+              <p class="text-xs text-[#7b7c83]">{tool.note}</p>
+              {"notice" in tool && tool.notice && <p class="text-xs text-[#7b7c83]">{tool.notice}</p>}
+            </div>
             {tool.href ? (
               <a
                 href={tool.href}
