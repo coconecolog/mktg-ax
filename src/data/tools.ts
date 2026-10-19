@@ -20,7 +20,6 @@ export const ICONS: Record<string, string> = {
     '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="9" height="4" rx="1"/><rect x="7" y="5" width="12" height="4" rx="1"/>',
   "clipboard-check":
     '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
-  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
 };
 
@@ -42,11 +41,12 @@ export const MAIN_TOOLS = [
     phase: "発見・改善",
     purpose: "次に取り組む課題を見つける",
     icon: "scan-search",
-    titleLines: ["ボトルネック", "発見ツール"],
-    description: "マーケティング活動のなかで、改善すべき箇所を見つけるためのツールです。",
-    detail: "現在、公開に向けて準備中です。",
-    note: "改善の優先順位を考えるときに",
-    href: null,
+    titleLines: ["KPI運用", "チェッカー"],
+    description: "KPIツリーの妥当性を判定し、毎月の実績から未達のKPIと次の打ち手、撤退の判断を示します。",
+    detail: "翌月は前回のPDFを読み込み、実績を積み上げて判定できます。",
+    note: "改善の優先順位を決めるときに",
+    notice: "PDF出力にはメール登録が必要",
+    href: "/tools/kpi-check",
   },
   {
     step: "03",
@@ -63,14 +63,6 @@ export const MAIN_TOOLS = [
 
 // 日々の判断に、小さなツール。
 export const QUICK_TOOLS = [
-  {
-    icon: "target",
-    category: "KPIの運用",
-    title: "KPI運用チェッカー",
-    description: "KPIツリーの妥当性を判定し、毎月の実績から達成・未達、次の打ち手（出典つき）、撤退の判断を出します。",
-    time: "目安 10分",
-    href: "/tools/kpi-check",
-  },
   {
     icon: "clipboard-check",
     category: "予算の判定",
