@@ -1,0 +1,63 @@
+name: Preview deploy (Cloudflare Pages)
+
+# preview/ で始まるブランチに push すると、本番とは別のプレビューURLにデプロイする。
+# URL: https://<ブランチ名の / を - にしたもの>.mktg-ax.pages.dev （例: preview/standards → preview-standards.mktg-ax.pages.dev）
+# プレビューURLは Cloudflare が noindex を付けるので、検索には載らない。本番（main）には影響しない。
+on:
+  push:
+    branches: ["preview/**"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存パッケージをインストール
+        run: npm ci
+
+      - name: PDFプレビュー画像生成用のツールをインストール
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: ダウンロード済み画像を復元（本番のビルドと同じキャッシュを読むだけ。保存はしない）
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .notion-cache/posts-status-snapshot.json
+            public/images/notion/
+            public/images/generated/
+          key: notion-build-assets-${{ github.run_id }}
+          restore-keys: |
+            notion-build-assets-
+
+      - name: Notionから記事・資料データを取得してビルド
+        run: npm run build
+        env:
+          NOTION_TOKEN: ${{ secrets.MKTG_AX_NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_DATABASE_ID }}
+          NOTION_RESOURCES_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_RESOURCES_DATABASE_ID }}
+          NOTION_CATEGORIES_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_CATEGORIES_DATABASE_ID }}
+          NOTION_SUBCATEGORIES_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_SUBCATEGORIES_DATABASE_ID }}
+          NOTION_TAGS_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_TAGS_DATABASE_ID }}
+          NOTION_AUTHORS_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_AUTHORS_DATABASE_ID }}
+          NOTION_TOOLS_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_TOOLS_DATABASE_ID }}
+          PUBLIC_SITE_URL: ${{ secrets.MKTG_AX_PUBLIC_SITE_URL }}
+
+      - name: Cloudflare Pagesのプレビューへデプロイ
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.MKTG_AX_CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.MKTG_AX_CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=mktg-ax --branch=${{ github.ref_name }}
