@@ -10,6 +10,9 @@
 //   NOTION_ANALYTICS_DATABASE_ID  省略時は下の既定値（分析レポートDB）
 //   GSC_SITE_URL          省略時は、サービスアカウントが見られるSearch Consoleのサイトから自動で選ぶ
 //
+// インデックスの状況はURL検査APIで1件ずつ調べる（Search Consoleで「制限付き」以上の権限が要る）。
+//
+// インデックスの状況: サイトマップの記事URLを、Search ConsoleのURL検査APIで1本ずつ調べる（1日2,000件まで）。
 // 期間: Search Consoleのデータは2〜3日遅れるため、3日前を終わりとする直近28日と、その前の28日を比べる。
 // 外部のライブラリは使わない（Googleの認証はJWTを自前で署名する）。
 
@@ -207,6 +210,112 @@ async function collectGsc(token, siteUrl, periods) {
 }
 
 // ------------------------------------------------------------
+// インデックスの状況（URL検査API。記事ページだけを調べる）
+// ------------------------------------------------------------
+
+async function listArticleUrls(siteUrl) {
+  // サイトマップから /blog/{記事} のURLを集める（カテゴリ・タグ・ページ送りは除く）
+  const origin = siteUrl.startsWith("sc-domain:") ? `https://${siteUrl.slice(10)}` : siteUrl.replace(/\/$/, "");
+  const fetchText = async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`サイトマップを取得できません: ${url} (${res.status})`);
+    return res.text();
+  };
+  const locs = (xml) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
+  const index = await fetchText(`${origin}/sitemap-index.xml`);
+  const urls = [];
+  for (const sitemap of locs(index)) urls.push(...locs(await fetchText(sitemap)));
+  return urls.filter((u) => /\/blog\/(?!category\/|tag\/|\d+$)[^/]+$/.test(new URL(u).pathname));
+}
+
+async function inspectUrls(token, siteUrl, urls) {
+  const results = [];
+  for (const url of urls) {
+    try {
+      const res = await googleRequest(token, "POST", "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect", {
+        inspectionUrl: url,
+        siteUrl,
+        languageCode: "ja",
+      });
+      const status = res.inspectionResult?.indexStatusResult || {};
+      results.push({
+        path: pathOf(url),
+        verdict: status.verdict || "UNKNOWN",
+        coverage: status.coverageState || "",
+        lastCrawl: status.lastCrawlTime ? status.lastCrawlTime.slice(0, 10) : "",
+      });
+    } catch (err) {
+      results.push({ path: pathOf(url), verdict: "ERROR", coverage: err.message.slice(0, 120), lastCrawl: "" });
+    }
+  }
+  return results;
+}
+
+async function collectIndex(token, siteUrl) {
+  const urls = await listArticleUrls(siteUrl);
+  const results = await inspectUrls(token, siteUrl, urls);
+  const indexed = results.filter((r) => r.verdict === "PASS");
+  return {
+    total: results.length,
+    indexed: indexed.length,
+    notIndexed: results.filter((r) => r.verdict !== "PASS").sort((a, b) => a.coverage.localeCompare(b.coverage)),
+  };
+}
+
+// ------------------------------------------------------------
+// インデックスの状況（Search ConsoleのURL検査API）
+// サイトマップから記事・資料・ツールのURLを集め、1件ずつ検査する（上限は1日2,000件）。
+// ------------------------------------------------------------
+
+const INSPECT_PATH_PATTERN = /^\/(blog\/(?!tag\/|category\/|\d+$)[^/]+|resources\/[^/]+|tools\/[^/]+|standards(\/[^/]+)?)$/;
+
+async function fetchSitemapUrls(siteBase) {
+  const locs = async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`サイトマップを取得できません: ${url} (${res.status})`);
+    const xml = await res.text();
+    return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
+  };
+  const index = await locs(new URL("sitemap-index.xml", siteBase).toString());
+  const urls = [];
+  for (const sitemap of index) urls.push(...(await locs(sitemap)));
+  return urls.filter((u) => INSPECT_PATH_PATTERN.test(pathOf(u)));
+}
+
+async function collectIndexStatus(token, siteUrl) {
+  const siteBase = siteUrl.startsWith("sc-domain:") ? `https://${siteUrl.slice(10)}/` : siteUrl;
+  const urls = await fetchSitemapUrls(siteBase);
+  const results = [];
+  const queue = [...urls];
+  const worker = async () => {
+    while (queue.length) {
+      const url = queue.shift();
+      try {
+        const res = await googleRequest(
+          token,
+          "POST",
+          "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect",
+          { inspectionUrl: url, siteUrl, languageCode: "ja" },
+        );
+        const r = res.inspectionResult?.indexStatusResult || {};
+        results.push({
+          path: pathOf(url),
+          verdict: r.verdict || "UNKNOWN",
+          coverage: r.coverageState || "-",
+          lastCrawl: r.lastCrawlTime ? r.lastCrawlTime.slice(0, 10) : "-",
+        });
+      } catch (err) {
+        results.push({ path: pathOf(url), verdict: "ERROR", coverage: err.message.slice(0, 80), lastCrawl: "-" });
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: 4 }, worker));
+  results.sort((a, b) => a.path.localeCompare(b.path));
+  const indexed = results.filter((r) => r.verdict === "PASS").length;
+  return { total: results.length, indexed, notIndexed: results.filter((r) => r.verdict !== "PASS") };
+}
+
+// ------------------------------------------------------------
 // GA4
 // ------------------------------------------------------------
 
@@ -360,7 +469,7 @@ function diff(cur, prev) {
   return `（${d >= 0 ? "+" : ""}${(d * 100).toFixed(0)}%）`;
 }
 
-function buildBlocks({ periods, siteUrl, gsc, ga4 }) {
+function buildBlocks({ periods, siteUrl, gsc, ga4, index }) {
   const g = gsc.current;
   const gp = gsc.previous;
   return [
@@ -376,11 +485,31 @@ function buildBlocks({ periods, siteUrl, gsc, ga4 }) {
         ["検索のクリック率", g.impressions ? pct(g.clicks / g.impressions) : "-", gp.impressions ? pct(gp.clicks / gp.impressions) : "-", ""],
         ["平均順位", fmt1(g.position), fmt1(gp.position), ""],
         ["指名検索のクリック数", fmt(gsc.brandClicks), "-", ""],
+        ["インデックス済みのページ", index ? `${index.indexed} / ${index.total}` : "取得できず", "-", ""],
+        ["インデックス済みの記事", index ? `${index.indexed} / ${index.total}` : "取得失敗", "-", ""],
         ["AI経由のセッション", fmt(ga4.aiSessions.current), fmt(ga4.aiSessions.previous), diff(ga4.aiSessions.current, ga4.aiSessions.previous)],
         ["ツール利用（tool_use）", fmt(ga4.toolUse.current), fmt(ga4.toolUse.previous), diff(ga4.toolUse.current, ga4.toolUse.previous)],
         ["資料DL", fmt(ga4.downloads.current), fmt(ga4.downloads.previous), diff(ga4.downloads.current, ga4.downloads.previous)],
         ["お問い合わせ", fmt(ga4.contacts.current), fmt(ga4.contacts.previous), diff(ga4.contacts.current, ga4.contacts.previous)],
       ],
+    ),
+    heading("インデックスされていない記事"),
+    paragraph("Googleに登録されていない記事は、需要の有無に関係なく検索に出ない。公開から数週間たっても残る記事は、内容の重複や内部リンクの不足を疑う。"),
+    index
+      ? table(
+          ["ページ", "状態", "最終クロール"],
+          index.notIndexed.map((r) => [r.path, r.coverage || r.verdict, r.lastCrawl || "-"]),
+        )
+      : paragraph("取得に失敗しました（Actionsのログを確認）。"),
+    heading("インデックスされていないページ"),
+    paragraph(
+      index
+        ? "記事・資料・ツールのうち、Googleの検索結果に載っていないもの。「検出 - インデックス未登録」「クロール済み - インデックス未登録」が続くページは、内容の重複や薄さを疑う。"
+        : "URL検査APIを使えなかったため取得できませんでした。",
+    ),
+    table(
+      ["ページ", "状態", "最後のクロール"],
+      (index?.notIndexed || []).map((r) => [r.path, r.coverage, r.lastCrawl]),
     ),
     heading("AI経由の流入"),
     table(
@@ -450,7 +579,12 @@ async function main() {
       throw new Error(`${err.message}\nGA4の「プロパティのアクセス管理」に ${email} を「閲覧者」で追加してください。`);
     }),
   ]);
-  const report = { periods, siteUrl, gsc, ga4 };
+  // インデックスの状況は失敗してもレポート全体は止めない
+  const index = await collectIndex(token, siteUrl).catch((err) => {
+    console.warn(`インデックスの状況を取得できませんでした: ${err.message}`);
+    return null;
+  });
+  const report = { periods, siteUrl, gsc, ga4, index };
 
   if (DRY_RUN) {
     console.log(JSON.stringify(report, null, 2));
@@ -475,6 +609,7 @@ async function main() {
       資料DL: { number: ga4.downloads.current },
       問い合わせ: { number: ga4.contacts.current },
       ツール利用: { number: ga4.toolUse.current },
+      ...(index ? { インデックス済み記事: { number: index.indexed } } : {}),
     },
   });
   await appendBlocks(notionToken, page.id, buildBlocks(report));
