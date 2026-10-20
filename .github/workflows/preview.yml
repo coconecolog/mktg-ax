@@ -1,7 +1,7 @@
 name: Preview deploy (Cloudflare Pages)
 
 # preview/ で始まるブランチに push すると、本番とは別のプレビューURLにデプロイする。
-# URL: https://<ブランチ名の / を - にしたもの>.mktg-ax.pages.dev （例: preview/standards → preview-standards.mktg-ax.pages.dev）
+# URL: https://<ブランチ名の / を - にしたもの>.mktg-ax-422.pages.dev （例: preview/standards → preview-standards.mktg-ax-422.pages.dev）
 # プレビューURLは Cloudflare が noindex を付けるので、検索には載らない。本番（main）には影響しない。
 on:
   push:
