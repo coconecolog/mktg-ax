@@ -41,6 +41,44 @@ import { GTM_ID, GA4_ID, CLARITY_ID } from "@/consts";
 }
 
 {
+  /*
+    ツール利用の計測（tool_use）。/tools/{ツール名} のページで、ボタンが押されたら送る。
+    同じボタンは1回の表示につき1回だけ送る（月の切り替えなどで回数が膨らまないように）。
+    送る値：tool_name（URLのツール名）、tool_action（ボタンの文言。40文字まで）。
+    ボタンに data-track-action="..." があれば、文言の代わりにその値を使う。
+    GTMを使っているときは、GTM側にカスタムイベント「tool_use」のトリガーとGA4イベントのタグが必要。
+  */
+  (GTM_ID || GA4_ID) && (
+    <script is:inline>
+      (function () {
+        var match = location.pathname.match(/^\/tools\/([^/]+)/);
+        if (!match) return;
+        var toolName = match[1];
+        var sent = {};
+        document.addEventListener(
+          "click",
+          function (e) {
+            var el = e.target && e.target.closest && e.target.closest("button, [role='button'], a[download], input[type='submit']");
+            if (!el) return;
+            var action = (el.getAttribute("data-track-action") || el.textContent || el.value || "").replace(/\s+/g, " ").trim().slice(0, 40);
+            if (!action || sent[action]) return;
+            sent[action] = true;
+            var params = { tool_name: toolName, tool_action: action };
+            if (typeof window.gtag === "function") {
+              window.gtag("event", "tool_use", params);
+            } else {
+              window.dataLayer = window.dataLayer || [];
+              window.dataLayer.push(Object.assign({ event: "tool_use" }, params));
+            }
+          },
+          true,
+        );
+      })();
+    </script>
+  )
+}
+
+{
   CLARITY_ID && (
     <script is:inline define:vars={{ CLARITY_ID }}>
       (function (c, l, a, r, i, t, y) {

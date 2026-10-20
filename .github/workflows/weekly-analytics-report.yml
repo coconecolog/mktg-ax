@@ -1,0 +1,38 @@
+name: 週次の分析レポート
+
+# 毎週月曜 日本時間 8:43 に、Search Console・GA4を集計してNotionの「分析レポート」DBに1ページ追加する。
+# 使うSecrets（リポジトリの Settings → Secrets and variables → Actions）:
+#   MKTG_AX_GOOGLE_SA_KEY（サービスアカウントのJSON鍵）, MKTG_AX_GA4_PROPERTY_ID（GA4のプロパティID）,
+#   MKTG_AX_NOTION_TOKEN（既存）
+on:
+  schedule:
+    - cron: "43 23 * * 0" # UTC 日曜 23:43 = 日本時間 月曜 8:43
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Notionに書かず、集計結果だけ表示する"
+        type: boolean
+        default: false
+
+concurrency:
+  group: weekly-analytics-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 集計してNotionに書く
+        run: node scripts/weekly-analytics-report.mjs ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GOOGLE_SA_KEY: ${{ secrets.MKTG_AX_GOOGLE_SA_KEY }}
+          GA4_PROPERTY_ID: ${{ secrets.MKTG_AX_GA4_PROPERTY_ID }}
+          NOTION_TOKEN: ${{ secrets.MKTG_AX_NOTION_TOKEN }}
