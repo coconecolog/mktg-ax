@@ -56,8 +56,17 @@ jobs:
           PUBLIC_SITE_URL: ${{ secrets.MKTG_AX_PUBLIC_SITE_URL }}
 
       - name: Cloudflare Pagesのプレビューへデプロイ
+        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.MKTG_AX_CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.MKTG_AX_CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=mktg-ax --branch=${{ github.ref_name }}
+
+      - name: プレビューURLを表示（Actionsの実行結果の画面に出る）
+        run: |
+          echo "::notice title=プレビューURL::${{ steps.deploy.outputs.deployment-url }}"
+          echo "::notice title=プレビューURL（ブランチ）::${{ steps.deploy.outputs.pages-deployment-alias-url }}"
+          echo "### プレビューURL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ${{ steps.deploy.outputs.deployment-url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ${{ steps.deploy.outputs.pages-deployment-alias-url }}" >> "$GITHUB_STEP_SUMMARY"
