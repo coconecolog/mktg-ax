@@ -1,0 +1,262 @@
+---
+// 「モデル企業の全体像」（/standards）。数字の基準の3ページの1ページ目。
+// 見出しのアンカー（company・phases・persona・history）は、記事・ツールからリンクするので変えない。
+// ペルソナの正本：Googleドライブ「サイトコンセプトシート（正）」2-1
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import PageIntro from "@/components/standards/PageIntro.astro";
+import InPageNav from "@/components/standards/InPageNav.astro";
+import SectionHeading from "@/components/standards/SectionHeading.astro";
+import DataTable from "@/components/standards/DataTable.astro";
+import StandardsNav from "@/components/standards/StandardsNav.astro";
+import { getStandardPage, buildStandardArticleSchema } from "@/lib/standards";
+
+const page = getStandardPage("overview");
+const model = getStandardPage("model");
+const metrics = getStandardPage("metrics");
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: page.title, href: page.path },
+];
+
+const navItems = [
+  { num: "01", label: "会社の前提", anchor: "company" },
+  { num: "02", label: "3つの時期", anchor: "phases" },
+  { num: "03", label: "ペルソナ", anchor: "persona" },
+];
+
+const companyFigures = [
+  { label: "売上", value: "15", unit: "億円" },
+  { label: "従業員", value: "100", unit: "名" },
+  { label: "マーケ専任", value: "2", unit: "名" },
+];
+
+const channelPrices = [
+  { name: "展示会", value: "300" },
+  { name: "Web広告", value: "200" },
+  { name: "自社サイト", value: "250" },
+  { name: "メール・セミナー", value: "250" },
+];
+
+const mainPersona = [
+  { label: "会社", text: "従業員50〜200名のBtoB企業（製造業、IT・業務サービス、専門サービス業など）" },
+  { label: "予算", text: "年間のWebマーケ予算は100万〜500万円未満が中心" },
+  { label: "体制", text: "マーケ部2名（本人＋若手1名）、または1名。展示会対応や営業との連携まで自分で回す" },
+  {
+    label: "いまの状態",
+    text: "自社サイトは更新できず会社案内のまま。メルマガ・リスティング・展示会は単発。GA4・簡易CRMは入れたが、データを読み解けず活用できていない。代理店の提案は現場で実行できない",
+  },
+  { label: "目標", text: "年間の受注数20%増／リード数の拡大と商談化率の向上／CACの適正化とROIの改善" },
+  {
+    label: "悩み",
+    text: "CAC・回収期間が計算できない。経営に「この予算でいくら利益が出るのか」と聞かれても、数字で説明できない",
+  },
+  { label: "AIの使い方", text: "予算案はまず生成AIで作る。その根拠を確かめるときと、経営に出す前に、記事・資料・ツールを開く" },
+];
+
+const subPersona = [
+  { label: "決裁するもの", text: "年間100万〜500万円クラスのマーケ予算・ツール導入・外注費" },
+  { label: "見ているもの", text: "PVではなく、新規顧客の獲得と売上・利益。回収期間が見えない提案は通さない" },
+  { label: "判断の材料", text: "佐藤氏が出す稟議書・ROI計算シート。基準と数字の出どころが示された提案が通りやすい" },
+];
+---
+
+<BaseLayout
+  title={page.title}
+  description={page.description}
+  ogImage="/open-graph/default.png"
+  jsonLd={buildStandardArticleSchema(page)}
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <article class="mt-6 bg-white">
+    <div class="mx-auto max-w-6xl px-5 pb-[72px] pt-14">
+      <div class="space-y-8">
+        <PageIntro
+          label="NUMBERS / MODEL COMPANY"
+          title={page.title}
+          lead="記事・資料・ツールの数字を、ひとつの企業像でつかむ。産業機械向けの部品をつくる、架空の製造業の基本モデルです。"
+          lastUpdated={page.lastUpdated}
+        />
+        <p class="text-sm leading-[1.85] text-std-sub">
+          このページの会社と数字は、すべて架空のものです。業界の平均や目安ではありません。MKTG.AXの記事・資料・ツールの記入例は、成長期（3期目）の数字をもとにしています。
+        </p>
+        <InPageNav items={navItems} />
+      </div>
+
+      <!-- 01 会社の前提 -->
+      <section id="company" class="mt-16 scroll-mt-24 space-y-6">
+        <SectionHeading
+          num="01"
+          title="架空の会社の前提"
+          lead="産業機械向けの部品をつくる、架空の製造業の会社です。マーケは専任の2名で回しています。"
+        />
+        <div class="bg-std-bg p-6 sm:p-8">
+          <div class="flex flex-col gap-8 lg:flex-row lg:gap-10">
+            <div class="lg:w-[336px] lg:shrink-0">
+              <p class="text-[0.8125rem] font-bold text-std-mute">架空の会社 / BtoB製造業</p>
+              <p class="mt-[18px] text-[1.625rem] font-bold leading-[1.55] text-ink-950">産業機械を支える、<br />部品メーカー。</p>
+              <p class="mt-[18px] text-sm leading-[1.85] text-std-sub">3月決算（4月始まり）<br />受注まで約4か月 / 取引年数5年</p>
+            </div>
+            <div class="min-w-0 flex-1">
+              <dl class="grid grid-cols-3 gap-6">
+                {
+                  companyFigures.map((f) => (
+                    <div class="flex flex-col gap-1.5">
+                      <dt class="text-sm text-std-sub">{f.label}</dt>
+                      <dd class="text-ink-950">
+                        <span class="text-[2.25rem] font-semibold leading-tight sm:text-[3rem]">{f.value}</span>
+                        <span class="ml-1 text-base sm:text-[1.1875rem]">{f.unit}</span>
+                      </dd>
+                    </div>
+                  ))
+                }
+              </dl>
+              <hr class="my-6 border-std-line" />
+              <p class="text-sm leading-[1.85] text-std-sub">
+                新規1社の年間取引額：平均250万円 / 粗利率40%<br />
+                1社あたりの粗利：年間100万円（250 × 40%）、月8.3万円<br />
+                マーケ体制：部長＋若手 / 時間単価 5,000円・3,000円
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-2 lg:gap-10">
+          <div>
+            <h3 class="mb-3 text-[1.1875rem] font-bold text-ink-950">チャネル</h3>
+            <p class="text-sm leading-[1.85] text-std-sub">
+              マーケ経由：展示会 / Web広告 / 自社サイト / メール・セミナー<br />
+              マーケ以外：紹介・既存顧客 / 営業の開拓
+            </p>
+          </div>
+          <DataTable
+            title="表1 チャネルごとの平均単価（架空の会社の記入例）"
+            head={["チャネル", "平均単価"]}
+            minWidth="18rem"
+            rows={channelPrices.map((c) => [c.name, c.value])}
+          />
+        </div>
+        <p class="text-sm leading-[1.85] text-std-sub">単位は万円です（時間単価を除く）。</p>
+        <!-- TODO（予算シミュレーターの修正後に入れる）：自社の前提を入れて計算するなら、予算シミュレーター -->
+      </section>
+
+      <!-- 02 3つの時期 -->
+      <section id="phases" class="mt-16 scroll-mt-24 space-y-6">
+        <SectionHeading
+          num="02"
+          title="3つの時期の全体（成長モデル）"
+          lead="マーケを始めた導入期、仕組みが回り始めた成長期、規模が大きくなった安定期の3つの時期の数字です。記入例は成長期（3期目）を基本にしています。"
+        />
+        <DataTable
+          title="表2 3つの時期の全体（架空の会社の記入例）"
+          head={["項目", "導入期（1期目）", "成長期（3期目）", "安定期（5期目）"]}
+          strongCols={[2]}
+          rows={[
+            ["外部費用", "538", "910", "1,530"],
+            ["人件費", "246", "370", "483"],
+            ["費用合計", "784", "1,280", "2,013"],
+            ["リード", "166", "285", "505"],
+            ["商談", "19", "42", "76"],
+            ["マーケ経由の受注件数", "5", "12", "22"],
+            ["マーケ経由の受注金額", "1,300", "3,000", "5,550"],
+          ]}
+        />
+        <p class="text-sm leading-[1.85] text-std-sub">
+          金額は万円、件数は件。成長期の目標・費用・判定の内訳は「<a
+            href={model.path}
+            class="text-ink-950 underline underline-offset-2 hover:text-std-sub">{model.title}</a
+          >」、式は「<a href={metrics.path} class="text-ink-950 underline underline-offset-2 hover:text-std-sub">{metrics.title}</a>」にあります。
+        </p>
+        <!-- TODO（予算シミュレーターの修正後に入れる）：自社の時期に近い数字から予算を作るなら、予算シミュレーター -->
+      </section>
+
+      <!-- 03 ペルソナ -->
+      <section id="persona" class="mt-16 scroll-mt-24 space-y-6">
+        <SectionHeading
+          num="03"
+          title="想定する読者（ペルソナ）"
+          lead="実務を動かす主読者と、予算を承認する決裁者の2人です。モデル企業は、主読者が働く会社を想定しています。"
+        />
+
+        <!-- メインペルソナ（主読者） -->
+        <div class="border border-std-line">
+          <div class="flex flex-col gap-6 bg-std-bg p-6 sm:flex-row sm:items-center sm:p-8">
+            <div
+              class="flex size-20 shrink-0 items-center justify-center bg-ink-950 text-[1.75rem] font-bold text-white sm:size-24"
+              aria-hidden="true"
+            >
+              佐藤
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[0.8125rem] font-bold text-std-mute">メインペルソナ（主読者）</p>
+              <h3 class="mt-2 text-[1.5rem] font-bold leading-snug text-ink-950">
+                佐藤 健太<span class="ml-2 text-base font-normal text-std-sub">41歳</span>
+              </h3>
+              <p class="mt-1 leading-[1.85] text-ink-950">マーケティング部長（専任）</p>
+            </div>
+            <p class="text-sm leading-[1.85] text-std-sub sm:w-[340px] sm:shrink-0">
+              勘や代理店任せから抜け出し、経営を納得させる「自前の判断基準」を持ちたい。
+            </p>
+          </div>
+          <dl class="divide-y divide-std-line px-6 sm:px-8">
+            {
+              mainPersona.map((r) => (
+                <div class="flex flex-col gap-1 py-4 sm:flex-row sm:gap-6">
+                  <dt class="shrink-0 text-sm font-bold text-ink-950 sm:w-28">{r.label}</dt>
+                  <dd class="flex-1 text-sm leading-[1.85] text-std-sub">{r.text}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+
+        <!-- サブペルソナ（決裁者） -->
+        <div class="flex flex-col gap-6 border border-std-line p-6 lg:flex-row lg:gap-8">
+          <div class="flex items-center gap-4 lg:w-[300px] lg:shrink-0">
+            <div
+              class="flex size-14 shrink-0 items-center justify-center bg-std-bar text-base font-bold text-ink-950"
+              aria-hidden="true"
+            >
+              高橋
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-std-mute">サブペルソナ（決裁者）</p>
+              <h3 class="mt-1 text-[1.1875rem] font-bold leading-snug text-ink-950">
+                高橋 宏明<span class="ml-2 text-sm font-normal text-std-sub">52歳</span>
+              </h3>
+              <p class="text-sm text-ink-950">代表取締役社長（または役員・事業責任者）</p>
+            </div>
+          </div>
+          <dl class="grid min-w-0 flex-1 gap-4 sm:grid-cols-3">
+            {
+              subPersona.map((r) => (
+                <div>
+                  <dt class="text-[0.8125rem] font-bold text-ink-950">{r.label}</dt>
+                  <dd class="mt-1 text-sm leading-[1.8] text-std-sub">{r.text}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+      </section>
+
+      <!-- 04 更新履歴 -->
+      <section id="history" class="mt-16 scroll-mt-24 space-y-5">
+        <SectionHeading num="04" title="更新履歴" lead="このページの数字を変えたときに記録します。" />
+        <DataTable
+          caption="更新履歴"
+          head={["日付", "内容"]}
+          widths={["30%", "70%"]}
+          minWidth="20rem"
+          rows={[
+            ["2026-10-21", "ペルソナを追加"],
+            ["2026-10-20", "公開"],
+          ]}
+        />
+      </section>
+
+      <StandardsNav current="overview" />
+    </div>
+  </article>
+</BaseLayout>
