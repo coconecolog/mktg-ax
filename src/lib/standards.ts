@@ -195,14 +195,24 @@ function parseBody(md: string): ParsedBody {
       flushCaption();
       const tag = ulm ? "ul" : "ol";
       const re = ulm ? /^[-*]\s+(.*)$/ : /^\d+\.\s+(.*)$/;
-      const items: string[] = [];
+      // 2文字以上字下げした「- 」は、直前の項目の下の入れ子の箇条書きにする
+      const items: { html: string; sub: string[] }[] = [];
       while (i < lines.length) {
-        const mm = lines[i].trim().match(re);
+        const raw = lines[i];
+        const sub = raw.match(/^\s{2,}[-*]\s+(.*)$/);
+        if (sub && items.length > 0) {
+          items[items.length - 1].sub.push(`<li>${inline(sub[1])}</li>`);
+          i++;
+          continue;
+        }
+        const mm = raw.trim().match(re);
         if (!mm) break;
-        items.push(`<li>${inline(mm[1])}</li>`);
+        items.push({ html: inline(mm[1]), sub: [] });
         i++;
       }
-      out.push(`<${tag}>${items.join("")}</${tag}>`);
+      out.push(
+        `<${tag}>${items.map((it) => `<li>${it.html}${it.sub.length ? `<ul>${it.sub.join("")}</ul>` : ""}</li>`).join("")}</${tag}>`,
+      );
       continue;
     }
 

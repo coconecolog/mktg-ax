@@ -35,6 +35,10 @@ const jsonLd = page.slug === "metrics" ? buildDefinedTermSetSchema(page) : build
 
     <div class="prose-notion prose-standards mt-6" set:html={page.introHtml} />
 
+    <p class="mt-6 rounded-xl border border-neutral-300 bg-white px-5 py-4 text-[0.95rem] font-bold leading-relaxed text-ink-950">
+      MKTG.AXの記事・資料・ツールの記入例は、基本モデルの成長期（3期目）の数字をもとにしています。
+    </p>
+
     <div class="mt-10">
       <TableOfContents items={page.toc} />
     </div>
