@@ -1,0 +1,13 @@
+---
+// 「数字の基準」ページの補足（左に太線のあるグレーの囲み）。本文は slot に書く
+interface Props {
+  title: string;
+  class?: string;
+}
+const { title, class: className = "" } = Astro.props;
+---
+
+<div class={`border-l-[3px] border-ink-950 bg-std-bg p-6 ${className}`}>
+  <p class="font-bold leading-[1.85] text-ink-950">{title}</p>
+  <div class="mt-2 text-sm leading-[1.85] text-std-sub"><slot /></div>
+</div>
