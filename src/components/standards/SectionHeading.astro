@@ -1,0 +1,17 @@
+---
+// 「数字の基準」ページのセクション見出し（上の太線＋章番号＋タイトル＋説明）
+interface Props {
+  num: string;
+  title: string;
+  lead?: string;
+}
+const { num, title, lead } = Astro.props;
+---
+
+<div class="border-t-2 border-ink-950 pt-4">
+  <h2 class="flex items-baseline gap-5">
+    <span class="shrink-0 font-normal text-sm text-std-mute">{num}</span>
+    <span class="text-[1.5rem] font-bold leading-snug text-ink-950 sm:text-[1.75rem]">{title}</span>
+  </h2>
+  {lead && <p class="mt-3.5 leading-[1.85] text-std-sub">{lead}</p>}
+</div>
