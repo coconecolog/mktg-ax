@@ -1,0 +1,48 @@
+---
+// 「数字の基準」3ページの行き来（ページ下部）。今いるページはグレーにしてリンクにしない
+import { getStandardPages, type StandardPage } from "@/lib/standards";
+
+interface Props {
+  current: StandardPage["slug"];
+}
+const { current } = Astro.props;
+const pages = getStandardPages();
+---
+
+<nav aria-label="数字の基準のページ" class="mt-20 border-t-2 border-ink-950 pt-6">
+  <p class="text-xs font-semibold tracking-[2px] text-std-mute">NUMBERS / 数字の基準</p>
+  <ol class="mt-5 grid gap-4 md:grid-cols-3 md:gap-6">
+    {
+      pages.map((p, i) =>
+        p.slug === current ? (
+          <li>
+            <div aria-current="page" class="flex h-full items-center gap-6 bg-std-bg p-6">
+              <span class="min-w-0 flex-1">
+                <span class="block text-[0.8125rem] text-std-mute">{String(i + 1).padStart(2, "0")}　このページ</span>
+                <span class="mt-2 block font-bold leading-snug text-std-sub">{p.title}</span>
+              </span>
+            </div>
+          </li>
+        ) : (
+          <li>
+            <a
+              href={p.path}
+              class="group flex h-full items-center gap-6 border border-std-line bg-white p-6 transition-colors hover:border-ink-950"
+            >
+              <span class="min-w-0 flex-1">
+                <span class="block text-[0.8125rem] text-std-mute">{String(i + 1).padStart(2, "0")}</span>
+                <span class="mt-2 block font-bold leading-snug text-ink-950">{p.title}</span>
+              </span>
+              <span
+                class="flex size-11 shrink-0 items-center justify-center bg-std-bg text-xl leading-none text-ink-950 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                aria-hidden="true"
+              >
+                ↗
+              </span>
+            </a>
+          </li>
+        ),
+      )
+    }
+  </ol>
+</nav>
