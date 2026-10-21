@@ -22,6 +22,14 @@
 --color-brand-900: #000000;
 
   --color-ink-950: #0b0b12;
+
+  /* 「数字の基準」（/standards/metrics・/standards/model）のグレー（Figma「数字の定義・計算ルール」「モデル企業の全体像」） */
+  --color-std-sub: #4f5057; /* 説明文 */
+  --color-std-mute: #74757c; /* 章番号・ラベル */
+  --color-std-faint: #babac0; /* 黒地の上の単位 */
+  --color-std-line: #dedee2; /* 罫線 */
+  --color-std-bar: #dddee1; /* 費用バーの人件費 */
+  --color-std-bg: #f5f5f6; /* 囲み・表の見出し行 */
 }
 
 @layer base {
