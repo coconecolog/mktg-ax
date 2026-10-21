@@ -25,8 +25,5 @@
 /blog/tag/:tag/resources   /blog/tag/:tag 301
 /blog/tag/:tag/resources/* /blog/tag/:tag 301
 /blog/tag/:tag/:page       /blog/tag/:tag 301
-# 2026-10-21 「数字の基準」を2ページ（/standards/metrics・/standards/model）にし、入口（/standards）を廃止
-/standards    /standards/metrics 301
-/standards/   /standards/metrics 301
 # 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（Cloudflare Pages）
 /*/ /:splat 301
