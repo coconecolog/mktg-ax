@@ -1,0 +1,21 @@
+---
+// 「数字の基準」ページのページ内リンク（章番号つき）
+interface Props {
+  items: { num: string; label: string; anchor: string }[];
+}
+const { items } = Astro.props;
+---
+
+<nav aria-label="このページの目次" class="border-y border-std-line py-[18px]">
+  <ul class="flex flex-wrap justify-between gap-x-6 gap-y-3">
+    {
+      items.map((item) => (
+        <li>
+          <a href={`#${item.anchor}`} class="text-[0.8125rem] text-ink-950 hover:underline">
+            <span class="text-std-mute">{item.num}</span>　{item.label} ↓
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
