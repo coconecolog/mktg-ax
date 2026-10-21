@@ -1,0 +1,18 @@
+---
+// 「数字の基準」のもう1ページへの案内
+interface Props {
+  href: string;
+  title: string;
+  description: string;
+  class?: string;
+}
+const { href, title, description, class: className = "" } = Astro.props;
+---
+
+<a href={href} class={`group flex items-center gap-8 bg-std-bg p-7 transition-colors hover:bg-std-bar ${className}`}>
+  <span class="min-w-0 flex-1">
+    <span class="block text-[1.3125rem] font-bold leading-snug text-ink-950">{title}</span>
+    <span class="mt-2 block text-sm leading-[1.85] text-std-sub">{description}</span>
+  </span>
+  <span class="shrink-0 text-[1.875rem] leading-none text-ink-950 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true">↗</span>
+</a>
