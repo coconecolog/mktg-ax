@@ -1,128 +1,87 @@
-// 「数字の基準」の2ページ（/standards/metrics・/standards/model）のページ情報と構造化データ。
-// 本文は各ページ（src/pages/standards/*.astro）に直接書いている（デザイン：Figma「数字の定義・計算ルール」「モデル企業の全体像」）。
-// 原稿の正本はGoogleドライブ。数字を変えるときは、ページの本文とこのファイル（説明文・更新日・指標の説明）をあわせて直す。
-// 見出しのアンカー（id）は、記事・ツールからリンクしているので変えない。
-import { SITE_NAME, SITE_URL } from "@/consts";
-
-export interface StandardPage {
-  slug: "metrics" | "model";
-  path: string;
-  title: string;
-  description: string;
-  lastUpdated: string; // YYYY-MM-DD
-  datePublished: string; // YYYY-MM-DD
+---
+// 「数字の基準」ページの表。1列目は行の見出し。
+// title：表の上に出す表題（「表3 …」）。strongCols：太字にする列（0始まり）。total：最後の行を合計行（太字）にする。
+// size：sm で文字を14pxにする（列の多い表）。stickyFirst：横スクロールのとき1列目を固定する（列の多い表）
+interface Props {
+  head: string[];
+  rows: string[][];
+  title?: string;
+  widths?: string[];
+  strongCols?: number[];
+  total?: boolean;
+  size?: "md" | "sm";
+  minWidth?: string;
+  stickyFirst?: boolean;
+  caption?: string;
 }
+const {
+  head,
+  rows,
+  title,
+  widths,
+  strongCols = [],
+  total = false,
+  size = "md",
+  minWidth = "36rem",
+  stickyFirst = false,
+  caption,
+} = Astro.props;
+const text = size === "sm" ? "text-sm" : "text-base";
+const pad = size === "sm" ? "px-3" : "px-4";
+const stickyHead = stickyFirst ? "sticky left-0 z-10 bg-std-bg" : "";
+const stickyCell = stickyFirst ? "sticky left-0 z-10 bg-white" : "";
+---
 
-// llms.txt・フッターなどに並べる順番
-export const STANDARD_PAGES: StandardPage[] = [
-  {
-    slug: "metrics",
-    path: "/standards/metrics",
-    title: "数字の定義・計算ルール",
-    description:
-      "MKTG.AXで使うKPI・予算の数字の定義。人件費込みの費用、目標の逆算、CPL・CAC・ROI・回収期間・CACの上限・許容CPLの式と判定の基準、使わないものとその理由。",
-    lastUpdated: "2026-10-20",
-    datePublished: "2026-10-20",
-  },
-  {
-    slug: "model",
-    path: "/standards/model",
-    title: "モデル企業の全体像",
-    description:
-      "MKTG.AXの記事・資料・ツールの記入例に使う、架空の製造業の数字一式。会社の前提と3期の変化、成長期の目標の逆算、人件費込みの費用、施策・チャネルの判定、経営への説明例。",
-    lastUpdated: "2026-10-20",
-    datePublished: "2026-10-20",
-  },
-];
-
-export function getStandardPages(): StandardPage[] {
-  return STANDARD_PAGES;
-}
-
-export function getStandardPage(slug: StandardPage["slug"]): StandardPage {
-  const page = STANDARD_PAGES.find((p) => p.slug === slug);
-  if (!page) throw new Error(`[standards] ${slug} のページ情報がありません`);
-  return page;
-}
-
-// 判定の指標（/standards/metrics の #indicators）。DefinedTerm に使う
-export interface StandardTerm {
-  name: string;
-  anchor: string;
-  description: string;
-}
-
-export const METRIC_TERMS: StandardTerm[] = [
-  { name: "CPL", anchor: "cpl", description: "リード1件の獲得にかかった費用（人件費込み）。CPL ＝ 費用 ÷ リード数" },
-  { name: "CAC", anchor: "cac", description: "新規の受注1件の獲得にかかった費用（人件費込み）。CAC ＝ 費用 ÷ 受注件数" },
-  {
-    name: "ROI",
-    anchor: "roi",
-    description: "1年間の受注の粗利から費用を引いた額が、費用の何倍かを示す割合。ROI ＝（受注金額 × 粗利率 − 費用）÷ 費用",
-  },
-  {
-    name: "回収期間",
-    anchor: "payback",
-    description: "受注1件の費用（CAC）を、その1社の粗利で取り返すまでの月数。回収期間（か月）＝ CAC ÷ 1社あたりの月の粗利",
-  },
-  {
-    name: "CACの上限",
-    anchor: "cac-limit",
-    description: "受注1件の獲得にかけてよい費用（人件費込み）の最大額。CACの上限 ＝ 1社あたりの年間粗利 × 取り返す年数",
-  },
-  {
-    name: "許容CPL",
-    anchor: "allowable-cpl",
-    description: "CACの上限を、リード1件あたりに直した額。許容CPL ＝ CACの上限 × 商談化率 × 受注率",
-  },
-];
-
-// ---------- 構造化データ ----------
-const iso = (d: string) => `${d}T00:00:00+09:00`;
-
-const author = { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, url: SITE_URL };
-
-// 数字の定義ページ：DefinedTermSet（各指標を DefinedTerm にし、url はアンカー付き）
-export function buildDefinedTermSetSchema(page: StandardPage, terms: StandardTerm[] = METRIC_TERMS) {
-  const url = new URL(page.path, SITE_URL).toString();
-  return {
-    "@context": "https://schema.org",
-    "@type": "DefinedTermSet",
-    "@id": `${url}#termset`,
-    name: page.title,
-    description: page.description,
-    url,
-    inLanguage: "ja",
-    datePublished: iso(page.datePublished),
-    dateModified: iso(page.lastUpdated),
-    author,
-    publisher: author,
-    isPartOf: { "@id": `${SITE_URL}/#website` },
-    hasDefinedTerm: terms.map((t) => ({
-      "@type": "DefinedTerm",
-      "@id": `${url}#${t.anchor}`,
-      name: t.name,
-      description: t.description,
-      url: `${url}#${t.anchor}`,
-      inDefinedTermSet: { "@id": `${url}#termset` },
-    })),
-  };
-}
-
-// モデル企業ページ：Article
-export function buildStandardArticleSchema(page: StandardPage) {
-  const url = new URL(page.path, SITE_URL).toString();
-  return {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: page.title,
-    description: page.description,
-    url,
-    inLanguage: "ja",
-    datePublished: iso(page.datePublished),
-    dateModified: iso(page.lastUpdated),
-    author,
-    publisher: author,
-    mainEntityOfPage: { "@type": "WebPage", "@id": url },
-  };
-}
+<div>
+  {title && <p class="mb-3 text-sm font-bold text-ink-950" aria-hidden="true">{title}</p>}
+  <div class="overflow-x-auto">
+    <table class={`w-full border-collapse text-left leading-[1.7] ${text}`} style={`min-width:${minWidth}`}>
+      {(title || caption) && <caption class="sr-only">{title ?? caption}</caption>}
+      {
+        widths && (
+          <colgroup>
+            {widths.map((w) => (
+              <col style={w ? `width:${w}` : undefined} />
+            ))}
+          </colgroup>
+        )
+      }
+      <thead>
+        <tr class="bg-std-bg">
+          {head.map((h, hi) => (
+            <th
+              scope="col"
+              class={`${pad} py-3.5 text-[0.8125rem] font-bold leading-[1.6] text-std-sub ${hi === 0 ? stickyHead : "whitespace-nowrap"}`}
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((row, ri) => {
+            const isTotal = total && ri === rows.length - 1;
+            return (
+              <tr class="border-b border-std-line">
+                {row.map((cell, ci) =>
+                  ci === 0 ? (
+                    <th scope="row" class={`${pad} py-4 align-middle text-ink-950 ${stickyCell} ${isTotal ? "font-bold" : "font-medium"}`}>
+                      {cell}
+                    </th>
+                  ) : (
+                    <td
+                      class={`${pad} py-4 align-middle text-ink-950 tabular-nums ${isTotal || strongCols.includes(ci) ? "font-bold" : ""}`}
+                    >
+                      {cell}
+                    </td>
+                  ),
+                )}
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
