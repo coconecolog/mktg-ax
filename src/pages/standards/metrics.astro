@@ -1,5 +1,5 @@
 ---
-// 「数字の定義・計算ルール」（/standards/metrics）。デザイン：Figma「数字の定義・計算ルール」
+// 「数字の定義（KPI・予算）」（/standards/metrics）。数字の基準の3ページの3ページ目。
 // 見出しのアンカー（rules・labor-cost・labor-allocation・backcast・indicators・cpl・cac・roi・payback・cac-limit・allowable-cpl・judgment・
 // explain・scenario・not-used・history）は、記事・ツール（予算案チェッカーなど）からリンクしているので変えない。
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -9,31 +9,27 @@ import InPageNav from "@/components/standards/InPageNav.astro";
 import SectionHeading from "@/components/standards/SectionHeading.astro";
 import DataTable from "@/components/standards/DataTable.astro";
 import Note from "@/components/standards/Note.astro";
-import RelatedPage from "@/components/standards/RelatedPage.astro";
+import StandardsNav from "@/components/standards/StandardsNav.astro";
 import { getStandardPage, buildDefinedTermSetSchema } from "@/lib/standards";
 
 const page = getStandardPage("metrics");
+const overview = getStandardPage("overview");
 const model = getStandardPage("model");
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "数字の基準", href: page.path },
+  { name: overview.title, href: overview.path },
   { name: page.title, href: page.path },
 ];
 
 const navItems = [
-  { num: "01", label: "共通ルール", anchor: "rules" },
+  { num: "01", label: "共通のルール", anchor: "rules" },
   { num: "02", label: "人件費", anchor: "labor-cost" },
   { num: "03", label: "目標の逆算", anchor: "backcast" },
-  { num: "04", label: "判定指標", anchor: "indicators" },
+  { num: "04", label: "判定の指標", anchor: "indicators" },
   { num: "05", label: "経営への説明", anchor: "explain" },
-  { num: "06", label: "参照事項", anchor: "scenario" },
-];
-
-const principles = [
-  { num: "01", title: "人件費を入れる", text: "外部費用だけで、安く見せない。" },
-  { num: "02", title: "売上から逆算する", text: "目標と、必要な活動量をつなぐ。" },
-  { num: "03", title: "回収期間と併せて見る", text: "1年のROIだけで、結論を出さない。" },
+  { num: "06", label: "シナリオ", anchor: "scenario" },
+  { num: "07", label: "使わないもの", anchor: "not-used" },
 ];
 
 const allocationSteps = [
@@ -42,34 +38,7 @@ const allocationSteps = [
   { title: "時間の割合 × マーケの人件費", text: "＝ 施策の人件費" },
 ];
 
-const backcastSteps = [
-  {
-    title: "新規の売上目標",
-    formula: "全社の売上目標 − 既存顧客の売上",
-    example: "モデルでの例：152,500 − 138,000",
-    result: "14,500万円",
-  },
-  {
-    title: "マーケ経由の売上目標",
-    formula: "新規の売上目標 − マーケ以外の見込み",
-    example: "モデルでの例：14,500 − 11,500（紹介・営業の開拓：46件 × 250）",
-    result: "3,000万円",
-  },
-  { title: "受注件数", formula: "マーケ経由の売上目標 ÷ 平均単価", example: "モデルでの例：3,000 ÷ 250", result: "12件" },
-  {
-    title: "商談数",
-    formula: "受注件数 ÷ 受注率",
-    example: "モデルでの例：12 ÷ 28.6%（今期の実績：受注12 ÷ 商談42）",
-    result: "42件",
-  },
-  {
-    title: "リード数",
-    formula: "商談数 ÷ 商談化率",
-    example: "モデルでの例：42 ÷ 14.7%（今期の実績：商談42 ÷ リード285）",
-    result: "285件",
-  },
-];
-
+// 判定の指標。最後の「施策の判定」も同じ形で並べる
 const indicators = [
   {
     anchor: "cpl",
@@ -134,13 +103,23 @@ const indicators = [
 ];
 
 const explainSteps = [
-  { num: "1", question: "いつ取り返せるか", value: "回収期間 12.8か月", text: "受注1件の費用を何か月で取り返すか。" },
-  { num: "2", question: "1年ではどうか", value: "ROI −6%", text: "1年のROIを回収期間と並べて示す。" },
+  { num: "1", question: "回収期間", value: "12.8か月", text: "受注1件の費用を何か月で取り返すか。" },
+  { num: "2", question: "1年のROI", value: "−6%", text: "回収期間と並べて示す。マイナスでも隠さない。" },
+  { num: "3", question: "上限による判定", value: "CAC 107 ≦ 上限150", text: "CACの上限と許容CPLで判定。上限超えの施策と、その扱いを示す。" },
+];
+
+const notUsed = [
+  { name: "予備費", text: "使い道の決まっていない枠は説明できず、削られやすくなります。期中に足りなくなったら、追加予算の稟議で扱います。" },
   {
-    num: "3",
-    question: "上限に収まるか",
-    value: "CAC 107 ≦ 上限150",
-    text: "CACの上限と許容CPLで判断。上限超えの施策と、その扱いを示す。",
+    name: "LTVから出す許容CPL",
+    text: "数年先の取引を前提にするので、上限が甘くなります。年間粗利と取り返す年数から出すほうが、経営と合意しやすくなります。",
+  },
+  { name: "限界CPL", text: "リード数が少ない部門では、1件増やすのにかかる費用を安定して測れません。" },
+  { name: "「粗利 ÷ 費用」のROI", text: "費用を引かないため、プラスでも赤字のことがあり、損益を読み違えやすくなります。" },
+  { name: "業界の広告宣伝費の比率との比較", text: "自社の売上目標や受注の目標とつながらず、予算の根拠になりません。" },
+  {
+    name: "「LTV/CAC 3以上」という一律の基準",
+    text: "一律の基準として使える根拠がありません。自社の年間粗利と取り返す年数から、CACの上限を出します。",
   },
 ];
 
@@ -157,39 +136,26 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
 
   <article class="mt-6 bg-white">
     <div class="mx-auto max-w-6xl px-5 pb-[72px] pt-14">
-      <!-- 入口 -->
       <div class="space-y-8">
         <PageIntro
-          label="NUMBERS / DEFINITIONS & RULES"
+          label="NUMBERS / DEFINITIONS"
           title={page.title}
-          lead="同じ前提で計算し、同じ基準で判断する。MKTG.AXの記事・資料・ツールで使うKPI・予算の式と、その読み方をまとめました。"
+          lead="MKTG.AXの記事・資料・ツールは、すべてこのページの式と基準で計算しています。知りたい指標の見出しから読んでください。記事・ツールの指標名のリンクからは、その見出しに直接移動します。"
           lastUpdated={page.lastUpdated}
         />
-        <ul class="grid gap-4 sm:grid-cols-3 sm:gap-6">
-          {
-            principles.map((p) => (
-              <li class="flex flex-col gap-3 bg-std-bg p-6">
-                <span class="text-[0.8125rem] text-std-mute">{p.num}</span>
-                <span class="text-[1.3125rem] font-bold leading-snug text-ink-950">{p.title}</span>
-                <span class="text-sm leading-[1.85] text-std-sub">{p.text}</span>
-              </li>
-            ))
-          }
-        </ul>
         <p class="text-sm leading-[1.85] text-std-sub">
-          計算例はすべて架空の会社の成長期（3期目）の数字です。業界の平均や目安ではありません。記事・ツールの指標名からは、対応する見出しへ直接移動します。
+          計算例の数字は、「<a href={model.path} class={linkClass}>{model.title}</a>」の架空の会社のものです。業界の平均や目安ではありません。
         </p>
         <InPageNav items={navItems} />
-        <RelatedPage
-          href={model.path}
-          title="モデル企業の全体像"
-          description="従業員100名・売上15億円の製造業。3期の変化と、計算例の数字一式を確認する。"
-        />
       </div>
 
-      <!-- 01 共通ルール -->
+      <!-- 01 共通のルール -->
       <section id="rules" class="mt-16 scroll-mt-24 space-y-6">
-        <SectionHeading num="01" title="まず、単位と言葉をそろえる。" lead="どの指標も、この共通ルールの上で計算します。" />
+        <SectionHeading
+          num="01"
+          title="共通のルール"
+          lead="単位、使う用語、費用への人件費の入れ方を決めています。どの指標も、このルールの上で計算します。"
+        />
         <DataTable
           caption="共通のルール"
           head={["項目", "このサイトでの定義"]}
@@ -210,82 +176,86 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
 
       <!-- 02 人件費 -->
       <section id="labor-cost" class="mt-16 scroll-mt-24 space-y-6">
-        <SectionHeading num="02" title="人件費を入れて、投資の全体を捉える。" />
+        <SectionHeading
+          num="02"
+          title="人件費を入れる"
+          lead="費用には、外部に払う費用に加えて人件費を入れます。内訳がわかるときは「外部費用・人件費・合計」の3行で示します。"
+        />
         <div class="grid gap-6 lg:grid-cols-2 lg:gap-10">
-          <div class="space-y-4 leading-[1.85] text-std-sub">
-            <p>
-              経営は人件費も含めて投資を見ています。外部費用だけで計算すると、記事制作・MAツールの運用・ウェビナーなど、社内の時間を多く使う施策が実際より安く見えてしまいます。
-            </p>
-            <p>内訳がわかるときは「外部費用・人件費・合計」の3行で示します。</p>
-          </div>
+          <p class="leading-[1.85] text-std-sub">
+            経営は人件費も含めて投資を見ています。外部費用だけで計算すると、記事制作・MAツールの運用・ウェビナーなど、社内の時間を多く使う施策が実際より安く見えてしまいます。
+          </p>
           <Note title="まだ人件費がわからないとき">0として計算できます。ただし結果には、人件費を入れていない数字だと明記します。</Note>
         </div>
 
-        <div id="labor-allocation" class="scroll-mt-24 bg-std-bg p-6 sm:p-8">
-          <h3 class="font-bold leading-[1.85] text-ink-950">施策ごとの人件費の配り方</h3>
-          <ol class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
-            {
-              allocationSteps.map((s, i) => (
-                <>
-                  <li class="flex flex-1 flex-col gap-2.5">
-                    <span class="font-bold leading-[1.85] text-ink-950">{s.title}</span>
-                    <span class="text-sm leading-[1.85] text-std-sub">{s.text}</span>
-                  </li>
-                  {i < allocationSteps.length - 1 && (
-                    <li class="text-[1.75rem] leading-none text-ink-950 lg:block" aria-hidden="true">
-                      <span class="inline-block rotate-90 lg:rotate-0">→</span>
+        <div id="labor-allocation" class="scroll-mt-24 space-y-5 pt-4">
+          <h3 class="text-[1.1875rem] font-bold text-ink-950">施策ごとの人件費の配り方</h3>
+          <p class="leading-[1.85] text-std-sub">
+            マーケの人件費は、施策と共通の作業にかけた時間に、人ごとの時間単価をかけて出します。施策ごとの人件費は、その施策にかける時間の割合で配ります。
+          </p>
+          <div class="bg-std-bg p-6 sm:p-8">
+            <ol class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
+              {
+                allocationSteps.map((s, i) => (
+                  <>
+                    <li class="flex flex-1 flex-col gap-2.5">
+                      <span class="font-bold leading-[1.85] text-ink-950">{s.title}</span>
+                      <span class="text-sm leading-[1.85] text-std-sub">{s.text}</span>
                     </li>
-                  )}
-                </>
-              ))
-            }
-          </ol>
-          <hr class="my-5 border-std-line" />
-          <p class="leading-[1.85] text-std-sub">成長期の例：370 × 展示会120時間 ÷ 施策の合計742時間 ＝ 人件費60万円</p>
+                    {i < allocationSteps.length - 1 && (
+                      <li class="text-[1.75rem] leading-none text-ink-950" aria-hidden="true">
+                        <span class="inline-block rotate-90 lg:rotate-0">→</span>
+                      </li>
+                    )}
+                  </>
+                ))
+              }
+            </ol>
+            <hr class="my-5 border-std-line" />
+            <p class="leading-[1.85] text-std-sub">成長期の例：370 × 展示会120時間 ÷ 施策の合計742時間 ＝ 人件費60万円</p>
+          </div>
+          <ul class="list-disc space-y-1.5 pl-5 leading-[1.85] text-std-sub">
+            <li>共通の作業（集計・報告、営業との連携、予算づくり）の時間は、施策の時間の比で配ります</li>
+            <li>マーケの人件費には、施策に協力する営業の時間も含めます</li>
+            <li>施策と共通の作業のどちらにも入らない時間（社内の会議など）は入れません</li>
+          </ul>
+          <!-- TODO（予算案チェッカー公開後に入れる）：人件費の配り方は予算案チェッカーで自動で計算できます -->
         </div>
-        <p class="leading-[1.85] text-std-sub">
-          共通の作業（集計・報告、営業との連携、予算づくり）の時間は施策の時間の比で配ります。施策に協力する営業の時間も含みます。施策と共通作業のどちらにも入らない時間（社内の会議など）は入れません。
-        </p>
       </section>
 
       <!-- 03 目標の逆算 -->
       <section id="backcast" class="mt-16 scroll-mt-24 space-y-6">
         <SectionHeading
           num="03"
-          title="全社の売上目標から、リード数へ逆算する。"
-          lead="既存顧客の売上とマーケ以外の見込みを引き、受注件数・商談数・リード数へ順に割り戻します。"
+          title="目標の逆算"
+          lead="全社の売上目標から既存顧客の売上とマーケ以外の見込みを引いてマーケ経由の売上目標を出し、受注件数・商談数・リード数を順に割り戻します。"
         />
-        <ol>
-          {
-            backcastSteps.map((s, i) => (
-              <li class="flex items-center gap-4 border-b border-std-line py-5 sm:gap-6">
-                <div class="flex w-8 shrink-0 flex-col items-center gap-3 text-std-mute" aria-hidden="true">
-                  <span class="text-sm">{String(i + 1).padStart(2, "0")}</span>
-                  {i < backcastSteps.length - 1 && <span class="text-2xl leading-none">↓</span>}
-                </div>
-                <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
-                  <div class="min-w-0 flex-1">
-                    <p class="text-[1.1875rem] font-bold text-ink-950">{s.title}</p>
-                    <p class="mt-2 leading-[1.85] text-std-sub">{s.formula}</p>
-                    <p class="mt-2 text-sm leading-[1.85] text-std-sub">{s.example}</p>
-                  </div>
-                  <p class="text-[1.5rem] font-bold text-ink-950 sm:w-[200px] sm:shrink-0 sm:text-right sm:text-[1.75rem]">{s.result}</p>
-                </div>
-              </li>
-            ))
-          }
-        </ol>
-        <Note title="率は今期の実績。進行中の商談は、受注率の分母に入れない。">
-          受注率は、決着した商談（受注＋失注）だけで出します。進行中の商談を分母に入れると、受注率が実際より低く出てしまいます。モデルの表示値は丸めていますが、計算には丸める前の値を使います。
+        <DataTable
+          caption="目標の逆算の式と計算例"
+          head={["目標", "式", "計算例（成長期）"]}
+          widths={["20%", "38%", "42%"]}
+          minWidth="48rem"
+          rows={[
+            ["新規の売上目標", "全社の売上目標 − 既存顧客の売上", "152,500 − 138,000 ＝ 14,500"],
+            ["マーケ経由の売上目標", "新規の売上目標 − マーケ以外（紹介・営業の開拓）の見込み", "14,500 − 11,500（46件 × 250）＝ 3,000"],
+            ["受注件数", "マーケ経由の売上目標 ÷ 平均単価", "3,000 ÷ 250 ＝ 12件"],
+            ["商談数", "受注件数 ÷ 受注率", "12 ÷ 28.6%（受注12 ÷ 商談42）＝ 42件"],
+            ["リード数", "商談数 ÷ 商談化率", "42 ÷ 14.7%（商談42 ÷ リード285）＝ 285件"],
+          ]}
+        />
+        <Note title="率の取り方">
+          率は今期の実績を使います。受注率は、決着した商談（受注＋失注）だけで出します。進行中の商談を分母に入れると、受注率が実際より低く出てしまいます。
         </Note>
+        <!-- TODO（B-04公開後に入れる）：逆算の進め方はB-04で詳しく説明しています -->
+        <!-- TODO（予算シミュレーターの修正後に入れる）：予算シミュレーターで、目標から逆算した予算を作れます -->
       </section>
 
-      <!-- 04 判定指標 -->
+      <!-- 04 判定の指標 -->
       <section id="indicators" class="mt-16 scroll-mt-24 space-y-6">
         <SectionHeading
           num="04"
-          title="費用が見合うかを、6つの指標で確かめる。"
-          lead="すべて外部費用＋人件費の合計で計算。式、モデルでの例、判断の順で参照できます。"
+          title="判定の指標"
+          lead="費用（人件費込み）が見合っているかを判定する指標です。すべて費用の合計で計算します。"
         />
         <ul class="flex flex-wrap gap-x-7 gap-y-2">
           {
@@ -297,6 +267,9 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
               </li>
             ))
           }
+          <li>
+            <a href="#judgment" class="text-sm font-medium text-ink-950 hover:underline">施策の判定 ↓</a>
+          </li>
         </ul>
         <div>
           {
@@ -304,10 +277,7 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
               <section id={m.anchor} class="scroll-mt-24 border-b border-std-line py-8">
                 <div class="flex flex-col gap-6 lg:flex-row lg:gap-10">
                   <div class="min-w-0 flex-1 space-y-3.5">
-                    <div class="flex items-baseline gap-6">
-                      <h3 class="text-[1.5625rem] font-bold text-ink-950">{m.name}</h3>
-                      <span class="text-xs text-std-mute">何を見る</span>
-                    </div>
+                    <h3 class="text-[1.5625rem] font-bold text-ink-950">{m.name}</h3>
                     <p class="leading-[1.85] text-ink-950">{m.what}</p>
                     <p class="whitespace-pre-line bg-std-bg p-[18px] font-medium leading-[1.89] text-ink-950">{m.formula}</p>
                   </div>
@@ -325,39 +295,50 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
               </section>
             ))
           }
-        </div>
 
-        <section id="judgment" class="scroll-mt-24 space-y-5 pt-4">
-          <h3 class="text-[1.5625rem] font-bold text-ink-950">施策は、CPLと許容CPLで判定する。</h3>
-          <div class="grid gap-4 sm:grid-cols-2 sm:gap-6">
-            <div class="flex flex-col gap-3 bg-std-bg p-6">
-              <p class="font-bold leading-[1.85] text-ink-950">施策のCPL ≦ 許容CPL → 上限内</p>
-              <p class="leading-[1.85] text-std-sub">展示会：CPL 2.8 ≦ 6.3</p>
+          <!-- 施策の判定 -->
+          <section id="judgment" class="scroll-mt-24 border-b border-std-line py-8">
+            <div class="flex flex-col gap-6 lg:flex-row lg:gap-10">
+              <div class="min-w-0 flex-1 space-y-3.5">
+                <h3 class="text-[1.5625rem] font-bold text-ink-950">施策の判定</h3>
+                <p class="leading-[1.85] text-ink-950">施策のCPLを許容CPLと比べ、許容CPL以下なら「上限内」、超えたら「上限超え」とします。</p>
+                <p class="bg-std-bg p-[18px] font-medium leading-[1.89] text-ink-950">
+                  施策のCPL ≦ 許容CPL → 上限内<br />施策のCPL ＞ 許容CPL → 上限超え
+                </p>
+              </div>
+              <div class="flex flex-col gap-2.5 lg:w-[240px] lg:shrink-0 lg:pt-2">
+                <p class="text-xs text-std-mute">モデルでの例 / 成長期</p>
+                <p class="text-sm leading-[1.79] text-ink-950">
+                  <span class="font-bold">上限内</span><br />展示会：CPL 2.8 ≦ 6.3
+                </p>
+                <p class="text-sm leading-[1.79] text-ink-950">
+                  <span class="font-bold">上限超え</span><br />新しい業種向けLP＋広告（試行）：CPL 7.0 ＞ 6.3
+                </p>
+              </div>
             </div>
-            <div class="flex flex-col gap-3 border border-ink-950 p-6">
-              <p class="font-bold leading-[1.85] text-ink-950">施策のCPL ＞ 許容CPL → 上限超え</p>
-              <p class="leading-[1.85] text-std-sub">新しい業種向けLP＋広告（試行）：7.0 ＞ 6.3</p>
+            <div class="mt-5 flex flex-col gap-1 sm:flex-row sm:gap-6">
+              <p class="shrink-0 text-sm font-bold text-ink-950 sm:w-20">判断・注意</p>
+              <p class="flex-1 text-sm leading-[1.85] text-std-sub">
+                施策ごとの受注件数は少なく、1件の差でCACが大きく変わります。そのため、判定はCPLで行います。施策ごとに見ると上限内でも、共通の費用（MAツールなど）を含めてチャネルで集計し直すと、上限を超えることがあります。施策とチャネルの両方で見ます（<a
+                  href={`${model.path}#channels`}
+                  class={linkClass}>モデルでの例</a
+                >）。
+              </p>
             </div>
-          </div>
-          <Note title="施策とチャネル、両方で確認する。">
-            受注件数が少ない施策は、1件の差でCACが大きく変わります。そのため判定はCPLで行います。施策単体では上限内でも、MAツールなどの共通費用を含めてチャネルで集計し直すと、上限を超えることがあります。
-          </Note>
-        </section>
+            <!-- TODO（予算案チェッカー公開後に入れる）：施策ごとの判定は予算案チェッカーで出せます -->
+          </section>
+        </div>
       </section>
 
-      <!-- 05 経営への説明 -->
+      <!-- 05 経営への説明の順番 -->
       <section id="explain" class="mt-16 scroll-mt-24 space-y-6">
-        <SectionHeading
-          num="05"
-          title="回収期間 → 1年のROI → 上限による判断。"
-          lead="経営への説明は、回収期間を主役に。ROIがマイナスでも隠しません。"
-        />
+        <SectionHeading num="05" title="経営への説明の順番" lead="経営への説明の主役は回収期間です。1年のROIは並べて示します。" />
         <ol class="grid gap-4 sm:grid-cols-3 sm:gap-6">
           {
             explainSteps.map((s) => (
-              <li class="flex flex-col gap-4 bg-std-bg p-6">
+              <li class="flex flex-col gap-3 bg-std-bg p-6">
                 <span class="text-[1.875rem] leading-none text-std-mute">{s.num}</span>
-                <span class="text-[1.3125rem] font-bold leading-snug text-ink-950">{s.question}</span>
+                <span class="text-[1.1875rem] font-bold leading-snug text-ink-950">{s.question}</span>
                 <span class="font-bold leading-[1.85] text-ink-950">{s.value}</span>
                 <span class="text-sm leading-[1.85] text-std-sub">{s.text}</span>
               </li>
@@ -365,13 +346,15 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
           }
         </ol>
         <p class="text-sm leading-[1.85] text-std-sub">
-          計算例は架空の会社・成長期。金額は万円。具体的な経営への説明例は「<a href={`${model.path}#explain`} class={linkClass}>モデル企業の全体像</a>」に掲載しています。
+          計算例は架空の会社の成長期。説明の一文の例は「<a href={`${model.path}#explain`} class={linkClass}>{model.title}</a>」にあります。
         </p>
+        <!-- TODO（D-01公開後に入れる）：経営への説明の組み立てはD-01で詳しく -->
+        <!-- TODO（予算案チェッカー公開後に入れる）：説明に使う回収期間・ROI・判定は予算案チェッカーで出せます -->
       </section>
 
       <!-- 06 シナリオ -->
       <section id="scenario" class="mt-16 scroll-mt-24 space-y-6">
-        <SectionHeading num="06" title="見込みのずれは、3つのシナリオで確かめる。" lead="予算案は、費用ではなく率を変えて示します。" />
+        <SectionHeading num="06" title="3つのシナリオ" lead="予算案は、費用ではなく率を変えた3つのシナリオで示します。" />
         <DataTable
           caption="3つのシナリオ"
           head={["シナリオ", "商談化率", "受注率"]}
@@ -385,45 +368,39 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
         <p class="leading-[1.85] text-std-sub">
           率を変えるのは、費用より率のほうが見込みから外れやすいためです。2つの率を同じ幅で動かし、どこまで外れても上限内に収まるかを確かめます。
         </p>
+        <!-- TODO（D-10公開後に入れる）：シナリオと撤退基準の立て方はD-10で詳しく -->
+        <!-- TODO（予算シミュレーターの修正後、3つのシナリオを出せるなら入れる）：3つのシナリオは予算シミュレーターで比べられます -->
       </section>
 
       <!-- 07 使わないもの -->
       <section id="not-used" class="mt-16 scroll-mt-24 space-y-6">
-        <SectionHeading num="07" title="使わない指標・基準にも、理由がある。" />
-        <DataTable
-          caption="使わないもの"
-          head={["使わないもの", "理由・代わりに見るもの"]}
-          widths={["346px", ""]}
-          rows={[
-            ["予備費", "使い道の決まっていない枠は説明できず、削られやすくなります。期中に足りなくなったら追加予算の稟議で扱います。"],
-            [
-              "LTVから出す許容CPL",
-              "数年先の取引を前提にするので、上限が甘くなります。年間粗利と取り返す年数から出すほうが、経営と合意しやすくなります。",
-            ],
-            ["限界CPL", "リード数が少ない部門では、1件増やすのにかかる費用を安定して測れません。"],
-            ["「粗利 ÷ 費用」のROI", "費用を引かないため、プラスでも赤字のことがあり、損益を読み違えやすくなります。"],
-            ["業界の広告宣伝費の比率との比較", "自社の売上目標や受注の目標につながらず、予算の根拠になりません。"],
-            [
-              "「LTV/CAC 3以上」という一律の基準",
-              "一律の基準として使える根拠がありません。自社の年間粗利と取り返す年数から、CACの上限を出します。",
-            ],
-          ]}
-        />
+        <SectionHeading num="07" title="使わないもの" lead="MKTG.AXでは、次のものを使いません。それぞれ理由を書きます。" />
+        <ul class="divide-y divide-std-line bg-std-bg px-6 sm:px-8">
+          {
+            notUsed.map((n) => (
+              <li class="flex flex-col gap-1 py-5 sm:flex-row sm:gap-6">
+                <span class="shrink-0 font-bold leading-[1.85] text-ink-950 sm:w-[300px]">{n.name}</span>
+                <span class="flex-1 leading-[1.85] text-std-sub">{n.text}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <!-- TODO（ツール・資料のリンクが入ったら、この下に「自社の数字で計算する」の節を戻す。予算案チェッカー／予算シミュレーター／M-B-03／M-B-04） -->
       </section>
 
       <!-- 08 更新履歴 -->
       <section id="history" class="mt-16 scroll-mt-24 space-y-5">
-        <SectionHeading num="08" title="更新履歴" />
-        <p class="text-sm leading-[1.85] text-std-sub">このページの式・基準を変えたときに記録します。</p>
-        <DataTable caption="更新履歴" head={["日付", "内容"]} widths={["50%", "50%"]} minWidth="20rem" rows={[["2026-10-20", "公開"]]} />
+        <SectionHeading num="08" title="更新履歴" lead="このページの式・基準を変えたときに記録します。" />
+        <DataTable
+          caption="更新履歴"
+          head={["日付", "内容"]}
+          widths={["30%", "70%"]}
+          minWidth="20rem"
+          rows={[["2026-10-20", "公開"]]}
+        />
       </section>
 
-      <RelatedPage
-        class="mt-16"
-        href={model.path}
-        title="モデル企業の全体像へ"
-        description="企業の前提、成長期の費用・施策・チャネル、経営への説明例をまとめて確認する。"
-      />
+      <StandardsNav current="metrics" />
     </div>
   </article>
 </BaseLayout>
