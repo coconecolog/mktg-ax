@@ -1,0 +1,19 @@
+---
+// 「数字の基準」ページの冒頭（分類・更新日・H1・説明）
+interface Props {
+  label: string;
+  title: string;
+  lead: string;
+  lastUpdated: string;
+}
+const { label, title, lead, lastUpdated } = Astro.props;
+---
+
+<div>
+  <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+    <p class="text-xs font-semibold tracking-[2px] text-std-mute">{label}</p>
+    <p class="text-[0.8125rem] text-std-mute">最終更新日：<time datetime={lastUpdated}>{lastUpdated}</time></p>
+  </div>
+  <h1 class="mt-[18px] text-[2.25rem] font-bold leading-tight tracking-[-1px] text-ink-950 sm:text-[2.75rem]">{title}</h1>
+  <p class="mt-[18px] leading-[1.85] text-std-sub">{lead}</p>
+</div>
