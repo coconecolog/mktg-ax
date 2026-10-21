@@ -1,0 +1,48 @@
+---
+// 「数字の基準」の各ページ（/standards/metrics・/standards/model）。
+// 本文は src/content/standards/*.md の原稿から組み立てる（src/lib/standards.ts）。原稿を差しかえるときは、mdファイルを上書きするだけでよい。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import TableOfContents from "@/components/TableOfContents.astro";
+import {
+  getStandardPages,
+  buildDefinedTermSetSchema,
+  buildStandardArticleSchema,
+  type StandardPage,
+} from "@/lib/standards";
+
+export function getStaticPaths() {
+  return getStandardPages().map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props as { page: StandardPage };
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "数字の基準", href: "/standards" },
+  { name: page.title, href: page.path },
+];
+
+// 数字の定義は DefinedTermSet、それ以外（基本モデル）は Article
+const jsonLd = page.slug === "metrics" ? buildDefinedTermSetSchema(page) : buildStandardArticleSchema(page);
+---
+
+<BaseLayout title={page.title} description={page.description} ogImage="/open-graph/default.png" jsonLd={jsonLd}>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <article class="mx-auto max-w-3xl px-5 pb-20 pt-10">
+    <h1 class="text-3xl font-extrabold leading-snug tracking-tight text-ink-950 sm:text-4xl">{page.h1}</h1>
+
+    <div class="prose-notion prose-standards mt-6" set:html={page.introHtml} />
+
+    <p class="mt-6 rounded-xl border border-neutral-300 bg-white px-5 py-4 text-[0.95rem] font-bold leading-relaxed text-ink-950">
+      MKTG.AXの記事・資料・ツールの記入例は、基本モデルの成長期（3期目）の数字をもとにしています。
+    </p>
+
+    <div class="mt-10">
+      <TableOfContents items={page.toc} />
+    </div>
+
+    <div class="prose-notion prose-standards" set:html={page.bodyHtml} />
+  </article>
+</BaseLayout>
