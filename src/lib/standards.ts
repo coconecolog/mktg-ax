@@ -38,8 +38,8 @@ export const STANDARD_PAGES: StandardPage[] = [
     path: "/standards/metrics",
     title: "数字の定義（KPI・予算）",
     description:
-      "MKTG.AXで使うKPI・予算の数字の定義。人件費込みの費用、目標の逆算、CPL・CAC・ROI・回収期間・CACの上限・許容CPLの式と判定の基準、使わないものとその理由。",
-    lastUpdated: "2026-10-21",
+      "MKTG.AXで使うKPI・予算の数字の定義。人件費込みの費用、目標の逆算、CPL・CAC・ROI・回収期間・CACの上限・許容CPLの式と判定の基準、撤退の判断、使わないものとその理由。",
+    lastUpdated: "2026-10-23",
     datePublished: "2026-10-20",
   },
 ];
@@ -83,6 +83,12 @@ export const METRIC_TERMS: StandardTerm[] = [
     name: "許容CPL",
     anchor: "allowable-cpl",
     description: "CACの上限を、リード1件あたりに直した額。許容CPL ＝ CACの上限 × 商談化率 × 受注率",
+  },
+  {
+    name: "撤退の判断",
+    anchor: "exit",
+    description:
+      "施策を続けるか止めるかを決める線。開始月＋6か月以降、開始月からの累計で、施策のCPL ＞ 許容CPL かつ リード数 ＜ 目標の90% なら撤退を検討",
   },
 ];
 
