@@ -360,6 +360,7 @@ export interface KpiPlan {
 }
 export interface OtherPlan {
   name: string;
+  after: string; // 施策の中で、どの欄のあとに置くか（欄の key。空＝最後）
   target: number | null;
   monthly: (number | null)[];
   measurable: boolean;
@@ -379,8 +380,9 @@ export interface MeasurePlan {
   others: OtherPlan[];
   cost: number | null;
   parts: CostParts;
-  start: number; // 開始月（期首からの月数 0〜11）
-  exitAfter: number | null; // 撤退を判定する月＝開始月＋N
+  start: number; // 開始月（期首からの月数 0〜11）。resolvePlan が月別の目標から出す（最初に目標が入った月。なければ期首）
+  exitAfter: number | null; // 撤退を判定する月＝開始月＋N。resolvePlan が exitAt から出す
+  exitAt: number | null; // 撤退を判定し始める月（期首からの月数 0〜11）。null＝決めない
   cplCap: number | null;
   cplCapTouched: boolean; // false のあいだは許容CPLを初期値として入れる
 }
@@ -409,7 +411,9 @@ export interface Plan {
   years: number | null; // 取り返す年数
   decider: string;
   review: string;
-  handoffTarget: number | null; // 営業に渡せる割合の目標 %（任意）
+  handoffTarget: number | null; // 営業に渡せる割合（リード→営業に渡す）%。ツリーを率で入れるときの入力。resolvePlan が必ず入れる
+  handoffs: number | null; // 営業に渡す数（ツリーを件数で入れるときの入力）
+  mqlDealRate: number | null; // 営業に渡したうち商談になる割合 %（ツリーを率で入れるときの入力）
   commonMeasurable: Record<CommonKey, boolean>;
   measures: Record<MeasureId, MeasurePlan>;
 }
@@ -450,8 +454,8 @@ export function emptyMeasurePlan(id: MeasureId): MeasurePlan {
   const counts: Record<string, number | null> = {};
   for (const f of MEASURES[id].fields) counts[f.key] = null;
   const rates: Record<string, number | null> = {};
-  for (const k of MEASURES[id].kpis) if (k.kind === "rate") rates[k.key] = null;
-  return { on: false, mode: "count", counts, rates, kpis, others: [], cost: null, parts: emptyParts(), start: 0, exitAfter: 6, cplCap: null, cplCapTouched: false };
+  for (const l of LINKS[id]) rates[l.b] = null; // つながりの先の欄（b）ごとの率 %（月の配信回数は回）
+  return { on: false, mode: "count", counts, rates, kpis, others: [], cost: null, parts: emptyParts(), start: 0, exitAfter: 6, exitAt: 6, cplCap: null, cplCapTouched: false };
 }
 
 export function emptyMeasureMonth(id: MeasureId): MeasureMonth {
@@ -492,6 +496,8 @@ export function emptyPlan(now = new Date()): Plan {
     decider: "",
     review: "",
     handoffTarget: null,
+    handoffs: null,
+    mqlDealRate: null,
     commonMeasurable: { handoffRate: true, dealRate: true, winRate: true },
     measures,
   };
@@ -519,7 +525,7 @@ export function normalizeData(raw: any): KcData {
   if (Number.isInteger(p.startYear) && p.startYear > 2000 && p.startYear < 2100) plan.startYear = p.startYear;
   if (Number.isInteger(p.startMonth) && p.startMonth >= 1 && p.startMonth <= 12) plan.startMonth = p.startMonth;
   plan.manageDay = Number.isInteger(p.manageDay) && p.manageDay >= 1 && p.manageDay <= 31 ? p.manageDay : p.manageDay === null ? null : plan.manageDay;
-  for (const k of ["sales", "price", "wins", "winRate", "deals", "dealRate", "leads", "cycle", "margin", "years", "handoffTarget"] as const) plan[k] = numOrNull(p[k]);
+  for (const k of ["sales", "price", "wins", "winRate", "deals", "dealRate", "leads", "cycle", "margin", "years", "handoffTarget", "handoffs", "mqlDealRate"] as const) plan[k] = numOrNull(p[k]);
   plan.decider = str(p.decider, 80);
   plan.review = str(p.review, 80);
   for (const c of COMMON_KPIS) plan.commonMeasurable[c.key] = bool(p.commonMeasurable?.[c.key], true);
@@ -538,20 +544,25 @@ export function normalizeData(raw: any): KcData {
       for (const k of MEASURES[id].kpis) {
         const t = numOrNull(src.kpis?.[k.key]?.target);
         if ((k.kind === "count" || k.kind === "level") && k.num) mp.counts[k.num] = t;
-        else if (k.kind === "rate") mp.rates[k.key] = t;
+        else if (k.kind === "rate") {
+          const l = LINKS[id].find((x) => x.kpi === k.key);
+          if (l) mp.rates[l.b] = t;
+        }
       }
     } else {
       mp.mode = src.mode === "rate" ? "rate" : "count";
       for (const f of MEASURES[id].fields) mp.counts[f.key] = numOrNull(src.counts?.[f.key]);
-      for (const k of Object.keys(mp.rates)) mp.rates[k] = numOrNull(src.rates?.[k]);
+      for (const l of LINKS[id]) mp.rates[l.b] = numOrNull(src.rates?.[l.b] ?? (l.kpi ? src.rates?.[l.kpi] : null)); // 10-23の最初の版は率のKPIの key で持っていた
     }
     mp.others = Array.isArray(src.others)
-      ? src.others.slice(0, 5).map((o: any) => ({ name: str(o?.name, 40), target: numOrNull(o?.target), monthly: numArr(o?.monthly), measurable: bool(o?.measurable, true) }))
+      ? src.others.slice(0, 5).map((o: any) => ({ name: str(o?.name, 40), after: MEASURES[id].fields.some((f) => f.key === o?.after) ? o.after : "", target: numOrNull(o?.target), monthly: numArr(o?.monthly), measurable: bool(o?.measurable, true) }))
       : [];
     mp.cost = numOrNull(src.cost);
     mp.parts = parts(src.parts);
     mp.start = Number.isInteger(src.start) && src.start >= 0 && src.start <= 11 ? src.start : 0;
     mp.exitAfter = Number.isInteger(src.exitAfter) && src.exitAfter >= 1 && src.exitAfter <= 11 ? src.exitAfter : src.exitAfter === null ? null : 6;
+    mp.exitAt =
+      src.exitAt === null ? null : Number.isInteger(src.exitAt) && src.exitAt >= 0 && src.exitAt <= 11 ? src.exitAt : mp.exitAfter === null ? null : Math.min(11, mp.start + mp.exitAfter);
     mp.cplCap = numOrNull(src.cplCap);
     mp.cplCapTouched = bool(src.cplCapTouched, false);
   }
@@ -654,10 +665,11 @@ export function cplCapOf(plan: Plan, id: MeasureId): number | null {
 }
 
 // ---------- 一般的な値と、空欄を埋めた plan（2026-10-23） ----------
-/** 空欄のときに使う一般的な値（2年目以降の会社の目安。基本モデルの成長期）。画面の薄い文字と同じ */
-export const GENERAL = { sales: 3000, price: 250, winRate: 29, dealRate: 15, cycle: 3, margin: 40, years: 1.5 } as const;
+/** 空欄のときに使う一般的な値（2年目以降の会社の目安。基本モデルの成長期）。画面の薄い文字と同じ。
+ *  営業に渡せる割合（MQL化率）37%×商談になる割合40%＝商談化率14.8%（≒15%） */
+export const GENERAL = { sales: 3000, price: 250, winRate: 29, dealRate: 15, handoffRate: 37, mqlDealRate: 40, cycle: 3, margin: 40, years: 1.5 } as const;
 
-/** 施策の中の欄のつながり：b ≒ a × r。率で入れるときは、KPI（kpi）の率で r を置きかえる */
+/** 施策の中の欄のつながり：b ≒ a × r。率で入れるときは、rates[b] で r を置きかえる */
 export interface LinkDef {
   a: string;
   b: string;
@@ -684,19 +696,19 @@ export const LINKS: Record<MeasureId, LinkDef[]> = {
   dl: [
     { a: "views", b: "dls", r: 0.06, label: "ダウンロード率", kpi: "dlRate" },
     { a: "dls", b: "target", r: 0.5, label: "狙う相手の割合", kpi: "targetRate" },
-    { a: "dls", b: "inquiries", r: 0.15, label: "その後の問い合わせ・相談になる割合" },
+    { a: "dls", b: "inquiries", r: 0.15, label: "問い合わせになる割合" },
   ],
   mail: [
     { a: "list", b: "sent", r: 2, label: "月の配信回数", perMonth: true },
     { a: "sent", b: "delivered", r: 0.98, label: "到達率", kpi: "delivRate" },
-    { a: "delivered", b: "opened", r: 0.2, label: "開封率（参考値）", kpi: "openRate" },
+    { a: "delivered", b: "opened", r: 0.2, label: "開封率（参考）", kpi: "openRate" },
     { a: "delivered", b: "clicks", r: 0.02, label: "クリック率", kpi: "ctr" },
-    { a: "clicks", b: "conv", r: 0.05, label: "問い合わせ・申込になる割合" },
+    { a: "clicks", b: "conv", r: 0.05, label: "問い合わせになる割合" },
   ],
   seminar: [
     { a: "apps", b: "attend", r: 0.6, label: "参加率", kpi: "attendRate" },
     { a: "attend", b: "survey", r: 0.8, label: "アンケートの回答率", kpi: "surveyRate" },
-    { a: "attend", b: "consult", r: 0.1, label: "個別相談を希望する割合" },
+    { a: "attend", b: "consult", r: 0.1, label: "相談を希望する割合" },
   ],
 };
 
@@ -705,9 +717,8 @@ const ceilCount = (x: number): number => Math.ceil(clean(x) - 1e-9);
 const div = (a: number | null, b: number | null): number | null => (a === null || b === null || b === 0 ? null : a / b);
 const round1 = (x: number): number => Math.round(clean(x) * 10) / 10;
 
-/** 率で入れるときの入力欄（件数のKPIの欄） */
-export const rateModeCountFields = (id: MeasureId): string[] =>
-  MEASURES[id].kpis.filter((k) => (k.kind === "count" || k.kind === "level") && k.num).map((k) => k.num!);
+/** 率で入れるときの件数の入力欄：一番上の欄だけ（ほかの件数は率から計算） */
+export const rateModeCountFields = (id: MeasureId): string[] => [MEASURES[id].fields[0].key];
 
 export interface TreeResolved {
   sales: number;
@@ -715,70 +726,69 @@ export interface TreeResolved {
   wins: number;
   winRate: number | null; // %
   deals: number;
-  dealRate: number | null; // %
+  mqlDealRate: number | null; // 営業に渡したうち商談になる割合 %
+  handoffs: number;
+  handoffRate: number | null; // 営業に渡せる割合 %
   leads: number;
+  dealRate: number | null; // 商談化率（商談÷リード）%
   defaults: string[];
 }
-/** ツリーの空欄を一般的な値で埋める。件数で入れるときは率を、率で入れるときは件数を計算する */
+type TreeKey = "sales" | "price" | "wins" | "winRate" | "deals" | "mqlDealRate" | "handoffs" | "handoffTarget" | "leads";
+/** ツリーの空欄を一般的な値で埋める。件数で入れるときは率を、率で入れるときは件数を計算する
+ *  売上 →（÷平均単価）受注 →（÷受注率）商談 →（÷商談になる割合）営業に渡す →（÷営業に渡せる割合）リード */
 export function resolveTree(p: Plan): TreeResolved {
   const defaults: string[] = [];
-  const pick = (k: "sales" | "price" | "wins" | "winRate" | "deals" | "dealRate" | "leads", gen: () => number): number => {
+  const pick = (k: TreeKey, name: string, gen: () => number): number => {
     const v = p[k];
-    if (v !== null && v > 0) return v;
-    defaults.push(k);
+    if (v !== null && v !== undefined && v > 0) return v;
+    defaults.push(name);
     return gen();
   };
-  const sales = pick("sales", () => GENERAL.sales);
+  const sales = pick("sales", "sales", () => GENERAL.sales);
+  let out: Omit<TreeResolved, "dealRate" | "defaults">;
   if (p.treeMode === "rate") {
-    const price = pick("price", () => GENERAL.price);
-    const winRate = pick("winRate", () => GENERAL.winRate);
-    const dealRate = pick("dealRate", () => GENERAL.dealRate);
+    const price = pick("price", "price", () => GENERAL.price);
+    const winRate = pick("winRate", "winRate", () => GENERAL.winRate);
+    const mqlDealRate = pick("mqlDealRate", "mqlDealRate", () => GENERAL.mqlDealRate);
+    const handoffRate = pick("handoffTarget", "handoffRate", () => GENERAL.handoffRate);
     const wins = ceilCount(sales / price);
     const deals = ceilCount(wins / (winRate / 100));
-    const leads = ceilCount(deals / (dealRate / 100));
-    return { sales, price, wins, winRate, deals, dealRate, leads, defaults };
+    const handoffs = ceilCount(deals / (mqlDealRate / 100));
+    const leads = ceilCount(handoffs / (handoffRate / 100));
+    out = { sales, price, wins, winRate, deals, mqlDealRate, handoffs, handoffRate, leads };
+  } else {
+    const wins = pick("wins", "wins", () => Math.max(1, ceilCount(sales / GENERAL.price)));
+    const deals = pick("deals", "deals", () => Math.max(1, ceilCount(wins / (GENERAL.winRate / 100))));
+    const handoffs = pick("handoffs", "handoffs", () => Math.max(1, ceilCount(deals / (GENERAL.mqlDealRate / 100))));
+    const leads = pick("leads", "leads", () => Math.max(1, ceilCount(handoffs / (GENERAL.handoffRate / 100))));
+    // 件数を一般的な値で出したところは、その率も一般的な値のまま
+    if (defaults.includes("wins")) defaults.push("price");
+    if (defaults.includes("deals")) defaults.push("winRate");
+    if (defaults.includes("handoffs")) defaults.push("mqlDealRate");
+    if (defaults.includes("leads")) defaults.push("handoffRate");
+    const r = (a: number, b: number) => {
+      const v = div(a, b);
+      return v === null ? null : round1(v * 100);
+    };
+    const pr = div(sales, wins);
+    out = { sales, price: pr === null ? null : round1(pr), wins, winRate: r(wins, deals), deals, mqlDealRate: r(deals, handoffs), handoffs, handoffRate: r(handoffs, leads), leads };
   }
-  const wins = pick("wins", () => Math.max(1, ceilCount(sales / GENERAL.price)));
-  const deals = pick("deals", () => Math.max(1, ceilCount(wins / (GENERAL.winRate / 100))));
-  const leads = pick("leads", () => Math.max(1, ceilCount(deals / (GENERAL.dealRate / 100))));
-  // 件数を一般的な値で出したところは、その率も一般的な値のまま
-  if (defaults.includes("wins")) defaults.push("price");
-  if (defaults.includes("deals")) defaults.push("winRate");
-  if (defaults.includes("leads")) defaults.push("dealRate");
-  const pr = div(sales, wins);
-  const wr = div(wins, deals);
-  const dr = div(deals, leads);
-  return { sales, price: pr === null ? null : round1(pr), wins, winRate: wr === null ? null : round1(wr * 100), deals, dealRate: dr === null ? null : round1(dr * 100), leads, defaults };
+  if (defaults.includes("mqlDealRate") && defaults.includes("handoffRate")) defaults.push("dealRate");
+  const dr = div(out.deals, out.leads);
+  return { ...out, dealRate: dr === null ? null : round1(dr * 100), defaults };
 }
 
 export interface MeasureResolved {
   counts: Record<string, number | null>; // 欄ごとの期間の目標（件数）
-  rates: Record<string, number | null>; // つながり（b）ごとの率 0〜1。キーは LinkDef.b
-  entered: Record<string, boolean>; // 入力した欄
+  rates: Record<string, number | null>; // つながり（b）ごとの率 0〜1（月の配信回数は回）
+  entered: Record<string, boolean>; // 入力した欄（件数）
   targets: Record<string, number | null>; // KPIごとの目標（count・level＝件数、rate・ref＝%）
-  leadDefault: boolean; // リード数を入れていない（全体のリード数を施策の数で割った値）
+  leadDefault: boolean; // リード数を入れていない
   defaults: string[]; // 一般的な値のままのKPI
 }
-/** リード数が空の施策の初期値：全体のリード数から、入れた施策のリード数を引いた残りを、空の施策で分ける（合計が全体と合うように） */
-export function leadDefaults(p: Plan, treeLeads: number): Partial<Record<MeasureId, number>> {
-  const ids = selectedMeasures(p);
-  const valOf = (id: MeasureId) => {
-    const mp = p.measures[id];
-    const f = leadKpi(id).num!;
-    const v = mp.counts[f];
-    return v !== null && v !== undefined && v >= 0 ? v : null;
-  };
-  const blanks = ids.filter((id) => valOf(id) === null);
-  const used = ids.reduce((s, id) => s + (valOf(id) ?? 0), 0);
-  const rest = Math.max(0, Math.round(treeLeads - used));
-  const out: Partial<Record<MeasureId, number>> = {};
-  const base = blanks.length ? Math.floor(rest / blanks.length) : 0;
-  blanks.forEach((id, k) => (out[id] = base + (k < rest - base * blanks.length ? 1 : 0)));
-  return out;
-}
-
-/** 施策の欄の空欄を埋める。リード数が空なら leadDefaults（全体の残りを分けた値）。ほかは一般的な率でつなぐ */
-export function resolveMeasure(p: Plan, id: MeasureId, treeLeads: number, _nSel?: number): MeasureResolved {
+/** 施策の欄の空欄を埋める。入れた件数（率で入れるときは一番上の件数と率）から、一般的な率でつないで計算する。
+ *  何も入れていない施策は、すべて空（未入力）のまま */
+export function resolveMeasure(p: Plan, id: MeasureId, _treeLeads?: number, _nSel?: number): MeasureResolved {
   const def = MEASURES[id];
   const mp = p.measures[id];
   const links = LINKS[id];
@@ -792,19 +802,18 @@ export function resolveMeasure(p: Plan, id: MeasureId, treeLeads: number, _nSel?
     known[f.key] = v !== null && v !== undefined && v >= 0 ? v : null;
     entered[f.key] = known[f.key] !== null;
   }
-  const leadDefault = known[leadField] === null;
-  if (leadDefault) known[leadField] = mp.on ? leadDefaults(p, treeLeads)[id] ?? null : null;
+  const rateEntered = (l: LinkDef) => mp.mode === "rate" && mp.rates[l.b] !== null && mp.rates[l.b] !== undefined;
   const rateOf = (l: LinkDef): number => {
-    if (l.perMonth) return l.r * months;
-    if (mp.mode === "rate" && l.kpi && mp.rates[l.kpi] !== null && mp.rates[l.kpi] !== undefined) return mp.rates[l.kpi]! / 100;
-    return l.r;
+    const v = rateEntered(l) ? mp.rates[l.b]! : null;
+    if (l.perMonth) return (v ?? l.r) * months;
+    return v !== null ? v / 100 : l.r;
   };
   for (let loop = 0; loop < 8; loop++) {
     let changed = false;
     for (const l of links) {
       const r = rateOf(l);
       if (known[l.b] === null && known[l.a] !== null) {
-        known[l.b] = l.b === leadField ? known[l.a]! * r : clean(known[l.a]! * r);
+        known[l.b] = clean(known[l.a]! * r);
         changed = true;
       } else if (known[l.a] === null && known[l.b] !== null && r > 0) {
         known[l.a] = clean(known[l.b]! / r);
@@ -813,12 +822,11 @@ export function resolveMeasure(p: Plan, id: MeasureId, treeLeads: number, _nSel?
     }
     if (!changed) break;
   }
-  // 件数は切り上げ（リード数より上流は「これだけ要る」、下流は端数を切り上げ）
-  for (const f of def.fields) if (!entered[f.key] && known[f.key] !== null && !(f.key === leadField && !leadDefault)) known[f.key] = ceilCount(known[f.key]!);
+  for (const f of def.fields) if (!entered[f.key] && known[f.key] !== null) known[f.key] = ceilCount(known[f.key]!);
   const rates: Record<string, number | null> = {};
   for (const l of links) {
-    const v = l.perMonth ? div(known[l.b], known[l.a] === null ? null : known[l.a]! * months) : div(known[l.b], known[l.a]);
-    rates[l.b] = v;
+    if (rateEntered(l)) rates[l.b] = l.perMonth ? mp.rates[l.b]! : mp.rates[l.b]! / 100;
+    else rates[l.b] = l.perMonth ? div(known[l.b], known[l.a] === null ? null : known[l.a]! * months) : div(known[l.b], known[l.a]);
   }
   const targets: Record<string, number | null> = {};
   const defaults: string[] = [];
@@ -828,16 +836,26 @@ export function resolveMeasure(p: Plan, id: MeasureId, treeLeads: number, _nSel?
       if (!entered[k.num!]) defaults.push(k.key);
     } else if (k.kind === "rate" || k.kind === "ref") {
       const link = links.find((l) => l.kpi === k.key);
-      if (mp.mode === "rate" && mp.rates[k.key] !== null && mp.rates[k.key] !== undefined) targets[k.key] = mp.rates[k.key];
+      if (link && rateEntered(link)) targets[k.key] = mp.rates[link.b];
       else {
         const r = div(known[k.num!], known[k.den!]);
         targets[k.key] = r === null ? null : round1(r * 100);
-        const fromInputs = mp.mode === "count" ? entered[k.num!] && entered[k.den!] : false;
-        if (!fromInputs && !link?.perMonth) defaults.push(k.key);
+        const fromInputs = mp.mode === "count" && entered[k.num!] && entered[k.den!];
+        if (!fromInputs) defaults.push(k.key);
       }
     } else targets[k.key] = null; // cpl は費用から（resolvePlan）
   }
-  return { counts: known, rates, entered, targets, leadDefault, defaults };
+  return { counts: known, rates, entered, targets, leadDefault: !entered[leadField], defaults };
+}
+
+/** 施策の開始月：件数のKPIの月別の目標が最初に入った月（なければ期首） */
+export function measureStart(p: Plan, id: MeasureId): number {
+  const n = periodMonths(p.period);
+  const mp = p.measures[id];
+  const arrs = MEASURES[id].kpis.filter((k) => k.kind === "count").map((k) => mp.kpis[k.key].monthly.slice(0, n));
+  if (!arrs.some((a) => a.some((v) => v !== null && v !== undefined))) return 0;
+  for (let i = 0; i < n; i++) if (arrs.some((a) => (a[i] ?? 0) > 0)) return i;
+  return 0;
 }
 
 /** 判定・PDF・毎月の計算に使う plan。入力（raw）の空欄を一般的な値で埋め、施策のKPIの目標を入れる */
@@ -851,6 +869,9 @@ export function resolvePlan(raw: Plan): Plan {
   p.deals = t.deals;
   p.dealRate = t.dealRate;
   p.leads = t.leads;
+  p.handoffs = t.handoffs;
+  p.handoffTarget = t.handoffRate;
+  p.mqlDealRate = t.mqlDealRate;
   const treeDefaults = [...t.defaults];
   for (const k of ["cycle", "margin", "years"] as const) {
     if (raw[k] === null || raw[k] === undefined) {
@@ -858,7 +879,6 @@ export function resolvePlan(raw: Plan): Plan {
       treeDefaults.push(k);
     }
   }
-  const sel = selectedMeasures(raw);
   const measureDefaults: Partial<Record<MeasureId, string[]>> = {};
   for (const id of MEASURE_IDS) {
     const mp = p.measures[id];
@@ -866,7 +886,7 @@ export function resolvePlan(raw: Plan): Plan {
       for (const k of MEASURES[id].kpis) mp.kpis[k.key].target = null;
       continue;
     }
-    const r = resolveMeasure(raw, id, t.leads, sel.length);
+    const r = resolveMeasure(raw, id);
     for (const k of MEASURES[id].kpis) if (k.kind !== "cpl") mp.kpis[k.key].target = r.targets[k.key];
     if (mp.kpis.cpl) {
       // CPLの目標：入れたもの（旧版のデータ）、なければ 費用÷リード目標
@@ -874,6 +894,8 @@ export function resolvePlan(raw: Plan): Plan {
       const lt = r.targets[leadKpi(id).key];
       mp.kpis.cpl.target = raw.measures[id].kpis.cpl?.target ?? (c !== null && lt ? clean(c / lt) : null);
     }
+    mp.start = measureStart(raw, id);
+    mp.exitAfter = mp.exitAt === null || mp.exitAt === undefined ? null : Math.max(1, mp.exitAt - mp.start);
     measureDefaults[id] = r.defaults;
   }
   p.meta = { treeDefaults, measureDefaults };
@@ -885,32 +907,36 @@ export const resolveData = (d: KcData): KcData => ({ ...d, plan: resolvePlan(d.p
 export function switchTreeMode(p: Plan, to: InputMode): void {
   if (p.treeMode === to) return;
   const t = resolveTree(p);
-  const from = p.treeMode === "count" ? (["wins", "deals", "leads"] as const) : (["price", "winRate", "dealRate"] as const);
-  const any = from.some((k) => p[k] !== null);
+  const from: TreeKey[] = p.treeMode === "count" ? ["wins", "deals", "handoffs", "leads"] : ["price", "winRate", "mqlDealRate", "handoffTarget"];
+  const any = from.some((k) => p[k] !== null && p[k] !== undefined);
   p.treeMode = to;
   if (!any) return;
   if (to === "rate") {
     p.price = t.price;
     p.winRate = t.winRate;
-    p.dealRate = t.dealRate;
+    p.mqlDealRate = t.mqlDealRate;
+    p.handoffTarget = t.handoffRate;
   } else {
     p.wins = t.wins;
     p.deals = t.deals;
+    p.handoffs = t.handoffs;
     p.leads = t.leads;
   }
 }
 export function switchMeasureMode(p: Plan, id: MeasureId, to: InputMode): void {
   const mp = p.measures[id];
   if (mp.mode === to) return;
-  const t = resolveTree(p);
-  const r = resolveMeasure(p, id, t.leads, selectedMeasures(p).length);
-  const from = mp.mode === "count" ? MEASURES[id].fields.map((f) => f.key) : rateModeCountFields(id);
-  const any = from.some((f) => mp.counts[f] !== null) || (mp.mode === "rate" && Object.values(mp.rates).some((v) => v !== null));
+  const r = resolveMeasure(p, id);
+  const any = mp.mode === "count" ? MEASURES[id].fields.some((f) => mp.counts[f.key] !== null) : mp.counts[MEASURES[id].fields[0].key] !== null || Object.values(mp.rates).some((v) => v !== null);
   mp.mode = to;
   if (!any) return;
   if (to === "rate") {
-    for (const k of Object.keys(mp.rates)) mp.rates[k] = r.targets[k] ?? null;
-    for (const f of rateModeCountFields(id)) mp.counts[f] = r.counts[f];
+    for (const l of LINKS[id]) {
+      const v = r.rates[l.b];
+      mp.rates[l.b] = v === null ? null : l.perMonth ? round1(v) : round1(v * 100);
+    }
+    const top = MEASURES[id].fields[0].key;
+    mp.counts[top] = r.counts[top];
   } else {
     for (const f of MEASURES[id].fields) mp.counts[f.key] = r.counts[f.key];
   }
@@ -1812,7 +1838,7 @@ export function exampleData(now = new Date()): KcData {
   p.startYear = y;
   p.startMonth = 4;
   p.manageDay = 5;
-  Object.assign(p, { sales: 3000, wins: 12, deals: 41, leads: 280, cycle: 3, margin: 40, years: 1.5 });
+  Object.assign(p, { sales: 3000, wins: 12, deals: 41, handoffs: 103, leads: 280, cycle: 3, margin: 40, years: 1.5 });
   p.decider = "営業本部長";
   p.review = "毎月10日の経営会議";
   p.commonMeasurable = { handoffRate: true, dealRate: true, winRate: true };
@@ -1825,22 +1851,22 @@ export function exampleData(now = new Date()): KcData {
   expo.kpis.cards.monthly = y12({ 2: 60, 7: 60 });
   expo.kpis.reachRate.measurable = false;
   expo.cost = 600;
-  expo.exitAfter = 5;
+  expo.exitAt = 5;
 
   const ads = p.measures.ads;
   ads.on = true;
   ads.counts = { imp: 222000, clicks: 3330, leads: 100, target: 60 };
   ads.cost = 420;
-  ads.exitAfter = 5;
+  ads.exitAt = 5;
   ads.cplCap = 4;
   ads.cplCapTouched = true;
 
   const dl = p.measures.dl;
   dl.on = true;
   dl.counts = { views: 1200, dls: 72, target: 36, inquiries: 12 };
-  dl.others = [{ name: "Xのフォロワー数", target: 600, monthly: [], measurable: true }];
+  dl.others = [{ name: "Xのフォロワー数", after: "views", target: 600, monthly: [], measurable: true }];
   dl.cost = 120;
-  dl.exitAfter = 8;
+  dl.exitAt = 8;
 
   // 毎月の実績（4月から nMonths か月）
   const ADS = {
