@@ -1,9 +1,9 @@
 // src/scripts/kpi-check/app.ts
 //
-// KPI運用チェッカーの画面（2026-10-23 改修：ステップごとのページ）。
+// （仮）KPI妥当性チェッカーの画面（2026-10-23 改修：ステップごとのページ）。
 // - 入口：/tools/kpi-check（#kc-hub）
-// - ① 初回：/tools/kpi-check/setup/1〜6（3は施策ごと /setup/3/<施策>、/setup/3/common）
-// - ② 毎月：/tools/kpi-check/monthly/1〜5（2は施策ごと /monthly/2/<施策>）
+// - ①（仮）KPI妥当性チェッカー：/tools/kpi-check/setup/1〜6（3は施策ごと /setup/3/<施策>）
+// - ②（仮）KPI運用管理ツール：/tools/kpi-check/monthly/1〜5。②は別のツールにする予定で、入口からはリンクしていない（あとで見直す）
 // 各ページは <div id="kc-app" data-flow data-step data-sub> を置くだけで、中身はここで描く。
 // 入力は localStorage（mktgax-kpi-check-v1）に入れ、ページを移っても残す。サンプルは sessionStorage に別に置く。
 // 判定・PDFには resolveData()（空欄を一般的な値で埋めたもの）を使う。
@@ -75,7 +75,7 @@ const STEPS: Record<Flow, { n: number; label: string }[]> = {
     { n: 5, label: "PDF" },
   ],
 };
-const FLOW_NAME: Record<Flow, string> = { setup: "① KPIの妥当性をチェック", monthly: "② 毎月の実績を判定" };
+const FLOW_NAME: Record<Flow, string> = { setup: "KPI妥当性チェッカー", monthly: "毎月の実績を判定" };
 
 // ---------- 保存 ----------
 const ls = {
@@ -166,7 +166,8 @@ function setAt(path: string, v: any) {
   let o: any = data;
   for (let n = 0; n < ks.length - 1; n++) {
     const k = ks[n];
-    if (Array.isArray(o[k]) && (ks[n + 1] ?? "").match(/^\d+$/)) while (o[k].length < 12) o[k].push(null);
+    // 配列の先の番号まで null で埋める（月別の目標など。足したKPIの配列は埋めない＝番号はすでにある）
+    if (Array.isArray(o[k]) && (ks[n + 1] ?? "").match(/^\d+$/)) while (o[k].length <= Number(ks[n + 1])) o[k].push(null);
     o = o[k];
   }
   o[ks[ks.length - 1]] = v;
@@ -202,7 +203,7 @@ interface View {
 
 function sampleBanner(): string {
   if (!isSample()) return "";
-  return `<div class="kc-sample"><span><b>サンプル（架空の会社）を表示しています。</b>あなたの入力とは別に保存しています。</span><div><a class="kc-link" href="${url("setup", 5)}">初回の判定</a><a class="kc-link" href="${url("monthly", 4)}">毎月の判定</a><button type="button" class="kc-link" data-act="sample-end">サンプルを終える</button></div></div>`;
+  return `<div class="kc-sample"><span><b>サンプル（架空の会社）を表示しています。</b>あなたの入力とは別に保存しています。</span><div><button type="button" class="kc-link" data-act="sample-end">サンプルを終える</button></div></div>`;
 }
 
 function progress(flow: Flow, step: number): string {
@@ -243,44 +244,47 @@ function setup1(): View {
   const t = resolveTree(p);
   const count = p.treeMode === "count";
   const toggle = `<div class="kc-tg">入れ方${seg("tree-mode", p.treeMode, [["count", "件数"], ["rate", "率"]])}</div>`;
-  const nodeIn = (key: "wins" | "deals" | "leads", label: string, v: number) =>
-    `<div class="kc-nd in"><p class="lb">${label}</p>${inp(`plan.${key}`, "件", fmtNum(v), { label })}</div>`;
+  type K = "wins" | "deals" | "handoffs" | "leads";
+  type R = "price" | "winRate" | "mqlDealRate" | "handoffTarget";
+  const nodeIn = (key: K, label: string, v: number) => `<div class="kc-nd in"><p class="lb">${label}</p>${inp(`plan.${key}`, "件", fmtNum(v), { label })}</div>`;
   const nodeCalc = (label: string, v: number) => `<div class="kc-nd c"><p class="lb">${label}</p><p class="num">${fmtNum(v)}<small>件</small></p></div>`;
   const linkCalc = (label: string, v: string) => `<div class="kc-lk"><div class="op">${label} ${rc("", v)}</div></div>`;
-  const linkIn = (label: string, key: "price" | "winRate" | "dealRate", unit: string, ph: string) =>
-    `<div class="kc-lk"><div class="op">÷ ${label} ${inp(`plan.${key}`, unit, ph, { label })}</div></div>`;
+  const linkIn = (label: string, key: R, unit: string, ph: number) => `<div class="kc-lk"><div class="op">÷ ${label} ${inp(`plan.${key}`, unit, fmtNum(ph), { label })}</div></div>`;
   const tree = count
     ? [
         linkCalc("平均単価", `${fmtNum(t.price)}万円`),
         nodeIn("wins", "受注数", t.wins),
         linkCalc("受注率", `${pct1(t.winRate)}%`),
         nodeIn("deals", "商談数", t.deals),
-        linkCalc("商談化率", `${pct1(t.dealRate)}%`),
+        linkCalc("商談になる割合", `${pct1(t.mqlDealRate)}%`),
+        nodeIn("handoffs", "営業に渡す数", t.handoffs),
+        linkCalc("営業に渡せる割合", `${pct1(t.handoffRate)}%`),
         nodeIn("leads", "リード数", t.leads),
       ]
     : [
-        linkIn("平均単価", "price", "万円", fmtNum(GENERAL.price)),
+        linkIn("平均単価", "price", "万円", GENERAL.price),
         nodeCalc("受注数", t.wins),
-        linkIn("受注率", "winRate", "%", fmtNum(GENERAL.winRate)),
+        linkIn("受注率", "winRate", "%", GENERAL.winRate),
         nodeCalc("商談数", t.deals),
-        linkIn("商談化率", "dealRate", "%", fmtNum(GENERAL.dealRate)),
+        linkIn("商談になる割合", "mqlDealRate", "%", GENERAL.mqlDealRate),
+        nodeCalc("営業に渡す数", t.handoffs),
+        linkIn("営業に渡せる割合", "handoffTarget", "%", GENERAL.handoffRate),
         nodeCalc("リード数", t.leads),
       ];
-  const ids = sel();
-  const rp = ids.length ? resolvePlan(p) : null;
-  const leaves = ids.length
-    ? ids.map((id) => `<div class="kc-bk">${esc(TINY[id])}<b>${fmtNum(rp!.measures[id].kpis[leadKpi(id).key].target)}</b></div>`)
-    : ["施策A", "施策B", "施策C"].map((x) => `<div class="kc-bk ph">${x}</div>`);
+  const chips = COMMON_KPIS.map(
+    (c) => `<button type="button" class="kc-chip" data-act="unmeasured" data-path="plan.commonMeasurable.${c.key}" aria-pressed="${!p.commonMeasurable[c.key]}">${esc(c.key === "handoffRate" ? "営業に渡す数" : c.key === "dealRate" ? "商談数" : "受注数")}</button>`,
+  ).join("");
   const html = `
     <p class="kc-h">売上目標から、必要なリード数を確かめます</p>
-    <p class="kc-lead">黒い枠の欄だけ入れてください。灰色の欄はツールが計算します。薄い文字は一般的な値で、空欄のまま進むとその値で計算します。率がわかるときは、「入れ方」を「率」に切りかえてください。</p>
+    <p class="kc-lead">枠のある欄だけ入れてください。灰色の欄はツールが計算します。薄い文字は一般的な値で、空欄のまま進むとその値で計算します。</p>
     ${legend(toggle)}
     <div class="kc-vt">
-      <div class="kc-nd top"><p class="lb">売上目標（マーケ経由・期間の合計）</p>${inp("plan.sales", "万円", fmtNum(GENERAL.sales), { label: "売上目標" })}</div>
+      <div class="kc-nd in top"><p class="lb">売上目標（マーケ経由・期間の合計）</p>${inp("plan.sales", "万円", fmtNum(GENERAL.sales), { label: "売上目標" })}</div>
       ${tree.join("")}
-      <div class="kc-br"><div class="hl" style="left:${100 / (leaves.length * 2)}%;right:${100 / (leaves.length * 2)}%"></div>${leaves.join("")}</div>
-      <p class="kc-hint" style="text-align:center">${ids.length ? "施策ごとのリード数（STEP3で入れます）" : "施策ごとの内訳は、STEP2で施策を選び、STEP3で入れます"}</p>
-    </div>`;
+    </div>
+    <p class="kc-hint" style="text-align:center;margin-top:12px !important">営業に渡せる割合：リードのうち、営業に渡す（営業が追うに値する）割合。商談化率（商談÷リード）は ${pct1(t.dealRate)}% です</p>
+    <p class="kc-sec">今は取れていない数字<small style="font-weight:400;margin-left:6px">あれば選ぶ</small></p>
+    <div class="kc-chips">${chips}</div>`;
   return { html, back: { href: BASE, label: "ツールの入口へ" }, next: { href: url("setup", 2), label: "次へ：施策と期間" } };
 }
 
@@ -378,117 +382,107 @@ function allocBar(cur: MeasureId | null): string {
 function setup3(sub: string): View {
   const ids = sel();
   if (!ids.length) return { html: "", redirect: url("setup", 2) };
-  if (sub === "common") return setup3common();
   const id = sub as MeasureId;
   if (!MEASURES[id] || !data.plan.measures[id].on) return { html: "", redirect: url("setup", 3, ids[0]) };
   const p = data.plan;
   const def = MEASURES[id];
   const mp = p.measures[id];
-  const t = resolveTree(p);
-  const r = resolveMeasure(p, id, t.leads, ids.length);
+  const r = resolveMeasure(p, id);
   const base = `plan.measures.${id}`;
   const count = mp.mode === "count";
   const inputs = count ? def.fields.map((f) => f.key) : rateModeCountFields(id);
   const leadField = leadKpi(id).num!;
   const flabel = (k: string) => def.fields.find((f) => f.key === k)!.label.replace(/（リード数）$/, "");
   const fieldUnit = (k: string) => def.fields.find((f) => f.key === k)!.unit;
+  const cnt = (v: number | null) => (v === null ? "" : fmtNum(v));
+  const posOpts = (cur: string) =>
+    def.fields.map((f) => `<option value="${f.key}"${f.key === cur ? " selected" : ""}>${esc(flabel(f.key))}のあと</option>`).join("") + `<option value=""${cur === "" ? " selected" : ""}>いちばん下</option>`;
+  const otherRow = (j: number) => {
+    const o = mp.others[j];
+    return `<div class="kc-fl br"><span class="kc-oth-tag">足したKPI</span></div>
+      <div class="kc-fs kc-fs-oth"><span class="nm"><span class="kc-in"><input data-p="${base}.others.${j}.name" data-t="text" maxlength="30" value="${esc(o.name)}" placeholder="KPIの名前" aria-label="足したKPIの名前" /></span></span>
+        <div class="kc-oth-r">${inp(`${base}.others.${j}.target`, "件", "目標", { label: "足したKPIの目標" })}<div class="kc-in kc-pos"><select data-p="${base}.others.${j}.after" data-t="str" aria-label="置く場所">${posOpts(o.after)}</select></div><button type="button" class="kc-del" data-act="del-other" data-id="${id}" data-j="${j}" aria-label="このKPIを消す">×</button></div></div>`;
+  };
+  const othersAfter = (key: string) => mp.others.map((o, j) => (o.after === key ? otherRow(j) : "")).join("");
   const rows: string[] = [];
   def.fields.forEach((f, i) => {
     if (i > 0) {
       for (const l of LINKS[id].filter((x) => x.b === f.key)) {
         const prev = def.fields[i - 1].key;
         const from = l.a !== prev ? `${flabel(l.a)}の ` : "";
-        const kpiDef = l.kpi ? def.kpis.find((k) => k.key === l.kpi) : null;
+        const rv = r.rates[l.b];
         let body: string;
-        if (l.perMonth) body = rc(`${l.label}`, `${fmtNum(r.rates[l.b] === null ? null : r.rates[l.b]!, 1)}回`);
-        else if (!count && kpiDef) body = `${esc(from)}× ${esc(l.label)} ${inp(`${base}.rates.${l.kpi}`, "%", fmtNum(l.r * 100, 1), { label: l.label })}`;
-        else body = rc(`${from}${l.label}`, `${r.rates[l.b] === null ? "—" : fmtNum(r.rates[l.b]! * 100, 1)}%`);
+        if (!count) {
+          const unit = l.perMonth ? "回" : "%";
+          const ph = l.perMonth ? fmtNum(l.r, 1) : fmtNum(l.r * 100, 1);
+          body = `${esc(from)}× ${esc(l.label)} ${inp(`${base}.rates.${l.b}`, unit, ph, { label: l.label })}`;
+        } else body = rc(`${from}${l.label}`, rv === null ? "—" : l.perMonth ? `${fmtNum(rv, 1)}回` : `${fmtNum(rv * 100, 1)}%`);
         rows.push(`<div class="kc-fl${l.a !== prev ? " br" : ""}">${body}</div>`);
       }
     }
     const isIn = inputs.includes(f.key);
     const v = r.counts[f.key];
     const name = `${esc(flabel(f.key))}${f.key === leadField ? "<small>この施策で取る分（リード数）</small>" : ""}`;
-    const box = isIn ? inp(`${base}.counts.${f.key}`, fieldUnit(f.key), fmtNum(v), { label: flabel(f.key) }) : calc(fmtNum(v), fieldUnit(f.key));
+    const box = isIn ? inp(`${base}.counts.${f.key}`, fieldUnit(f.key), cnt(v) || "未入力", { label: flabel(f.key) }) : calc(v === null ? "—" : fmtNum(v), fieldUnit(f.key));
     rows.push(`<div class="kc-fs"><span class="nm">${name}</span>${box}</div>`);
+    rows.push(othersAfter(f.key));
   });
+  rows.push(othersAfter(""));
+  const addRow =
+    mp.others.length < 5
+      ? `<div class="kc-addrow"><span>KPIを足す場所</span><div class="kc-in kc-pos"><select id="kc-add-pos" aria-label="KPIを足す場所">${posOpts(leadField)}</select></div><button type="button" class="kc-btn2" data-act="add-other" data-id="${id}">＋ KPIを足す</button></div>`
+      : "";
 
-  // 今は取れていない数字
   const unmeas = def.kpis
     .filter((k) => k.kind !== "cpl")
     .map((k) => `<button type="button" class="kc-chip" data-act="unmeasured" data-path="${base}.kpis.${k.key}.measurable" aria-pressed="${!mp.kpis[k.key].measurable}">${esc(k.label)}</button>`)
     .join("");
-  // その他のKPI
-  const others = mp.others
-    .map(
-      (o, j) =>
-        `<div class="kc-oth"><div class="kc-in"><input data-p="${base}.others.${j}.name" data-t="text" maxlength="30" value="${esc(o.name)}" placeholder="KPIの名前" aria-label="その他のKPIの名前" /></div>${inp(`${base}.others.${j}.target`, "件", "目標", { label: "その他のKPIの目標" })}<button type="button" class="kc-del" data-act="del-other" data-id="${id}" data-j="${j}" aria-label="削除">×</button></div>`,
-    )
-    .join("");
-  // 月別の目標
+
+  // 月別の目標（行＝月、列＝KPI）
   const n = periodMonths(p.period);
   let monthly = "";
   if (n > 1) {
     const rp = resolvePlan(p);
-    const targets = def.kpis
+    const cols = def.kpis
       .filter((k) => k.kind === "count" && rp.measures[id].kpis[k.key].target !== null)
       .map((k) => ({ label: k.label, path: `${base}.kpis.${k.key}.monthly`, target: rp.measures[id].kpis[k.key].target!, monthly: mp.kpis[k.key].monthly }))
-      .concat(mp.others.map((o, j) => ({ label: o.name || "その他のKPI", path: `${base}.others.${j}.monthly`, target: o.target as number, monthly: o.monthly })).filter((x) => x.target !== null));
-    const blocks = targets
-      .map((tg) => {
-        const entered = tg.monthly.slice(0, n).some((v) => v !== null && v !== undefined);
-        const sum = tg.monthly.slice(0, n).reduce((s: number, v) => s + (v || 0), 0);
-        const okSum = Math.abs(sum - tg.target) < 1e-6;
-        const line = entered ? `<small class="${okSum ? "" : "ng"}">合計 ${fmtCount(sum)}／目標 ${fmtCount(tg.target)}${okSum ? " ✓" : "（合っていません）"}</small>` : `<small>未入力（各月 ${fmtCount(tg.target / n)}）</small>`;
-        const cells = Array.from({ length: n }, (_, i) => {
-          const v = tg.monthly[i];
-          return `<label>${esc(monthLabel(p, i))}<input data-p="${tg.path}.${i}" inputmode="decimal" value="${esc(numStr(v ?? null))}" placeholder="${esc(entered ? "0" : fmtCount(tg.target / n))}" /></label>`;
-        }).join("");
-        return `<p class="kc-mgl">${esc(tg.label)}${line}</p><div class="kc-mgr">${cells}</div>`;
-      })
-      .join("");
-    monthly = `<details class="kc-det" data-k="${id}-monthly"${openSet.has(`${id}-monthly`) ? " open" : ""}><summary>月別の目標<small>任意。入れないと期間の月数で均等に割ります（展示会など月に偏る施策に）</small></summary>${blocks}</details>`;
+      .concat(mp.others.map((o, j) => ({ label: o.name || "足したKPI", path: `${base}.others.${j}.monthly`, target: o.target as number, monthly: o.monthly })).filter((x) => x.target !== null));
+    if (cols.length) {
+      const st = cols.map((c) => {
+        const entered = c.monthly.slice(0, n).some((v) => v !== null && v !== undefined);
+        const sum = c.monthly.slice(0, n).reduce((s: number, v) => s + (v || 0), 0);
+        return { entered, sum, ok: Math.abs(sum - c.target) < 1e-6 };
+      });
+      const head = `<tr><th>月</th>${cols.map((c) => `<th>${esc(c.label)}</th>`).join("")}</tr>`;
+      const body = Array.from({ length: n }, (_, i) => `<tr><th>${esc(monthLabel(p, i))}</th>${cols
+        .map((c, k) => `<td><input data-p="${c.path}.${i}" inputmode="decimal" value="${esc(numStr(c.monthly[i] ?? null))}" placeholder="${esc(st[k].entered ? "0" : fmtCount(c.target / n))}" aria-label="${esc(monthLabel(p, i))} ${esc(c.label)}" /></td>`)
+        .join("")}</tr>`).join("");
+      const foot = `<tr class="sum"><th>合計／目標</th>${cols.map((c, k) => `<td class="${st[k].entered && !st[k].ok ? "ng" : ""}">${st[k].entered ? `${fmtCount(st[k].sum)}／${fmtCount(c.target)}${st[k].ok ? " ✓" : ""}` : `均等（${fmtCount(c.target)}）`}</td>`).join("")}</tr>`;
+      monthly = `<details class="kc-det" data-k="${id}-monthly"${openSet.has(`${id}-monthly`) ? " open" : ""}><summary>月別の目標<small>任意。入れないと期間の月数で均等に割ります（展示会など月に偏る施策に）。最初に目標が入った月を、この施策の開始月にします</small></summary><div class="kc-tw"><table class="kc-mt">${head}${body}${foot}</table></div></details>`;
+    }
   }
 
   const k = ids.indexOf(id);
-  const nextHref = k < ids.length - 1 ? url("setup", 3, ids[k + 1]) : url("setup", 3, "common");
-  const nextLabel = k < ids.length - 1 ? `次へ：${MEASURES[ids[k + 1]].short}` : "次へ：リードの後";
+  const last = k === ids.length - 1;
   const html = `
-    ${subChips("setup", 3, id, true)}
+    ${subChips("setup", 3, id, false)}
     <p class="kc-h">${esc(def.short)}：リードをどこまで取るか</p>
     ${allocBar(id)}
+    <div class="kc-tgl"><div class="kc-tg">入れ方${seg("m-mode", mp.mode, [["count", "件数"], ["rate", "率"]], ` data-id="${id}"`)}</div><span class="kc-hint" style="margin:0 !important">${count ? "件数をすべて入れます。率は計算します" : "いちばん上の件数と、率を入れます。ほかの件数は計算します"}</span></div>
     <div class="kc-fun">
-      <div>${rows.join("")}</div>
+      <div>${rows.join("")}${addRow}</div>
       <div class="kc-side">
-        <div class="tgr"><div class="kc-tg">入れ方${seg("m-mode", mp.mode, [["count", "件数"], ["rate", "率"]], ` data-id="${id}"`)}</div></div>
-        <div class="kc-box"><b>${esc(def.short)}で見るところ</b>${esc(MEASURE_NOTE[id])}<br />${count ? "率は、件数から自動で出します。" : "件数は、率から自動で出します。"}薄い文字は一般的な値で、空欄のまま進むとその値で計算します。リード数が空欄のときは、全体のリード数の残りを、空欄の施策で分けます。</div>
+        <div class="kc-box"><b>${esc(def.short)}で見るところ</b>${esc(MEASURE_NOTE[id])}<br />薄い文字は一般的な値で、空欄のまま進むとその値で計算します。何も入れない欄しかないときは「未入力」になります。</div>
         <div><p class="kc-mgl" style="margin-top:0 !important">今は取れていない数字<small>あれば選ぶ</small></p><div class="kc-chips" style="margin-top:6px">${unmeas}</div></div>
-        <div><p class="kc-mgl" style="margin-top:0 !important">この施策に足すKPI<small>任意・件数</small></p>${others}${mp.others.length < 5 ? `<button type="button" class="kc-add" data-act="add-other" data-id="${id}">＋ KPIを足す</button>` : ""}</div>
       </div>
     </div>
     ${monthly}`;
-  return { html, wide: true, back: { href: k > 0 ? url("setup", 3, ids[k - 1]) : url("setup", 2), label: k > 0 ? MEASURES[ids[k - 1]].short : "施策と期間" }, next: { href: nextHref, label: nextLabel } };
-}
-
-function setup3common(): View {
-  const p = data.plan;
-  const ids = sel();
-  const t = resolveTree(p);
-  const chips = COMMON_KPIS.map(
-    (c) => `<button type="button" class="kc-chip" data-act="unmeasured" data-path="plan.commonMeasurable.${c.key}" aria-pressed="${!p.commonMeasurable[c.key]}">${esc(c.label)}</button>`,
-  ).join("");
-  const html = `
-    ${subChips("setup", 3, "common", true)}
-    <p class="kc-h">リードになった後（全体で1組）</p>
-    <p class="kc-lead">商談化率・受注率はSTEP1のツリーの値を使います。営業に渡せる割合（リードのうち、営業に渡した割合）は任意です。</p>
-    <div class="kc-g3">
-      <div class="kc-fld"><span class="kc-lb">営業に渡せる割合<small>任意</small></span>${inp("plan.handoffTarget", "%", "目標がなければ空欄")}</div>
-      <div class="kc-fld"><span class="kc-lb">商談化率<small>STEP1</small></span>${calc(pct1(t.dealRate), "%")}</div>
-      <div class="kc-fld"><span class="kc-lb">受注率<small>STEP1</small></span>${calc(pct1(t.winRate), "%")}</div>
-    </div>
-    <p class="kc-sec">今は取れていない数字<small style="font-weight:400;margin-left:6px">あれば選ぶ</small></p>
-    <div class="kc-chips">${chips}</div>`;
-  return { html, back: { href: url("setup", 3, ids[ids.length - 1]), label: MEASURES[ids[ids.length - 1]].short }, next: { href: url("setup", 4), label: "次へ：費用と撤退（任意）" } };
+  return {
+    html,
+    wide: true,
+    back: { href: k > 0 ? url("setup", 3, ids[k - 1]) : url("setup", 2), label: k > 0 ? MEASURES[ids[k - 1]].short : "施策と期間" },
+    next: { href: last ? url("setup", 4) : url("setup", 3, ids[k + 1]), label: last ? "次へ：費用と撤退（任意）" : `次へ：${MEASURES[ids[k + 1]].short}` },
+  };
 }
 
 function setup4(): View {
@@ -497,6 +491,7 @@ function setup4(): View {
   const p = data.plan;
   const rp = resolvePlan(p);
   const { cacLimit: lim, allowCpl } = limitsOf(rp);
+  const allow = allowCpl === null ? null : Math.round(allowCpl * 10) / 10;
   const blocks = ids
     .map((id) => {
       const mp = p.measures[id];
@@ -505,24 +500,24 @@ function setup4(): View {
       const lt = rp.measures[id].kpis[leadKpi(id).key].target;
       const cpl = cost !== null && lt ? cost / lt : null;
       const partsOn = hasParts(mp.parts);
-      const capPh = allowCpl !== null ? fmtMan1(Math.round(allowCpl * 10) / 10) : "未入力";
-      const exitOpts = [`<option value=""${mp.exitAfter === null ? " selected" : ""}>決めない</option>`]
-        .concat(
-          Array.from({ length: 11 }, (_, k) => k + 1).map((k) => {
-            const idx = mp.start + k;
-            return `<option value="${k}"${mp.exitAfter === k ? " selected" : ""}>開始から${k}か月後（${idx <= 11 ? monthLabel(p, idx) : "期間の外"}）</option>`;
-          }),
-        )
+      const start = rp.measures[id].start;
+      const exitOpts = [`<option value=""${mp.exitAt === null ? " selected" : ""}>判定しない</option>`]
+        .concat(Array.from({ length: 12 }, (_, i) => i).filter((i) => i > start).map((i) => `<option value="${i}"${mp.exitAt === i ? " selected" : ""}>${esc(monthLabelLong(p, i))}から</option>`))
         .join("");
       const costBox = partsOn ? calc(fmtNum(cost, 1), "万円") : inp(`${base}.cost`, "万円", "未入力", { label: `${MEASURES[id].short}の費用` });
-      const capIn = `<div class="kc-in"><input data-p="${base}.cplCap" inputmode="decimal" value="${esc(mp.cplCapTouched ? numStr(mp.cplCap) : "")}" placeholder="${esc(capPh)}" aria-label="CPLの上限" /><span>万円</span></div>`;
+      const own = mp.cplCapTouched;
+      const capBox = own
+        ? `<div class="kc-in"><input data-p="${base}.cplCap" inputmode="decimal" value="${esc(numStr(mp.cplCap))}" placeholder="例：5" aria-label="CPLの上限" /><span>万円</span></div>`
+        : calc(allow === null ? "—" : fmtMan1(allow), "万円");
       return `<div class="kc-cost"><h3>${esc(MEASURES[id].name)}</h3>
         <div class="kc-g3">
           <div class="kc-fld"><span class="kc-lb">費用<small>期間の合計</small></span>${costBox}</div>
-          <div class="kc-fld"><span class="kc-lb">CPL（1件あたりの費用）</span>${calc(cpl === null ? "—" : fmtMan1(cpl), "万円")}</div>
-          <div class="kc-fld"><span class="kc-lb">CPLの上限<small>撤退の線</small></span>${capIn}</div>
-          <div class="kc-fld"><span class="kc-lb">開始月</span><div class="kc-in"><select data-p="${base}.start" data-t="int">${monthOpts(mp.start)}</select></div></div>
-          <div class="kc-fld"><span class="kc-lb">撤退を判定する月</span><div class="kc-in"><select data-p="${base}.exitAfter" data-t="intnull">${exitOpts}</select></div></div>
+          <div class="kc-fld"><span class="kc-lb">CPL<small>費用÷リード数</small></span>${calc(cpl === null ? "—" : fmtMan1(cpl), "万円")}</div>
+          <div class="kc-fld"><span class="kc-lb">撤退を判定する月<small>${start > 0 ? `開始 ${esc(monthLabel(p, start))}` : "期首から"}</small></span><div class="kc-in"><select data-p="${base}.exitAt" data-t="intnull" aria-label="撤退を判定する月">${exitOpts}</select></div></div>
+        </div>
+        <div class="kc-cap">
+          <span class="kc-lb">CPLの上限<small>撤退の線。これを超え、リードも目標の90%に届かないと「撤退を検討」</small></span>
+          <div class="kc-row" style="align-items:center;margin-top:6px">${seg("cap-mode", own ? "own" : "allow", [["allow", "許容CPLを使う"], ["own", "自分で決める"]], ` data-id="${id}"`)}<div style="width:200px">${capBox}</div></div>
         </div>
         <details class="kc-det" data-k="${id}-parts"${openSet.has(`${id}-parts`) || partsOn ? " open" : ""}><summary>費用の内訳<small>任意。入れると費用は内訳の合計になります</small></summary>
           <div class="kc-g3" style="margin-top:10px">
@@ -535,17 +530,17 @@ function setup4(): View {
     .join("");
   const html = `
     <p class="kc-h">費用と、撤退の線を決めます（任意）</p>
-    <p class="kc-lead">入れなくても判定に進めます。費用を入れた施策だけ、CPL・CACの判定と、毎月の撤退の判断をします。</p>
+    <p class="kc-lead">入れなくても判定に進めます。費用を入れた施策だけ、CPL・CACの判定と、撤退の判断をします。施策の開始月は、STEP3の月別の目標で最初に目標が入った月です（入れていなければ期首）。</p>
     ${legend("")}
     <div class="kc-g2" style="grid-template-columns:repeat(4,minmax(0,1fr))">
       <div class="kc-fld"><span class="kc-lb">粗利率</span>${inp("plan.margin", "%", fmtNum(GENERAL.margin))}</div>
       <div class="kc-fld"><span class="kc-lb">取り返す年数</span>${inp("plan.years", "年", fmtNum(GENERAL.years, 1))}</div>
-      <div class="kc-fld"><span class="kc-lb">CACの上限</span>${calc(lim === null ? "—" : fmtNum(lim), "万円")}</div>
-      <div class="kc-fld"><span class="kc-lb">許容CPL</span>${calc(allowCpl === null ? "—" : fmtMan1(allowCpl), "万円")}</div>
+      <div class="kc-fld"><span class="kc-lb">CACの上限<small>1社にかけてよい費用</small></span>${calc(lim === null ? "—" : fmtNum(lim), "万円")}</div>
+      <div class="kc-fld"><span class="kc-lb">許容CPL<small>1リードにかけてよい費用</small></span>${calc(allow === null ? "—" : fmtMan1(allow), "万円")}</div>
     </div>
-    <p class="kc-hint">CACの上限＝平均単価×粗利率×取り返す年数。許容CPL＝CACの上限×商談化率×受注率。CPLの上限が空欄のときは、許容CPLを使います</p>
+    <div class="kc-box" style="margin-top:12px"><b>許容CPLの出し方</b>CACの上限＝平均単価${fmtNum(rp.price)}万円×粗利率${fmtNum(rp.margin, 1)}%×取り返す年数${fmtNum(rp.years, 1)}年＝${lim === null ? "—" : fmtNum(lim)}万円<br />許容CPL＝CACの上限${lim === null ? "—" : fmtNum(lim)}万円×商談化率${pct1(rp.dealRate)}%×受注率${pct1(rp.winRate)}%＝${allow === null ? "—" : fmtMan1(allow)}万円（1件のリードにかけてよい費用の上限）</div>
     ${blocks}`;
-  return { html, back: { href: url("setup", 3, "common"), label: "リードの後" }, next: { href: url("setup", 5), label: "次へ：判定" } };
+  return { html, back: { href: url("setup", 3, ids[ids.length - 1]), label: MEASURES[ids[ids.length - 1]].short }, next: { href: url("setup", 5), label: "次へ：判定" } };
 }
 
 function stepLinkOf(it: FirstItem): string {
@@ -624,41 +619,38 @@ function setup5(): View {
   return { html, wide: true, back: { href: url("setup", 4), label: "費用と撤退" }, next: { href: url("setup", 6), label: "次へ：PDFにする" } };
 }
 
-function regBlock(kind: "first" | "monthly", ok: boolean, what: string): string {
+function alertBlock(): string {
+  const p = data.plan;
+  const days = Array.from({ length: 28 }, (_, i) => i + 1).concat([31]);
+  const dayOpts = days.map((d) => `<option value="${d}"${d === p.manageDay ? " selected" : ""}>${manageDayLabel(d)}</option>`).join("");
   const email = getRegistered();
-  const body = email
-    ? `<p class="kc-hint" style="margin-top:0 !important">登録済み：<b>${esc(email)}</b></p>
-       <button type="button" class="kc-btn" data-act="download" data-kind="${kind}"${ok ? "" : " disabled"}><span>PDFをダウンロード</span><span aria-hidden="true">↓</span></button>
-       <p class="kc-msg" id="kc-dl-msg" role="status"${flash.dl ? "" : " hidden"}>${esc(flash.dl || "")}</p>
-       <button type="button" class="kc-link" data-act="reregister" style="margin-top:10px">別のメールアドレスで登録しなおす</button>`
-    : `<form id="kc-reg-form" data-kind="${kind}" novalidate>
-        <p class="kc-hint" style="margin-top:0 !important;margin-bottom:10px !important">メールアドレスを登録すると、その場でPDFをダウンロードできます（PDFはメールでは送りません）。管理日を決めた場合は、3営業日前と当日にお知らせメールが届きます。</p>
+  if (email)
+    return `<div class="kc-dl"><p class="kc-mgl" style="margin-top:0 !important">お知らせメール<small>登録済み</small></p><p class="kc-hint"><b>${esc(email)}</b>　振り返りの日：${esc(manageDayLabel(p.manageDay))}（3営業日前と当日に届きます）</p><button type="button" class="kc-link" data-act="reregister" style="margin-top:10px">メールアドレス・振り返りの日を変える</button></div>`;
+  return `<form id="kc-reg-form" class="kc-dl" novalidate>
+      <p class="kc-mgl" style="margin-top:0 !important">お知らせメールを受け取る<small>任意</small></p>
+      <p class="kc-hint" style="margin-bottom:12px !important">振り返りの日の3営業日前と当日に、数字を確かめるお知らせを送ります。</p>
+      <div class="kc-g2">
         <div class="kc-fld"><label for="reg-email">メールアドレス</label><div class="kc-in"><input id="reg-email" type="email" autocomplete="email" placeholder="you@example.com" /></div></div>
-        <div class="kc-hp" aria-hidden="true"><label>ウェブサイト<input type="text" id="reg-website" tabindex="-1" autocomplete="off" /></label></div>
-        <label class="kc-check"><input id="reg-consent" type="checkbox" /><span><a href="/privacy" target="_blank" rel="noopener">プライバシーポリシー</a>に同意して、お知らせメールを受け取る</span></label>
-        <button type="submit" class="kc-btn" id="reg-submit"${ok ? "" : " disabled"}><span>登録してPDFをダウンロード</span><span aria-hidden="true">↓</span></button>
-        <p class="kc-msg" id="reg-msg" role="status" hidden></p>
-      </form>`;
-  return `<div class="kc-dl">${body}<p class="kc-hint" style="margin-top:12px !important">${esc(what)}</p><p class="kc-hint">※PDFを別のソフトで保存し直すと、埋め込んだデータが消えることがあります（その場合は手で入力してください）。メンバーとの共有はPDFを渡して行えます。</p></div>`;
+        <div class="kc-fld"><label for="reg-day">振り返りの日</label><div class="kc-in"><select id="reg-day" data-p="plan.manageDay" data-t="day">${dayOpts}</select></div></div>
+      </div>
+      <div class="kc-hp" aria-hidden="true"><label>ウェブサイト<input type="text" id="reg-website" tabindex="-1" autocomplete="off" /></label></div>
+      <label class="kc-check"><input id="reg-consent" type="checkbox" /><span><a href="/privacy" target="_blank" rel="noopener">プライバシーポリシー</a>に同意して、お知らせメールを受け取る</span></label>
+      <button type="submit" class="kc-btn2" id="reg-submit" style="margin-top:12px">登録する</button>
+      <p class="kc-msg" id="reg-msg" role="status"${flash.reg ? "" : " hidden"}>${esc(flash.reg || "")}</p>
+    </form>`;
 }
 
 function setup6(): View {
   const ids = sel();
   if (!ids.length) return { html: "", redirect: url("setup", 2) };
-  const p = data.plan;
-  const days = [null, ...Array.from({ length: 28 }, (_, i) => i + 1), 31];
-  const dayOpts = days.map((d) => `<option value="${d === null ? "" : d}"${d === p.manageDay ? " selected" : ""}>${manageDayLabel(d)}</option>`).join("");
   const html = `
     <p class="kc-h">PDFにして、経営との合意に使います</p>
-    <p class="kc-lead">PDFはA4横の3ページです（判定／KPIツリーと施策の目標／経営との合意用の1枚）。次の2つは合意用の1枚に入ります。</p>
-    <div class="kc-g3">
-      <div class="kc-fld"><label>判断する人</label>${txt("plan.decider", "例：営業本部長")}</div>
-      <div class="kc-fld"><label>振り返りの日</label>${txt("plan.review", "例：毎月10日の経営会議")}</div>
-      <div class="kc-fld"><label for="kc-day">管理日<small>毎月の数字を入れる日</small></label><div class="kc-in"><select id="kc-day" data-p="plan.manageDay" data-t="day">${dayOpts}</select></div></div>
-    </div>
-    <p class="kc-sec">ダウンロード</p>
-    ${regBlock("first", true, "翌月からは、このPDFを「② 毎月の実績を判定する」で読み込むと、目標が入ります。")}
-    <a class="kc-next" href="${url("monthly", 1)}"><span><b>毎月の管理は「② 毎月の実績を判定する」で</b>このPDFを読み込み、実績を入れると、達成・未達と次の打ち手、撤退の判断を出します</span><span aria-hidden="true">毎月の判定へ →</span></a>`;
+    <p class="kc-lead">A4横の3ページです（判定／KPIツリーと施策の目標／経営との合意用の1枚）。</p>
+    <div class="kc-dl"><button type="button" class="kc-btn" data-act="download" data-kind="first"><span>PDFをダウンロード</span><span aria-hidden="true">↓</span></button>
+      <p class="kc-msg" id="kc-dl-msg" role="status"${flash.dl ? "" : " hidden"}>${esc(flash.dl || "")}</p>
+      <p class="kc-hint">※PDFを別のソフトで保存し直すと、埋め込んだデータが消えることがあります。メンバーとの共有はPDFを渡して行えます。</p></div>
+    <p class="kc-sec">お知らせメール（任意）</p>
+    ${alertBlock()}`;
   return { html, back: { href: url("setup", 5), label: "判定" } };
 }
 
@@ -823,12 +815,14 @@ function monthly5(): View {
   const html = `<p class="kc-h">${esc(monthLabelLong(data.plan, i))}のPDF</p>
     <p class="kc-lead">A4横の1ページです（9pt未満になるときは2ページに分けます）。左にKPIごとの達成・未達、右に次の打ち手と撤退の判断が入ります。</p>
     ${ok ? "" : `<p class="kc-msg ng" style="margin-bottom:12px !important">この月の実績を入れるとダウンロードできます。</p>`}
-    ${regBlock("monthly", ok, "翌月は、このPDFを「準備」で読み込んでください。目標と今月までの実績が入ります。")}`;
+    <div class="kc-dl"><button type="button" class="kc-btn" data-act="download" data-kind="monthly"${ok ? "" : " disabled"}><span>PDFをダウンロード</span><span aria-hidden="true">↓</span></button>
+      <p class="kc-msg" id="kc-dl-msg" role="status"${flash.dl ? "" : " hidden"}>${esc(flash.dl || "")}</p>
+      <p class="kc-hint">翌月は、このPDFを「準備」で読み込んでください。目標と今月までの実績が入ります。</p></div>`;
   return { html, back: { href: url("monthly", 4), label: "判定" } };
 }
 
 // ---------- 描画 ----------
-const flash: { load?: string; loadOk?: boolean; dl?: string } = {};
+const flash: { load?: string; loadOk?: boolean; dl?: string; reg?: string } = {};
 const openSet = new Set<string>();
 let app: HTMLElement | null = null;
 let flow: Flow = "setup";
@@ -900,7 +894,6 @@ function bindApp(root: HTMLElement) {
       el.closest(".kc-in")?.classList.toggle("kc-bad", bad);
       if (bad) return;
       setAt(path, v);
-      if (/\.cplCap$/.test(path)) setAt(path.replace(/cplCap$/, "cplCapTouched"), v !== null);
     }
     save();
     if (t !== "text") scheduleRender();
@@ -916,9 +909,11 @@ function bindApp(root: HTMLElement) {
     } else {
       const path = (el as HTMLElement).dataset?.p;
       if (!path) return;
-      if (t === "int") setAt(path, Number(el.value));
+      if (t === "str") setAt(path, el.value);
+      else if (t === "int") setAt(path, Number(el.value));
       else if (t === "intnull" || t === "day") setAt(path, el.value === "" ? null : Number(el.value));
       else return;
+      if (t === "day") return void save(); // 登録フォームの中。描き直すと入力中のメールアドレスが消えるため
     }
     save();
     render();
@@ -949,7 +944,21 @@ function bindApp(root: HTMLElement) {
     else if (act === "period") data.plan.period = el.dataset.v as any;
     else if (act === "toggle-measure") data.plan.measures[id].on = !data.plan.measures[id].on;
     else if (act === "unmeasured") setAt(el.dataset.path!, !getAt(el.dataset.path!));
-    else if (act === "add-other") data.plan.measures[id].others.push({ name: "", target: null, monthly: [], measurable: true });
+    else if (act === "add-other") {
+      const pos = (document.getElementById("kc-add-pos") as HTMLSelectElement | null)?.value ?? "";
+      data.plan.measures[id].others.push({ name: "", after: pos, target: null, monthly: [], measurable: true });
+      save();
+      render();
+      const j = data.plan.measures[id].others.length - 1;
+      const el2 = document.querySelector<HTMLInputElement>(`[data-p="plan.measures.${id}.others.${j}.name"]`);
+      el2?.focus();
+      el2?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    } else if (act === "cap-mode") {
+      const mp = data.plan.measures[id];
+      mp.cplCapTouched = el.dataset.v === "own";
+      if (!mp.cplCapTouched) mp.cplCap = null;
+    }
     else if (act === "del-other") {
       const j = Number(el.dataset.j);
       data.plan.measures[id].others.splice(j, 1);
@@ -1018,7 +1027,6 @@ async function download(btn: HTMLButtonElement, kind: "first" | "monthly") {
 }
 
 async function register(form: HTMLFormElement) {
-  const kind = form.dataset.kind as "first" | "monthly";
   const msg = document.getElementById("reg-msg");
   const btn = document.getElementById("reg-submit") as HTMLButtonElement;
   const emailEl = document.getElementById("reg-email") as HTMLInputElement;
@@ -1044,9 +1052,7 @@ async function register(form: HTMLFormElement) {
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json.ok) throw new Error(json.error || "登録に失敗しました。時間をおいて再度お試しください。");
     setRegistered(email);
-    showMsg(msg, "登録しました。PDFを作っています…", true);
-    await makePdf(data, resolveData(data), kind, email);
-    flash.dl = "PDFをダウンロードしました。";
+    flash.reg = "";
     render();
   } catch (err: any) {
     showMsg(msg, err?.message || "エラーが発生しました。", false);
