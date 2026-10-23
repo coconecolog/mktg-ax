@@ -97,11 +97,10 @@ a.kc-st i { background: var(--ink); }
 .kc-vt { display: flex; flex-direction: column; align-items: center; }
 .kc-nd { width: 320px; max-width: 100%; padding: 12px 14px; text-align: center; }
 .kc-nd .lb { font-size: 0.85rem; font-weight: 700; color: var(--sub); margin-bottom: 6px !important; }
-.kc-nd.top { background: var(--ink); }
-.kc-nd.top .lb { color: #d4d4d8; }
-.kc-nd.in { background: #fff; border: 1.5px solid var(--ink); }
-.kc-nd.in .kc-in { border: 0; height: 40px; outline: 0; }
-.kc-nd.in .kc-in input { font-size: 1.5rem; font-weight: 800; text-align: center; }
+.kc-nd.in { background: var(--bg); border: 1px solid var(--line); }
+.kc-nd.in.top { background: #fff; border: 2px solid var(--ink); }
+.kc-nd.in .kc-in { height: 48px; background: #fff; }
+.kc-nd.in .kc-in input { font-size: 1.4rem; font-weight: 800; text-align: center; }
 .kc-nd.c { background: var(--calc); }
 .kc-nd .num { font-size: 1.5rem; font-weight: 800; }
 .kc-nd .num small { font-size: 0.8rem; margin-left: 2px; color: var(--sub); }
@@ -117,6 +116,27 @@ a.kc-st i { background: var(--ink); }
 .kc-bk b { display: block; font-size: 1rem; color: var(--ink); }
 .kc-bk.ph { border: 1.5px dashed var(--faint); color: var(--faint); }
 .kc-bk::before { content: ""; position: absolute; top: -15px; left: 50%; height: 13px; border-left: 2px solid var(--ink); }
+
+/* STEP3 入れ方（左上）・足したKPI・月別の目標の表 */
+.kc-tgl { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 18px; }
+.kc-fs-oth .nm .kc-in { height: 36px; }
+.kc-fs-oth .nm .kc-in input { font-size: 0.85rem; font-weight: 700; text-align: right; }
+.kc-oth-r { display: flex; gap: 6px; align-items: center; }
+.kc-oth-r > .kc-in:first-child { width: 110px; flex: none; }
+.kc-oth-tag { font-size: 0.7rem; color: var(--mute); }
+.kc-pos { height: 36px; min-width: 150px; flex: 1 1 auto; }
+.kc-pos select { font-size: 0.78rem; font-weight: 400; }
+.kc-addrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 18px 0 0 0; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 0.82rem; color: var(--sub); }
+.kc-addrow .kc-pos { width: 220px; flex: none; }
+.kc-mt { border-collapse: collapse; margin-top: 10px; min-width: 100%; font-size: 0.82rem; }
+.kc-mt th { font-weight: 700; color: var(--sub); padding: 4px 6px; text-align: center; white-space: nowrap; font-size: 0.75rem; }
+.kc-mt tr > th:first-child { text-align: left; width: 70px; }
+.kc-mt td { padding: 3px 4px; }
+.kc-mt td input { width: 100%; min-width: 80px; border: 1px solid var(--ink); background: #fff; padding: 5px 6px; font-size: 0.85rem; text-align: right; font-family: inherit; }
+.kc-mt td input::placeholder { color: var(--faint); }
+.kc-mt tr.sum td, .kc-mt tr.sum th { border-top: 1.5px solid var(--ink); padding-top: 6px; font-size: 0.75rem; color: var(--sub); text-align: right; white-space: nowrap; }
+.kc-mt tr.sum td.ng { color: var(--red); font-weight: 700; }
+.kc-cap { margin-top: 12px; }
 
 /* STEP2 施策 */
 .kc-mg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -295,6 +315,11 @@ a.kc-st i { background: var(--ink); }
 .kc-dl .kc-btn { margin-top: 14px; width: 100%; }
 
 /* 入口 */
+.kc-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 36px; align-items: center; margin-top: 8px; }
+.kc-shot { margin: 0; border: 1px solid var(--line); background: #fff; padding: 10px; }
+.kc-shot img { display: block; width: 100%; height: auto; }
+.kc-shot figcaption { font-size: 0.75rem; color: var(--mute); margin-top: 6px; text-align: center; }
+@media (max-width: 760px) { .kc-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
 .kc-hub-ent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
 .kc-ent { border: 1.5px solid var(--ink); background: #fff; padding: 22px 24px; display: flex; flex-direction: column; }
 .kc-ent .no { font-size: 0.75rem; font-weight: 800; color: var(--mute); letter-spacing: 0.06em; }
@@ -315,8 +340,12 @@ a.kc-st i { background: var(--ink); }
   .kc-steps .kc-st { font-size: 0; }
   .kc-steps .kc-st.cur { font-size: 0; }
   .kc-lk { width: 100%; }
-  .kc-lk .op { left: calc(50% + 12px); }
-  .kc-lk .op .kc-in { width: 110px; }
+  .kc-lk { height: 86px; }
+  .kc-lk .op { left: calc(50% + 12px); right: 0; flex-direction: column; align-items: flex-start; gap: 4px; white-space: normal; font-size: 0.78rem; }
+  .kc-lk .op .kc-in { width: 120px; height: 34px; }
+  .kc-rc { white-space: normal; }
+  .kc-fs-oth .nm { text-align: left; }
+  .kc-oth-r { flex-wrap: wrap; }
   .kc-nd { width: 100%; max-width: 320px; }
   .kc-br { gap: 6px; }
   .kc-bk { min-width: 0; flex: 1 1 0; padding: 6px 4px; font-size: 0.72rem; }
