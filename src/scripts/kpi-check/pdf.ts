@@ -42,7 +42,7 @@ import {
 export const ATTACH_NAME = "mktgax-kpi-check.json";
 const LIB_PDF = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
 const LIB_CANVAS = "https://cdn.jsdelivr.net/npm/html2canvas-pro@2.5.0/dist/html2canvas-pro.min.js";
-const FOOT = "KPI運用チェッカー｜MKTG.AX　mktg.ax/tools/kpi-check";
+const FOOT = "KPI妥当性チェッカー｜MKTG.AX　mktg.ax/tools/kpi-check";
 
 export const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
@@ -67,7 +67,7 @@ function firstItemsHtml(items: FirstItem[]) {
 }
 
 function pageWrap(inner: string, title: string, sub: string, pageNo: string, extraClass = "") {
-  return `<div class="kp ${extraClass}"><div class="kp-h"><h2>${esc(title)}</h2><p>${sub}</p></div><div class="kp-fit">${inner}</div><div class="kp-f"><span>${esc(FOOT)}　※このPDFを次回読み込むと、目標と実績が入ります</span><span>${pageNo}</span></div></div>`;
+  return `<div class="kp ${extraClass}"><div class="kp-h"><h2>${esc(title)}</h2><p>${sub}</p></div><div class="kp-fit">${inner}</div><div class="kp-f"><span>${esc(FOOT)}</span><span>${pageNo}</span></div></div>`;
 }
 
 export function firstPages(rd: KcData): string[] {
@@ -95,7 +95,7 @@ export function firstPages(rd: KcData): string[] {
   const arr = (t: string) => `<div class="kp-arr">${t}<b>→</b></div>`;
   const sel = selectedMeasures(p);
   const leadList = sel.map((id) => `${esc(MEASURES[id].short)} ${fmtCount(p.measures[id].kpis[leadKpi(id).key].target)}件`).join("<br />");
-  const tree = `<div class="kp-tree">${node("売上（マーケ経由）", fmtNum(p.sales), true)}${arr(`÷平均単価 ${fmtNum(p.price)}`)}${node("受注数", `${fmtCount(p.wins)}件`)}${arr(`÷受注率 ${fmtNum(p.winRate, 1)}%`)}${node("商談数", `${fmtCount(p.deals)}件`)}${arr(`÷商談化率 ${fmtNum(p.dealRate, 1)}%`)}${node("リード数", `${fmtCount(p.leads)}件`)}<div class="kp-arr" style="width:36px">＝</div><div style="font-size:10.5px;line-height:1.6">${leadList}</div></div>`;
+  const tree = `<div class="kp-tree">${node("売上（マーケ経由）", fmtNum(p.sales), true)}${arr(`÷平均単価 ${fmtNum(p.price)}`)}${node("受注数", `${fmtCount(p.wins)}件`)}${arr(`÷受注率 ${fmtNum(p.winRate, 1)}%`)}${node("商談数", `${fmtCount(p.deals)}件`)}${arr(`÷商談になる割合 ${fmtNum(p.mqlDealRate, 1)}%`)}${node("営業に渡す数", `${fmtCount(p.handoffs)}件`)}${arr(`÷営業に渡せる割合 ${fmtNum(p.handoffTarget, 1)}%`)}${node("リード数", `${fmtCount(p.leads)}件`)}<div class="kp-arr" style="width:36px">＝</div><div style="font-size:10.5px;line-height:1.6">${leadList}</div></div>`;
   const smallSet = new Set(smallKpis(p).map((s) => s.replace(/（.*$/, "")));
   const card = (id: MeasureId) => {
     const def = MEASURES[id];
@@ -182,13 +182,12 @@ export function firstPages(rd: KcData): string[] {
     : "";
   const page3 = pageWrap(
     `<div class="kp-agree">
-      <div>判断する人</div><div>${esc(p.decider) || "（未記入）"}</div>
-      <div>振り返りの日</div><div>${esc(p.review) || "（未記入）"}（管理日：${esc(manageDayLabel(p.manageDay))}に数字を入れる）</div>
+      <div>振り返りの日</div><div>${esc(manageDayLabel(p.manageDay))}</div>
       <div>見る指標</div><div><b>売上（マーケ経由）${fmtNum(p.sales)}万円</b>　受注${fmtCount(p.wins)}件・商談${fmtCount(p.deals)}件・リード${fmtCount(p.leads)}件<br />施策ごと：${leadsTxt || "—"}</div>
       <div>判定の線</div><div>実績÷目標が100%以上＝達成、90%以上＝やや届かない、90%未満＝届かない（CPLは目標÷実績）<br />月の目標が10件未満のKPIと商談化率は、直近3か月の合計で判定する。受注率は決着した商談が10件たまってから判定する</div>
       <div>撤退の基準</div><div>判定する月以降、開始月からの累計で、施策のCPLが上限を超え、かつリード数が目標の90%未満なら撤退を検討する<br />${exitTxt || "—"}</div>
       <div>費用の目安</div><div>${costTxt}${partsTxt}</div>
-    </div><div class="kp-sign"><div>判断する人</div><div>マーケ責任者</div></div>`,
+    </div>`,
     "KPIの運用についての合意",
     sub,
     "3 / 3",
@@ -310,7 +309,7 @@ function pack(blocks: string[], heights: number[], avail: number): string[][] {
 export function monthPages(rd: KcData, r: MonthReport): string[] {
   const p = rd.plan;
   const title = `KPIの運用｜${r.label}`;
-  const sub = `運用：${esc(rangeLabel(p))}（${r.index + 1}か月目）<br />判断する人：${esc(p.decider || "—")}　振り返りの日：${esc(p.review || "—")}`;
+  const sub = `運用：${esc(rangeLabel(p))}（${r.index + 1}か月目）<br />振り返りの日：${esc(manageDayLabel(p.manageDay))}`;
   const acts = monthActionBlocks(r);
   const exit = exitHtml(r, "kp");
   const single = pageWrap(
@@ -421,7 +420,7 @@ export async function makePdf(raw: KcData, rd: KcData, kind: "first" | "monthly"
     page.drawImage(img, { x: 0, y: 0, width: 841.89, height: 595.28 });
   }
   pdf.setTitle(title);
-  pdf.setCreator("MKTG.AX KPI運用チェッカー（mktg.ax/tools/kpi-check）");
+  pdf.setCreator("MKTG.AX KPI妥当性チェッカー（mktg.ax/tools/kpi-check）");
   pdf.setProducer("MKTG.AX");
   pdf.setLanguage("ja-JP");
   const payload = { ...raw, mode: kind, email: email || undefined };
