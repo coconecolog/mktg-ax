@@ -1,0 +1,25 @@
+---
+// KPI運用チェッカーのステップのページ（/tools/kpi-check/setup/*, /monthly/*）の共通部分。
+// 中身は src/scripts/kpi-check/app.ts が #kc-app に描く。ステップのページは検索に出さない（noindex）。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import "@/styles/kpi-check.css";
+
+interface Props {
+  flow: "setup" | "monthly";
+  step: number;
+  sub?: string;
+  title: string;
+}
+const { flow, step, sub = "", title } = Astro.props;
+const FLOW = flow === "setup" ? "① KPIの妥当性をチェック" : "② 毎月の実績を判定";
+---
+
+<BaseLayout title={`${title}｜${FLOW}｜KPI運用チェッカー｜MKTG.AX`} description="KPI運用チェッカーの入力ページです。" noindex={true} canonicalPath="/tools/kpi-check" pagefindIgnore={true}>
+  <div id="kc-app" class="kc" data-flow={flow} data-step={step} data-sub={sub}>
+    <noscript><p>このツールはJavaScriptを使います。ブラウザの設定でJavaScriptを有効にしてください。</p></noscript>
+  </div>
+</BaseLayout>
+
+<script>
+  import "@/scripts/kpi-check/app";
+</script>
