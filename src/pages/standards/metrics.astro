@@ -1,6 +1,6 @@
 ---
 // 「数字の定義（KPI・予算）」（/standards/metrics）。数字の基準の3ページの3ページ目。
-// 見出しのアンカー（rules・labor-cost・labor-allocation・backcast・indicators・cpl・cac・roi・payback・cac-limit・allowable-cpl・judgment・
+// 見出しのアンカー（rules・labor-cost・labor-allocation・backcast・indicators・cpl・cac・roi・payback・cac-limit・allowable-cpl・judgment・exit・
 // explain・scenario・not-used・history）は、記事・ツール（予算案チェッカーなど）からリンクしているので変えない。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
@@ -270,6 +270,9 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
           <li>
             <a href="#judgment" class="text-sm font-medium text-ink-950 hover:underline">施策の判定 ↓</a>
           </li>
+          <li>
+            <a href="#exit" class="text-sm font-medium text-ink-950 hover:underline">撤退の判断 ↓</a>
+          </li>
         </ul>
         <div>
           {
@@ -326,6 +329,34 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
               </p>
             </div>
             <!-- TODO（予算案チェッカー公開後に入れる）：施策ごとの判定は予算案チェッカーで出せます -->
+          </section>
+
+          <!-- 撤退の判断 -->
+          <section id="exit" class="scroll-mt-24 border-b border-std-line py-8">
+            <div class="flex flex-col gap-6 lg:flex-row lg:gap-10">
+              <div class="min-w-0 flex-1 space-y-3.5">
+                <h3 class="text-[1.5625rem] font-bold text-ink-950">撤退の判断</h3>
+                <p class="leading-[1.85] text-ink-950">施策を続けるか止めるかを決める線。判定する月以降、毎月、開始月からの累計で見ます。</p>
+                <p class="bg-std-bg p-[18px] font-medium leading-[1.89] text-ink-950">
+                  施策のCPL ＞ 許容CPL かつ リード数 ＜ 目標の90% → 撤退を検討<br />それ以外 → 続ける
+                </p>
+              </div>
+              <div class="flex flex-col gap-2.5 lg:w-[240px] lg:shrink-0 lg:pt-2">
+                <p class="text-xs text-std-mute">決め方</p>
+                <p class="text-sm leading-[1.79] text-ink-950">
+                  <span class="font-bold">開始月</span><br />その施策の目標を最初に入れた月
+                </p>
+                <p class="text-sm leading-[1.79] text-ink-950">
+                  <span class="font-bold">判定する月</span><br />開始月＋6か月
+                </p>
+              </div>
+            </div>
+            <div class="mt-5 flex flex-col gap-1 sm:flex-row sm:gap-6">
+              <p class="shrink-0 text-sm font-bold text-ink-950 sm:w-20">判断・注意</p>
+              <p class="flex-1 text-sm leading-[1.85] text-std-sub">
+                判定する月より前と、費用を入れていない施策は判定しません。CPLとリード数はリードの段階で確定する数字なので、商談・受注までのリードタイムは加味しません。
+              </p>
+            </div>
           </section>
         </div>
       </section>
