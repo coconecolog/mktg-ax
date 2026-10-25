@@ -165,7 +165,11 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
             ["受注", "新規の顧客からの受注です。"],
             [
               "マーケ経由",
-              "営業の商談管理表の「きっかけ」（最初の接点）が、展示会・Web広告・自社サイト・メール・セミナーの商談と受注です。",
+              "営業の商談管理表の「きっかけ」（最初の接点）が、展示会・セミナー・Web広告・自社サイト・SNS・メールの商談と受注です。",
+            ],
+            [
+              "メール・SNSのCV",
+              "メルマガやSNSから自社サイトに来たCV（資料DL・問い合わせ）は、URLのUTMパラメータで見分けて、メール・SNSのリードとして数えます。SNSの中だけで完結するCVは数えません。",
             ],
             ["平均単価", "新規1社との1年間の取引額の平均。回収期間とCACの上限は、チャネルを問わず全社の平均単価で計算します。"],
             ["費用", "外部に払う費用と、人件費の合計です。"],
@@ -322,7 +326,7 @@ const linkClass = "text-ink-950 underline underline-offset-2 hover:text-std-sub"
             <div class="mt-5 flex flex-col gap-1 sm:flex-row sm:gap-6">
               <p class="shrink-0 text-sm font-bold text-ink-950 sm:w-20">判断・注意</p>
               <p class="flex-1 text-sm leading-[1.85] text-std-sub">
-                施策ごとの受注件数は少なく、1件の差でCACが大きく変わります。そのため、判定はCPLで行います。施策ごとに見ると上限内でも、共通の費用（MAツールなど）を含めてチャネルで集計し直すと、上限を超えることがあります。施策とチャネルの両方で見ます（<a
+                施策ごとの受注件数は少なく、1件の差でCACが大きく変わります。そのため、判定はCPLで行います。共通の費用（サイトの保守など）を含めてチャネルで集計し直すと、CPLは施策ごとに見たときより上がります。施策とチャネルの両方で見ます（<a
                   href={`${model.path}#channels`}
                   class={linkClass}>モデルでの例</a
                 >）。
