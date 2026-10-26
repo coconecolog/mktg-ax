@@ -1,0 +1,561 @@
+---
+// src/pages/tools/kpi-sheet-maker.astro
+//
+// KPI管理表メーカー（/tools/kpi-sheet-maker）2026-10-26 新規
+// 期のはじめに、KPI管理表（Excel）を作る作業を省くツール。入れるのは「はじめに入力」シートの灰色のセル（計画）だけで、実績は入れない
+// - ひな形: public/files/tools/kpi-sheet-template.xlsx（Drive「M-B-04_KPI管理表」を書き出し、実績を空にしたもの）
+//   作り直すとき: Driveからxlsxで書き出し → python3 scripts/build-kpi-sheet-template.py <書き出したxlsx> public/files/tools/kpi-sheet-template.xlsx
+// - 計算と書き込み: src/lib/kpi-sheet-maker.ts（計算は「はじめに入力」シートの式と同じ）
+// - 入力のルール（ツール・ファイル共通）: 件数（リード数・有効リード数・商談数・受注数）を入れる。率は入れない（件数から出す）
+// - 月別の計画は、年間を12か月に分けて入れる（整数。余りは期首に近い月から）。実績は空
+// - 計算もファイル作りもブラウザ内。入力した数字は外に送らない。入力の途中の値は localStorage に保存する（消えても動く）
+// - Excelの書き込みは JSZip（jsDelivr）をダウンロードのときだけ読み込む
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
+import { CHANNELS } from "@/lib/kpi-sheet-maker";
+
+const TOOL_TITLE = "KPI管理表メーカー";
+const TOOL_DESCRIPTION =
+  "期のはじめに、目標と前提、チャネル別の年間の計画（件数と費用）を入れるだけで、毎月の予実と撤退の判断まで自動で出るKPI管理表（Excel）を作れる無料ツールです。計画が年間の目標に足りるかも、ダウンロードの前に確かめられます。";
+
+const FIELDS = [
+  { key: "leads", label: "リード数", unit: "件" },
+  { key: "valid", label: "有効リード数", unit: "件" },
+  { key: "deals", label: "商談数", unit: "件" },
+  { key: "wins", label: "受注数", unit: "件" },
+  { key: "ext", label: "外部費用", unit: "万円" },
+  { key: "labor", label: "人件費", unit: "万円" },
+] as const;
+---
+
+<BaseLayout title={`${TOOL_TITLE}｜期初のKPI管理表をExcelで作成｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/default.png">
+  <main class="km">
+    <header class="km-head">
+      <p class="km-eyebrow"><a href="/tools">便利ツール</a></p>
+      <h1>{TOOL_TITLE}</h1>
+      <p class="km-lead">期のはじめに、目標と前提、チャネル別の年間の計画を入れると、KPI管理表（Excel）ができます。毎月の実績を入れれば、予実・CPLの判定・撤退の判断が自動で出ます。</p>
+      <p class="km-hint">無料・登録なし・入力した数字はサーバーに送りません（計算もファイル作りもブラウザの中）・金額は万円</p>
+    </header>
+
+    <div class="km-grid">
+      <!-- ===== STEP1 入力 ===== -->
+      <form class="km-in" id="km-form" novalidate>
+        <div class="km-bar">
+          <p class="km-step"><span>STEP1</span>計画を入れる</p>
+          <p class="km-tools">
+            <button type="button" class="km-link" id="km-example">記入例を入れる</button>
+            <button type="button" class="km-link" id="km-clear">入力をすべて消す</button>
+          </p>
+        </div>
+        <p class="km-note">記入例は架空の会社（基本モデル）の安定期の数字です</p>
+
+        <section class="km-sec">
+          <h2 class="km-st">1. 前提</h2>
+          <div class="km-f">
+            <div class="km-field km-wide">
+              <label class="km-lb" for="km-year">期首</label>
+              <div class="km-row2">
+                <div class="km-ip"><input id="km-year" name="startYear" type="number" inputmode="numeric" min="2000" max="2100" step="1" /><span>年</span></div>
+                <div class="km-ip">
+                  <select id="km-month" name="startMonth" aria-label="期首の月">
+                    {Array.from({ length: 12 }, (_, i) => <option value={i + 1}>{i + 1}</option>)}
+                  </select><span>月</span>
+                </div>
+              </div>
+            </div>
+            <div class="km-field">
+              <label class="km-lb" for="km-goal">マーケ経由の売上目標</label>
+              <div class="km-ip"><input id="km-goal" name="goal" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+            </div>
+            <div class="km-field">
+              <label class="km-lb" for="km-price">平均受注単価<small>新規の受注1件あたり</small></label>
+              <div class="km-ip"><input id="km-price" name="price" type="number" inputmode="decimal" min="0" step="any" /><span>万円</span></div>
+            </div>
+            <div class="km-field">
+              <label class="km-lb" for="km-gm">粗利率</label>
+              <div class="km-ip"><input id="km-gm" name="gmPct" type="number" inputmode="decimal" min="0" max="100" step="any" /><span>%</span></div>
+            </div>
+            <div class="km-field">
+              <label class="km-lb" for="km-pb">回収期間<small>獲得の費用を取り返す年数</small></label>
+              <div class="km-ip"><input id="km-pb" name="paybackYears" type="number" inputmode="decimal" min="0" step="any" /><span>年</span></div>
+            </div>
+            <div class="km-field">
+              <label class="km-lb" for="km-lt">リードタイム<small>リード獲得から受注まで</small></label>
+              <div class="km-ip"><input id="km-lt" name="leadTime" type="number" inputmode="decimal" min="0" step="any" /><span>か月</span></div>
+            </div>
+            <div class="km-field">
+              <label class="km-lb" for="km-common">共通費<small>どの施策にも配らない費用</small></label>
+              <div class="km-ip"><input id="km-common" name="common" type="number" inputmode="decimal" min="0" step="any" placeholder="0" /><span>万円</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="km-sec">
+          <h2 class="km-st">2. チャネル別の計画（年間）<small>使わないチャネルは空欄のまま</small></h2>
+          {
+            CHANNELS.map((name, i) => (
+              <fieldset class="km-card" data-ch={i}>
+                <legend class="km-name">{name}</legend>
+                <div class="km-g3">
+                  {FIELDS.map((f) => (
+                    <div class="km-field">
+                      <label class="km-lb" for={`km-${i}-${f.key}`}>{f.label}</label>
+                      <div class="km-ip">
+                        <input id={`km-${i}-${f.key}`} name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" placeholder="0" />
+                        <span>{f.unit}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p class="km-rates" data-rates={i}></p>
+              </fieldset>
+            ))
+          }
+          <p class="km-note">率（有効リード率・商談化率・受注率）は入れません。件数から自動で出します</p>
+        </section>
+      </form>
+
+      <!-- ===== STEP2 確認とダウンロード ===== -->
+      <div class="km-out">
+        <p class="km-step"><span>STEP2</span>計画を確かめて、ダウンロードする</p>
+        <div id="km-result" class="km-rp" aria-live="polite"></div>
+
+        <div class="km-dl">
+          <button type="button" class="km-btn" id="km-download">Excelでダウンロード</button>
+          <p class="km-msg" id="km-msg" role="status"></p>
+          <ul class="km-what">
+            <li>「はじめに入力」に、左で入れた数字が入ります</li>
+            <li>各チャネルのシートの月別の計画（リード数・有効リード数）は、年間を12か月に分けて入れます。月によって違うときはExcelで書き換えてください</li>
+            <li>実績は空です。毎月「毎月の実績入力」に入れると、予実と判定が出ます</li>
+            <li>Googleスプレッドシートで使うときは、Googleドライブにアップロードして開いてください</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <ToolFooter path="/tools/kpi-sheet-maker" />
+</BaseLayout>
+
+<script>
+  import {
+    CHANNELS,
+    EXAMPLE,
+    calc,
+    validate,
+    fillWorkbook,
+    fileName,
+    type SheetInput,
+    type ChannelInput,
+  } from "@/lib/kpi-sheet-maker";
+  import { metricUrl } from "@/lib/budget-calc";
+
+  const STORE = "mktgax-kpi-sheet-maker-v1";
+  const TEMPLATE = "/files/tools/kpi-sheet-template.xlsx";
+  const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
+  const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", "labor"];
+  const PRE = ["startYear", "goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
+
+  const form = document.getElementById("km-form") as HTMLFormElement;
+  const result = document.getElementById("km-result") as HTMLElement;
+  const msg = document.getElementById("km-msg") as HTMLElement;
+  const btn = document.getElementById("km-download") as HTMLButtonElement;
+  const el = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
+
+  const esc = (s: unknown) =>
+    String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+  const nf = (v: number | null, d = 0) =>
+    v === null || !Number.isFinite(v) ? "―" : v.toLocaleString("ja-JP", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const pct = (v: number | null, d = 0) => (v === null || !Number.isFinite(v) ? "―" : `${(v * 100).toFixed(d)}%`);
+  const def = (key: Parameters<typeof metricUrl>[0], label = "定義") =>
+    `<a class="km-def" href="${metricUrl(key)}" target="_blank" rel="noopener">${label}</a>`;
+
+  // 期首の初期値：今が4月以降なら来年の4月、1〜3月なら今年の4月
+  function defaultStart() {
+    const now = new Date();
+    return { y: now.getMonth() >= 3 ? now.getFullYear() + 1 : now.getFullYear(), m: 4 };
+  }
+
+  const num = (s: string) => (s.trim() === "" ? NaN : Number(s));
+
+  /** 画面の入力 → SheetInput。チャネルの空欄は0（使わない）、前提の空欄は NaN（入力が必要） */
+  function read(): SheetInput {
+    const v = (n: string) => num(el(n).value);
+    return {
+      startYear: v("startYear"),
+      startMonth: Number(el("startMonth").value),
+      goal: v("goal"),
+      price: v("price"),
+      gmPct: v("gmPct"),
+      paybackYears: v("paybackYears"),
+      leadTime: v("leadTime"),
+      common: el("common").value.trim() === "" ? 0 : v("common"),
+      channels: CHANNELS.map((_, i) => {
+        const c = {} as ChannelInput;
+        for (const k of KEYS) {
+          const s = el(`ch${i}.${k}`).value;
+          c[k] = s.trim() === "" ? 0 : Number(s);
+        }
+        return c;
+      }),
+    };
+  }
+
+  function write(inp: Partial<SheetInput> & { channels?: ChannelInput[] }, blankZero = false) {
+    const show = (x: number | undefined) => (x === undefined || !Number.isFinite(x) || (blankZero && x === 0) ? "" : String(x));
+    for (const k of PRE) el(k).value = show(inp[k] as number | undefined);
+    if (inp.startMonth) el("startMonth").value = String(inp.startMonth);
+    CHANNELS.forEach((_, i) => {
+      for (const k of KEYS) el(`ch${i}.${k}`).value = show(inp.channels?.[i]?.[k]);
+    });
+  }
+
+  function save() {
+    try {
+      const raw: Record<string, string> = {};
+      for (const e of Array.from(form.elements) as HTMLInputElement[]) if (e.name) raw[e.name] = e.value;
+      localStorage.setItem(STORE, JSON.stringify(raw));
+    } catch {
+      /* 保存できなくても動く */
+    }
+  }
+
+  function restore(): boolean {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STORE) || "null");
+      if (!raw || typeof raw !== "object") return false;
+      for (const [k, v] of Object.entries(raw)) {
+        const e = el(k);
+        if (e && typeof v === "string") e.value = v;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  const PRE_LABEL: Record<string, string> = {
+    startYear: "期首",
+    goal: "マーケ経由の売上目標",
+    price: "平均受注単価",
+    gmPct: "粗利率",
+    paybackYears: "回収期間",
+    leadTime: "リードタイム",
+    common: "共通費",
+  };
+
+  /** ダウンロードを押したあとは、空欄も赤枠にする（それまでは入れた値が不正なときだけ） */
+  let showAll = false;
+
+  /** 入力の欄に赤枠（直す）を付ける */
+  function markInvalid(inp: SheetInput) {
+    const bad = (n: string, isBad: boolean) =>
+      el(n).closest(".km-ip")?.classList.toggle("km-invalid", isBad && (showAll || el(n).value.trim() !== ""));
+    const pos = (v: number) => Number.isFinite(v) && v > 0;
+    bad("startYear", !(Number.isInteger(inp.startYear) && inp.startYear >= 2000 && inp.startYear <= 2100));
+    bad("goal", !pos(inp.goal));
+    bad("price", !pos(inp.price));
+    bad("gmPct", !pos(inp.gmPct) || inp.gmPct > 100);
+    bad("paybackYears", !pos(inp.paybackYears));
+    bad("leadTime", !(Number.isFinite(inp.leadTime) && inp.leadTime >= 0));
+    bad("common", !(Number.isFinite(inp.common) && inp.common >= 0));
+    CHANNELS.forEach((_, i) => {
+      for (const k of KEYS) {
+        const v = inp.channels[i][k];
+        bad(`ch${i}.${k}`, !Number.isFinite(v) || v < 0);
+      }
+    });
+  }
+
+  /** 前提が埋まっていないときは結果を出さない */
+  const preReady = (inp: SheetInput) =>
+    [inp.goal, inp.price, inp.gmPct, inp.paybackYears].every((v) => Number.isFinite(v) && v > 0) &&
+    inp.channels.some((c) => c.leads > 0);
+
+  function render() {
+    const inp = read();
+    markInvalid(inp);
+    const { errors, warnings } = validate(inp);
+    if (!(Number.isInteger(inp.startYear) && inp.startYear >= 2000 && inp.startYear <= 2100)) errors.unshift("期首");
+
+    // チャネルごとの率（入力の下に表示）
+    CHANNELS.forEach((_, i) => {
+      const c = inp.channels[i];
+      const p = form.querySelector(`[data-rates="${i}"]`) as HTMLElement;
+      const r = (a: number, b: number) => (b > 0 && Number.isFinite(a) ? `${Math.round((a / b) * 100)}%` : "―");
+      p.textContent = c.leads > 0 ? `有効リード率 ${r(c.valid, c.leads)}・商談化率 ${r(c.deals, c.valid)}・受注率 ${r(c.wins, c.deals)}` : "";
+    });
+
+    btn.dataset.ready = errors.length ? "0" : "1";
+    if (!errors.length) msg.textContent = "";
+
+    if (!preReady(inp) || errors.length) {
+      const missing = errors.length && showAll ? `<p class="km-miss">入力が必要な欄：${errors.map(esc).join("、")}</p>` : "";
+      result.innerHTML = `<p class="km-empty">前提（売上目標・平均受注単価・粗利率・回収期間）と、どれか1つのチャネルのリード数を入れると、計画が年間の目標に足りるかをここに表示します。</p>${missing}`;
+      return;
+    }
+
+    const r = calc(inp);
+    const shortKeys = (["wins", "deals", "valid", "leads", "sales"] as const).filter((k) => r.short[k]);
+    const NAMES = { leads: "リード数", valid: "有効リード数", deals: "商談数", wins: "受注数", sales: "受注金額" } as const;
+    const UNITS = { leads: "件", valid: "件", deals: "件", wins: "件", sales: "万円" } as const;
+    const concl = shortKeys.length
+      ? `<p class="km-concl fix">計画の数が、年間の目標に足りません（${shortKeys
+          .map((k) => `${NAMES[k]} ${nf(r.plan[k])}／${nf(r.need[k])}${UNITS[k]}`)
+          .join("、")}）。チャネルの件数を見直してください</p>`
+      : `<p class="km-concl">計画の数は、年間の目標に足ります。このままダウンロードできます</p>`;
+
+    const cols = ["leads", "valid", "deals", "wins", "sales"] as const;
+    const judge = cols.map((k) => (r.short[k] ? `<td class="fix">直す</td>` : `<td>足りる</td>`)).join("");
+    const checkTable = `
+      <div class="km-tw"><table class="km-t">
+        <thead><tr><th></th>${cols.map((k) => `<th>${NAMES[k]}</th>`).join("")}</tr></thead>
+        <tbody>
+          <tr><td>必要な数（逆算）</td>${cols.map((k) => `<td>${nf(r.need[k])}</td>`).join("")}</tr>
+          <tr><td>計画の数</td>${cols.map((k) => `<td>${nf(r.plan[k])}</td>`).join("")}</tr>
+          <tr class="tot"><td>判定</td>${judge}</tr>
+        </tbody>
+      </table></div>
+      <p class="km-fx">必要な数＝受注数（売上目標÷平均受注単価、切り上げ）から、計画の率でさかのぼった数${def("backcast")}</p>`;
+
+    const kpis = `
+      <div class="km-k">
+        <div><p class="kl">CACの上限${def("cacLimit")}</p><p class="kv">${nf(r.cacLimit, 1)}<small>万円</small></p></div>
+        <div><p class="kl">許容CPL${def("allowableCpl")}</p><p class="kv">${nf(r.allowableCpl, 1)}<small>万円</small></p></div>
+        <div><p class="kl">コスト合計</p><p class="kv">${nf(r.costTotal)}<small>万円</small></p></div>
+        <div><p class="kl">ROI（1年）${def("roi")}</p><p class="kv">${pct(r.roi)}</p></div>
+      </div>`;
+
+    const chRow = (c: (typeof r.channels)[number], tot = false) => {
+      if (!tot && !c.leads) return `<tr class="na"><td>${esc(c.name)}</td><td colspan="8">使わない</td></tr>`;
+      const j = c.cplOver === null ? "―" : c.cplOver ? `<span class="km-bd check">上限超え</span>` : "上限内";
+      return `<tr${tot ? ' class="tot"' : ""}><td>${esc(c.name)}</td><td>${nf(c.leads)}</td><td>${pct(c.validRate)}</td><td>${pct(c.dealRate)}</td><td>${pct(c.winRate)}</td><td>${nf(c.cpl, 1)}</td><td>${nf(c.cac)}</td><td>${nf(c.paybackMonths, 1)}</td><td>${j}</td></tr>`;
+    };
+    const chTable = `
+      <div class="km-tw"><table class="km-t">
+        <thead><tr><th>チャネル</th><th>リード数</th><th>有効リード率</th><th>商談化率</th><th>受注率</th><th>CPL</th><th>CAC</th><th>回収期間<br />（か月）</th><th>CPL判定</th></tr></thead>
+        <tbody>${r.channels.map((c) => chRow(c)).join("")}${chRow(r.total, true)}</tbody>
+      </table></div>
+      <p class="km-fx">CPL・CAC・回収期間は外部費用＋人件費で計算。CPLが許容CPL（CACの上限×受注数÷リード数の合計）を超えたら「上限超え」${def("cpl", "CPL")}${def("cac", "CAC")}${def("payback", "回収期間")}</p>`;
+
+    const warn = warnings.length
+      ? `<div class="km-warn"><p class="km-h">確認</p><ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>`
+      : "";
+
+    result.innerHTML = `
+      ${concl}
+      ${warn}
+      <p class="km-h">計画の妥当性（目標）</p>${checkTable}
+      <p class="km-h">コストと上限</p>${kpis}
+      <p class="km-h">チャネル別の計画</p>${chTable}`;
+  }
+
+  // ===== ダウンロード =====
+  let zipLib: Promise<any> | null = null;
+  function loadZip(): Promise<any> {
+    const w = window as unknown as { JSZip?: any };
+    if (w.JSZip) return Promise.resolve(w.JSZip);
+    zipLib ??= new Promise((ok, ng) => {
+      const s = document.createElement("script");
+      s.src = LIB_ZIP;
+      s.onload = () => (w.JSZip ? ok(w.JSZip) : ng(new Error("JSZip")));
+      s.onerror = () => {
+        zipLib = null;
+        ng(new Error("JSZip"));
+      };
+      document.head.appendChild(s);
+    });
+    return zipLib;
+  }
+
+  async function download() {
+    showAll = true;
+    render();
+    const inp = read();
+    if (btn.dataset.ready !== "1") {
+      msg.className = "km-msg ng";
+      msg.textContent = "赤い欄を直してからダウンロードしてください";
+      return;
+    }
+    btn.disabled = true;
+    msg.className = "km-msg";
+    msg.textContent = "ファイルを作っています…";
+    try {
+      const [JSZip, buf] = await Promise.all([
+        loadZip(),
+        fetch(TEMPLATE).then((res) => {
+          if (!res.ok) throw new Error("template");
+          return res.arrayBuffer();
+        }),
+      ]);
+      const zip = await JSZip.loadAsync(buf);
+      const files: Record<string, string> = {};
+      for (const n of Object.keys(zip.files)) {
+        if (n === "xl/workbook.xml" || n === "xl/_rels/workbook.xml.rels" || /^xl\/worksheets\/sheet\d+\.xml$/.test(n)) {
+          files[n] = await zip.file(n).async("string");
+        }
+      }
+      const changed = fillWorkbook(files, inp);
+      for (const [n, xml] of Object.entries(changed)) zip.file(n, xml);
+      const blob: Blob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName(inp);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      msg.className = "km-msg ok";
+      msg.textContent = `${fileName(inp)} をダウンロードしました`;
+    } catch {
+      msg.className = "km-msg ng";
+      msg.textContent = "ファイルを作れませんでした。通信の状態を確かめて、もう一度お試しください";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ===== 初期化 =====
+  if (!restore()) {
+    const d = defaultStart();
+    el("startYear").value = String(d.y);
+    el("startMonth").value = String(d.m);
+  }
+  form.addEventListener("input", () => {
+    render();
+    save();
+  });
+  form.addEventListener("submit", (e) => e.preventDefault());
+  btn.addEventListener("click", download);
+
+  document.getElementById("km-example")!.addEventListener("click", () => {
+    write(EXAMPLE);
+    render();
+    save();
+  });
+  const clearBtn = document.getElementById("km-clear") as HTMLButtonElement;
+  clearBtn.addEventListener("click", () => {
+    // 1回目は確認、2回目で消す
+    if (clearBtn.dataset.armed !== "1") {
+      clearBtn.dataset.armed = "1";
+      clearBtn.textContent = "もう一度押すと消えます";
+      setTimeout(() => {
+        clearBtn.dataset.armed = "0";
+        clearBtn.textContent = "入力をすべて消す";
+      }, 4000);
+      return;
+    }
+    clearBtn.dataset.armed = "0";
+    clearBtn.textContent = "入力をすべて消す";
+    const d = defaultStart();
+    write({ startYear: d.y, startMonth: d.m });
+    for (const k of PRE) if (k !== "startYear") el(k).value = "";
+    showAll = false;
+    msg.textContent = "";
+    render();
+    save();
+  });
+  render();
+</script>
+
+<style is:global>
+  .km { max-width: 1240px; margin: 0 auto; padding: 1.5rem 1rem 3rem; color: #0b0b12; font-variant-numeric: tabular-nums; }
+  .km p { margin: 0; }
+  .km-eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; color: #74757c; }
+  .km-eyebrow a { color: inherit; text-decoration: none; }
+  .km-eyebrow a:hover { text-decoration: underline; }
+  .km-head h1 { margin: 0.25rem 0 0.4rem; font-size: 1.7rem; font-weight: 800; line-height: 1.35; }
+  .km-lead { color: #4f5057; line-height: 1.8; max-width: 52rem; }
+  .km-hint { font-size: 0.75rem; color: #74757c; margin: 6px 0 1.25rem !important; line-height: 1.7; }
+
+  .km-grid { display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .km-step { font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .km-step span { background: #0b0b12; color: #fff; padding: 1px 7px; font-size: 0.68rem; letter-spacing: 0.04em; }
+  .km-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .km-tools { display: flex; gap: 12px; }
+  .km-link { background: none; border: 0; padding: 0; font-size: 0.75rem; color: #4f5057; text-decoration: underline; cursor: pointer; }
+  .km-link[data-armed="1"] { color: #c81e1e; font-weight: 700; }
+  .km-note { font-size: 0.68rem; color: #74757c; line-height: 1.6; margin-top: 4px !important; }
+
+  /* ===== 入力 ===== */
+  .km-in { border: 1px solid #dedee2; padding: 14px 16px 16px; background: #fff; min-width: 0; }
+  .km-sec { border-top: 1px solid #dedee2; margin-top: 12px; padding-top: 12px; }
+  .km-st { font-size: 0.85rem; font-weight: 800; margin: 0 0 8px; }
+  .km-st small { font-weight: 400; color: #74757c; margin-left: 6px; font-size: 0.7rem; }
+  .km-f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+  .km-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .km-lb { font-size: 0.72rem; font-weight: 700; color: #33343a; line-height: 1.4; }
+  .km-lb small { display: block; font-weight: 400; color: #74757c; font-size: 0.64rem; }
+  .km-wide { grid-column: 1 / -1; }
+  .km-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; max-width: calc(50% - 4px); }
+  @media (max-width: 640px) { .km-row2 { max-width: none; } }
+  .km-ip { display: flex; align-items: center; gap: 6px; min-width: 0; border: 1px solid #c9c9cf; background: #fff; padding: 0 8px; }
+  .km-ip:focus-within { border-color: #0b0b12; outline: 1px solid #0b0b12; }
+  .km-ip input, .km-ip select { flex: 1 1 0; width: 0; min-width: 0; border: 0; outline: 0; background: transparent; padding: 6px 0; font-size: 0.9rem; color: #0b0b12; text-align: right; }
+  .km-ip input::placeholder { color: #b5b6bc; }
+  .km-ip > span { font-size: 0.7rem; color: #74757c; flex-shrink: 0; }
+  .km-ip.km-invalid { border-color: #c81e1e; background: #fdf0f0; outline: 1px solid #c81e1e; }
+  .km-card { border: 1px solid #dedee2; padding: 6px 10px 8px; margin: 0 0 8px; min-width: 0; }
+  .km-name { font-size: 0.8rem; font-weight: 800; padding: 0 4px; }
+  .km-g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .km-card .km-lb { font-size: 0.66rem; font-weight: 400; color: #4f5057; }
+  .km-card .km-ip input { padding: 4px 0; font-size: 0.82rem; }
+  .km-card .km-ip > span { font-size: 0.62rem; }
+  .km-rates { font-size: 0.66rem; color: #4f5057; margin-top: 6px !important; min-height: 1em; }
+
+  /* ===== 確認とダウンロード ===== */
+  .km-out { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .km-rp { border: 1px solid #dedee2; padding: 18px 20px; background: #fff; font-size: 13px; line-height: 1.6; }
+  .km-empty { color: #74757c; font-size: 13px; line-height: 1.8; padding: 24px 0; text-align: center; }
+  .km-miss { color: #c81e1e; font-size: 12px; text-align: center; }
+  .km-concl { font-size: 14px; font-weight: 800; line-height: 1.7; border: 1.5px solid #0b0b12; padding: 10px 12px; }
+  .km-concl.fix { color: #c81e1e; border-color: #c81e1e; background: #fdf0f0; }
+  .km-h { font-size: 12px; font-weight: 800; margin: 16px 0 6px !important; }
+  .km-def { font-size: 10px; font-weight: 400; color: #74757c; margin-left: 5px; text-decoration: underline; }
+  .km-def:hover { color: #0b0b12; }
+  .km-tw { overflow-x: auto; }
+  .km-t { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .km-t th { font-size: 10.5px; color: #33343a; font-weight: 700; text-align: right; padding: 4px 7px; border-bottom: 1.5px solid #0b0b12; white-space: nowrap; vertical-align: bottom; line-height: 1.3; }
+  .km-t td { text-align: right; padding: 4px 7px; border-bottom: 1px solid #ececef; white-space: nowrap; }
+  .km-t th:first-child, .km-t td:first-child { text-align: left; }
+  .km-t tr.tot td { font-weight: 800; border-top: 1.5px solid #0b0b12; }
+  .km-t td.fix { color: #c81e1e; background: #fdf0f0; font-weight: 800; }
+  .km-t tr.na td { color: #9a9ba1; }
+  .km-t tr.na td:last-child { text-align: left; }
+  .km-bd { display: inline-block; padding: 0 6px; font-size: 10.5px; font-weight: 800; border: 1px solid; }
+  .km-bd.check { color: #c2560c; border-color: #ea7a24; background: #fff5ec; }
+  .km-fx { font-size: 10.5px; color: #74757c; margin-top: 6px !important; line-height: 1.7; }
+  .km-k { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid #dedee2; }
+  .km-k > div { padding: 8px 10px; min-width: 0; }
+  .km-k > div + div { border-left: 1px solid #dedee2; }
+  .km-k .kl { font-size: 10.5px; color: #4f5057; font-weight: 700; }
+  .km-k .kv { font-size: 20px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
+  .km-k .kv small { font-size: 11px; margin-left: 2px; }
+  .km-warn { border: 1px solid #ea7a24; background: #fff5ec; padding: 8px 12px; margin-top: 10px; }
+  .km-warn .km-h { margin: 0 0 4px !important; color: #c2560c; }
+  .km-warn ul { margin: 0; padding-left: 1.2em; font-size: 12px; line-height: 1.7; color: #7a3507; }
+
+  .km-dl { border: 1.5px solid #0b0b12; padding: 14px 16px; background: #fff; }
+  .km-btn { display: block; width: 100%; border: 0; background: #0b0b12; color: #fff; padding: 0.75rem; font-size: 0.95rem; font-weight: 800; cursor: pointer; }
+  .km-btn:hover { opacity: 0.88; }
+  .km-btn:disabled { opacity: 0.6; cursor: wait; }
+  .km-msg { font-size: 0.75rem; font-weight: 700; margin-top: 8px !important; min-height: 1em; }
+  .km-msg.ok { color: #0b0b12; }
+  .km-msg.ng { color: #c81e1e; }
+  .km-what { margin: 10px 0 0; padding-left: 1.2em; font-size: 0.75rem; line-height: 1.75; color: #4f5057; }
+
+  @media (max-width: 960px) {
+    .km-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .km-rp { padding: 14px 12px; }
+    .km-k { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .km-k > div:nth-child(3) { border-left: 0; }
+    .km-k > div:nth-child(n + 3) { border-top: 1px solid #dedee2; }
+    .km-g3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
