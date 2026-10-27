@@ -21,6 +21,7 @@ export const ICONS: Record<string, string> = {
   "clipboard-check":
     '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
   "arrow-right": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  "chart-spline": '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16c.5-2 1.5-7 4-7 2 0 2 3 4.5 3 2.5 0 4.5-5 5-7"/>',
 };
 
 // 計画から改善、報告まで（PDCAの3ツール）。href を null にすると「公開準備中」の表示になる。
@@ -62,6 +63,14 @@ export const MAIN_TOOLS = [
 
 // 日々の判断に、小さなツール。
 export const QUICK_TOOLS = [
+  {
+    icon: "chart-spline",
+    category: "KPIの振り返り",
+    title: "KPI分析ツール",
+    description: "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで示します。",
+    time: "目安 1分",
+    href: "/tools/kpi-analysis",
+  },
   {
     icon: "clipboard-check",
     category: "予算の判定",

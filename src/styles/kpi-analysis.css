@@ -1,0 +1,125 @@
+/* KPI分析ツール（/tools/kpi-analysis）
+   サイトのトンマナに合わせて角丸なし・白黒。色は判定（赤＝下回っている・悪くなった、オレンジ＝たぶん・確認）にだけ使う。
+   クラス接頭辞 ka-。PDF（html2canvas で画像にする）も同じ見た目を使う。 */
+
+.ka { --ink: #0b0b12; --sub: #4f5057; --mute: #74757c; --faint: #a3a3a8; --line: #dedee2; --bg: #f5f5f6; --calc: #ececee;
+  --red: #c81e1e; --red-bg: #fbe3e3; --org: #c2560c; --org-bg: #fdecd9;
+  max-width: 1060px; margin: 0 auto; padding: 1.5rem 1.25rem 3.5rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ka p { margin: 0; }
+.ka *, .ka *::before, .ka *::after { box-sizing: border-box; }
+.ka a { color: inherit; }
+.ka [hidden] { display: none !important; }
+.ka-eyebrow { font-size: 0.8rem; color: var(--mute); letter-spacing: 0.08em; margin-bottom: 6px !important; }
+.ka-eyebrow a { text-decoration: none; }
+.ka-h1 { font-size: 1.8rem; font-weight: 800; line-height: 1.4; margin: 0 0 8px; }
+.ka-lead { font-size: 1rem; color: var(--sub); line-height: 1.8; }
+.ka-lead b { color: var(--ink); }
+.ka-hint { font-size: 0.8rem; color: var(--mute); line-height: 1.65; margin-top: 6px !important; }
+.ka-sec { font-size: 1.05rem; font-weight: 800; margin: 2.2rem 0 0.8rem; padding-bottom: 6px; border-bottom: 1.5px solid var(--ink); }
+
+/* 入口：アップロードと結果のイメージ */
+.ka-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; margin-top: 1.25rem; }
+@media (max-width: 760px) { .ka-hero { grid-template-columns: minmax(0, 1fr); } }
+.ka-drop { border: 1.5px dashed var(--ink); background: #fff; padding: 28px 18px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; cursor: pointer; }
+.ka-drop.is-over { background: var(--bg); border-style: solid; }
+.ka-drop svg { width: 30px; height: 30px; }
+.ka-drop b { font-size: 1rem; }
+.ka-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--ink); background: var(--ink); color: #fff; font-weight: 800; font-size: 0.95rem; padding: 10px 22px; cursor: pointer; font-family: inherit; text-decoration: none; }
+.ka-btn:hover { opacity: 0.85; }
+.ka-btn2 { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--ink); background: #fff; color: var(--ink); font-weight: 700; font-size: 0.85rem; padding: 8px 16px; cursor: pointer; font-family: inherit; text-decoration: none; }
+.ka-btn2:hover { background: var(--bg); }
+.ka-link { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ka-prev { border: 1px solid var(--line); padding: 14px; background: #fff; }
+.ka-prev small { display: block; font-size: 0.72rem; color: var(--mute); margin: 8px 0 4px; }
+.ka-prev small:first-child { margin-top: 0; }
+.ka-mini { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-bottom: 2px; }
+.ka-mini i { height: 10px; background: var(--calc); }
+.ka-mini i.r { background: var(--red-bg); } .ka-mini i.o { background: var(--org-bg); } .ka-mini i.e { background: #fff; border: 1px dashed var(--line); }
+.ka-err { margin-top: 12px !important; border: 1.5px solid var(--red); background: #fff; color: var(--red); font-weight: 700; padding: 10px 14px; font-size: 0.9rem; line-height: 1.6; }
+.ka-busy { margin-top: 12px !important; font-size: 0.9rem; font-weight: 700; }
+
+.ka-g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .ka-g3 { grid-template-columns: minmax(0, 1fr); } }
+.ka-card { border: 1px solid var(--line); padding: 14px 16px; background: #fff; }
+.ka-card em { font-style: normal; display: block; font-size: 1.2rem; font-weight: 800; }
+.ka-card b { display: block; font-size: 0.95rem; margin-bottom: 4px; }
+.ka-card p { font-size: 0.82rem; color: var(--sub); line-height: 1.7; }
+.ka-dl { display: flex; align-items: center; gap: 14px; border: 1px solid var(--ink); padding: 14px 16px; margin-top: 2rem; flex-wrap: wrap; }
+.ka-dl div { flex: 1 1 260px; }
+.ka-dl b { display: block; font-size: 0.95rem; }
+.ka-dl p { font-size: 0.82rem; color: var(--sub); }
+
+/* 結果 */
+.ka-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px; }
+.ka-bar .ka-meta { font-size: 0.82rem; color: var(--sub); }
+.ka-bar .ka-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ka-sample { border: 1.5px solid var(--ink); padding: 8px 14px; font-size: 0.85rem; margin-bottom: 14px; }
+.ka-sample b { font-weight: 800; }
+.ka-warn { border-left: 4px solid var(--org); background: var(--org-bg); padding: 8px 12px; font-size: 0.82rem; line-height: 1.6; margin-bottom: 10px; }
+.ka-sum { border: 1.5px solid var(--ink); padding: 12px 16px; font-size: 0.92rem; line-height: 1.75; }
+.ka-sum b { font-weight: 800; }
+.ka-sum .r { color: var(--red); font-weight: 800; }
+.ka-sum .o { color: var(--org); font-weight: 800; }
+.ka-when { font-size: 0.78rem; color: var(--mute); margin-top: 8px !important; }
+.ka-h2 { font-size: 1rem; font-weight: 800; margin: 1.8rem 0 0.4rem; padding-bottom: 5px; border-bottom: 1.5px solid var(--ink); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.ka-h2 small { font-size: 0.75rem; font-weight: 400; color: var(--mute); }
+.ka-legend { font-size: 0.75rem; color: var(--mute); margin: 4px 0 8px !important; line-height: 1.6; }
+.ka-sw { display: inline-block; width: 12px; height: 12px; vertical-align: -2px; margin: 0 3px 0 8px; }
+.ka-sw.r { background: var(--red-bg); } .ka-sw.o { background: var(--org-bg); } .ka-sw.g { background: var(--calc); } .ka-sw.e { border: 1px dashed var(--faint); }
+.ka-sw.pin { width: 7px; height: 7px; background: var(--ink); vertical-align: 1px; }
+
+/* A 課題の地図 */
+.ka-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ka-hm { display: grid; grid-template-columns: 190px repeat(12, minmax(44px, 1fr)); gap: 2px; min-width: 760px; }
+.ka-hm .hd { font-size: 0.72rem; color: var(--mute); text-align: center; padding: 2px 0; }
+.ka-hm .lb { font-size: 0.8rem; line-height: 1.35; padding: 4px 6px; text-align: left; background: none; border: 0; border-left: 3px solid transparent; font-family: inherit; color: var(--ink); cursor: pointer; }
+.ka-hm .lb small { display: block; font-size: 0.68rem; color: var(--mute); }
+.ka-hm .lb small.r { color: var(--red); font-weight: 700; }
+.ka-hm .lb:hover { background: var(--bg); }
+.ka-hm .lb[aria-pressed="true"] { border-left-color: var(--ink); font-weight: 800; background: var(--bg); }
+.ka-hm .c { position: relative; min-height: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.72rem; line-height: 1.25; background: var(--calc); }
+.ka-hm .c span { font-size: 0.68rem; opacity: 0.85; }
+.ka-hm .c.r { background: var(--red-bg); color: var(--red); }
+.ka-hm .c.o { background: var(--org-bg); color: var(--org); }
+.ka-hm .c.e { background: #fff; border: 1px dashed var(--line); }
+.ka-hm .c.n { background: #fff; color: var(--faint); font-size: 0.66rem; text-align: center; }
+.ka-hm .c.pin::after { content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; background: var(--ink); }
+.ka-hm .c.pin.plan::after { background: #fff; border: 1.5px solid var(--ink); width: 8px; height: 8px; }
+
+/* B・C のグラフ */
+.ka-svg { width: 100%; height: auto; display: block; }
+.ka-scroll > .ka-svg { min-width: 640px; }
+.ka-svg text { font-family: inherit; }
+.ka-note { border: 1px solid var(--line); background: var(--bg); padding: 10px 12px; font-size: 0.82rem; line-height: 1.7; margin-top: 6px; }
+.ka-c-hit { cursor: pointer; }
+.ka-c-hit:hover rect.bar { opacity: 0.8; }
+
+/* D 表 */
+.ka-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 0.8rem; margin: 6px 0 8px; }
+.ka-filters select { border: 1px solid var(--ink); background: #fff; font: inherit; padding: 4px 6px; }
+.ka-filters label { display: inline-flex; align-items: center; gap: 4px; }
+.ka-tbl { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 760px; }
+.ka-tbl th, .ka-tbl td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; line-height: 1.5; }
+.ka-tbl th { background: var(--bg); font-weight: 700; white-space: nowrap; }
+.ka-tbl td.n { text-align: right; white-space: nowrap; }
+.ka-tbl tr.hit { outline: 2px solid var(--ink); outline-offset: -2px; }
+.ka-tbl .sub { display: block; color: var(--mute); font-size: 0.72rem; }
+.ka-tbl .r { color: var(--red); font-weight: 700; }
+.ka-tbl .o { color: var(--org); font-weight: 700; }
+.ka-tbl .g { font-weight: 700; }
+.ka-how { margin-top: 1.6rem; border-top: 1px solid var(--line); padding-top: 10px; font-size: 0.8rem; color: var(--sub); line-height: 1.75; }
+.ka-how summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+.ka-how ul { margin: 6px 0 0 1.2em; padding: 0; }
+.ka-pdffoot { display: none; font-size: 0.72rem; color: var(--mute); margin-top: 16px !important; border-top: 1px solid var(--line); padding-top: 6px; }
+
+/* PDF用（html2canvasで画像にする間だけ付ける） */
+.ka-pdf { width: 1000px !important; max-width: none !important; background: #fff; padding: 24px !important; }
+.ka-pdf .ka-scroll { overflow: visible; }
+.ka-pdf .ka-how { display: none; }
+.ka-pdf .ka-filters { display: none; }
+.ka-pdf .ka-pdffoot { display: block; }
+.ka-pdf .ka-pdfhead { display: block !important; }
+.ka-pdfhead { display: none; font-size: 0.9rem; margin-bottom: 12px !important; }
+.ka-pdfhead b { font-size: 1.2rem; font-weight: 800; }
+
+@media print { .ka-bar .ka-acts, .ka-filters { display: none; } }
