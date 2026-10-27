@@ -1,8 +1,0 @@
-GitHubで削除するファイル（このフォルダごと削除してOK）
-
-src/pages/blog/category/[category]/[...page].astro
-src/pages/blog/category/[category]/blog/[...page].astro
-src/pages/blog/category/[category]/resources/[...page].astro
-src/pages/library/[...page].astro
-src/pages/library/blog/[...page].astro
-src/pages/library/resources/[...page].astro
