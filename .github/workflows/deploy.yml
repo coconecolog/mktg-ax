@@ -5,7 +5,12 @@ on:
     branches: [main]
   schedule:
     - cron: "*/30 * * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      full_refresh:
+        description: "Notionの本文キャッシュを使わず、全ページを取り直す（表示がおかしいときだけ）"
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-to-cloudflare-pages
@@ -43,6 +48,7 @@ jobs:
         with:
           path: |
             .notion-cache/posts-status-snapshot.json
+            .notion-cache/blocks/
             public/images/notion/
             public/images/generated/
           key: notion-build-assets-${{ github.run_id }}
@@ -50,8 +56,11 @@ jobs:
             notion-build-assets-
 
       - name: Notionから記事・資料データを取得してビルド
+        # 前回から更新されていないページの本文は .notion-cache/blocks/ を使い回す（scripts/lib/block-cache.mjs）。
+        # 手動実行で「全部取り直す」にチェックしたときだけ、キャッシュを使わずに全ページを取り直す。
         run: npm run build
         env:
+          NOTION_FULL_REFRESH: ${{ inputs.full_refresh && '1' || '' }}
           NOTION_TOKEN: ${{ secrets.MKTG_AX_NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_DATABASE_ID }}
           NOTION_RESOURCES_DATABASE_ID: ${{ secrets.MKTG_AX_NOTION_RESOURCES_DATABASE_ID }}
@@ -71,6 +80,7 @@ jobs:
         with:
           path: |
             .notion-cache/posts-status-snapshot.json
+            .notion-cache/blocks/
             public/images/notion/
             public/images/generated/
           key: notion-build-assets-${{ github.run_id }}

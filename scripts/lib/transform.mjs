@@ -462,6 +462,17 @@ const IMAGE_OUT_DIR = path.resolve(process.cwd(), "public/images/notion");
 const downloadCache = new Map();
 
 /**
+ * 前回のビルドでダウンロード済みの画像を、URL → ローカルパスとして登録する（2026-10-27追加）。
+ * 本文キャッシュ（scripts/lib/block-cache.mjs）を使い回すページは、保存してあるNotionの画像URLの
+ * 署名がすでに切れているため、再ダウンロードせずにこの登録済みのローカルファイルを使わせる。
+ */
+export function seedImageDownload(url, publicPath) {
+  if (url && publicPath) downloadCache.set(url, publicPath);
+}
+
+export { IMAGE_OUT_DIR };
+
+/**
  * 画像をダウンロードして public/images/notion/ に保存し、
  * サイト内から参照できる絶対パス（例: /images/notion/xxxx.jpg）を返す。
  * 失敗した場合は null を返し、呼び出し側でフォールバック表示にする。

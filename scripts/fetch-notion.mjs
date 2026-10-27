@@ -12,10 +12,14 @@ import path from "node:path";
 import {
   resolveDataSourceId,
   queryAllPages,
-  fetchBlockChildrenRecursive,
   getRelationNames,
   getFirstRelationName,
+  primeRelationTitles,
+  saveRelationTitles,
+  requestStats,
 } from "./lib/notion-client.mjs";
+import { fetchPageBlocksCached, pruneStaleBlockCache, blockCacheSummary } from "./lib/block-cache.mjs";
+import { mapWithConcurrency, elapsedSeconds } from "./lib/concurrency.mjs";
 import {
   PROP,
   CATEGORY_PROP,
@@ -45,6 +49,8 @@ import {
 
 // 記事DBの「CTA資料」リレーションプロパティ名（記事末尾の資料ダウンロードCTAに使う資料DBのページ）。
 const CTA_RESOURCE_PROP = "CTA資料";
+// 記事・タグ・カテゴリを同時に何件ずつ処理するか（Notionへの同時リクエスト数は notion-client.mjs 側で3に制限）
+const PAGE_CONCURRENCY = 4;
 // 記事DBの「CTAツール」リレーションプロパティ名（記事末尾のツールCTAに使うツールDBのページ）。資料CTAと並べて表示する。
 const CTA_TOOL_PROP = "CTAツール";
 let warnedMissingCtaToolProp = false;
@@ -89,10 +95,12 @@ async function fetchCategories(token, linkMap) {
   console.log("[fetch-notion] カテゴリ一覧を取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
   const rawPages = await queryAllPages(token, dataSourceId, {});
+  // 記事・資料・サブカテゴリの「カテゴリ」リレーションの名前解決に使う（1件ずつGETしないで済む）
+  primeRelationTitles(rawPages);
 
-  const categories = [];
+  // Slugの検証（重複チェックがあるので、取得順のとおり先に1件ずつ決める）
   const usedSlugs = new Set();
-  for (const page of rawPages) {
+  const slugs = rawPages.map((page) => {
     const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
     // URL用の英字Slug（2026-09-25追加）。半角英小文字・数字・ハイフンのみ有効（大文字は小文字に直す）。
     // 未設定・不正・重複の場合は null（従来どおりカテゴリ名そのものがURLになる）にして警告を出す。
@@ -112,6 +120,12 @@ async function fetchCategories(token, linkMap) {
       slug = slugRaw;
       usedSlugs.add(slugRaw);
     }
+    return slug;
+  });
+
+  const categories = await mapWithConcurrency(rawPages, PAGE_CONCURRENCY, async (page, i) => {
+    const name = getTitleText(page, CATEGORY_PROP.name) || "(無題カテゴリ)";
+    const slug = slugs[i];
     const description = getRichTextPlain(page, CATEGORY_PROP.description);
         const representativeSlugRaw = resolveRepresentativeSlug(
       page,
@@ -124,11 +138,11 @@ async function fetchCategories(token, linkMap) {
     const themeColor = getSelectColor(page, CATEGORY_PROP.themeColor);
     const order = getNumber(page, CATEGORY_PROP.order);
 
-    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const rawBlocks = await fetchPageBlocksCached(token, page);
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
 
-    categories.push({
+    return {
       name,
       slug,
       description,
@@ -137,8 +151,8 @@ async function fetchCategories(token, linkMap) {
       backgroundImageFilename,
       order,
       blocks,
-    });
-  }
+    };
+  });
 
   // 並び順は「並び順」プロパティ（数値、小さい順）を正としてソートする。マスターカテゴリDBで
   // この数値を変更するだけで、サイト側の表示順がそのまま追従する。
@@ -180,6 +194,7 @@ async function fetchSubcategories(token) {
   console.log("[fetch-notion] サブカテゴリ一覧を取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
   const rawPages = await queryAllPages(token, dataSourceId, {});
+  primeRelationTitles(rawPages);
 
   const subcategories = [];
   const usedSlugs = new Set();
@@ -246,10 +261,12 @@ async function fetchTags(token, linkMap) {
   console.log("[fetch-notion] タグ一覧を取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
   const rawPages = await queryAllPages(token, dataSourceId, {});
+  // 記事・資料・ツールの「タグ」「メインタグ」リレーションの名前解決に使う
+  primeRelationTitles(rawPages);
 
-  const tags = [];
+  // Slugの検証（重複チェックがあるので、取得順のとおり先に1件ずつ決める）
   const usedSlugs = new Set();
-  for (const page of rawPages) {
+  const slugs = rawPages.map((page) => {
     const name = getTitleText(page, TAG_PROP.name) || "(無題タグ)";
     // URL用の英字Slug。半角英小文字・数字・ハイフンのみ有効（大文字は小文字に直す）。
     // 未設定・不正・重複の場合は null（従来どおりタグ名そのものがURLになる）にして警告を出す。
@@ -265,6 +282,12 @@ async function fetchTags(token, linkMap) {
       slug = slugRaw;
       usedSlugs.add(slugRaw);
     }
+    return slug;
+  });
+
+  const tags = await mapWithConcurrency(rawPages, PAGE_CONCURRENCY, async (page, i) => {
+    const name = getTitleText(page, TAG_PROP.name) || "(無題タグ)";
+    const slug = slugs[i];
     // titleタグ。末尾に「| MKTG.AX」を書いてしまっても二重にならないよう取り除く。
     const seoTitle =
       getRichTextPlain(page, TAG_PROP.seoTitle).trim().replace(/\s*[|｜]\s*MKTG\.AX\s*$/i, "") || null;
@@ -279,11 +302,11 @@ async function fetchTags(token, linkMap) {
       linkMap,
     ).trim();
 
-    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const rawBlocks = await fetchPageBlocksCached(token, page);
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
 
-    tags.push({
+    return {
       name,
       slug,
       seoTitle,
@@ -291,8 +314,8 @@ async function fetchTags(token, linkMap) {
       metaDescription,
       representativeSlug: representativeSlugRaw || null,
       blocks,
-    });
-  }
+    };
+  });
 
   return tags;
 }
@@ -314,6 +337,7 @@ async function fetchAuthors(token) {
   console.log("[fetch-notion] 執筆者一覧を取得中…");
   const dataSourceId = await resolveDataSourceId(token, databaseId);
   const rawPages = await queryAllPages(token, dataSourceId, {});
+  primeRelationTitles(rawPages);
 
   const authors = [];
   for (const page of rawPages) {
@@ -340,6 +364,7 @@ async function fetchAuthors(token) {
 }
 
 async function main() {
+  const startedAt = Date.now();
   const token = process.env.NOTION_TOKEN;
   const databaseId = process.env.NOTION_DATABASE_ID;
 
@@ -413,8 +438,7 @@ async function main() {
     subcategoryIds.map((id) => subcategoryById.get(id)?.category).filter(Boolean);
   const unique = (names) => [...new Set(names)];
 
-  const posts = [];
-  for (const page of rawPages) {
+  const postResults = await mapWithConcurrency(rawPages, PAGE_CONCURRENCY, async (page) => {
     const title = getTitleText(page, PROP.title) || "(無題)";
     const status = getStatusOrSelectName(page, PROP.status);
 
@@ -422,7 +446,7 @@ async function main() {
     // （未設定・想定外の値は「未公開」と同じ扱いにして、意図せず公開されないようにする）。
     if (status !== POST_STATUS.published && status !== POST_STATUS.editing) {
       console.log(`  - ${title}（ステータスが「${status || "未設定"}」のためスキップ）`);
-      continue;
+      return null;
     }
 
     // 「公開後の編集中」は、Notionの最新の下書きを一切見ずに前回公開時点のものをそのまま使い回す
@@ -435,13 +459,13 @@ async function main() {
         // 2026-10-12のサブカテゴリ導入前のスナップショットにはこの値が無いため、編集中の記事が「その他」に落ちないようにする目的。
         const subcategoryIds = getRelationIds(page, PROP.subcategory);
         const categories = unique([...categoriesFromSubcategories(subcategoryIds), ...(previousPost.categories || [])]);
-        posts.push({ ...previousPost, subcategoryIds, categories, category: categories[0] || null });
+        return { ...previousPost, subcategoryIds, categories, category: categories[0] || null };
       } else {
         console.warn(
           `  - ${title}（ステータスが「${POST_STATUS.editing}」ですが公開履歴が無いためスキップします。一度「${POST_STATUS.published}」にしてから編集中にしてください）`,
         );
       }
-      continue;
+      return null;
     }
 
     console.log(`  - ${title}`);
@@ -488,7 +512,7 @@ async function main() {
       subcategoryIds.map((id) => subcategoryBackgroundMap.get(id)).find(Boolean) || { dataUri: null, colorKey: "default" };
     const thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
 
-    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const rawBlocks = await fetchPageBlocksCached(token, page);
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
 
@@ -497,7 +521,7 @@ async function main() {
 
     const description = getRichTextPlain(page, PROP.description).trim() || extractExcerpt(blocks);
 
-    posts.push({
+    return {
       id: page.id,
       slug,
       title,
@@ -514,8 +538,9 @@ async function main() {
       updatedAt,
       thumbnail,
       blocks,
-    });
-  }
+    };
+  });
+  const posts = postResults.filter(Boolean);
 
   // スラッグの重複チェック（重複していると同じURLに2記事が衝突してビルドが壊れるため）
   const slugCounts = new Map();
@@ -536,8 +561,15 @@ async function main() {
   // GitHub Actions側がこのファイルをキャッシュに保存し、次回のビルド開始時に復元する。
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(output, null, 2));
 
+  // 後続の fetch-notion-resources / fetch-notion-tools がリレーション名を再取得しないで済むように書き出す
+  await saveRelationTitles();
+  await pruneStaleBlockCache();
+
   console.log(
     `[fetch-notion] 完了: 記事${posts.length}件・カテゴリ${categories.length}件・サブカテゴリ${subcategories.length}件・タグ${tags.length}件・執筆者${authors.length}件を .notion-cache/posts.json に書き出しました。`,
+  );
+  console.log(
+    `[fetch-notion] 所要時間 ${elapsedSeconds(startedAt)}秒・Notionへの問い合わせ${requestStats.count}回（レート制限${requestStats.rateLimited}回）・${blockCacheSummary()}`,
   );
 }
 

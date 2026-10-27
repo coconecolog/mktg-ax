@@ -11,10 +11,13 @@ import path from "node:path";
 import {
   resolveDataSourceId,
   queryAllPages,
-  fetchBlockChildrenRecursive,
   getRelationNames,
   getFirstRelationName,
+  loadRelationTitles,
+  requestStats,
 } from "./lib/notion-client.mjs";
+import { fetchPageBlocksCached, blockCacheSummary } from "./lib/block-cache.mjs";
+import { mapWithConcurrency, elapsedSeconds } from "./lib/concurrency.mjs";
 import {
   RESOURCE_PROP,
   getTitleText,
@@ -40,6 +43,8 @@ const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
 // ・内容物（テキスト）: 大きい枠の下部に出す「管理シート＋16ページの使い方ガイド」などの説明。空欄なら非表示。
 const HOME_PROP = { order: "トップ掲載", catch: "トップ用キャッチ", contents: "内容物" };
 const CACHE_FILE = path.join(CACHE_DIR, "resources.json");
+// 資料を同時に何件ずつ処理するか（PDFの画像化も含む。Notionへの同時リクエスト数は notion-client.mjs 側で3に制限）
+const PAGE_CONCURRENCY = 4;
 
 async function writeEmptyCache(reason) {
   console.warn(`\n[fetch-notion-resources] ${reason}`);
@@ -52,6 +57,7 @@ async function writeEmptyCache(reason) {
 }
 
 async function main() {
+  const startedAt = Date.now();
   const token = process.env.NOTION_TOKEN;
   const databaseId = process.env.NOTION_RESOURCES_DATABASE_ID;
 
@@ -83,6 +89,9 @@ async function main() {
 
   console.log(`[fetch-notion-resources] ${rawPages.length}件の公開資料を処理します。`);
 
+  // 直前の fetch-notion.mjs が書き出したタグ・カテゴリ・執筆者の名前を読み込む（1件ずつGETしないで済む）
+  await loadRelationTitles();
+
   // 本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための
   // NotionページID → サイト内URL のマップ。ブロック変換より先に作っておく必要がある。
   console.log("[fetch-notion-resources] 記事間リンク用のマップを作成中…");
@@ -98,8 +107,7 @@ async function main() {
     console.warn("[fetch-notion-resources] .notion-cache/posts.json が無いため、サブカテゴリからカテゴリを決められません（先に fetch-notion を実行してください）。");
   }
 
-  const resources = [];
-  for (const page of rawPages) {
+  const resources = await mapWithConcurrency(rawPages, PAGE_CONCURRENCY, async (page) => {
     const title = getTitleText(page, RESOURCE_PROP.title) || "(無題)";
     console.log(`  - ${title}`);
 
@@ -150,11 +158,11 @@ async function main() {
 
     // ページ本文（記事と同じ仕組み）。「目次」「導入事例紹介」など、都度自由に見出し・内容を変えたい
     // 可変セクションはここに書けば、資料DBのプロパティを増やさずにNotion側だけで表現できる。
-    const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
+    const rawBlocks = await fetchPageBlocksCached(token, page);
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
 
-    resources.push({
+    return {
       id: page.id,
       slug,
       title,
@@ -176,8 +184,8 @@ async function main() {
       homeCatch,
       contents,
       blocks,
-    });
-  }
+    };
+  });
 
   // スラッグの重複チェック（重複していると同じURLに2資料が衝突してビルドが壊れるため）
   const slugCounts = new Map();
@@ -197,6 +205,9 @@ async function main() {
   );
 
   console.log(`[fetch-notion-resources] 完了: ${resources.length}件を .notion-cache/resources.json に書き出しました。`);
+  console.log(
+    `[fetch-notion-resources] 所要時間 ${elapsedSeconds(startedAt)}秒・Notionへの問い合わせ${requestStats.count}回（レート制限${requestStats.rateLimited}回）・${blockCacheSummary()}`,
+  );
 }
 
 main().catch((err) => {

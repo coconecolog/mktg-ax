@@ -12,7 +12,14 @@
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { resolveDataSourceId, queryAllPages, getRelationNames } from "./lib/notion-client.mjs";
+import {
+  resolveDataSourceId,
+  queryAllPages,
+  getRelationNames,
+  loadRelationTitles,
+  requestStats,
+} from "./lib/notion-client.mjs";
+import { elapsedSeconds } from "./lib/concurrency.mjs";
 import { getRichTextPlain, getCheckbox, getNumber, resolveSlug } from "./lib/transform.mjs";
 
 // Notion側のプロパティ名（完全一致が必要）。タイトル列は名前に関わらず「タイトル型のプロパティ」を自動で使う。
@@ -51,6 +58,7 @@ function toolPageExists(slug) {
 }
 
 async function main() {
+  const startedAt = Date.now();
   const token = process.env.NOTION_TOKEN;
   const databaseId = process.env.NOTION_TOOLS_DATABASE_ID;
 
@@ -68,6 +76,9 @@ async function main() {
   const allPages = await queryAllPages(token, dataSourceId, {});
   const rawPages = allPages.filter((p) => getCheckbox(p, TOOL_PROP.published));
   console.log(`[fetch-notion-tools] ${rawPages.length}件の公開ツールを処理します。`);
+
+  // 直前の fetch-notion.mjs が書き出したタグ・カテゴリの名前を読み込む（1件ずつGETしないで済む）
+  await loadRelationTitles();
 
   const tools = [];
   for (const page of rawPages) {
@@ -126,6 +137,7 @@ async function main() {
 
   await writeCache(tools);
   console.log(`[fetch-notion-tools] 完了: ${tools.length}件を .notion-cache/tools.json に書き出しました。`);
+  console.log(`[fetch-notion-tools] 所要時間 ${elapsedSeconds(startedAt)}秒・Notionへの問い合わせ${requestStats.count}回`);
 }
 
 main().catch(async (err) => {

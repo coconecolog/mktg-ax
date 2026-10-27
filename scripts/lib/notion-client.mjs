@@ -7,6 +7,9 @@
 // 2026-08時点での最新版。データベースは「データソース」経由でのクエリが必須になった
 // 2025-09-03以降のバージョンを使う必要があります（それより古いバージョンを指定すると
 // 従来の /v1/databases/{id}/query が使えてしまいますが、将来的に廃止される可能性があります）。
+import fs from "node:fs/promises";
+import path from "node:path";
+
 export const NOTION_API_VERSION = "2026-03-11";
 const NOTION_API_BASE = "https://api.notion.com/v1";
 
@@ -23,14 +26,52 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ------------------------------------------------------------
+// 同時に投げるリクエスト数の上限（2026-10-27追加）
+//
+// 記事・タグ・資料の処理を並列化したため、Notionへのリクエストが一度に大量に飛ばないよう
+// プロセス全体で同時実行数をここで絞る。Notion APIのレート制限は平均3リクエスト/秒
+// （短いバーストは許容）なので3並列にしておき、それでも429が返った場合は下のリトライで待つ。
+// ------------------------------------------------------------
+const MAX_CONCURRENT_REQUESTS = 3;
+let activeRequests = 0;
+const waitingRequests = [];
+
+async function acquireSlot() {
+  if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+    activeRequests++;
+    return;
+  }
+  await new Promise((resolve) => waitingRequests.push(resolve));
+}
+
+function releaseSlot() {
+  const next = waitingRequests.shift();
+  if (next) next(); // 枠をそのまま次の待ちに渡す（activeRequestsは変えない）
+  else activeRequests--;
+}
+
+// ビルドログに出す集計用（何回Notionに問い合わせたか）
+export const requestStats = { count: 0, rateLimited: 0 };
+
 /**
  * Notion APIを叩く共通関数。429（レート制限）は自動リトライします。
  */
 export async function notionRequest(token, method, path, body) {
+  await acquireSlot();
+  try {
+    return await notionRequestUnlimited(token, method, path, body);
+  } finally {
+    releaseSlot();
+  }
+}
+
+async function notionRequestUnlimited(token, method, path, body) {
   const url = `${NOTION_API_BASE}/${path}`;
   const maxRetries = 5;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    requestStats.count++;
     const res = await fetch(url, {
       method,
       headers: {
@@ -42,6 +83,7 @@ export async function notionRequest(token, method, path, body) {
     });
 
     if (res.status === 429) {
+      requestStats.rateLimited++;
       const retryAfter = Number(res.headers.get("retry-after")) || 1;
       console.warn(
         `  [notion] レート制限。${retryAfter}秒待って再試行します… (${attempt + 1}/${maxRetries})`,
@@ -139,15 +181,18 @@ export async function fetchBlockChildrenRecursive(token, blockId, depth = 0) {
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
 
-  for (const block of blocks) {
-    const isTrashed = block.in_trash || block.archived;
-    if (isTrashed) continue;
-    if (block.has_children && block.type !== "child_page" && block.type !== "child_database") {
-      block._children = await fetchBlockChildrenRecursive(token, block.id, depth + 1);
-    } else {
-      block._children = [];
-    }
-  }
+  // 子ブロック（トグル・表・入れ子の箇条書きなど）は並列に取りに行く（同時実行数はnotionRequest側で制御）。
+  await Promise.all(
+    blocks.map(async (block) => {
+      const isTrashed = block.in_trash || block.archived;
+      if (isTrashed) return;
+      if (block.has_children && block.type !== "child_page" && block.type !== "child_database") {
+        block._children = await fetchBlockChildrenRecursive(token, block.id, depth + 1);
+      } else {
+        block._children = [];
+      }
+    }),
+  );
 
   return blocks.filter((b) => !(b.in_trash || b.archived));
 }
@@ -167,6 +212,54 @@ export async function fetchBlockChildrenRecursive(token, blockId, depth = 0) {
 
 const relationTitleCache = new Map();
 
+function titleOfPage(page) {
+  const titleProp = Object.values(page.properties || {}).find((p) => p.type === "title");
+  return (titleProp?.title || []).map((t) => t.plain_text).join("").trim() || null;
+}
+
+// ------------------------------------------------------------
+// リレーション先の名前の事前登録（2026-10-27追加）
+//
+// タグ・カテゴリ・執筆者などのマスターDBは、fetch-notion.mjs が一覧取得（queryAllPages）で
+// 全ページ分のタイトルを既に受け取っている。それを先にキャッシュへ入れておけば、記事ごとに
+// 関連ページを1件ずつ GET し直さずに済む（名前の変更も一覧取得の時点で反映されるので鮮度は同じ）。
+// 後続の fetch-notion-resources / fetch-notion-tools は別プロセスなので、ファイル経由で受け渡す。
+// ------------------------------------------------------------
+const RELATION_TITLES_FILE = path.resolve(process.cwd(), ".notion-cache/meta/relation-titles.json");
+
+/** queryAllPages の結果（ページの配列）を、ID → タイトルとして登録する。 */
+export function primeRelationTitles(pages) {
+  for (const page of pages || []) relationTitleCache.set(page.id, titleOfPage(page));
+}
+
+/** 今回のビルドで登録したリレーション名をファイルに書き出す（fetch-notion.mjs の最後に呼ぶ）。 */
+export async function saveRelationTitles() {
+  await fs.mkdir(path.dirname(RELATION_TITLES_FILE), { recursive: true });
+  const entries = [...relationTitleCache].filter(([, title]) => title !== null);
+  await fs.writeFile(
+    RELATION_TITLES_FILE,
+    JSON.stringify({ generatedAt: new Date().toISOString(), titles: Object.fromEntries(entries) }),
+  );
+}
+
+/**
+ * fetch-notion.mjs が書き出したリレーション名を読み込む（resources / tools の最初に呼ぶ）。
+ * 同じビルドの直前に書かれたものだけを信用する（古いファイルが残っていても使わない）。
+ */
+export async function loadRelationTitles(maxAgeMs = 60 * 60 * 1000) {
+  try {
+    const data = JSON.parse(await fs.readFile(RELATION_TITLES_FILE, "utf-8"));
+    if (Date.now() - Date.parse(data.generatedAt) > maxAgeMs) return 0;
+    const titles = Object.entries(data.titles || {});
+    for (const [id, title] of titles) {
+      if (!relationTitleCache.has(id)) relationTitleCache.set(id, title);
+    }
+    return titles.length;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * ページIDからタイトルプロパティの文字列を取得する（リレーション先ページの名前解決用）。
  */
@@ -174,8 +267,7 @@ export async function getPageTitleById(token, pageId) {
   if (relationTitleCache.has(pageId)) return relationTitleCache.get(pageId);
   try {
     const page = await notionRequest(token, "GET", `pages/${pageId}`);
-    const titleProp = Object.values(page.properties || {}).find((p) => p.type === "title");
-    const title = (titleProp?.title || []).map((t) => t.plain_text).join("").trim() || null;
+    const title = titleOfPage(page);
     relationTitleCache.set(pageId, title);
     return title;
   } catch (err) {
