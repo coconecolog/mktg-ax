@@ -1,8 +1,8 @@
 ---
 import { NAV_LINKS, SITE_NAME } from "@/consts";
 
-// 「便利ツール」のプルダウンは廃止（2026-09-20）。子メニューを持たない通常のリンクとして表示する
-// （ツールの一覧は /tools ページ、DB連動）。プルダウンを復活させたい場合は children に getToolNavItems()（@/lib/tools）を渡す。
+// 「キット一覧」のプルダウンは廃止（2026-09-20）。子メニューを持たない通常のリンクとして表示する
+// （キット一覧は /tools ページ、DB連動）。プルダウンを復活させたい場合は children に getToolNavItems()（@/lib/tools）を渡す。
 const navLinks = NAV_LINKS.map((link) => ({ ...link, children: [] as { href: string; icon: string; label: string; description: string }[] }));
 
 const currentPath = Astro.url.pathname;
@@ -105,7 +105,7 @@ function isActive(href: string) {
 </header>
 
 <script>
-  // ヘッダーの「便利ツール」等、子メニューを持つナビ項目のドロップダウン制御。
+  // ヘッダーの「キット一覧」等、子メニューを持つナビ項目のドロップダウン制御。
   // ラベル部分（<a>）はクリックでそのページへ遷移し、右側の矢印ボタンのみが開閉を担当する。
   const dropdowns = Array.from(document.querySelectorAll<HTMLElement>(".nav-dropdown"));
 
