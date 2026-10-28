@@ -46,8 +46,7 @@ export const HOME_FOCUS = {
       label: "ツール",
       name: "KPI分析ツール",
       description:
-        "期のはじめに、目標とチャネル別の年間の計画を入れるだけ。資料「KPI管理表」と同じ表が、計画の数字を記入済みのExcelでダウンロードできます。",
-      note: "表を一から埋める手間がなくなります。毎月の実績を入れれば、予実と判定が自動で出ます。",
+        "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。ファイルは送信せず、ブラウザの中だけで読みます。",
       subLink: { label: "KPI管理表をダウンロードする", href: "/resources/kpi-management-template" },
       cta: { label: "KPIを分析する", href: "/tools/kpi-analysis" },
     },
