@@ -26,6 +26,20 @@ export const HOME_HERO = {
 };
 
 // ------------------------------------------------------------
+// 共通基準（ファーストビューの下の黒い帯）
+// items は右の3つ。行を増やす・消すときは { ... }, のまとまりごと操作してください。
+// ------------------------------------------------------------
+export const HOME_STANDARDS = {
+  eyebrow: "共通基準",
+  headingLines: ["すべての記事・資料・ツールは、", "同じ定義で計算しています。"],
+  items: [
+    { label: "前提の共有", title: "架空の製造業の前提", link: { label: "モデル企業を見る", href: "/standards" } },
+    { label: "具体のシミュレーション", title: "予算・リード・受注の内訳", link: { label: "施策と数字を見る", href: "/standards/model" } },
+    { label: "判断の基準", title: "CAC・回収期間・上限コストの基準", link: { label: "数字の定義を見る", href: "/standards/metrics" } },
+  ],
+};
+
+// ------------------------------------------------------------
 // 01 注力テーマ（時期に合わせて差し替えるエリア）
 // ・STEP 01〜03 は、category の「サブカテゴリ」（Notionの並び順）と、その「代表記事」から自動で表示します。
 //   代表記事が未設定のときは「代表資料」→ そのサブカテゴリの新しい記事・資料 の順で埋めます。
@@ -80,6 +94,61 @@ export const HOME_ISSUES = {
   heading: "いまの課題に、合うテーマを。",
   subcategoryCount: 3,
   linkLabel: "カテゴリを見る",
+};
+
+// ------------------------------------------------------------
+// 計画から改善、報告まで（3つのステップのツール）
+// ・related は「あわせて使う」。type は "ツール" か "資料"。href を null にするとリンクなしで「準備中」と出ます
+// ------------------------------------------------------------
+export const HOME_PDCA = {
+  heading: "計画から改善、報告まで。",
+  sub: "予算とKPIを1本でつなぐ、3つのステップ",
+  note: "ツールと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
+  relatedLabel: "あわせて使う",
+  comingSoonLabel: "準備中",
+  ctaLabel: "ツールを使う",
+  listLink: { label: "便利ツール一覧", href: "/tools" },
+  steps: [
+    {
+      step: "01",
+      phase: "計画",
+      purpose: "投資の根拠をつくる",
+      name: "マーケティング予算シミュレーター",
+      description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
+      href: "/tools/budget-simulator",
+      related: [
+        { type: "ツール", name: "予算案チェッカー", description: "AIで作った予算案や年間予算表を判定する", href: "/tools/budget-checker" },
+        { type: "資料", name: "年間予算表（スプレッドシート）", description: "", href: null },
+      ],
+      note: "来期の予算策定・社内提案に",
+    },
+    {
+      step: "02",
+      phase: "管理",
+      purpose: "追う数字を決める",
+      name: "KPI管理表メーカー",
+      description: "計画の数字を入れるだけで、毎月の予実と撤退の判断まで自動で出るKPI管理表ができます。",
+      href: "/tools/kpi-sheet-maker",
+      related: [
+        { type: "ツール", name: "KPI妥当性チェッカー", description: "KPIのつながりと数字の無理を、始める前に確かめる", href: "/tools/kpi-check" },
+        { type: "資料", name: "KPI管理表（スプレッドシート）", description: "", href: "/resources/kpi-management-template" },
+      ],
+      note: "期のはじめにKPIを決めるときに",
+    },
+    {
+      step: "03",
+      phase: "改善・報告",
+      purpose: "打ち手を見直して伝える",
+      name: "KPI分析ツール",
+      description: "KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきで示します。",
+      href: "/tools/kpi-analysis",
+      related: [
+        { type: "資料", name: "月次レポート", description: "KPI管理表に実績を入れると、経営向けの1枚が自動でできる", href: "/resources/kpi-management-template" },
+        { type: "資料", name: "KPI管理表（スプレッドシート）", description: "", href: "/resources/kpi-management-template" },
+      ],
+      note: "毎月の振り返りと経営報告に",
+    },
+  ],
 };
 
 // ------------------------------------------------------------
