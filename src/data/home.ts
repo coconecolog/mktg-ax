@@ -47,7 +47,9 @@ export const HOME_FOCUS = {
       name: "KPI分析ツール",
       description:
         "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。ファイルは送信せず、ブラウザの中だけで読みます。",
-      subLink: { label: "KPI管理表をダウンロードする", href: "/resources/kpi-management-template" },
+      note: "",
+      // 関連資料（資料DBのSlug）。資料を出さないときは null
+      resourceSlug: "kpi-management-template",
       cta: { label: "KPIを分析する", href: "/tools/kpi-analysis" },
     },
     {
@@ -56,10 +58,13 @@ export const HOME_FOCUS = {
       description:
         "売上目標と施策ごとのKPIから、KPIツリーの妥当性を判定。リードの過不足や、受注とつながらないKPIを示します。",
       note: "期のはじめにKPIを決めるときに。結果はA4横のPDFで出せます。",
-      subLink: null,
+      resourceSlug: null,
       cta: { label: "KPIを判定する", href: "/tools/kpi-check" },
     },
   ],
+  // ツールの下の関連資料の文言
+  resourceTypeLabel: "無料資料",
+  resourceCtaLabel: "無料で資料をもらう",
   postTag: "記事",
   resourceTag: "資料",
   latestLabel: "このテーマの新着",
