@@ -378,11 +378,11 @@ const latestPosts = getLibraryItems("post")
                     );
                   })()}
                   <div class="min-w-0">
-                    <p class="font-bold leading-snug">
+                    <p class="text-sm font-bold leading-snug">
                       {step.resource.href ? (
                         <a href={step.resource.href} class="group flex items-center justify-between gap-3">
                           <span class="group-hover:underline">{step.resource.name}</span>
-                          <span aria-hidden="true">→</span>
+                          <span class="shrink-0 text-base" aria-hidden="true">→</span>
                         </a>
                       ) : (
                         <>
