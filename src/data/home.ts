@@ -70,12 +70,12 @@ export const HOME_FOCUS = {
     },
     {
       label: "ツール",
-      name: "KPI妥当性チェッカー",
+      name: "KPI妥当性診断キット",
       description:
-        "売上目標と施策ごとのKPIから、KPIツリーの妥当性を判定。リードの過不足や、受注とつながらないKPIを示します。",
-      note: "期のはじめにKPIを決めるときに。結果はA4横のPDFで出せます。",
+        "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れるだけです。",
+      note: "期のはじめにKPIを決めるときに。結果はA4縦のPDFで出せます。",
       resourceSlug: null,
-      cta: { label: "KPIを判定する", href: "/tools/kpi-check" },
+      cta: { label: "KPIを診断する", href: "/tools/kpi-check" },
     },
   ],
   // ツールの下の関連資料の文言
@@ -132,7 +132,7 @@ export const HOME_PDCA = {
       description: "計画の数字を入れるだけで、毎月の予実と撤退の判断まで自動で出るKPI管理表ができます。",
       href: "/tools/kpi-sheet-maker",
       related: [
-        { type: "ツール", name: "KPI妥当性チェッカー", description: "KPIのつながりと数字の無理を、始める前に確かめる", href: "/tools/kpi-check" },
+        { type: "ツール", name: "KPI妥当性診断キット", description: "KPIのつながりと数字の無理を、始める前に確かめる", href: "/tools/kpi-check" },
         { type: "資料", name: "KPI管理表（スプレッドシート）", description: "", href: "/resources/kpi-management-template" },
       ],
       note: "期のはじめにKPIを決めるときに",

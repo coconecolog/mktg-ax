@@ -28,7 +28,7 @@ const pages: Record<string, PageEntry> = {
   "tools/seo-aeo-aio-check": { title: "簡易SEO・AEO・AIO診断チェックリスト", description: SITE_DESCRIPTION },
   "tools/inhouse-vs-outsource": { title: "内製 vs 外注 コスト比較シミュレーター", description: SITE_DESCRIPTION },
   "tools/monthly-report": { title: "マーケ月次報告メーカー", description: SITE_DESCRIPTION },
-  "tools/kpi-check": { title: "KPI妥当性チェッカー", description: SITE_DESCRIPTION },
+  "tools/kpi-check": { title: "KPI妥当性診断キット", description: SITE_DESCRIPTION },
   "tools/kpi-analysis": { title: "施策効果診断キット", description: SITE_DESCRIPTION },
   resources: { title: "資料一覧", description: SITE_DESCRIPTION },
   service: { title: "サービスについて", description: SITE_DESCRIPTION },
