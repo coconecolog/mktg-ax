@@ -47,6 +47,8 @@ export const HOME_STANDARDS = {
 // ・テーマを変えるときは、category・見出し・tools を書き換えます。
 // ------------------------------------------------------------
 export const HOME_FOCUS = {
+  // false にするとトップページに表示しません（中身は残るので true に戻せばそのまま出ます）
+  visible: false,
   eyebrow: "注力テーマ",
   badge: "KPI設計と運用",
   heading: "目標から逆算するKPI設計と、回し続けるための運用・管理手法",
