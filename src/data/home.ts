@@ -110,7 +110,6 @@ export const HOME_PDCA = {
   note: "キットと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
   relatedLabel: "あわせて使う資料",
   comingSoonLabel: "準備中",
-  ctaLabel: "キットを使う",
   listLink: { label: "キット一覧", href: "/tools" },
   steps: [
     {
