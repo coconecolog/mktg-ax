@@ -60,7 +60,7 @@ export const HOME_FOCUS = {
   tools: [
     {
       label: "ツール",
-      name: "KPI分析ツール",
+      name: "施策効果診断キット",
       description:
         "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。ファイルは送信せず、ブラウザの中だけで読みます。",
       note: "",
@@ -141,7 +141,7 @@ export const HOME_PDCA = {
       step: "03",
       phase: "改善・報告",
       purpose: "打ち手を見直して伝える",
-      name: "KPI分析ツール",
+      name: "施策効果診断キット",
       description: "KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきで示します。",
       href: "/tools/kpi-analysis",
       related: [

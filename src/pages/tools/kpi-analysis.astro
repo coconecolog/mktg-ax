@@ -1,22 +1,22 @@
 ---
 // src/pages/tools/kpi-analysis.astro
 //
-// KPI分析ツール（/tools/kpi-analysis）2026-10-27 新規
+// 施策効果診断キット（旧KPI分析ツール、/tools/kpi-analysis）2026-10-27 新規、2026-10-28 改名
 // KPI管理表（M-B-04）の .xlsx を読み込むと、その場で分析結果を出す（ファイルは送信しない。計算はすべてブラウザの中）。
 // - A 課題の地図：課題（チャネル×指標）×12か月。色＝計画を本当に下回っている確率（ベイズ推定）
 // - B 推移と打ち手：Aで選んだ課題の実績・計画の線と、打ち手を入れた月
 // - C 打ち手の効果：施策ログの打ち手ごとに「良くなった確率」（実施月の前3か月 → 実施月から最新月まで）
 // - D 打ち手の一覧（表）
-// 読むセルの位置：Googleドライブ「02_ツール仕様／KPI分析ツール_読むシートの約束」
+// 読み方：見出しの文字（チャネル名・「リード数」・「登録月」など）を探して読む。行の位置は決め打ちしない（2026-10-28）
 // 計算：src/lib/kpiAnalysis.ts　画面：src/scripts/kpi-analysis/app.ts　xlsxの読み込み：src/scripts/kpi-analysis/xlsx.ts
 // 結果の見本（?sample=1）：src/data/kpi-analysis-sample.json（scripts/build-kpi-analysis-sample.py で作る）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import "@/styles/kpi-analysis.css";
 
-const TOOL_TITLE = "KPI分析ツール";
+const TOOL_TITLE = "施策効果診断キット";
 const TOOL_DESCRIPTION =
-  "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで示す無料ツールです。月×課題の地図、指標の推移と打ち手、打ち手ごとの「良くなった確率」を、その場で表示します。ファイルは送信しません。";
+  "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで示す無料のキットです。月×課題の地図、指標の推移と打ち手、打ち手ごとの「良くなった確率」を、その場で表示します。ファイルは送信しません。";
 // KPI管理表（M-B-04）の資料ページ。資料のページができたら差し替える
 const KPI_SHEET_URL = "/resources";
 
