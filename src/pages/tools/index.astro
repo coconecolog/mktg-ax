@@ -1,5 +1,5 @@
 ---
-// 便利ツール一覧（/tools）。2026-10-28 やりたいこと別のキット構成にリニューアル。
+// キット一覧（/tools）。2026-10-28 やりたいこと別のキット構成にリニューアル。
 // 見出しまわりは /library に合わせる。キット・その他の文言は src/data/tools.ts を編集する。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
@@ -9,7 +9,7 @@ import { ICONS, KIT_GROUPS, OTHER_TOOLS } from "@/data/tools";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "便利ツール", href: "/tools" },
+  { name: "キット一覧", href: "/tools" },
 ];
 
 const pageDescription =
@@ -20,7 +20,7 @@ const schemaItems = [
   ...OTHER_TOOLS.map((t) => ({ href: t.href, title: t.title })),
 ];
 const toolsSchema = buildCollectionPageSchema({
-  name: "便利ツール",
+  name: "キット一覧",
   description: pageDescription,
   path: "/tools",
   items: schemaItems,
@@ -28,7 +28,7 @@ const toolsSchema = buildCollectionPageSchema({
 ---
 
 <BaseLayout
-  title="便利ツール"
+  title="キット一覧"
   description={pageDescription}
   ogImage="/open-graph/tools.png"
   jsonLd={toolsSchema}
@@ -37,7 +37,7 @@ const toolsSchema = buildCollectionPageSchema({
   <Breadcrumb items={breadcrumbItems} />
 
   <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 text-ink-950">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">便利ツール</h1>
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">キット一覧</h1>
     <p class="mt-4 text-lg font-bold text-ink-950">やりたいことから、キットを選ぶ。</p>
     <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
 
