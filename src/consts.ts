@@ -6,16 +6,16 @@ export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || "https://mktg-ax.page
 export const SITE_NAME = "MKTG.AX";
 // 修正後（SITE_TAGLINEはFooter・OGP画像でも使うので変更しない。
 // トップページ見出し専用に、改行位置を配列で明示できる定数を追加）
-export const SITE_TAGLINE = "マーケティング責任者のための 分析ツール&情報メディア";
+export const SITE_TAGLINE = "マーケティング責任者のための 分析キット&情報メディア";
 // トップページのファーストビュー見出し。配列の要素ごとに改行される。
 // 文言を変える際は、ここで改行したい位置で要素を分ければOK（成り行きの折り返しにはしない）。
-export const HOME_HERO_TITLE_LINES = ["マーケティング責任者のための", "分析ツール&情報メディア"];
+export const HOME_HERO_TITLE_LINES = ["マーケティング責任者のための", "分析キット&情報メディア"];
 export const SITE_DESCRIPTION =
   "直感と経験頼みから、本質を突く意思決定へ";
 
 export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 
-// ヘッダーの「便利ツール」プルダウンに表示するツール一覧。
+// ヘッダーの「便利キット」プルダウンに表示するキット一覧。
 // ここに追加すればヘッダーのプルダウン・モバイルメニューの両方に自動で反映される。
 export const TOOLS_NAV_ITEMS = [
   {
@@ -44,8 +44,8 @@ export const TOOLS_NAV_ITEMS = [
   },
 ] as const;
 
-// トップページ「便利ツール」セクションに表示するツール（最大3つ）。
-// TOOLS_NAV_ITEMS（ヘッダーのプルダウン・モバイルメニュー用、全ツール掲載）とは別に管理する。
+// トップページ「便利キット」セクションに表示するキット（最大3つ）。
+// TOOLS_NAV_ITEMS（ヘッダーのプルダウン・モバイルメニュー用、全キット掲載）とは別に管理する。
 // TOOLS_NAV_ITEMSの先頭（マーケティング予算策定・投資計画書）を活かしつつ、ROAS/CACシミュレーターだけを表示から外している。
 export const HOME_TOOLS_ITEMS = [
   ...TOOLS_NAV_ITEMS.filter((tool) => tool.href !== "/tools/roas-cac-simulator"),
@@ -55,8 +55,8 @@ export const HOME_TOOLS_ITEMS = [
 // （Footer.astroは独自の3カラム構成のため、この配列は参照していません。フッターのリンクを変えたい場合はFooter.astroを直接編集してください）。
 export const NAV_LINKS = [
   { href: "/", label: "トップ", children: [] },
-  { href: "/tools", label: "便利ツール", children: TOOLS_NAV_ITEMS },
-  { href: "/library", label: "ライブラリ（記事・資料）", children: [] },
+  { href: "/tools", label: "キット一覧", children: TOOLS_NAV_ITEMS },
+  { href: "/library", label: "ラボ（記事・資料）", children: [] },
   { href: "/service", label: "サービスについて", children: [] },
   { href: "/contact", label: "お問い合わせ", children: [] },
 ] as const;
@@ -75,7 +75,7 @@ export const CATEGORY_SECTION_POST_LIMIT = 4; // まずはこの記事から1件
 // URLは /blog/tag/{slug} の1つだけで、ページ送りはページ内のJSで行う（全記事のリンクはHTMLに入っている）。
 export const TAG_PAGE_SIZE = 3;
 
-// ライブラリ（記事・資料統合）ページで1ページに表示する件数
+// ラボ（記事・資料統合）ページで1ページに表示する件数
 export const LIBRARY_PAGE_SIZE = 8;
 
 // 執筆者ページで1ページに表示する記事・資料数（カテゴリ/タグページと同じ考え方で分けている）
