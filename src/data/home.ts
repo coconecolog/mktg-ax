@@ -99,43 +99,48 @@ export const HOME_ISSUES = {
 };
 
 // ------------------------------------------------------------
-// 計画から改善、報告まで（3つのステップのツール）
-// ・related は「あわせて使う」。type は "ツール" か "資料"。href を null にするとリンクなしで「準備中」と出ます
+// 計画から改善、報告まで（3つのステップのキット）
+// ・resource は「あわせて使う資料」（1つ）。href を null にするとリンクなしで「準備中」と出ます
+// ・resource.coverTitle は表紙に出す名前（改行は \n）。guide は資料の下の案内文（空なら出さない）
+// ・2026-10-28：作成キットは作成時に判定までするので、診断キットは「あわせて使う」に出さない
 // ------------------------------------------------------------
 export const HOME_PDCA = {
   heading: "計画から改善、報告まで。",
   sub: "予算とKPIを1本でつなぐ、3つのステップ",
-  note: "ツールと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
-  relatedLabel: "あわせて使う",
+  note: "キットと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
+  relatedLabel: "あわせて使う資料",
   comingSoonLabel: "準備中",
-  ctaLabel: "ツールを使う",
-  listLink: { label: "便利ツール一覧", href: "/tools" },
+  listLink: { label: "キット一覧", href: "/tools" },
   steps: [
     {
       step: "01",
       phase: "計画",
       purpose: "投資の根拠をつくる",
-      name: "マーケティング予算シミュレーター",
+      name: "予算作成キット",
       description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
       href: "/tools/budget-simulator",
-      related: [
-        { type: "ツール", name: "予算案チェッカー", description: "AIで作った予算案や年間予算表を判定する", href: "/tools/budget-checker" },
-        { type: "資料", name: "年間予算表（スプレッドシート）", description: "", href: null },
-      ],
-      note: "来期の予算策定・社内提案に",
+      resource: {
+        name: "年間予算表",
+        coverTitle: "年間\n予算表",
+        typeLabel: "スプレッドシート",
+        href: null,
+        guide: "",
+      },
     },
     {
       step: "02",
       phase: "管理",
       purpose: "追う数字を決める",
-      name: "KPI管理表メーカー",
+      name: "KPI管理表作成キット",
       description: "計画の数字を入れるだけで、毎月の予実と撤退の判断まで自動で出るKPI管理表ができます。",
       href: "/tools/kpi-sheet-maker",
-      related: [
-        { type: "ツール", name: "KPI妥当性診断キット", description: "KPIのつながりと数字の無理を、始める前に確かめる", href: "/tools/kpi-check" },
-        { type: "資料", name: "KPI管理表（スプレッドシート）", description: "", href: "/resources/kpi-management-template" },
-      ],
-      note: "期のはじめにKPIを決めるときに",
+      resource: {
+        name: "KPI管理表",
+        coverTitle: "KPI\n管理表",
+        typeLabel: "スプレッドシート",
+        href: "/resources/kpi-management-template",
+        guide: "キットを使わず、スプレッドシートをダウンロードして直接入力しても作れます。",
+      },
     },
     {
       step: "03",
@@ -144,11 +149,13 @@ export const HOME_PDCA = {
       name: "施策効果診断キット",
       description: "KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきで示します。",
       href: "/tools/kpi-analysis",
-      related: [
-        { type: "資料", name: "月次レポート", description: "KPI管理表に実績を入れると、経営向けの1枚が自動でできる", href: "/resources/kpi-management-template" },
-        { type: "資料", name: "KPI管理表（スプレッドシート）", description: "", href: "/resources/kpi-management-template" },
-      ],
-      note: "毎月の振り返りと経営報告に",
+      resource: {
+        name: "KPI管理表",
+        coverTitle: "KPI\n管理表",
+        typeLabel: "スプレッドシート",
+        href: "/resources/kpi-management-template",
+        guide: "毎月の実績をKPI管理表に入れて、このキットにアップするだけで診断が終わります。",
+      },
     },
   ],
 };
