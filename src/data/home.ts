@@ -10,12 +10,12 @@ export const HOME_HERO = {
   eyebrow: "少人数でマーケティングを担う、BtoB企業へ",
   titleLines: ["施策の優先順位も、", "投資の根拠も。", "自社の数字で判断する。"],
   descriptionLines: [
-    "少人数体制でマーケティングを担う方に、記事・資料・分析ツールで",
+    "少人数体制でマーケティングを担う方に、記事・資料・分析キットで",
     "自社の判断基準を。戦略の立案から運用・改善、社内への提案まで。",
     "施策の優先順位と成果を見える化する実務メディアです。",
   ],
   primaryCta: { label: "記事・資料を見る", href: "/library" },
-  secondaryCta: { label: "ツールを使ってみる", href: "/tools" },
+  secondaryCta: { label: "キットを使ってみる", href: "/tools" },
   // 右側の画像（public/images/home/ に置いたファイル）。画像もリンクになります（リンク先は imageLink.href）
   image: {
     src: "/images/home/kpi-illustration.svg",
@@ -31,7 +31,7 @@ export const HOME_HERO = {
 // ------------------------------------------------------------
 export const HOME_STANDARDS = {
   eyebrow: "共通基準",
-  headingLines: ["すべての記事・資料・ツールは、", "同じ定義で計算しています。"],
+  headingLines: ["すべての記事・資料・キットは、", "同じ定義で計算しています。"],
   items: [
     { label: "前提の共有", title: "架空の製造業の前提", link: { label: "モデル企業を見る", href: "/standards" } },
     { label: "具体のシミュレーション", title: "予算・リード・受注の内訳", link: { label: "施策と数字を見る", href: "/standards/model" } },
@@ -56,10 +56,10 @@ export const HOME_FOCUS = {
   category: "KPI・効果測定",
   stepCount: 3,
   stepLabel: "STEP",
-  // ツール（左から順に表示）。行を増やす・消すときは { ... }, のまとまりごと操作してください。
+  // キット（左から順に表示）。行を増やす・消すときは { ... }, のまとまりごと操作してください。
   tools: [
     {
-      label: "ツール",
+      label: "キット",
       name: "施策効果診断キット",
       description:
         "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。ファイルは送信せず、ブラウザの中だけで読みます。",
@@ -69,7 +69,7 @@ export const HOME_FOCUS = {
       cta: { label: "KPIを分析する", href: "/tools/kpi-analysis" },
     },
     {
-      label: "ツール",
+      label: "キット",
       name: "KPI妥当性診断キット",
       description:
         "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れるだけです。",
@@ -78,7 +78,7 @@ export const HOME_FOCUS = {
       cta: { label: "KPIを診断する", href: "/tools/kpi-check" },
     },
   ],
-  // ツールの下の関連資料の文言
+  // キットの下の関連資料の文言
   resourceTypeLabel: "無料資料",
   resourceCtaLabel: "無料で資料をもらう",
   postTag: "記事",
@@ -178,10 +178,10 @@ export const HOME_LATEST = {
 export const HOME_REQUEST = {
   eyebrow: "ご要望・ご質問",
   heading: "取り上げてほしいテーマや、使い方の質問を。",
-  description: "記事・資料・分析ツールへのご要望やご質問を受け付けています。いただいた内容は、今後のコンテンツづくりの参考にします。",
+  description: "記事・資料・分析キットへのご要望やご質問を受け付けています。いただいた内容は、今後のコンテンツづくりの参考にします。",
   examples: [
     "こんなテーマの記事や資料を読みたい",
-    "分析ツールの使い方・入力のしかたがわからない",
+    "分析キットの使い方・入力のしかたがわからない",
     "資料の記入例や、記事の内容についてもっと知りたい",
   ],
   link: { label: "要望・質問を送る", href: "/contact" },
