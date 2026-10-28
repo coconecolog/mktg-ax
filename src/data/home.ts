@@ -14,111 +14,84 @@ export const HOME_HERO = {
     "自社の判断基準を。戦略の立案から運用・改善、社内への提案まで。",
     "施策の優先順位と成果を見える化する実務メディアです。",
   ],
-  primaryCta: { label: "いまの課題から探す", href: "#issues" },
-  secondaryCta: { label: "実務資料を見る", href: "#materials" },
-  footnote: "直感と経験頼みから、本質を突く意思決定へ",
-  // 右側の画像（public/images/home/ に置いたファイル）
+  primaryCta: { label: "記事・資料を見る", href: "/library" },
+  secondaryCta: { label: "ツールを使ってみる", href: "/tools" },
+  // 右側の画像（public/images/home/ に置いたファイル）。画像もリンクになります（リンク先は imageLink.href）
   image: {
-    src: "/images/home/decision-note.svg",
-    alt: "DECISION NOTEの記入イメージ。目的・優先する施策・判断に使う数字・次の行動を1枚に整理する。",
+    src: "/images/home/kpi-illustration.svg",
+    alt: "KPIツリーのイメージ。売上目標（KGI）からリード獲得・商談転換（CSF）、MQL数・CPL・商談率・受注率（KPI）に分け、月次で追う。",
   },
+  // 画像の下のリンク（線つきのテキストリンク）
+  imageLink: { label: "KPIツリーの作り方と例を読む", href: "/blog/kpi-tree" },
 };
 
 // ------------------------------------------------------------
-// 01 課題から探す
+// 01 注力テーマ（時期に合わせて差し替えるエリア）
+// ・STEP 01〜03 は、category の「サブカテゴリ」（Notionの並び順）と、その「代表記事」から自動で表示します。
+//   代表記事が未設定のときは「代表資料」→ そのサブカテゴリの新しい記事・資料 の順で埋めます。
+// ・下の一覧は、category の記事・資料を新しい順に latestCount 件表示します。
+// ・テーマを変えるときは、category・見出し・tools を書き換えます。
+// ------------------------------------------------------------
+export const HOME_FOCUS = {
+  eyebrow: "注力テーマ",
+  badge: "KPI設計と運用",
+  heading: "目標から逆算するKPI設計と、回し続けるための運用・管理手法",
+  // Notionのカテゴリ名（マスターカテゴリDBの名前と同じにする）
+  category: "KPI・効果測定",
+  stepCount: 3,
+  stepLabel: "STEP",
+  // ツール（左から順に表示）。行を増やす・消すときは { ... }, のまとまりごと操作してください。
+  tools: [
+    {
+      label: "ツール",
+      name: "KPI管理表メーカー",
+      description:
+        "期のはじめに、目標とチャネル別の年間の計画を入れるだけ。資料「KPI管理表」と同じ表が、計画の数字を記入済みのExcelでダウンロードできます。",
+      note: "表を一から埋める手間がなくなります。毎月の実績を入れれば、予実と判定が自動で出ます。",
+      subLink: { label: "資料「KPI管理表」を見る", href: "/resources/kpi-management-template" },
+      cta: { label: "KPI管理表を作る", href: "/tools/kpi-sheet-maker" },
+    },
+    {
+      label: "ツール",
+      name: "KPI妥当性チェッカー",
+      description:
+        "売上目標と施策ごとのKPIから、KPIツリーの妥当性を判定。リードの過不足や、受注とつながらないKPIを示します。",
+      note: "期のはじめにKPIを決めるときに。結果はA4横のPDFで出せます。",
+      subLink: null,
+      cta: { label: "KPIを判定する", href: "/tools/kpi-check" },
+    },
+  ],
+  postTag: "記事",
+  resourceTag: "資料",
+  latestLabel: "このテーマの新着",
+  latestCount: 3,
+  categoryLinkLabel: "このテーマの記事・資料をすべて見る",
+};
+
+// ------------------------------------------------------------
+// 02 課題から探す（カテゴリ・サブカテゴリは Notion から自動。ここは見出しまわりの文言だけ）
 // ------------------------------------------------------------
 export const HOME_ISSUES = {
   eyebrow: "課題から探す",
-  heading: "いま、解決したいことは何ですか。",
-  lead: "記事を読むだけでなく、判断に必要な数字や書式まで。3つの問いから、次に使う情報を選べます。",
-  items: [
-    {
-      title: "何をやるべきか",
-      label: "戦略・優先順位・予算",
-      description: "顧客の購買理由と自社の強みを整理し、限られた予算・体制で優先する施策を決める。",
-      bullets: ["顧客が選ぶ理由（KBF）と差別化", "予算・人員に合った施策の順序", "内製と外注の役割分担"],
-      link: { label: "施策の優先順位を決める資料へ", href: "/blog/category/strategy-analysis" },
-    },
-    {
-      title: "成果をどう測るか",
-      label: "KPI・効果測定・データ活用",
-      description: "売上・利益につながるKPIを設計し、どこを改善すれば成果が変わるかを数字で捉える。",
-      bullets: ["KPIツリー・商談率・受注率", "LTV / CAC / 投資回収期間", "CRM・SFA・MAのデータ連携"],
-      link: { label: "KPIを設計・管理する方法へ", href: "/blog/category/kpi-measurement" },
-    },
-    {
-      title: "社内でどう進めるか",
-      label: "組織・運用・社内連携",
-      description: "経営・営業と判断基準を共有し、社内提案と日々の運用を、担当者だけに依存させない。",
-      bullets: ["経営が判断できる投資提案", "営業との連携・指標と期限の合意", "月次の見直しと運用の標準化"],
-      link: { label: "社内で進める方法を読む", href: "/blog/category/organization-hr" },
-    },
-  ],
+  heading: "いまの課題に、合うテーマを。",
+  subcategoryCount: 3,
+  linkLabel: "カテゴリを見る",
 };
 
 // ------------------------------------------------------------
-// 02 実務で使う資料・分析ツール
-// ------------------------------------------------------------
-// 資料（大1件＋小2件）は Notion の資料DB「トップ掲載」（数値 1〜3）で選びます。ここでは見出しだけ設定。
-export const HOME_MATERIALS = {
-  eyebrow: "実務で使う資料・分析ツール",
-  heading: "理解したら、自社の業務ですぐ実行。",
-  resourceTypeLabel: "無料資料",
-  resourceCtaLabel: "無料で資料をもらう",
-};
-
-// 分析ツールの表。1行 = 1ツール。行を増やす・消す・並べ替えるときは { ... }, のまとまりごと操作してください。
-export const HOME_TOOLS_TABLE = {
-  heading: "入力する数字と、判断できること。",
-  columns: { tool: "分析ツール", inputs: "入力する情報", result: "結果から検討すること" },
-  rows: [
-    {
-      purpose: "来期の計画・社内提案に",
-      name: "マーケティング予算策定・投資計画書",
-      inputs: ["現在の成果", "来期の人件費・ツール費・広告費"],
-      resultTitle: "目標と投資計画の関係を確認",
-      resultDescription: "必要な予算と目標を逆算し、来期の計画を検討する。",
-      href: "/tools/budget-simulator",
-    },
-    {
-      purpose: "実行体制・役割分担に",
-      name: "内製 vs 外注 コスト比較シミュレーター",
-      inputs: ["新規採用のコスト", "代理店・フリーランスの費用"],
-      resultTitle: "内製と外注のコストを比較",
-      resultDescription: "社内で担う業務と、外部に任せる業務を検討する。",
-      href: "/tools/inhouse-vs-outsource",
-    },
-    {
-      purpose: "広告投資の見直しに",
-      name: "広告費用対効果（ROAS/CAC）シミュレーター",
-      inputs: ["広告費・売上・獲得顧客数", "継続・リピートによる顧客価値"],
-      resultTitle: "ROAS・CACから採算を確認",
-      resultDescription: "LTVを踏まえ、広告費の配分と継続条件を検討する。",
-      href: "/tools/roas-cac-simulator",
-    },
-  ],
-  rowCtaLabel: "使ってみる",
-  note: "計算結果は入力した前提に基づきます。社内の実績・条件と合わせて判断してください。",
-  listLink: { label: "分析ツール一覧", href: "/tools" },
-  allLink: { label: "記事・資料をすべて見る", href: "/library" },
-};
-
-// ------------------------------------------------------------
-// 03 新着記事（記事は自動で新しい順に3件。ここは見出しまわりの文言だけ）
+// 03 新着記事（記事は自動で新しい順に count 件。ここは見出しまわりの文言だけ）
 // ------------------------------------------------------------
 export const HOME_LATEST = {
   eyebrow: "新着記事",
   heading: "いまの実務に、必要な知識を。",
-  subLabel: "LATEST ARTICLES",
-  subHeadingLines: ["作り方から、", "使い続ける方法まで。"],
-  description: "判断に必要な考え方と、実際の手順を解説します。資料やツールと合わせて活用してください。",
   count: 3,
-  allLink: { label: "記事をすべて見る", href: "/library?type=post" },
+  allLink: { label: "記事・資料をすべて見る", href: "/library" },
 };
 
 // ------------------------------------------------------------
 // 04 ご要望・ご質問（ボタンはお問い合わせフォームへ）
 // examples は箇条書きの例。行を増やす・消すときは "…", の単位で操作してください。
+// ※ components/ContactCta.astro からも使っています
 // ------------------------------------------------------------
 export const HOME_REQUEST = {
   eyebrow: "ご要望・ご質問",
