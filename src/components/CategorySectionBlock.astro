@@ -1,10 +1,11 @@
 ---
 // カテゴリページ（2026-10-12リニューアル）の、サブカテゴリ1つ分のブロック。
 // 左「記事で理解する」、右「資料で実践する」（資料が無いテーマは「関連テーマも活用する」）。
-// 件数が多いテーマは、最初の数件だけを表示し、残りは「もっと見る」ボタンで開く（ページ番号のページネーションは使わない）。
+// 2026-10-28：右は代表資料1件だけにし、2件目以降の資料は左の一覧に記事と混ぜて公開日順で並べる。
+// 件数が多いテーマは、最初の数件だけを表示し、残りは「記事・資料をもっと見る」ボタンで開く（ページ番号のページネーションは使わない）。
 // 絞り込み・検索・「もっと見る」の動きは、カテゴリページ側の <script> が data-* 属性を見て制御する。
 import type { CategorySection } from "@/lib/library";
-import { CATEGORY_SECTION_POST_LIMIT, CATEGORY_SECTION_RESOURCE_LIMIT, DEFAULT_OG_IMAGE } from "@/consts";
+import { CATEGORY_SECTION_POST_LIMIT, DEFAULT_OG_IMAGE } from "@/consts";
 
 interface RelatedLink {
   number: string;
@@ -27,31 +28,24 @@ const searchText = (item: { title: string; description: string }) => `${item.tit
 
 // 「まずはこの記事から」はサブカテゴリのブロックだけ（「その他」は全件を同じ形の行で並べる）
 const featuredPost = !isOthers ? section.posts[0] : undefined;
-const listPosts = featuredPost ? section.posts.slice(1) : section.posts;
-// 最初から見えている記事の数（代表記事を含めて CATEGORY_SECTION_POST_LIMIT 件）
-const visiblePostRows = Math.max(0, CATEGORY_SECTION_POST_LIMIT - (featuredPost ? 1 : 0));
-const extraPostCount = Math.max(0, listPosts.length - visiblePostRows);
-
 const featuredResource = section.resources[0];
-const listResources = section.resources.slice(1);
-const visibleResourceRows = Math.max(0, CATEGORY_SECTION_RESOURCE_LIMIT - 1);
-const extraResourceCount = Math.max(0, listResources.length - visibleResourceRows);
+// 左の一覧：代表記事・代表資料以外の記事と資料を混ぜ、公開日の新しい順に並べる
+const listItems = [
+  ...(featuredPost ? section.posts.slice(1) : section.posts),
+  ...section.resources.slice(1),
+].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+// 最初から見えている行の数（代表記事を含めて CATEGORY_SECTION_POST_LIMIT 件）
+const visibleRows = Math.max(0, CATEGORY_SECTION_POST_LIMIT - (featuredPost ? 1 : 0));
+const extraCount = Math.max(0, listItems.length - visibleRows);
 
 const hasRight = section.resources.length > 0 || related.length > 0;
-const countLabel =
-  section.resources.length > 0
-    ? `記事 ${section.posts.length} / 無料資料 ${section.resources.length}`
-    : `記事 ${section.posts.length}`;
 ---
 
 <section id={section.anchor} data-section class="scroll-mt-24 border-t-2 border-ink-950 pt-8 pb-14">
-  <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-    <h2 class="flex items-baseline gap-4 text-2xl font-bold tracking-tight text-ink-950">
-      {section.number && <span class="text-3xl font-bold tabular-nums">{section.number}</span>}
-      <span>{section.name}</span>
-    </h2>
-    <p class="text-xs text-neutral-500">{countLabel}　・　{total}件</p>
-  </div>
+  <h2 class="flex items-baseline gap-4 text-2xl font-bold tracking-tight text-ink-950">
+    {section.number && <span class="text-3xl font-bold tabular-nums">{section.number}</span>}
+    <span>{section.name}</span>
+  </h2>
 
   {section.description && <p class="mt-4 text-sm text-neutral-500">ここでできること｜{section.description}</p>}
 
@@ -61,8 +55,8 @@ const countLabel =
     ) : (
       <div class={`mt-8 grid grid-cols-1 gap-10 ${hasRight ? "lg:grid-cols-[minmax(0,1fr)_336px]" : ""}`}>
         {/* 左: 記事で理解する */}
-        <div data-column="post" class="min-w-0">
-          {section.posts.length > 0 && <p class="text-sm font-bold text-ink-950">記事で理解する</p>}
+        <div data-column="main" class="min-w-0">
+          {(featuredPost || listItems.length > 0) && <p class="text-sm font-bold text-ink-950">記事で理解する</p>}
 
           {featuredPost && (
             <a href={featuredPost.href} data-item data-kind="post" data-search={searchText(featuredPost)} class="group mt-4 flex items-start gap-5 border-b border-neutral-300 pb-6">
@@ -78,12 +72,12 @@ const countLabel =
             </a>
           )}
 
-          {listPosts.length > 0 && (
-            <ul data-list="post" class={featuredPost ? "" : "mt-4 border-t border-neutral-300"}>
-              {listPosts.map((item, i) => (
-                <li data-item data-kind="post" data-search={searchText(item)} data-extra={i >= visiblePostRows ? "" : undefined} hidden={i >= visiblePostRows} class="border-b border-neutral-300">
+          {listItems.length > 0 && (
+            <ul data-list="main" class={featuredPost ? "" : "mt-4 border-t border-neutral-300"}>
+              {listItems.map((item, i) => (
+                <li data-item data-kind={item.kind} data-search={searchText(item)} data-extra={i >= visibleRows ? "" : undefined} hidden={i >= visibleRows} class="border-b border-neutral-300">
                   <a href={item.href} class="group flex items-center gap-4 py-4">
-                    <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
+                    <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">{item.kind === "resource" ? "無料資料" : "記事"}</span>
                     <span class="min-w-0 flex-1 text-sm font-medium leading-relaxed text-ink-950 group-hover:underline sm:text-[15px]">{item.title}</span>
                     <span aria-hidden="true" class="shrink-0 text-ink-950 transition-transform group-hover:translate-x-1">→</span>
                   </a>
@@ -92,9 +86,9 @@ const countLabel =
             </ul>
           )}
 
-          {extraPostCount > 0 && (
-            <button type="button" data-more="post" class="mt-5 flex w-full items-center justify-center gap-2 border border-ink-950 bg-white px-4 py-3 text-sm font-bold text-ink-950 transition-colors hover:bg-ink-950 hover:text-white">
-              記事をもっと見る（残り{extraPostCount}件）<span aria-hidden="true">↓</span>
+          {extraCount > 0 && (
+            <button type="button" data-more="main" class="mt-5 flex w-full items-center justify-center gap-2 border border-ink-950 bg-white px-4 py-3 text-sm font-bold text-ink-950 transition-colors hover:bg-ink-950 hover:text-white">
+              記事・資料をもっと見る（残り{extraCount}件）<span aria-hidden="true">↓</span>
             </button>
           )}
 
@@ -132,26 +126,6 @@ const countLabel =
                   資料を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
                 </span>
               </a>
-
-              {listResources.length > 0 && (
-                <ul data-list="resource" class="mt-4">
-                  {listResources.map((item, i) => (
-                    <li data-item data-kind="resource" data-search={searchText(item)} data-extra={i >= visibleResourceRows ? "" : undefined} hidden={i >= visibleResourceRows} class="border-t border-neutral-300">
-                      <a href={item.href} class="group flex items-center gap-3 py-3.5">
-                        <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">無料資料</span>
-                        <span class="min-w-0 flex-1 text-sm font-medium leading-snug text-ink-950 group-hover:underline">{item.title}</span>
-                        <span aria-hidden="true" class="shrink-0 text-ink-950">→</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {extraResourceCount > 0 && (
-                <button type="button" data-more="resource" class="mt-4 flex w-full items-center justify-center gap-2 border border-ink-950 bg-white px-4 py-3 text-sm font-bold text-ink-950 transition-colors hover:bg-ink-950 hover:text-white">
-                  資料をもっと見る（残り{extraResourceCount}件）<span aria-hidden="true">↓</span>
-                </button>
-              )}
             </div>
           </div>
         ) : (
