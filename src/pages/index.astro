@@ -1,6 +1,6 @@
 ---
 // トップページ。文言・リンクは src/data/home.ts にまとめています（文言の修正はそちらだけでOK）。
-// 構成: ヒーロー → 01 注力テーマ → 02 課題から探す → 03 新着記事 → 04 ご要望・ご質問
+// 構成: ヒーロー → 共通基準（黒い帯） → 01 注力テーマ → 02 課題から探す → 計画から改善、報告まで → 03 新着記事 → 04 ご要望・ご質問
 // ・01: HOME_FOCUS.category のサブカテゴリ（STEP）と代表記事、ツール、記事・資料の新着を表示。
 // ・02: Notionのカテゴリ（並び順）と、カテゴリごとのサブカテゴリを自動で表示。
 // ・03: 記事を新しい順に自動表示（件数は HOME_LATEST.count）。
@@ -16,7 +16,7 @@ import {
 import { getResourceById, getResourceBySlug } from "@/lib/resources";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
-import { HOME_HERO, HOME_FOCUS, HOME_ISSUES, HOME_LATEST, HOME_REQUEST } from "@/data/home";
+import { HOME_HERO, HOME_STANDARDS, HOME_FOCUS, HOME_ISSUES, HOME_PDCA, HOME_LATEST, HOME_REQUEST } from "@/data/home";
 
 const organizationSchema = buildOrganizationSchema();
 
@@ -136,10 +136,36 @@ const latestPosts = getLibraryItems("post")
           <a href={HOME_HERO.imageLink.href} class="block transition-opacity hover:opacity-80" aria-hidden="true" tabindex="-1">
             <img src={HOME_HERO.image.src} alt={HOME_HERO.image.alt} width="484" height="475" class="h-auto w-full" />
           </a>
-          <a href={HOME_HERO.imageLink.href} class="group mt-4 flex items-center justify-between gap-4 border-t-2 border-ink-950 pt-4 text-sm font-bold">
+          <a href={HOME_HERO.imageLink.href} class="group mt-4 flex items-center justify-between gap-4 border-t border-neutral-300 pt-4 text-sm font-bold">
             <span class="group-hover:underline">{HOME_HERO.imageLink.label}</span>
             <span aria-hidden="true">→</span>
           </a>
+        </div>
+      </div>
+    </section>
+
+    {/* ===== 共通基準（黒い帯） ===== */}
+    <section class="bg-ink-950 text-white">
+      <div class="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,2.3fr)] lg:gap-12">
+        <div>
+          <p class="text-xs font-bold text-white/70">{HOME_STANDARDS.eyebrow}</p>
+          <p class="mt-4 text-xl font-extrabold leading-[1.6] md:text-2xl lg:text-[1.4rem]">
+            {HOME_STANDARDS.headingLines.map((line) => (
+              <span class="block">{line}</span>
+            ))}
+          </p>
+        </div>
+        <div class="grid divide-y divide-white/20 sm:grid-cols-3 sm:divide-y-0">
+          {HOME_STANDARDS.items.map((item) => (
+            <a href={item.link.href} class="group flex flex-col py-5 sm:border-l sm:border-white/20 sm:py-0 sm:pl-6 sm:pr-6 sm:last:pr-0">
+              <p class="text-xs font-bold text-white/70">{item.label}</p>
+              <p class="mt-3 text-[0.95rem] font-extrabold leading-relaxed text-white">{item.title}</p>
+              <span class="mt-auto inline-flex items-center justify-between gap-4 border-b border-white/40 pb-2 pt-6 text-sm font-bold text-white group-hover:border-white">
+                {item.link.label}
+                <span aria-hidden="true">→</span>
+              </span>
+            </a>
+          ))}
         </div>
       </div>
     </section>
@@ -298,6 +324,65 @@ const latestPosts = getLibraryItems("post")
         </section>
       )
     }
+
+    {/* ===== 計画から改善、報告まで（文言は src/data/home.ts の HOME_PDCA） ===== */}
+    <section id="tools" class="scroll-mt-20 border-t border-neutral-200">
+      <div class="mx-auto max-w-6xl px-5 py-14 md:py-16">
+        <div class="flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
+          <h2 class="text-2xl font-extrabold tracking-tight md:text-[1.75rem]">{HOME_PDCA.heading}</h2>
+          <p class="text-sm text-neutral-600">{HOME_PDCA.sub}</p>
+        </div>
+        <div class="mt-8 grid gap-4 lg:grid-cols-3">
+          {HOME_PDCA.steps.map((step) => (
+            <div class="flex flex-col border border-neutral-300 bg-white p-6">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl font-light tracking-tight text-neutral-500">{step.step}</span>
+                <div>
+                  <p class="text-sm font-extrabold">{step.phase}</p>
+                  <p class="text-xs text-neutral-500">{step.purpose}</p>
+                </div>
+              </div>
+              <h3 class="mt-5 text-lg font-extrabold leading-snug">
+                <a href={step.href} class="hover:underline">{step.name}</a>
+              </h3>
+              <p class="mt-2 text-sm leading-relaxed text-neutral-700">{step.description}</p>
+              <div class="mt-4 border-t border-neutral-200 pt-4">
+                <p class="text-xs font-bold text-neutral-500">{HOME_PDCA.relatedLabel}</p>
+                <ul class="mt-2 space-y-2">
+                  {step.related.map((r) => (
+                    <li class="flex items-start gap-2 text-sm">
+                      <span class="mt-[0.2em] shrink-0 border border-ink-950 px-1.5 text-[0.7rem] font-bold leading-snug">{r.type}</span>
+                      <span class="min-w-0 leading-snug">
+                        {r.href ? (
+                          <a href={r.href} class="font-bold hover:underline">{r.name}</a>
+                        ) : (
+                          <span class="font-bold">{r.name}<span class="ml-2 text-xs font-normal text-neutral-500">{HOME_PDCA.comingSoonLabel}</span></span>
+                        )}
+                        {r.description && <span class="block text-xs text-neutral-600">{r.description}</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div class="mt-auto pt-5">
+                <p class="text-xs text-neutral-500">{step.note}</p>
+                <a href={step.href} class="mt-3 flex items-center justify-between gap-4 bg-ink-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
+                  {HOME_PDCA.ctaLabel}
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <p class="text-xs text-neutral-500">{HOME_PDCA.note}</p>
+          <a href={HOME_PDCA.listLink.href} class="inline-flex items-center justify-between gap-10 self-start border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950 md:self-auto">
+            {HOME_PDCA.listLink.label}
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
 
     {/* ===== 03 新着記事 ===== */}
     {
