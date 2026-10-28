@@ -1,12 +1,11 @@
 ---
-// 便利ツール一覧（/tools）。2026-10-17 Figma「便利ツール一覧 | MKTG.AX」に合わせてリニューアル。
-// ツールの文言（名前・説明・目安時間など）は src/data/tools.ts を編集する。
+// 便利ツール一覧（/tools）。2026-10-28 やりたいこと別のキット構成にリニューアル。
+// 見出しまわりは /library に合わせる。キット・その他の文言は src/data/tools.ts を編集する。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import PdcaToolCards from "@/components/PdcaToolCards.astro";
 import { buildCollectionPageSchema } from "@/lib/schema";
-import { ICONS, MAIN_TOOLS, QUICK_TOOLS } from "@/data/tools";
+import { ICONS, KIT_GROUPS, OTHER_TOOLS } from "@/data/tools";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -14,11 +13,11 @@ const breadcrumbItems = [
 ];
 
 const pageDescription =
-  "少人数でマーケティングを担うBtoB企業へ。計画づくりから改善点の発見、経営への報告まで、日々の判断に役立つ計算・診断ツールをまとめました。";
+  "作成キットは、画面で入力しながら判定まで行います。ほかの方法で作った計画は、診断キットで確かめられます。";
 
 const schemaItems = [
-  ...MAIN_TOOLS.filter((t) => t.href).map((t) => ({ href: t.href as string, title: t.titleLines.join("") })),
-  ...QUICK_TOOLS.map((t) => ({ href: t.href, title: t.title })),
+  ...KIT_GROUPS.flatMap((g) => g.kits.map((k) => ({ href: k.href, title: k.name }))),
+  ...OTHER_TOOLS.map((t) => ({ href: t.href, title: t.title })),
 ];
 const toolsSchema = buildCollectionPageSchema({
   name: "便利ツール",
@@ -37,72 +36,88 @@ const toolsSchema = buildCollectionPageSchema({
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <div class="text-[#0c0c11]">
-    <!-- ページ導入 -->
-    <section class="mx-auto max-w-6xl px-5 pb-12 pt-12 md:pt-14">
-      <p class="text-xs font-semibold tracking-wide text-[#7b7c83]">TOOLS</p>
-      <div class="mt-5 flex flex-col gap-6 md:flex-row md:items-center md:gap-[72px]">
-        <h1 class="shrink-0 text-4xl font-bold leading-[1.3] md:w-[360px] md:text-5xl">便利ツール</h1>
-        <div class="min-w-0 flex-1">
-          <p class="text-lg font-bold md:text-[21px]">実務の意思決定を、自社の数字で。</p>
-          <p class="mt-3 text-[15px] leading-[1.9] text-[#4f5057]">
-            少人数でマーケティングを担う、BtoB企業へ。<br />
-            計画づくりから改善点の発見、経営への報告まで。<br />
-            日々の判断に役立つ計算・診断ツールをまとめました。
-          </p>
-        </div>
+  <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 text-ink-950">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">便利ツール</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">やりたいことから、キットを選ぶ。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
+
+    <!-- キット（予算・KPI） -->
+    <div class="mt-12 grid grid-cols-1 gap-x-6 gap-y-12 md:grid-cols-2">
+      {
+        KIT_GROUPS.map((group) => (
+          <section>
+            <div class="flex flex-wrap items-end justify-between gap-2 border-b-2 border-ink-950 pb-2">
+              <h2 class="text-xl font-bold text-ink-950">{group.title}</h2>
+              <p class="text-xs text-neutral-500">{group.note}</p>
+            </div>
+            <ul class="mt-4 space-y-3">
+              {group.kits.map((kit) => (
+                <li class="border border-neutral-300 bg-white p-5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex size-11 shrink-0 items-center justify-center bg-[#f8f7f9]">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[kit.icon]} />
+                    </div>
+                    <h3 class="text-lg font-bold leading-snug md:text-xl">{kit.situation}</h3>
+                  </div>
+                  <p class="mt-3 text-[13px] leading-[1.8] text-neutral-600">{kit.description}</p>
+                  <div class="mt-3 flex items-center justify-between gap-3">
+                    <p class="text-sm font-bold">{kit.name}</p>
+                    <a href={kit.href} class="flex shrink-0 items-center gap-2 bg-ink-950 px-4 py-2 text-[13px] font-bold text-white hover:opacity-85">
+                      {kit.button}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
+                    </a>
+                  </div>
+                  {kit.resource && (
+                    <p class="mt-4 flex items-start gap-2 border-t border-dashed border-neutral-300 pt-3 text-xs leading-relaxed text-neutral-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 shrink-0" set:html={ICONS["file-text"]} />
+                      <span>
+                        {kit.resource.before}
+                        {kit.resource.before && " "}
+                        {kit.resource.href ? (
+                          <a href={kit.resource.href} class="font-bold text-ink-950 underline underline-offset-2">{kit.resource.label}</a>
+                        ) : (
+                          <span class="font-bold text-ink-950">{kit.resource.label}</span>
+                        )}
+                        {kit.resource.after && ` ${kit.resource.after}`}
+                        {!kit.resource.href && <span class="ml-1 border border-neutral-300 px-1 text-[10px] text-neutral-400">準備中</span>}
+                      </span>
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+
+    <!-- その他 -->
+    <section class="mt-16">
+      <div class="flex flex-wrap items-end justify-between gap-2 border-b-2 border-ink-950 pb-2">
+        <h2 class="text-xl font-bold text-ink-950">その他</h2>
+        <p class="text-xs text-neutral-500">個別の判断に</p>
       </div>
-    </section>
-
-    <!-- 計画から改善、報告まで（PDCAの3ツール） -->
-    <section class="mx-auto max-w-6xl px-5 pb-[72px]">
-      <div class="h-[2px] bg-[#0c0c11]"></div>
-      <div class="mt-[30px] flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-        <h2 class="text-2xl font-bold md:text-[28px]">計画から改善、報告まで。</h2>
-        <p class="text-sm text-[#4f5057]">マーケティングのPDCAを支える、3つのツール</p>
-      </div>
-
-      <PdcaToolCards class="mt-[30px]" />
-
-      <p class="mt-[30px] text-xs leading-[1.7] text-[#7b7c83]">
-        目的に合うツールからお使いください。上記の流れは活用の目安であり、ツール間の自動データ連携を示すものではありません。
-      </p>
-    </section>
-
-    <!-- 日々の判断に、小さなツール。 -->
-    <section class="mx-auto max-w-6xl px-5 pb-16">
-      <div class="h-[2px] bg-[#0c0c11]"></div>
-      <div class="mt-[22px] flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-        <h2 class="text-2xl font-bold md:text-[28px]">日々の判断に、小さなツール。</h2>
-        <p class="text-[13px] text-[#7b7c83]">実務の「あったらいいな」を、少しずつ。</p>
-      </div>
-
-      <ul class="mt-[22px] border-t border-[#dedee2]">
+      <ul class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
         {
-          QUICK_TOOLS.map((tool) => (
-            <li class="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-[#dedee2] py-[25px] md:flex-nowrap">
-              <div class="flex size-14 shrink-0 items-center justify-center bg-[#f8f7f9]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[tool.icon]} />
+          OTHER_TOOLS.map((tool) => (
+            <li class="flex gap-4 border-b border-[#dedee2] py-6">
+              <div class="flex size-11 shrink-0 items-center justify-center bg-[#f8f7f9]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[tool.icon]} />
               </div>
-              <div class="min-w-0 flex-1 basis-[calc(100%-80px)] md:basis-auto">
+              <div class="min-w-0">
                 <p class="text-[11px] font-medium text-[#7b7c83]">{tool.category}</p>
-                <a href={tool.href} class="mt-2 block text-[17px] font-bold hover:underline md:text-[19px]">{tool.title}</a>
+                <a href={tool.href} class="mt-1 block text-base font-bold leading-snug hover:underline md:text-[17px]">{tool.title}</a>
                 <p class="mt-2 text-[13px] leading-[1.7] text-[#4f5057]">{tool.description}</p>
               </div>
-              <span class="shrink-0 text-xs text-[#7b7c83] md:ml-0 ml-20">{tool.time}</span>
-              <a href={tool.href} class="ml-auto flex shrink-0 items-center gap-4 pl-3 text-[13px] font-bold md:ml-0" aria-label={`${tool.title}を使う`}>
-                使う
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS["arrow-right"]} />
-              </a>
             </li>
           ))
         }
       </ul>
-
-      <p class="mt-[22px] text-xs leading-[1.9] text-[#7b7c83]">
-        計算・診断結果は、入力した前提に基づく参考情報です。社内の実績や条件に照らし合わせてご判断ください。
-      </p>
     </section>
+
+    <p class="mt-8 text-xs leading-[1.9] text-[#7b7c83]">
+      計算・診断結果は、入力した前提に基づく参考情報です。社内の実績や条件に照らし合わせてご判断ください。
+    </p>
   </div>
 
   <ContactCta />
