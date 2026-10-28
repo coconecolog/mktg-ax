@@ -120,11 +120,11 @@ export const HOME_PDCA = {
       description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
       href: "/tools/budget-simulator",
       resource: {
-        name: "年間予算表",
+        name: "年間計画シート（KPIと予算）",
         coverTitle: "年間\n予算表",
         typeLabel: "スプレッドシート",
-        href: null,
-        guide: "",
+        href: "/resources/kgi-kpi-backcast-sheet",
+        guide: "キットを使わず、スプレッドシートをダウンロードして直接入力しても作れます。表はKPI管理表の「はじめに入力」と同じなので、そのまま貼りつけられます。",
       },
     },
     {
