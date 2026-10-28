@@ -3,7 +3,7 @@
 //
 // 施策効果診断キット（旧KPI分析ツール、/tools/kpi-analysis）2026-10-27 新規、2026-10-28 改名
 // KPI管理表（M-B-04）の .xlsx を読み込むと、その場で分析結果を出す（ファイルは送信しない。計算はすべてブラウザの中）。
-// - A 課題の地図：課題（チャネル×指標）×12か月。色＝計画を本当に下回っている確率（ベイズ推定）
+// - A 月別進捗状況：課題（チャネル×指標）×12か月。色＝計画を本当に下回っている確率（ベイズ推定）
 // - B 推移と打ち手：Aで選んだ課題の実績・計画の線と、打ち手を入れた月
 // - C 打ち手の効果：施策ログの打ち手ごとに「良くなった確率」（実施月の前3か月 → 実施月から最新月まで）
 // - D 打ち手の一覧（表）
@@ -27,7 +27,7 @@ const breadcrumbItems = [
   { name: TOOL_TITLE, href: "/tools/kpi-analysis" },
 ];
 
-// 入口の「結果のイメージ」（課題の地図の縮小版）。r＝赤、o＝オレンジ、g＝灰、e＝これから
+// 入口の「結果のイメージ」（月別進捗状況の縮小版）。r＝赤、o＝オレンジ、g＝灰、e＝これから
 const MINI = ["goooorooeeee", "ggrrgggeeeee", "gggggggeeeee"].map((s) => s.split(""));
 ---
 
@@ -59,7 +59,7 @@ const MINI = ["goooorooeeee", "ggrrgggeeeee", "gggggggeeeee"].map((s) => s.split
           <p class="ka-err" id="ka-err" role="alert" hidden></p>
         </div>
         <div class="ka-prev" aria-hidden="true">
-          <small>課題の地図</small>
+          <small>月別進捗状況</small>
           {MINI.map((row) => <div class="ka-mini">{row.map((c) => <i class={c} />)}</div>)}
           <small>打ち手の「良くなった確率」</small>
           <svg viewBox="0 0 260 64" style="width:100%;height:auto;display:block">
