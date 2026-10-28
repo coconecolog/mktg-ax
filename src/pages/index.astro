@@ -170,11 +170,12 @@ const latestPosts = getLibraryItems("post")
       </div>
     </section>
 
-    {/* ===== 01 注力テーマ ===== */}
+    {/* ===== 01 注力テーマ（HOME_FOCUS.visible が false のときは表示しない） ===== */}
+    {HOME_FOCUS.visible && (
     <section id="focus" class="scroll-mt-20 border-t border-neutral-200">
       <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
         <p class="flex items-center gap-3 text-xs font-bold text-neutral-500">
-          01　{HOME_FOCUS.eyebrow}
+          {HOME_FOCUS.eyebrow}
           <span class="bg-ink-950 px-2 py-0.5 text-white">{HOME_FOCUS.badge}</span>
         </p>
         <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_FOCUS.heading}</h2>
@@ -289,13 +290,14 @@ const latestPosts = getLibraryItems("post")
         </div>
       </div>
     </section>
+    )}
 
     {/* ===== 02 課題から探す ===== */}
     {
       issueCategories.length > 0 && (
         <section id="issues" class="scroll-mt-20 bg-neutral-100">
           <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
-            <p class="text-xs font-bold text-neutral-500">02　{HOME_ISSUES.eyebrow}</p>
+            <p class="text-xs font-bold text-neutral-500">{HOME_ISSUES.eyebrow}</p>
             <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_ISSUES.heading}</h2>
             <div class="mt-10 grid gap-px bg-neutral-200 sm:grid-cols-2 lg:grid-cols-5">
               {issueCategories.map((cat, i) => (
@@ -389,7 +391,7 @@ const latestPosts = getLibraryItems("post")
       latestPosts.length > 0 && (
         <section class="border-t border-neutral-200">
           <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
-            <p class="text-xs font-bold text-neutral-500">03　{HOME_LATEST.eyebrow}</p>
+            <p class="text-xs font-bold text-neutral-500">{HOME_LATEST.eyebrow}</p>
             <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_LATEST.heading}</h2>
             <ul class="mt-10 border-t border-neutral-200">
               {latestPosts.map((post) => (
@@ -423,7 +425,7 @@ const latestPosts = getLibraryItems("post")
     {/* ===== 04 ご要望・ご質問（お問い合わせフォームへ誘導） ===== */}
     <section class="border-t border-neutral-200">
       <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
-        <p class="text-xs font-bold text-neutral-500">04　{HOME_REQUEST.eyebrow}</p>
+        <p class="text-xs font-bold text-neutral-500">{HOME_REQUEST.eyebrow}</p>
         <div class="mt-4 grid gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <div>
             <h2 class="text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_REQUEST.heading}</h2>
