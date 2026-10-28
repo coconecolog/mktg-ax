@@ -17,9 +17,9 @@ import "@/styles/kpi-analysis.css";
 
 const TOOL_TITLE = "施策効果診断キット";
 const TOOL_DESCRIPTION =
-  "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで示す無料のキットです。月×課題の地図、指標の推移と打ち手、打ち手ごとの「良くなった確率」を、その場で表示します。ファイルは送信しません。";
-// KPI管理表（M-B-04）の資料ページ。資料のページができたら差し替える
-const KPI_SHEET_URL = "/resources";
+  "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで示す無料のキットです。指標ごとの月別進捗状況、推移と打ち手、打ち手ごとの「良くなった確率」を、その場で表示します。ファイルは送信しません。";
+// KPI管理表（M-B-04）の資料ページ
+const KPI_SHEET_URL = "/resources/kpi-management-template";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -34,66 +34,77 @@ const MINI = ["goooorooeeee", "ggrrgggeeeee", "gggggggeeeee"].map((s) => s.split
 <BaseLayout title={`${TOOL_TITLE}｜続いている課題と打ち手の効果を確率で分析｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-analysis.png">
   <Breadcrumb items={breadcrumbItems} />
 
-  <!-- H1まわりは /library・/tools と同じ形（2026-10-28）。.ka の外に置く（.ka p の margin:0 を受けないように） -->
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">毎月の振り返りを、勘ではなく数字で。</p>
-    <p class="mt-3 text-sm leading-relaxed text-neutral-500">KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで見られます。</p>
-  </div>
-
   <main class="ka" id="ka">
-    <!-- ===== 入口 ===== -->
+    <!-- ===== 入口（2026-10-28 レイアウト変更：上のパネルに見出し・できること・入口、下のパネルに使い方） ===== -->
     <section id="ka-intro">
+      <div class="ka-panel">
+        <h1 class="ka-title">{TOOL_TITLE}</h1>
+        <p class="ka-catch">KPIと実績の数字で施策を検証。</p>
+        <p class="ka-lead">KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで見られます。</p>
 
-      <div class="ka-hero">
-        <div>
-          <label class="ka-drop" id="ka-drop" for="ka-file">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M12 11v8"/></svg>
-            <b>KPI管理表（.xlsx）をここに置く</b>
-            <span class="ka-hint" style="margin:0 0 10px !important">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
-            <span class="ka-btn">ファイルを選ぶ</span>
-            <span class="ka-hint">ファイルは送信されず、ブラウザの中だけで読みます</span>
-          </label>
-          <input type="file" id="ka-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
-          <p class="ka-busy" id="ka-busy" role="status" hidden>読み込んでいます…</p>
-          <p class="ka-err" id="ka-err" role="alert" hidden></p>
-        </div>
-        <div class="ka-prev" aria-hidden="true">
-          <small>月別進捗状況</small>
-          {MINI.map((row) => <div class="ka-mini">{row.map((c) => <i class={c} />)}</div>)}
-          <small>打ち手の「良くなった確率」</small>
-          <svg viewBox="0 0 260 64" style="width:100%;height:auto;display:block">
-            <line x1="130" y1="0" x2="130" y2="64" stroke="#0b0b12" />
-            <rect x="130" y="2" width="118" height="9" fill="#0b0b12" />
-            <rect x="130" y="15" width="85" height="9" fill="#0b0b12" />
-            <rect x="130" y="28" width="40" height="9" fill="#a3a3a8" />
-            <rect x="100" y="41" width="30" height="9" fill="#a3a3a8" />
-            <rect x="60" y="54" width="70" height="9" fill="#c81e1e" />
-          </svg>
-          <p style="margin-top:10px"><a href="/tools/kpi-analysis?sample=1" style="font-size:0.82rem">結果の見本を見る（サンプルの管理表で表示）→</a></p>
+        <div class="ka-can">
+          <p class="ka-can-h">このキットでわかること<small>KPI管理表から自動で出します</small></p>
+          <div class="ka-g3">
+            <div class="ka-can-i"><b><i>A</i>月別進捗状況</b><p>指標ごとに、計画を下回っている確率を月別に色分け</p></div>
+            <div class="ka-can-i"><b><i>B</i>推移と打ち手</b><p>実績・計画の推移に、打ち手を入れた月を重ねて表示</p></div>
+            <div class="ka-can-i"><b><i>C</i>打ち手の効果</b><p>打ち手ごとに、実施後に良くなった確率を表示</p></div>
+          </div>
         </div>
 
-      <div class="ka-dl">
-        <div><b>KPI管理表をまだ持っていない方へ</b><p>M-B-04 KPI管理表（無料）。計画・毎月の実績・施策ログを1つのファイルで管理できます。</p></div>
-        <a class="ka-btn2" href={KPI_SHEET_URL}>資料をダウンロード →</a>
-      </div>
+        <div class="ka-hero">
+          <div>
+            <label class="ka-drop" id="ka-drop" for="ka-file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M12 11v8"/></svg>
+              <b>KPI管理表（.xlsx）をここに置く</b>
+              <span class="ka-hint" style="margin:0 0 10px !important">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
+              <span class="ka-btn">ファイルを選ぶ</span>
+              <span class="ka-hint">ファイルは送信されず、ブラウザの中だけで読みます</span>
+            </label>
+            <input type="file" id="ka-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+            <p class="ka-busy" id="ka-busy" role="status" hidden>読み込んでいます…</p>
+            <p class="ka-err" id="ka-err" role="alert" hidden></p>
+
+            <div class="ka-dl">
+              <div class="ka-doc" aria-hidden="true"><small>MKTG.AX</small><i></i><b>KPI管理表</b><em></em><em></em></div>
+              <div class="ka-dl-t">
+                <span class="ka-tag">まずはここから</span>
+                <b>KPI管理表をお持ちでない方へ</b>
+                <p>計画・毎月の実績・施策ログを1つのファイルで管理できる無料の資料です。</p>
+              </div>
+              <a class="ka-btn" href={KPI_SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+
+          <div class="ka-prev">
+            <p class="ka-prev-h">結果のイメージ<span class="ka-tag">見本</span></p>
+            <div class="ka-prev-box" aria-hidden="true">
+              <small>月別進捗状況（12か月）</small>
+              {MINI.map((row) => <div class="ka-mini">{row.map((c) => <i class={c} />)}</div>)}
+              <small>打ち手の「良くなった確率」</small>
+              <svg viewBox="0 0 260 64" style="width:100%;height:auto;display:block">
+                <line x1="130" y1="0" x2="130" y2="64" stroke="#0b0b12" />
+                <rect x="130" y="2" width="118" height="9" fill="#0b0b12" />
+                <rect x="130" y="15" width="85" height="9" fill="#0b0b12" />
+                <rect x="130" y="28" width="40" height="9" fill="#a3a3a8" />
+                <rect x="100" y="41" width="30" height="9" fill="#a3a3a8" />
+                <rect x="60" y="54" width="70" height="9" fill="#c81e1e" />
+              </svg>
+            </div>
+            <p class="ka-hint">赤＝計画を下回っている確率が90%以上、オレンジ＝70〜89%</p>
+            <a class="ka-btn2 ka-full" href="/tools/kpi-analysis?sample=1">見本の管理表で結果を見る<span aria-hidden="true">→</span></a>
+          </div>
+        </div>
       </div>
 
-      <h2 class="ka-sec">わかること</h2>
-      <div class="ka-g3">
-        <div class="ka-card"><em>A</em><b>月別進捗状況</b><p>1年分の月×課題を、計画を下回っている確率で色分け。赤が続く行＝続いている課題です。</p></div>
-        <div class="ka-card"><em>B</em><b>推移と打ち手</b><p>選んだ課題の実績・計画の線に、打ち手を入れた月を重ねて表示します。</p></div>
-        <div class="ka-card"><em>C</em><b>打ち手の効果</b><p>打ち手ごとに「良くなった確率」。件数が少ないときは「まだ分からない」と出します。</p></div>
+      <div class="ka-panel">
+        <h2 class="ka-sec">使い方</h2>
+        <div class="ka-g3">
+          <div class="ka-step"><p class="ka-step-h">STEP 01<i>1</i></p><b>KPI管理表に入力</b><p>毎月の実績と、施策ログ（打ち手・実施月・状態・振り返り）を入れます。</p><small>期首の月から使えます</small></div>
+          <div class="ka-step"><p class="ka-step-h">STEP 02<i>2</i></p><b>Excelで保存</b><p>Googleスプレッドシートなら、ファイル → ダウンロード → Microsoft Excel（.xlsx）。</p><small>読めるのは .xlsx だけです</small></div>
+          <div class="ka-step"><p class="ka-step-h">STEP 03<i>3</i></p><b>ここに置く</b><p>上の枠にファイルを置くと、すぐに結果が出ます。</p><small>結果はPDFで保存できます</small></div>
+        </div>
+        <p class="ka-hint">月別進捗状況は1か月目から、推移と打ち手の参考値は2か月目から、打ち手の効果の確定値は実施月の2か月後から出ます。</p>
       </div>
-
-      <h2 class="ka-sec">使い方</h2>
-      <div class="ka-g3">
-        <div class="ka-card"><em>1</em><b>KPI管理表に入力</b><p>毎月の実績と、施策ログ（打ち手・実施月・状態・振り返り）を入れます。</p></div>
-        <div class="ka-card"><em>2</em><b>Excelで保存</b><p>Googleスプレッドシートなら、ファイル → ダウンロード → Microsoft Excel（.xlsx）。</p></div>
-        <div class="ka-card"><em>3</em><b>ここに置く</b><p>すぐに結果が出ます。PDFで保存もできます。</p></div>
-      </div>
-      <p class="ka-hint">期首の月から使えます。月別進捗状況の可視化は1か月目から、打ち手の効果は実施月の実績を入れた月から出ます。</p>
-
     </section>
 
     <!-- ===== 結果 ===== -->

@@ -1,7 +1,7 @@
 // src/scripts/kpi-analysis/app.ts
 //
 // 施策効果診断キット（/tools/kpi-analysis）の画面。計算は src/lib/kpiAnalysis.ts。
-// 入口でファイルを置く／選ぶ → 同じページで結果（まとめ → A 課題の地図 → B 推移と打ち手 → C 打ち手の効果 → D 表）に切りかえる。
+// 入口でファイルを置く／選ぶ → 同じページで結果（まとめ → A 月別進捗状況 → B 推移と打ち手 → C 打ち手の効果 → D 表）に切りかえる。
 // ?sample=1 のときは、サンプルの管理表（src/data/kpi-analysis-sample.json）で結果を出す。
 // PDF は html2canvas-pro で結果を画像にし、pdf-lib でA4縦のPDFにする（CDNから、使うときだけ読み込む）。
 import {
@@ -132,9 +132,9 @@ function logFor(a: Analysis, key: string) {
 
 function sectionA(a: Analysis) {
   const { model, rows } = a;
-  if (!rows.length) return `<h2 class="ka-h2">A. 課題の地図</h2><p class="ka-note">計画を下回っている課題も、施策ログの課題もありません。</p>`;
+  if (!rows.length) return `<h2 class="ka-h2">A. 月別進捗状況</h2><p class="ka-note">計画を下回っている課題も、施策ログの課題もありません。</p>`;
   const h: string[] = [];
-  h.push(`<h2 class="ka-h2">A. 課題の地図（1年分）<small>行を選ぶとBが切りかわります</small></h2>`);
+  h.push(`<h2 class="ka-h2">A. 月別進捗状況（1年分）<small>行を選ぶとBが切りかわります</small></h2>`);
   h.push(
     `<p class="ka-legend">上段＝計画比（CPLは許容÷実績）、下段＝計画を下回っている確率（CPLは上限を超えている確率）。<span class="ka-sw r"></span>90%以上<span class="ka-sw o"></span>70〜89%<span class="ka-sw g"></span>70%未満<span class="ka-sw e"></span>これから<span class="ka-sw pin"></span>打ち手を実施した月（白抜き＝予定）</p>`,
   );
