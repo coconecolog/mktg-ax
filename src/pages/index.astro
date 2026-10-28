@@ -1,22 +1,22 @@
 ---
 // トップページ。文言・リンクは src/data/home.ts にまとめています（文言の修正はそちらだけでOK）。
-// 構成: ヒーロー → 01 課題から探す → 02 実務で使う資料・分析ツール → 03 新着記事 → 04 ご要望・ご質問
-// ・02の資料: 資料DB「トップ掲載」（1 = 大きい枠、2・3 = 小さい枠）。空いた枠は新しい資料から自動で埋める。
-// ・03の記事: 新しい順に自動表示（件数は HOME_LATEST.count）。
-import PdcaToolCards from "@/components/PdcaToolCards.astro";
+// 構成: ヒーロー → 01 注力テーマ → 02 課題から探す → 03 新着記事 → 04 ご要望・ご質問
+// ・01: HOME_FOCUS.category のサブカテゴリ（STEP）と代表記事、ツール、記事・資料の新着を表示。
+// ・02: Notionのカテゴリ（並び順）と、カテゴリごとのサブカテゴリを自動で表示。
+// ・03: 記事を新しい順に自動表示（件数は HOME_LATEST.count）。
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { getLibraryItems } from "@/lib/library";
-import { getAllResources } from "@/lib/resources";
+import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
+import {
+  getAllCategories,
+  getAllPosts,
+  getCategoryPath,
+  getSubcategoriesByCategory,
+  getSubcategoryPath,
+} from "@/lib/posts";
+import { getResourceById } from "@/lib/resources";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
-import {
-  HOME_HERO,
-  HOME_ISSUES,
-  HOME_MATERIALS,
-  HOME_TOOLS_TABLE,
-  HOME_LATEST,
-  HOME_REQUEST,
-} from "@/data/home";
+import { HOME_HERO, HOME_FOCUS, HOME_ISSUES, HOME_LATEST, HOME_REQUEST } from "@/data/home";
 
 const organizationSchema = buildOrganizationSchema();
 
@@ -27,29 +27,77 @@ function formatDate(iso: string): string {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
 }
 
-// 02 資料: 「トップ掲載」の数字が小さい順 → 足りない分は新しい順で補完し、3件にする。
-const allResources = getAllResources();
-const pinnedResources = allResources
-  .filter((r) => typeof r.homeOrder === "number")
-  .sort((a, b) => (a.homeOrder as number) - (b.homeOrder as number));
-const homeResources = [...pinnedResources, ...allResources.filter((r) => !pinnedResources.includes(r))].slice(0, 3);
-const mainResource = homeResources[0];
-const subResources = homeResources.slice(1, 3);
+function readTimeOf(metaLabel: string | null): string | null {
+  return metaLabel ? metaLabel.replace(/^◷\s*/, "") : null;
+}
 
-// 03 新着記事
+// ===== 01 注力テーマ =====
+const focusItems = getLibraryItemsByCategory(HOME_FOCUS.category);
+const allPosts = getAllPosts();
+
+// STEP: サブカテゴリ（並び順）＋ 代表記事 →（なければ）代表資料 →（なければ）そのサブカテゴリの新しい記事・資料
+const focusSteps = getSubcategoriesByCategory(HOME_FOCUS.category)
+  .slice(0, HOME_FOCUS.stepCount)
+  .map((sub) => {
+    let link: { kind: "post" | "resource"; title: string; href: string } | null = null;
+    const repPost = sub.representativePostId ? allPosts.find((p) => p.id === sub.representativePostId) : undefined;
+    if (repPost) {
+      link = { kind: "post", title: repPost.title, href: `/blog/${repPost.slug}` };
+    } else {
+      const repResource = sub.representativeResourceId ? getResourceById(sub.representativeResourceId) : undefined;
+      if (repResource) {
+        link = { kind: "resource", title: repResource.title, href: `/resources/${repResource.slug}` };
+      } else {
+        const latest = focusItems.find((item) => item.subcategoryIds.includes(sub.id));
+        if (latest) link = { kind: latest.kind, title: latest.title, href: latest.href };
+      }
+    }
+    return { name: sub.name, href: getSubcategoryPath(sub), link };
+  });
+
+// このテーマの新着（記事・資料）
+const focusLatest = focusItems.slice(0, HOME_FOCUS.latestCount).map((item) => ({
+  ...item,
+  readTime: readTimeOf(item.metaLabel),
+}));
+const focusCategoryPath = getCategoryPath(HOME_FOCUS.category);
+
+// ===== 02 課題から探す =====
+const issueCategories = [...getAllCategories()]
+  .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+  .map((c) => ({
+    name: c.name,
+    href: getCategoryPath(c.name),
+    subs: getSubcategoriesByCategory(c.name)
+      .slice(0, HOME_ISSUES.subcategoryCount)
+      .map((s) => ({ name: s.name, href: getSubcategoryPath(s) })),
+  }));
+
+// カテゴリのアイコン（並び順の1番目から順に使う。足りないときは最初に戻る）
+const ISSUE_ICONS = [
+  // 戦略・市場分析
+  '<rect x="4" y="4" width="11" height="11"/><path d="M9.5 7v6M6.5 10h6"/><path d="M15 15l5 5"/>',
+  // 予算配分・投資判断
+  '<rect x="3" y="4" width="8" height="8"/><path d="M5.5 8h3"/><circle cx="17" cy="15" r="4"/><path d="M17 13v4M15 15h4"/>',
+  // KPI・効果測定
+  '<rect x="9" y="3" width="6" height="4"/><rect x="3" y="16" width="6" height="4"/><rect x="15" y="16" width="6" height="4"/><path d="M12 7v4M6 16v-5h12v5"/>',
+  // データ分析・AI活用
+  '<path d="M3 4h18l-7 8v6l-4 2v-8z"/><path d="M6 8h12"/>',
+  // 組織・人材育成
+  '<circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 20c0-3 2-5 5-5s5 2 5 5M12 20c0-3 2-5 5-5s5 2 5 5"/>',
+];
+
+// ===== 03 新着記事 =====
 const latestPosts = getLibraryItems("post")
   .slice(0, HOME_LATEST.count)
-  .map((item) => ({
-    ...item,
-    readTime: item.metaLabel ? item.metaLabel.replace(/^◷\s*/, "") : null,
-  }));
+  .map((item) => ({ ...item, readTime: readTimeOf(item.metaLabel) }));
 ---
 
 <BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore jsonLd={organizationSchema}>
   <div class="bg-white text-ink-950">
     {/* ===== ヒーロー ===== */}
     <section>
-      <div class="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-14 md:pt-20 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
+      <div class="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-14 md:pt-20 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
         <div>
           <p class="flex items-center gap-3 text-sm font-bold">
             <span class="h-[3px] w-6 bg-ink-950" aria-hidden="true"></span>
@@ -75,152 +123,150 @@ const latestPosts = getLibraryItems("post")
               <span aria-hidden="true">→</span>
             </a>
           </div>
-          <p class="mt-6 text-xs text-neutral-500">{HOME_HERO.footnote}</p>
         </div>
+
+        {/* 右の画像（画像と下のテキストリンクは、どちらも HOME_HERO.imageLink.href へ） */}
         <div class="mx-auto w-full max-w-[400px]">
-          <img src={HOME_HERO.image.src} alt={HOME_HERO.image.alt} width="510" height="720" class="h-auto w-full" />
+          <a href={HOME_HERO.imageLink.href} class="block transition-opacity hover:opacity-80" aria-hidden="true" tabindex="-1">
+            <img src={HOME_HERO.image.src} alt={HOME_HERO.image.alt} width="484" height="475" class="h-auto w-full" />
+          </a>
+          <a href={HOME_HERO.imageLink.href} class="group mt-4 flex items-center justify-between gap-4 border-t-2 border-ink-950 pt-4 text-sm font-bold">
+            <span class="group-hover:underline">{HOME_HERO.imageLink.label}</span>
+            <span aria-hidden="true">→</span>
+          </a>
         </div>
       </div>
     </section>
 
-    {/* ===== 01 課題から探す ===== */}
-    <section id="issues" class="bg-ink-950 text-white">
+    {/* ===== 01 注力テーマ ===== */}
+    <section id="focus" class="scroll-mt-20 border-t border-neutral-200">
       <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
-        <div class="grid gap-6 md:grid-cols-[minmax(0,1fr)_340px] md:items-end">
-          <div>
-            <p class="text-xs font-bold text-white/60">01　{HOME_ISSUES.eyebrow}</p>
-            <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_ISSUES.heading}</h2>
-          </div>
-          <p class="text-sm leading-relaxed text-white/70">{HOME_ISSUES.lead}</p>
-        </div>
+        <p class="flex items-center gap-3 text-xs font-bold text-neutral-500">
+          01　{HOME_FOCUS.eyebrow}
+          <span class="bg-ink-950 px-2 py-0.5 text-white">{HOME_FOCUS.badge}</span>
+        </p>
+        <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_FOCUS.heading}</h2>
 
-        <div class="mt-12 grid gap-12 md:grid-cols-3 md:gap-10">
-          {HOME_ISSUES.items.map((item, i) => (
-            <div id={`issue-${i + 1}`} class="flex scroll-mt-24 flex-col">
-              <p class="text-4xl font-light tracking-tight text-white/90">{String(i + 1).padStart(2, "0")}</p>
-              <h3 class="mt-4 text-xl font-extrabold md:text-2xl">{item.title}</h3>
-              <p class="mt-3 text-xs font-bold text-white/60">{item.label}</p>
-              <p class="mt-4 text-sm leading-[1.9] text-white/80">{item.description}</p>
-              <ul class="mt-6 space-y-2 text-sm text-white/80">
-                {item.bullets.map((b) => (
-                  <li class="flex items-start gap-3">
-                    <span class="mt-[0.55em] h-1.5 w-1.5 shrink-0 bg-white" aria-hidden="true"></span>
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-              <div class="mt-auto pt-8">
-                <a href={item.link.href} class="flex items-center justify-between gap-4 border-t border-white/20 pt-5 text-sm font-bold hover:underline">
-                  {item.link.label}
+        <div class="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)]">
+          {/* ツール */}
+          {HOME_FOCUS.tools.map((tool) => (
+            <div class="flex flex-col border border-neutral-300 bg-white p-6 md:p-7">
+              <p class="text-xs font-bold text-neutral-500">{tool.label}</p>
+              <h3 class="mt-2 text-xl font-extrabold leading-snug">
+                <a href={tool.cta.href} class="hover:underline">{tool.name}</a>
+              </h3>
+              <p class="mt-4 text-sm leading-[1.9] text-neutral-700">{tool.description}</p>
+              {tool.note && <p class="mt-4 bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-700">{tool.note}</p>}
+              {tool.subLink && (
+                <a href={tool.subLink.href} class="mt-4 inline-flex items-center gap-2 self-start text-sm font-bold hover:underline">
+                  {tool.subLink.label}
+                  <span aria-hidden="true">→</span>
+                </a>
+              )}
+              <div class="mt-auto pt-6">
+                <a href={tool.cta.href} class="flex items-center justify-between gap-4 bg-ink-950 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
+                  {tool.cta.label}
                   <span aria-hidden="true">→</span>
                 </a>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    </section>
 
-    {/* ===== 02 実務で使う資料・分析ツール ===== */}
-    <section id="materials" class="scroll-mt-20">
-      <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
-        <p class="text-xs font-bold text-neutral-500">02　{HOME_MATERIALS.eyebrow}</p>
-        <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_MATERIALS.heading}</h2>
-
-        {
-          mainResource && (
-            <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
-              {/* 大きい枠（トップ掲載 = 1） */}
-              <div class="grid gap-8 bg-neutral-100 p-6 sm:grid-cols-[minmax(0,220px)_minmax(0,1fr)] sm:items-center md:p-10">
-                <a href={`/resources/${mainResource.slug}`} class="mx-auto block w-full max-w-[200px] sm:max-w-none" aria-hidden="true" tabindex="-1">
-                  <div class="aspect-[3/4] w-full bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
-                    <p class="text-[0.6rem] font-bold tracking-wide">MKTG.AX</p>
-                    <div class="mt-2 h-[3px] bg-ink-950"></div>
-                    <p class="mt-4 line-clamp-4 text-base font-extrabold leading-snug">{mainResource.title}</p>
-                    <div class="mt-5 space-y-1.5" aria-hidden="true">
-                      <div class="h-3 bg-neutral-100"></div>
-                      <div class="grid grid-cols-3 gap-1.5"><div class="h-2.5 bg-neutral-100"></div><div class="h-2.5 bg-neutral-200"></div><div class="h-2.5 bg-neutral-100"></div></div>
-                      <div class="grid grid-cols-3 gap-1.5"><div class="h-2.5 bg-neutral-100"></div><div class="h-2.5 bg-neutral-100"></div><div class="h-2.5 bg-neutral-100"></div></div>
-                      <div class="grid grid-cols-3 gap-1.5"><div class="h-2.5 bg-neutral-100"></div><div class="h-2.5 bg-neutral-200"></div><div class="h-2.5 bg-neutral-100"></div></div>
-                    </div>
-                  </div>
-                </a>
-                <div>
-                  {mainResource.homeCatch && <p class="text-xs font-bold">{mainResource.homeCatch}</p>}
-                  <h3 class="mt-3 text-xl font-extrabold leading-snug md:text-2xl">
-                    <a href={`/resources/${mainResource.slug}`} class="hover:underline">{mainResource.title}</a>
-                  </h3>
-                  {mainResource.description && (
-                    <p class="mt-4 line-clamp-3 text-sm leading-relaxed text-neutral-700">{mainResource.description}</p>
+          {/* STEP（サブカテゴリと代表記事） */}
+          <div class="grid gap-4 md:col-span-2 lg:col-span-1">
+            {focusSteps.map((step, i) => (
+              <div class="border border-neutral-300 bg-white p-5 md:p-6">
+                <p class="flex items-baseline gap-3">
+                  <span class="shrink-0 text-xs font-bold text-neutral-500">{HOME_FOCUS.stepLabel} {String(i + 1).padStart(2, "0")}</span>
+                  {step.href ? (
+                    <a href={step.href} class="font-extrabold leading-snug hover:underline md:text-lg">{step.name}</a>
+                  ) : (
+                    <span class="font-extrabold leading-snug md:text-lg">{step.name}</span>
                   )}
-                  <p class="mt-4 text-xs text-neutral-500">
-                    {[mainResource.contents, formatDate(mainResource.publishedAt)].filter(Boolean).join(" / ")}
-                  </p>
-                  <a href={`/resources/${mainResource.slug}`} class="mt-6 inline-flex items-center gap-6 bg-ink-950 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
-                    {HOME_MATERIALS.resourceCtaLabel}
-                    <span aria-hidden="true">→</span>
+                </p>
+                {step.link && (
+                  <a href={step.link.href} class="group mt-3 flex items-start gap-3 text-sm">
+                    <span class="mt-[0.15em] shrink-0 border border-ink-950 px-1.5 text-[0.7rem] font-bold leading-snug">
+                      {step.link.kind === "post" ? HOME_FOCUS.postTag : HOME_FOCUS.resourceTag}
+                    </span>
+                    <span class="line-clamp-2 leading-relaxed group-hover:underline">{step.link.title}</span>
                   </a>
-                </div>
+                )}
               </div>
+            ))}
+          </div>
+        </div>
 
-              {/* 小さい枠（トップ掲載 = 2・3） */}
-              <div class="flex flex-col">
-                {subResources.map((r) => (
-                  <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-5 border-t border-neutral-200 py-6 last:border-b">
-                    <a href={`/resources/${r.slug}`} class="block" aria-hidden="true" tabindex="-1">
-                      <div class="aspect-[3/4] w-full border border-neutral-200 bg-white p-2.5">
-                        <p class="text-[0.45rem] font-bold">MKTG.AX</p>
-                        <div class="mt-1 h-[2px] bg-ink-950"></div>
-                        <p class="mt-2 line-clamp-4 text-[0.6rem] font-extrabold leading-snug">{r.title}</p>
-                        <div class="mt-2 space-y-1" aria-hidden="true">
-                          <div class="h-1.5 bg-neutral-100"></div>
-                          <div class="h-1.5 bg-neutral-100"></div>
-                        </div>
+        {/* このテーマの新着（記事・資料） */}
+        {
+          focusLatest.length > 0 && (
+            <div class="mt-12 grid gap-4 md:grid-cols-[160px_minmax(0,1fr)] md:gap-10">
+              <p class="text-xs font-bold text-neutral-500 md:pt-6">{HOME_FOCUS.latestLabel}</p>
+              <ul class="border-t border-neutral-200">
+                {focusLatest.map((item) => (
+                  <li class="border-b border-neutral-200">
+                    <a href={item.href} class="group grid gap-3 py-5 md:grid-cols-[110px_minmax(0,1fr)_24px] md:gap-6">
+                      <div class="flex gap-4 text-xs text-neutral-500 md:block md:space-y-2">
+                        <p>{formatDate(item.publishedAt)}</p>
+                        {item.readTime && <p>{item.readTime}</p>}
                       </div>
+                      <div class="flex min-w-0 items-start gap-3">
+                        <span class="mt-[0.2em] shrink-0 border border-ink-950 px-1.5 text-[0.7rem] font-bold leading-snug">
+                          {item.kind === "post" ? HOME_FOCUS.postTag : HOME_FOCUS.resourceTag}
+                        </span>
+                        <h3 class="font-extrabold leading-snug group-hover:underline md:text-lg">{item.title}</h3>
+                      </div>
+                      <span class="hidden text-lg text-neutral-400 group-hover:text-ink-950 md:block" aria-hidden="true">↗</span>
                     </a>
-                    <div class="min-w-0">
-                      <p class="text-xs text-neutral-500">
-                        {HOME_MATERIALS.resourceTypeLabel}　/　{formatDate(r.publishedAt)}
-                      </p>
-                      <h3 class="mt-2 font-extrabold leading-snug">
-                        <a href={`/resources/${r.slug}`} class="hover:underline">{r.title}</a>
-                      </h3>
-                      {r.description && <p class="mt-2 line-clamp-2 text-xs leading-relaxed text-neutral-600">{r.description}</p>}
-                      <a href={`/resources/${r.slug}`} class="mt-3 inline-flex items-center gap-2 text-sm font-bold hover:underline">
-                        {HOME_MATERIALS.resourceCtaLabel}
-                        <span aria-hidden="true">→</span>
-                      </a>
-                    </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )
         }
-
-        {/* 記事・資料をすべて見る（資料の下・右寄せ、分析ツール一覧と同じ枠付きボタン） */}
         <div class="mt-8 flex justify-end">
-          <a href={HOME_TOOLS_TABLE.allLink.href} class="inline-flex items-center justify-between gap-10 border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950">
-            {HOME_TOOLS_TABLE.allLink.label}
-            <span aria-hidden="true">→</span>
-          </a>
-        </div>
-
-        {/* 便利ツール（PDCAの3ツール。文言は src/data/tools.ts の MAIN_TOOLS） */}
-        <div class="mt-20 flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-          <h2 class="text-2xl font-extrabold tracking-tight md:text-[1.75rem]">計画から改善、報告まで。</h2>
-          <p class="text-sm text-[#4f5057]">マーケティングのPDCAを支える、3つのツール</p>
-        </div>
-        <PdcaToolCards class="mt-8 text-[#0c0c11]" />
-        <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p class="text-xs text-neutral-500">目的に合うツールからお使いください。計算結果は入力した前提に基づきます。</p>
-          <a href="/tools" class="inline-flex items-center justify-between gap-10 self-start border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950 md:self-auto">
-            便利ツール一覧
+          <a href={focusCategoryPath} class="inline-flex items-center justify-between gap-10 border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950">
+            {HOME_FOCUS.categoryLinkLabel}
             <span aria-hidden="true">→</span>
           </a>
         </div>
       </div>
     </section>
+
+    {/* ===== 02 課題から探す ===== */}
+    {
+      issueCategories.length > 0 && (
+        <section id="issues" class="scroll-mt-20 bg-neutral-100">
+          <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
+            <p class="text-xs font-bold text-neutral-500">02　{HOME_ISSUES.eyebrow}</p>
+            <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_ISSUES.heading}</h2>
+            <div class="mt-10 grid gap-px bg-neutral-200 sm:grid-cols-2 lg:grid-cols-5">
+              {issueCategories.map((cat, i) => (
+                <div class="flex flex-col bg-white p-6">
+                  <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true" set:html={ISSUE_ICONS[i % ISSUE_ICONS.length]} />
+                  <h3 class="mt-5 font-extrabold leading-snug">
+                    <a href={cat.href} class="hover:underline">{cat.name}</a>
+                  </h3>
+                  <ul class="mt-4 space-y-1.5 text-sm text-neutral-600">
+                    {cat.subs.map((sub) => (
+                      <li>
+                        {sub.href ? <a href={sub.href} class="hover:text-ink-950 hover:underline">{sub.name}</a> : sub.name}
+                      </li>
+                    ))}
+                  </ul>
+                  <div class="mt-auto pt-6">
+                    <a href={cat.href} class="inline-flex items-center gap-2 text-sm font-bold hover:underline">
+                      {HOME_ISSUES.linkLabel}
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
 
     {/* ===== 03 新着記事 ===== */}
     {
@@ -229,35 +275,24 @@ const latestPosts = getLibraryItems("post")
           <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
             <p class="text-xs font-bold text-neutral-500">03　{HOME_LATEST.eyebrow}</p>
             <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_LATEST.heading}</h2>
-            <div class="mt-10 grid gap-10 md:grid-cols-[240px_minmax(0,1fr)] md:gap-14">
-              <div>
-                <p class="text-xs font-bold tracking-widest text-neutral-500">{HOME_LATEST.subLabel}</p>
-                <p class="mt-4 text-xl font-extrabold leading-snug">
-                  {HOME_LATEST.subHeadingLines.map((line) => (
-                    <span class="block">{line}</span>
-                  ))}
-                </p>
-                <p class="mt-4 text-sm leading-relaxed text-neutral-600">{HOME_LATEST.description}</p>
-              </div>
-              <ul class="border-t border-neutral-200">
-                {latestPosts.map((post) => (
-                  <li class="border-b border-neutral-200">
-                    <a href={post.href} class="group grid gap-3 py-6 md:grid-cols-[110px_minmax(0,1fr)_24px] md:gap-6">
-                      <div class="flex gap-4 text-xs text-neutral-500 md:block md:space-y-2">
-                        <p>{formatDate(post.publishedAt)}</p>
-                        {post.readTime && <p>{post.readTime}</p>}
-                      </div>
-                      <div class="min-w-0">
-                        {post.category && <p class="text-xs font-bold">{post.category}</p>}
-                        <h3 class="mt-2 font-extrabold leading-snug group-hover:underline md:text-lg">{post.title}</h3>
-                        {post.description && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-600">{post.description}</p>}
-                      </div>
-                      <span class="hidden text-lg text-neutral-400 group-hover:text-ink-950 md:block" aria-hidden="true">↗</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ul class="mt-10 border-t border-neutral-200">
+              {latestPosts.map((post) => (
+                <li class="border-b border-neutral-200">
+                  <a href={post.href} class="group grid gap-3 py-6 md:grid-cols-[110px_minmax(0,1fr)_24px] md:gap-6">
+                    <div class="flex gap-4 text-xs text-neutral-500 md:block md:space-y-2">
+                      <p>{formatDate(post.publishedAt)}</p>
+                      {post.readTime && <p>{post.readTime}</p>}
+                    </div>
+                    <div class="min-w-0">
+                      {post.category && <p class="text-xs font-bold">{post.category}</p>}
+                      <h3 class="mt-2 font-extrabold leading-snug group-hover:underline md:text-lg">{post.title}</h3>
+                      {post.description && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-600">{post.description}</p>}
+                    </div>
+                    <span class="hidden text-lg text-neutral-400 group-hover:text-ink-950 md:block" aria-hidden="true">↗</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
             <div class="mt-8 flex justify-end">
               <a href={HOME_LATEST.allLink.href} class="inline-flex items-center justify-between gap-10 border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950">
                 {HOME_LATEST.allLink.label}
