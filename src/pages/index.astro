@@ -347,28 +347,57 @@ const latestPosts = getLibraryItems("post")
               <h3 class="mt-5 text-lg font-extrabold leading-snug">
                 <a href={step.href} class="hover:underline">{step.name}</a>
               </h3>
-              <p class="mt-2 text-sm leading-relaxed text-neutral-700">{step.description}</p>
+              {/* PCで3枚の区切り線の高さをそろえるため、説明文は3行分の高さを確保 */}
+              <p class="mt-2 text-sm leading-relaxed text-neutral-700 lg:min-h-[4.875em]">{step.description}</p>
               <div class="mt-4 border-t border-neutral-200 pt-4">
                 <p class="text-xs font-bold text-neutral-500">{HOME_PDCA.relatedLabel}</p>
-                <ul class="mt-2 space-y-2">
-                  {step.related.map((r) => (
-                    <li class="flex items-start gap-2 text-sm">
-                      <span class="mt-[0.2em] shrink-0 border border-ink-950 px-1.5 text-[0.7rem] font-bold leading-snug">{r.type}</span>
-                      <span class="min-w-0 leading-snug">
-                        {r.href ? (
-                          <a href={r.href} class="font-bold hover:underline">{r.name}</a>
-                        ) : (
-                          <span class="font-bold">{r.name}<span class="ml-2 text-xs font-normal text-neutral-500">{HOME_PDCA.comingSoonLabel}</span></span>
-                        )}
-                        {r.description && <span class="block text-xs text-neutral-600">{r.description}</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div class="mt-3 grid grid-cols-[64px_minmax(0,1fr)] gap-4">
+                  {/* 表紙（スプレッドシート：マス目＋下にシートのタブ） */}
+                  {(() => {
+                    const cover = (
+                      <div class="flex aspect-[3/4] w-full flex-col overflow-hidden border border-neutral-300 bg-white px-1.5 pt-1.5">
+                        <p class="text-[0.4rem] font-bold leading-none">MKTG.AX</p>
+                        <div class="mt-1 h-[2px] bg-ink-950"></div>
+                        <p class="mt-1 whitespace-pre-line text-[0.5rem] font-extrabold leading-tight">{step.resource.coverTitle}</p>
+                        <div class="mt-1 grid flex-1 grid-cols-[1fr_2fr_2fr] auto-rows-[5px] content-start border-l border-t border-neutral-300">
+                          {Array.from({ length: 12 }).map((_, i) => (
+                            <span class={`border-b border-r border-neutral-300 ${i < 3 ? "bg-neutral-100" : ""}`}></span>
+                          ))}
+                        </div>
+                        <div class="-mx-1.5 mt-auto flex h-[6px] gap-px border-t border-neutral-300">
+                          <span class="w-3 bg-ink-950"></span>
+                          <span class="w-3 border-r border-neutral-300"></span>
+                          <span class="w-3 border-r border-neutral-300"></span>
+                        </div>
+                      </div>
+                    );
+                    return step.resource.href ? (
+                      <a href={step.resource.href} class="block" aria-hidden="true" tabindex="-1">{cover}</a>
+                    ) : (
+                      <div aria-hidden="true">{cover}</div>
+                    );
+                  })()}
+                  <div class="min-w-0">
+                    <p class="font-bold leading-snug">
+                      {step.resource.href ? (
+                        <a href={step.resource.href} class="hover:underline">{step.resource.name}</a>
+                      ) : (
+                        <>
+                          {step.resource.name}
+                          <span class="ml-2 text-xs font-normal text-neutral-500">{HOME_PDCA.comingSoonLabel}</span>
+                        </>
+                      )}
+                    </p>
+                    {step.resource.guide ? (
+                      <p class="mt-2 bg-neutral-50 px-2.5 py-2 text-xs leading-relaxed text-neutral-700">{step.resource.guide}</p>
+                    ) : (
+                      <p class="mt-1 text-xs text-neutral-500">{step.resource.typeLabel}</p>
+                    )}
+                  </div>
+                </div>
               </div>
               <div class="mt-auto pt-5">
-                <p class="text-xs text-neutral-500">{step.note}</p>
-                <a href={step.href} class="mt-3 flex items-center justify-between gap-4 bg-ink-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
+                <a href={step.href} class="flex items-center justify-between gap-4 bg-ink-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-neutral-800">
                   {HOME_PDCA.ctaLabel}
                   <span aria-hidden="true">→</span>
                 </a>
