@@ -101,7 +101,7 @@ export const HOME_ISSUES = {
 // ------------------------------------------------------------
 // 計画から改善、報告まで（3つのステップのキット）
 // ・resource は「あわせて使う資料」（1つ）。href を null にするとリンクなしで「準備中」と出ます
-// ・resource.coverTitle は表紙に出す名前（改行は \n）。guide は資料の下の案内文（空なら出さない）
+// ・resource.label は資料の上の見出し（カードごとに変えられる）。coverTitle は表紙に出す名前（改行は \n）。guide は資料の下の案内文（空なら出さない）
 // ・2026-10-28：作成キットは作成時に判定までするので、診断キットは「あわせて使う」に出さない
 // ------------------------------------------------------------
 export const HOME_PDCA = {
@@ -120,6 +120,7 @@ export const HOME_PDCA = {
       description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
       href: "/tools/budget-simulator",
       resource: {
+        label: "あわせて使う資料",
         name: "年間計画シート（KPIと予算）",
         coverTitle: "年間\n予算表",
         typeLabel: "スプレッドシート",
@@ -135,6 +136,7 @@ export const HOME_PDCA = {
       description: "計画の数字を入れるだけで、毎月の予実と撤退の判断まで自動で出るKPI管理表ができます。",
       href: "/tools/kpi-sheet-maker",
       resource: {
+        label: "あわせて使う資料",
         name: "KPI管理表",
         coverTitle: "KPI\n管理表",
         typeLabel: "スプレッドシート",
@@ -150,6 +152,7 @@ export const HOME_PDCA = {
       description: "KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきで示します。",
       href: "/tools/kpi-analysis",
       resource: {
+        label: "あわせて使う資料",
         name: "KPI管理表",
         coverTitle: "KPI\n管理表",
         typeLabel: "スプレッドシート",
