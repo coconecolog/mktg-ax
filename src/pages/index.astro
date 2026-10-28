@@ -350,7 +350,7 @@ const latestPosts = getLibraryItems("post")
               {/* PCで3枚の区切り線の高さをそろえるため、説明文は3行分の高さを確保 */}
               <p class="mt-2 text-sm leading-relaxed text-neutral-700 lg:min-h-[4.875em]">{step.description}</p>
               <div class="mt-4 border-t border-neutral-200 pt-4">
-                <p class="text-xs font-bold text-neutral-500">{HOME_PDCA.relatedLabel}</p>
+                <p class="text-xs font-bold text-neutral-500">{step.resource.label || HOME_PDCA.relatedLabel}</p>
                 <div class="mt-3 grid grid-cols-[64px_minmax(0,1fr)] gap-4">
                   {/* 表紙（スプレッドシート：マス目＋下にシートのタブ） */}
                   {(() => {
@@ -380,7 +380,10 @@ const latestPosts = getLibraryItems("post")
                   <div class="min-w-0">
                     <p class="font-bold leading-snug">
                       {step.resource.href ? (
-                        <a href={step.resource.href} class="hover:underline">{step.resource.name}</a>
+                        <a href={step.resource.href} class="group flex items-center justify-between gap-3">
+                          <span class="group-hover:underline">{step.resource.name}</span>
+                          <span aria-hidden="true">→</span>
+                        </a>
                       ) : (
                         <>
                           {step.resource.name}

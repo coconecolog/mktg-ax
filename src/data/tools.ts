@@ -70,7 +70,7 @@ export const MAIN_TOOLS = [
 
 // /tools のキット（やりたいこと別）。
 // resource は小さく添える資料の案内。href を null にすると「準備中」の表示になる。resource を null にすると行を出さない。
-// フェーズ2（年間予算表の公開・.xlsxの読み込み対応）で、コメントの文に差し替える。
+// 2026-10-29：年間予算表（M-B-03、/resources/kgi-kpi-backcast-sheet）はKPI管理表「はじめに入力」と同じ中身で独立。予算作成キットはフェーズ2で年間予算表の.xlsxを出力、予算案診断キットは貼りつけ・アップ・画面入力の3つの入口。
 export type KitResource = {
   before: string;
   label: string;
@@ -106,17 +106,17 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "予算作成キット",
         button: "予算を作る",
         href: "/tools/budget-simulator",
-        resource: { before: "計画書と同じ形のシートで管理するなら", label: "年間予算表", after: "", href: null },
+        resource: { before: "計画書と同じ形のシートで管理するなら", label: "年間予算表", after: "", href: "/resources/kgi-kpi-backcast-sheet" },
       },
       {
         icon: "file-search",
         situation: "予算案を作った（AI・自社の表）",
-        // フェーズ2：「AIの案を貼りつけるか、年間予算表を読み込んで判定します。」
+        // フェーズ2：「AIの案を貼りつけるか、年間予算表を読み込むか、画面で入力して判定します。」
         description: "AIで作った予算案を貼りつけて、CPL・CAC・回収期間で判定します。",
         name: "予算案診断キット",
         button: "診断する",
         href: "/tools/budget-checker",
-        // フェーズ2：{ before: "先に", label: "年間予算表", after: "で作ると、読み込むだけで診断できます", href: "/resources/（年間予算表のslug）" }
+        // フェーズ2：{ before: "", label: "年間予算表", after: "で作っていれば、読み込むだけで診断できます", href: "/resources/kgi-kpi-backcast-sheet" }
         resource: null,
       },
     ],
