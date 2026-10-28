@@ -1,6 +1,6 @@
 // src/scripts/kpi-analysis/app.ts
 //
-// KPI分析ツール（/tools/kpi-analysis）の画面。計算は src/lib/kpiAnalysis.ts。
+// 施策効果診断キット（/tools/kpi-analysis）の画面。計算は src/lib/kpiAnalysis.ts。
 // 入口でファイルを置く／選ぶ → 同じページで結果（まとめ → A 課題の地図 → B 推移と打ち手 → C 打ち手の効果 → D 表）に切りかえる。
 // ?sample=1 のときは、サンプルの管理表（src/data/kpi-analysis-sample.json）で結果を出す。
 // PDF は html2canvas-pro で結果を画像にし、pdf-lib でA4縦のPDFにする（CDNから、使うときだけ読み込む）。
@@ -78,7 +78,7 @@ function render() {
   const statusText = ["完了", "実施中", "予定", "中止"].filter((k) => st[k]).map((k) => `${k}${st[k]}`).join("・");
   $("ka-meta")!.textContent = `${sample ? "サンプル（架空の会社）" : file}　実績 ${model.months[0]}〜${summary.lastLabel}（${summary.monthsCount}か月）／施策ログ ${summary.logCount}件${statusText ? `（${statusText}）` : ""}`;
   const html: string[] = [];
-  html.push(`<div class="ka-pdfhead"><b>KPI分析ツール</b>　${esc(sample ? "サンプル（架空の会社）" : file)}　実績 ${esc(model.months[0])}〜${esc(summary.lastLabel)}　作成日 ${new Date().toLocaleDateString("ja-JP")}</div>`);
+  html.push(`<div class="ka-pdfhead"><b>施策効果診断キット</b>　${esc(sample ? "サンプル（架空の会社）" : file)}　実績 ${esc(model.months[0])}〜${esc(summary.lastLabel)}　作成日 ${new Date().toLocaleDateString("ja-JP")}</div>`);
   if (sample) html.push(`<p class="ka-sample"><b>サンプル</b>　架空の会社のKPI管理表（10月まで入力）で表示しています。自社のファイルは「別のファイルを読み込む」から。</p>`);
   for (const w of model.warnings) html.push(`<p class="ka-warn">${esc(w)}</p>`);
   html.push(summaryHtml(a));
@@ -87,7 +87,7 @@ function render() {
   html.push(sectionC(a));
   html.push(sectionD(a));
   html.push(howHtml());
-  html.push(`<p class="ka-pdffoot">KPI分析ツール｜MKTG.AX　mktg.ax/tools/kpi-analysis　確率はベイズ推定による目安です</p>`);
+  html.push(`<p class="ka-pdffoot">施策効果診断キット｜MKTG.AX　mktg.ax/tools/kpi-analysis　確率はベイズ推定による目安です</p>`);
   $("ka-report")!.innerHTML = html.join("");
   bindReport();
 }
@@ -468,7 +468,7 @@ async function makePdf() {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     const ym = state.a.summary.lastLabel || "";
-    a.download = `KPI分析_${ym}.pdf`;
+    a.download = `施策効果診断_${ym}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();

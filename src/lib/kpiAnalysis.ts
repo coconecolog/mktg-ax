@@ -1,8 +1,8 @@
 // src/lib/kpiAnalysis.ts
 //
-// KPI分析ツール（/tools/kpi-analysis）の計算。画面は src/scripts/kpi-analysis/app.ts。
+// 施策効果診断キット（旧KPI分析ツール、/tools/kpi-analysis）の計算。画面は src/scripts/kpi-analysis/app.ts。
 // - 読むのは KPI管理表（M-B-04）の3シートだけ：「はじめに入力」「毎月の実績入力」「施策ログ」
-//   セルの位置の約束：Googleドライブ「02_ツール仕様／KPI分析ツール_読むシートの約束」（2026-10-27）
+//   セルの位置は決め打ちせず、見出しの文字を探して読む（2026-10-28）
 // - A 課題の地図：課題（チャネル×指標）ごとに、月ごとの計画比と「計画を本当に下回っている確率」
 // - B 推移：選んだ課題の実績・計画の線と、打ち手を入れた月
 // - C 打ち手の効果：施策ログの打ち手ごとに「実施の後に良くなった確率」（実施月の前3か月と、実施月から最新月まで）
@@ -15,12 +15,6 @@ export type Book = Record<string, Cells>;
 export const SHEET_PLAN = "はじめに入力";
 export const SHEET_ACTUAL = "毎月の実績入力";
 export const SHEET_LOG = "施策ログ";
-
-const COLS = "CDEFGHIJKLMN".split(""); // 12か月
-const PLAN_BLOCKS = [38, 44, 50, 56, 62, 68]; // はじめに入力 2-3（リード数・有効リード数・外部費用・人件費）
-const ACT_BLOCKS = [14, 22, 30, 38, 46, 54]; // 毎月の実績入力 3-2（リード数・有効リード数・商談数・受注数・外部費用・人件費）
-const LOG_FIRST = 7;
-const LOG_LAST = 200;
 
 export type Metric = "リード数" | "有効リード率" | "CPL" | "商談化率" | "受注率";
 export const METRICS: Metric[] = ["リード数", "有効リード率", "CPL", "商談化率", "受注率"];
@@ -56,7 +50,6 @@ export interface Model {
   planWinRate: number | null; // 受注率の計画（受注数÷商談数、年間）
   channels: Channel[];
   log: LogItem[];
-  hoursCap: number | null;
   warnings: string[];
 }
 
@@ -80,6 +73,51 @@ function str(c: Cells, ref: string): string {
 }
 const z = (v: Num) => (v == null ? 0 : v);
 
+// セルの位置は決め打ちにせず、見出しの文字を探して読む（説明の行を足したり消したりしても読めるように）。2026-10-28
+const MAX_ROW = 400;
+function colName(i: number) {
+  let s = "";
+  for (i += 1; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s;
+  return s;
+}
+const ALL_COLS = Array.from({ length: 40 }, (_, i) => colName(i));
+// 見出しの行を探し、見出し名→列の表を返す
+function findHeader(c: Cells, names: string[]): { row: number; col: Record<string, string> } | null {
+  for (let r = 1; r <= MAX_ROW; r++) {
+    const col: Record<string, string> = {};
+    for (const k of ALL_COLS) {
+      const v = str(c, `${k}${r}`);
+      if (names.includes(v) && !col[v]) col[v] = k;
+    }
+    if (names.every((n) => col[n])) return { row: r, col };
+  }
+  return null;
+}
+// 12か月の見出しが並ぶ最初の行（C〜N列）
+function findMonths(c: Cells): string[] | null {
+  for (let r = 1; r <= MAX_ROW; r++) {
+    const m = MONTH_COLS.map((k) => str(c, `${k}${r}`));
+    if (m.every((x) => /月$/.test(x))) return m;
+  }
+  return null;
+}
+const MONTH_COLS = "CDEFGHIJKLMN".split(""); // 12か月
+// チャネル別の表：A列にチャネル名、B列に「リード数」がある行が表の始まり。項目名（B列）→行の表を返す
+function findBlocks(c: Cells, labels: string[]): Map<string, Record<string, number>> {
+  const out = new Map<string, Record<string, number>>();
+  for (let r = 1; r <= MAX_ROW; r++) {
+    const name = str(c, `A${r}`);
+    if (!name || name === "チャネル" || str(c, `B${r}`) !== "リード数") continue;
+    const rows: Record<string, number> = {};
+    for (let k = r; k < r + labels.length + 3; k++) {
+      const lb = str(c, `B${k}`);
+      if (labels.includes(lb) && !rows[lb]) rows[lb] = k;
+    }
+    out.set(name, rows);
+  }
+  return out;
+}
+
 export function buildModel(book: Book): Model {
   for (const s of [SHEET_PLAN, SHEET_ACTUAL, SHEET_LOG]) {
     if (!book[s]) throw new ReadError(`「${s}」シートが見つかりません。KPI管理表（M-B-04）のファイルか確かめてください（シート名は変えずに使います）。`);
@@ -89,60 +127,85 @@ export function buildModel(book: Book): Model {
   const L = book[SHEET_LOG];
   const warnings: string[] = [];
 
-  const months = COLS.map((c) => str(A, `${c}4`) || str(A, `${c}13`));
-  if (months.filter((m) => /月$/.test(m)).length < 12) {
-    throw new ReadError("「毎月の実績入力」の4行目（C〜N列）に月の見出しが見つかりません。行や列を足したり消したりしていないか確かめてください。");
-  }
+  const months = findMonths(A);
+  if (!months) throw new ReadError("「毎月の実績入力」に月の見出し（C〜N列の4月〜3月）が見つかりません。列を足したり消したりしていないか確かめてください。");
 
+  const ACT_LABELS = ["リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
+  const PLAN_LABELS = ["リード数", "有効リード数", "外部費用", "人件費"];
+  const actBlocks = findBlocks(A, ACT_LABELS);
+  const planBlocks = findBlocks(P, PLAN_LABELS);
+  if (!actBlocks.size) throw new ReadError("「毎月の実績入力」にチャネル別の表（A列にチャネル名、B列に「リード数」）が見つかりません。");
+
+  const row = (c: Cells, r: number | undefined): Num[] => MONTH_COLS.map((col) => (r ? num(c, `${col}${r}`) : null));
   const channels: Channel[] = [];
-  for (let i = 0; i < 6; i++) {
-    const p = PLAN_BLOCKS[i];
-    const a = ACT_BLOCKS[i];
-    const name = str(A, `A${a}`) || str(P, `A${p}`);
-    if (!name) throw new ReadError(`「毎月の実績入力」のA${a}にチャネル名がありません。行を足したり消したりしていないか確かめてください。`);
-    if (str(A, `B${a}`) !== "リード数" || str(A, `B${a + 2}`) !== "商談数") {
-      throw new ReadError(`「毎月の実績入力」の${name}の行の並びが違います（B${a}＝リード数、B${a + 2}＝商談数のはず）。`);
-    }
-    if (str(P, `B${p}`) !== "リード数") {
-      throw new ReadError(`「はじめに入力」の${name}の月別の計画の並びが違います（B${p}＝リード数のはず）。`);
-    }
-    const row = (c: Cells, r: number) => COLS.map((col) => num(c, `${col}${r}`));
-    const pc = row(P, p + 2).map(z);
-    const pl = row(P, p + 3).map(z);
-    const ac = row(A, a + 4).map(z);
-    const al = row(A, a + 5).map(z);
+  for (const [name, a] of actBlocks) {
+    const miss = ACT_LABELS.filter((l) => !a[l]);
+    if (miss.length) throw new ReadError(`「毎月の実績入力」の${name}の表に「${miss.join("・")}」の行が見つかりません。`);
+    const p = planBlocks.get(name);
+    if (!p) throw new ReadError(`「はじめに入力」の月別の計画に「${name}」の表が見つかりません。チャネル名が2つのシートで同じか確かめてください。`);
+    const pmiss = PLAN_LABELS.filter((l) => !p[l]);
+    if (pmiss.length) throw new ReadError(`「はじめに入力」の${name}の月別の計画に「${pmiss.join("・")}」の行が見つかりません。`);
+    const pc = row(P, p["外部費用"]).map(z);
+    const pl = row(P, p["人件費"]).map(z);
+    const ac = row(A, a["外部費用"]).map(z);
+    const al = row(A, a["人件費"]).map(z);
     channels.push({
       name,
-      plan: { leads: row(P, p).map(z), valid: row(P, p + 1).map(z), cost: pc.map((v, k) => v + pl[k]) },
-      act: { leads: row(A, a), valid: row(A, a + 1), deals: row(A, a + 2), wins: row(A, a + 3), cost: ac.map((v, k) => v + al[k]) },
+      plan: { leads: row(P, p["リード数"]).map(z), valid: row(P, p["有効リード数"]).map(z), cost: pc.map((v, k) => v + pl[k]) },
+      act: { leads: row(A, a["リード数"]), valid: row(A, a["有効リード数"]), deals: row(A, a["商談数"]), wins: row(A, a["受注数"]), cost: ac.map((v, k) => v + al[k]) },
     });
   }
 
   let last = -1;
   for (let m = 0; m < 12; m++) if (channels.some((c) => c.act.leads[m] != null)) last = m;
 
-  const cplCap = num(P, "I7") ?? 0;
-  if (!cplCap) warnings.push("「はじめに入力」の許容CPL（I7）が空のため、CPLは判定していません。");
-  const d17 = num(P, "D17");
-  const f17 = num(P, "F17");
-  const h17 = num(P, "H17");
+  // 前提（はじめに入力 1.）：見出しのすぐ下の行が値
+  const pre = findHeader(P, ["許容CPL", "リードタイム"]);
+  const cplCap = pre ? num(P, `${pre.col["許容CPL"]}${pre.row + 1}`) ?? 0 : 0;
+  const leadTime = pre ? num(P, `${pre.col["リードタイム"]}${pre.row + 1}`) ?? 0 : 0;
+  if (!cplCap) warnings.push("「はじめに入力」の許容CPLが空のため、CPLは判定していません。");
 
+  // チャネル別の計画（年間）の「合計」の行
+  let planDealRate: number | null = null;
+  let planWinRate: number | null = null;
+  const yh = findHeader(P, ["チャネル", "有効リード数", "商談数", "受注数"]);
+  if (yh) {
+    for (let r = yh.row + 1; r <= yh.row + 30; r++) {
+      if (str(P, `${yh.col["チャネル"]}${r}`) !== "合計") continue;
+      const v = num(P, `${yh.col["有効リード数"]}${r}`);
+      const d = num(P, `${yh.col["商談数"]}${r}`);
+      const w = num(P, `${yh.col["受注数"]}${r}`);
+      planDealRate = v && d != null ? d / v : null;
+      planWinRate = d && w != null ? w / d : null;
+      break;
+    }
+  }
+
+  // 施策ログ
+  const LOG_NAMES = ["登録月", "狙う指標", "チャネル", "課題", "打ち手", "実施月", "根拠", "状態", "見込み時間", "振り返り"];
+  const lh = findHeader(L, ["登録月", "打ち手", "実施月"]);
+  if (!lh) throw new ReadError("「施策ログ」に表の見出し（登録月・打ち手・実施月）が見つかりません。");
+  const cell = (n: string, r: number) => (lh.col[n] ? `${lh.col[n]}${r}` : "");
+  for (const n of LOG_NAMES) if (!lh.col[n]) {
+    // 見出し行の残りの列も拾う（findHeaderは必須の3つだけで探しているため）
+    for (const k of ALL_COLS) if (str(L, `${k}${lh.row}`) === n) { lh.col[n] = k; break; }
+  }
   const log: LogItem[] = [];
-  for (let r = LOG_FIRST; r <= LOG_LAST; r++) {
-    const action = str(L, `G${r}`);
+  for (let r = lh.row + 1; r <= lh.row + 300; r++) {
+    const action = str(L, cell("打ち手", r));
     if (!action) continue;
     log.push({
       row: r,
-      registered: str(L, `A${r}`),
-      metric: str(L, `B${r}`),
-      channel: str(L, `C${r}`),
-      issue: str(L, `D${r}`),
+      registered: str(L, cell("登録月", r)),
+      metric: str(L, cell("狙う指標", r)),
+      channel: str(L, cell("チャネル", r)),
+      issue: str(L, cell("課題", r)),
       action,
-      doMonth: str(L, `L${r}`),
-      basis: str(L, `M${r}`),
-      status: str(L, `N${r}`),
-      hours: num(L, `O${r}`),
-      review: str(L, `P${r}`),
+      doMonth: str(L, cell("実施月", r)),
+      basis: str(L, cell("根拠", r)),
+      status: str(L, cell("状態", r)),
+      hours: lh.col["見込み時間"] ? num(L, cell("見込み時間", r)) : null,
+      review: str(L, cell("振り返り", r)),
     });
   }
   const noMonth = log.filter((x) => x.status !== "中止" && !months.includes(x.doMonth));
@@ -150,18 +213,7 @@ export function buildModel(book: Book): Model {
     warnings.push(`施策ログの${noMonth.length}件は実施月が空か読めないため、効果を計算していません（${noMonth.map((x) => `${x.row}行目`).join("・")}）。`);
   }
 
-  return {
-    months,
-    last,
-    cplCap,
-    leadTime: num(P, "F7") ?? 0,
-    planDealRate: d17 && f17 != null ? f17 / d17 : null,
-    planWinRate: f17 && h17 != null ? h17 / f17 : null,
-    channels,
-    log,
-    hoursCap: num(L, "D3"),
-    warnings,
-  };
+  return { months, last, cplCap, leadTime, planDealRate, planWinRate, channels, log, warnings };
 }
 
 // ---------- 確率 ----------
