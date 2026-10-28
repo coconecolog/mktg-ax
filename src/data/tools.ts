@@ -1,4 +1,4 @@
-// 便利ツールの文言（名前・説明・目安時間など）。/tools ページとトップページで共通に使う。
+// 便利ツールの文言（名前・説明など）。/tools ページとトップページで共通に使う。
 // ツールを増やす・文言を変えるときは、このファイルを編集する（Notionのツールは参照しない）。
 // アイコンは lucide（https://lucide.dev）の線画。ICONS に同じ形式で追加すれば使える。
 
@@ -10,6 +10,12 @@ export const ICONS: Record<string, string> = {
     '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/>',
   "file-chart-column":
     '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 18v-1"/><path d="M12 18v-6"/><path d="M16 18v-3"/>',
+  "file-search":
+    '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><circle cx="11.5" cy="14.5" r="2.5"/><path d="M13.3 16.3 15 18"/>',
+  "file-text":
+    '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  sheet:
+    '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="9" x2="9" y1="9" y2="21"/><line x1="15" x2="15" y1="9" y2="21"/>',
   "list-checks":
     '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
   calculator:
@@ -24,7 +30,8 @@ export const ICONS: Record<string, string> = {
   "chart-spline": '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16c.5-2 1.5-7 4-7 2 0 2 3 4.5 3 2.5 0 4.5-5 5-7"/>',
 };
 
-// 計画から改善、報告まで（PDCAの3ツール）。href を null にすると「公開準備中」の表示になる。
+// トップページの3枚カード（PdcaToolCards）用。トップページは別途作り直すので、それまでこのまま残す。
+// href を null にすると「公開準備中」の表示になる。
 export const MAIN_TOOLS = [
   {
     step: "01",
@@ -61,30 +68,102 @@ export const MAIN_TOOLS = [
   },
 ] as const;
 
-// 日々の判断に、小さなツール。
-export const QUICK_TOOLS = [
+// /tools のキット（やりたいこと別）。
+// resource は小さく添える資料の案内。href を null にすると「準備中」の表示になる。resource を null にすると行を出さない。
+// フェーズ2（年間予算表の公開・.xlsxの読み込み対応）で、コメントの文に差し替える。
+export type KitResource = {
+  before: string;
+  label: string;
+  after: string;
+  href: string | null;
+};
+
+export type Kit = {
+  icon: string;
+  situation: string;
+  description: string;
+  name: string;
+  button: string;
+  href: string;
+  resource: KitResource | null;
+};
+
+export type KitGroup = {
+  title: string;
+  note: string;
+  kits: Kit[];
+};
+
+export const KIT_GROUPS: KitGroup[] = [
   {
-    icon: "chart-spline",
-    category: "KPIの振り返り",
-    title: "KPI分析ツール",
-    description: "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで示します。",
-    time: "目安 1分",
-    href: "/tools/kpi-analysis",
+    title: "予算",
+    note: "来期の予算づくりに",
+    kits: [
+      {
+        icon: "chart-no-axes-combined",
+        situation: "予算をまだ作っていない",
+        description: "画面で入力しながらCPL・CACを判定し、計画書（PDF）にします。",
+        name: "予算作成キット",
+        button: "予算を作る",
+        href: "/tools/budget-simulator",
+        resource: { before: "計画書と同じ形のシートで管理するなら", label: "年間予算表", after: "", href: null },
+      },
+      {
+        icon: "file-search",
+        situation: "予算案を作った（AI・自社の表）",
+        // フェーズ2：「AIの案を貼りつけるか、年間予算表を読み込んで判定します。」
+        description: "AIで作った予算案を貼りつけて、CPL・CAC・回収期間で判定します。",
+        name: "予算案診断キット",
+        button: "診断する",
+        href: "/tools/budget-checker",
+        // フェーズ2：{ before: "先に", label: "年間予算表", after: "で作ると、読み込むだけで診断できます", href: "/resources/（年間予算表のslug）" }
+        resource: null,
+      },
+    ],
   },
   {
-    icon: "clipboard-check",
-    category: "予算の判定",
-    title: "予算案チェッカー",
-    description: "生成AIで作った予算案を、人件費込みのCPL・CAC・回収期間・ROI（1年）で判定し、抜けやすいところを指摘します。",
-    time: "目安 5分",
-    href: "/tools/budget-checker",
+    title: "KPI",
+    note: "期初の設計から毎月の運用まで",
+    kits: [
+      {
+        icon: "sheet",
+        situation: "KPI管理表がほしい",
+        description: "画面で計画の数字を入れると、妥当性を確かめてからKPI管理表（Excel）を作ります。",
+        name: "KPI管理表作成キット",
+        button: "管理表を作る",
+        href: "/tools/kpi-sheet-maker",
+        resource: { before: "キットを使わないなら", label: "KPI管理表", after: "をDLして直接記入", href: "/resources/kpi-management-template" },
+      },
+      {
+        icon: "scan-search",
+        situation: "KPIを自分で作った",
+        description: "KPIと施策の目標が、売上目標とつながっているかを判定します。",
+        name: "KPI妥当性診断キット",
+        button: "診断する",
+        href: "/tools/kpi-check",
+        // フェーズ2：{ before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/resources/kpi-management-template" }
+        resource: null,
+      },
+      {
+        icon: "file-chart-column",
+        situation: "KPIを運用・報告したい",
+        description: "打った施策が効いたか、続いている課題は何かを示します。",
+        name: "施策効果診断キット",
+        button: "診断する",
+        href: "/tools/kpi-analysis",
+        resource: { before: "先に", label: "KPI管理表", after: "をDLしておくと、読み込むだけで使えます", href: "/resources/kpi-management-template" },
+      },
+    ],
   },
+];
+
+// /tools の「その他」。
+export const OTHER_TOOLS = [
   {
     icon: "list-checks",
     category: "SEO・AI検索",
     title: "簡易SEO・AEO・AIO診断チェックリスト",
     description: "全15項目を自分でチェック。SEO・AI検索への対応状況を簡易診断します。",
-    time: "目安 2分",
     href: "/tools/seo-aeo-aio-check",
   },
   {
@@ -92,7 +171,6 @@ export const QUICK_TOOLS = [
     category: "広告の投資判断",
     title: "広告費用対効果（ROAS/CAC）シミュレーター",
     description: "サブスク・リピート型ビジネスのLTVから、許容CACと投資回収期間を試算します。",
-    time: "目安 1分",
     href: "/tools/roas-cac-simulator",
   },
   {
@@ -100,7 +178,6 @@ export const QUICK_TOOLS = [
     category: "体制・コスト",
     title: "内製 vs 外注 コスト比較シミュレーター",
     description: "新規採用と、代理店・フリーランスへの外注。累計コストを比較します。",
-    time: "目安 2分",
     href: "/tools/inhouse-vs-outsource",
   },
   {
@@ -108,7 +185,6 @@ export const QUICK_TOOLS = [
     category: "広告宣伝費",
     title: "広告宣伝費 業界ベンチマーク診断",
     description: "業種・年間売上高・年間広告宣伝費から、同業種と比べた広告宣伝費の水準を診断します。",
-    time: "目安 1分",
     href: "/tools/kpi-benchmark",
   },
 ] as const;
