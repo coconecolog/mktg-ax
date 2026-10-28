@@ -25,5 +25,8 @@
 /blog/tag/:tag/resources   /blog/tag/:tag 301
 /blog/tag/:tag/resources/* /blog/tag/:tag 301
 /blog/tag/:tag/:page       /blog/tag/:tag 301
+# 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL（ステップのページ・お知らせメールの配信停止）。末尾スラッシュ統一ルールより前に書くこと
+/tools/kpi-check/*            /tools/kpi-check 301
+/api/kpi-check-unsubscribe    /tools/kpi-check 302
 # 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（Cloudflare Pages）
 /*/ /:splat 301

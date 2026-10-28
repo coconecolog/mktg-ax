@@ -4,6 +4,7 @@
 // - xlsx は zip。JSZip（jsDelivr）を、ファイルを読むときだけ読み込む
 // - 式のセルは、保存されている計算後の値を使う（Googleスプレッドシート・Excelとも保存時に値が入る）
 // - 形は scripts/build-kpi-analysis-sample.py と同じ：{"シート名": {"A7": 46478, "G7": "文字", ...}}
+// - KPI妥当性診断キット（/tools/kpi-check）も、読むシートを want で指定して使う（「はじめに入力」だけ）
 import { SHEET_ACTUAL, SHEET_LOG, SHEET_PLAN, ReadError, type Book, type Cells } from "@/lib/kpiAnalysis";
 
 const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
@@ -33,7 +34,7 @@ function loadZip() {
 const parseXml = (s: string) => new DOMParser().parseFromString(s, "application/xml");
 const textOf = (el: Element) => Array.from(el.getElementsByTagNameNS(NS, "t")).map((t) => t.textContent ?? "").join("");
 
-export async function readBook(file: File): Promise<Book> {
+export async function readBook(file: File, want: string[] = WANT): Promise<Book> {
   if (!/\.xlsx$/i.test(file.name)) {
     throw new ReadError("Excel（.xlsx）のファイルを選んでください。Googleスプレッドシートは「ファイル → ダウンロード → Microsoft Excel（.xlsx）」で保存できます。");
   }
@@ -62,7 +63,7 @@ export async function readBook(file: File): Promise<Book> {
   const book: Book = {};
   for (const sh of Array.from(parseXml(wbXml).getElementsByTagNameNS(NS, "sheet"))) {
     const name = sh.getAttribute("name") ?? "";
-    if (!WANT.includes(name)) continue;
+    if (!want.includes(name)) continue;
     let path = rels[sh.getAttributeNS(NS_R, "id") ?? sh.getAttribute("r:id") ?? ""] ?? "";
     path = path.replace(/^\//, "");
     if (!path.startsWith("xl/")) path = `xl/${path}`;

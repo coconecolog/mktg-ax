@@ -49,9 +49,9 @@ export const MAIN_TOOLS = [
     phase: "発見・改善",
     purpose: "次に取り組む課題を見つける",
     icon: "scan-search",
-    titleLines: ["KPI妥当性", "チェッカー"],
-    description: "売上目標と施策ごとのKPIから、KPIツリーの妥当性を判定。リードの過不足や、受注とつながらないKPIを示します。",
-    detail: "空欄は一般的な値で計算。結果はA4横のPDFで出せます。",
+    titleLines: ["KPI妥当性", "診断キット"],
+    description: "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを、期のはじめに診断します。",
+    detail: "KPI管理表（Excel）の読み込みにも対応。結果はA4縦のPDFで出せます。",
     note: "期のはじめにKPIを決めるときに",
     href: "/tools/kpi-check",
   },
@@ -141,8 +141,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "KPI妥当性診断キット",
         button: "診断する",
         href: "/tools/kpi-check",
-        // フェーズ2：{ before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/resources/kpi-management-template" }
-        resource: null,
+        resource: { before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/resources/kpi-management-template" },
       },
       {
         icon: "file-chart-column",

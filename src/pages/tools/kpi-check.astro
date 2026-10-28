@@ -1,40 +1,172 @@
 ---
 // src/pages/tools/kpi-check.astro
 //
-// （仮）KPI妥当性チェッカー（/tools/kpi-check）の入口。2026-10-23：KPI運用チェッカーを2つに分けた。こちらは初回の妥当性の判定だけ
-// （毎月の判定は（仮）KPI運用管理ツールとして別のURLにする予定。/tools/kpi-check/monthly/* は入口からリンクしていない）
-// 仕様: Googleドライブ「MKTG.AX／共有（正本）／04_ツール仕様／KPI運用チェッカー 仕様」（2026-10-18）
-// 2026-10-23 改修：1ページの作りをやめ、ステップごとのページに分けた。
-// - /tools/kpi-check/setup/1〜6（KPIツリー → 施策と期間 → 施策のKPI → 費用と撤退（任意）→ 判定 → PDF）
-// - 画面は src/scripts/kpi-check/app.ts、PDFは src/scripts/kpi-check/pdf.ts、計算と判定は src/lib/kpiCheck.ts
-// - 見本の画像：public/images/tools/kpi-check-preview.png（判定の画面）
+// KPI妥当性診断キット（旧KPI妥当性チェッカー、/tools/kpi-check）2026-10-28 作り直し
+// 自分で作ったKPIが、売上目標とつながっているか・数字に無理がないかを、期のはじめに確かめる。
+// - 入口は2つ：KPI管理表（M-B-04）の .xlsx を読み込む／画面で入力する（項目は M-B-04「はじめに入力」と同じ）
+// - 判定：A つながり（必要な数・件数の順・月別と年間）／B 率の現実性／C コスト（CPL・CAC・ROI）。結果はA4縦のPDF
+// - 毎月の判定とお知らせメールはなくした（毎月の振り返りは KPI管理表と施策効果診断キット）
+// 計算と判定：src/lib/kpiCheck.ts　画面：src/scripts/kpi-check/app.ts　xlsxの読み込み：src/scripts/kpi-analysis/xlsx.ts
+// 結果の見本：/tools/kpi-check?sample=1（基本モデルの安定期。M-B-04の記入例と同じ数字）
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
+import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import "@/styles/kpi-check.css";
 
-const TOOL_TITLE = "KPI妥当性チェッカー";
+const TOOL_TITLE = "KPI妥当性診断キット";
 const TOOL_DESCRIPTION =
-  "売上目標と施策ごとのKPIを入れると、KPIツリーの妥当性（リードの過不足、受注とつながらないKPI、CPLの上限など）を判定する無料ツールです。空欄は一般的な値で計算し、結果はA4横のPDFで出せます。";
+  "自分で作ったKPIが売上目標とつながっているか、数字に無理がないかを、期のはじめに診断する無料のキットです。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れると、直すところと確認するところをその場で示します。結果はA4縦のPDFで保存できます。";
+const KPI_SHEET_URL = "/resources/kpi-management-template";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/kpi-check" },
+];
+
+const PRE = [
+  { key: "goal", label: "マーケ経由の売上目標", note: "", unit: "万円" },
+  { key: "price", label: "平均受注単価", note: "新規の受注1件あたり", unit: "万円" },
+  { key: "gmPct", label: "粗利率", note: "", unit: "%" },
+  { key: "paybackYears", label: "回収期間", note: "獲得の費用を取り返す年数", unit: "年" },
+  { key: "leadTime", label: "リードタイム", note: "リード獲得から受注まで", unit: "か月" },
+  { key: "common", label: "共通費", note: "どの施策にも配らない費用（任意）", unit: "万円" },
+] as const;
+const FIELDS = [
+  { key: "leads", label: "リード数", unit: "件" },
+  { key: "valid", label: "有効リード数", unit: "件" },
+  { key: "deals", label: "商談数", unit: "件" },
+  { key: "wins", label: "受注数", unit: "件" },
+  { key: "ext", label: "外部費用", unit: "万円" },
+  { key: "labor", label: "人件費", unit: "万円" },
+] as const;
 ---
 
-<BaseLayout title={`${TOOL_TITLE}｜KPIツリーと施策のKPIの妥当性を判定｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-check.png">
-  <div id="kc-hub" class="kc kc-wide">
-    <p class="kc-hint" style="margin:0 0 6px !important;letter-spacing:0.08em"><a href="/tools" style="color:inherit;text-decoration:none">便利ツール</a></p>
-    <div class="kc-hero">
-      <div>
-        <h1 class="kc-h" style="font-size:1.8rem">{TOOL_TITLE}</h1>
-        <p class="kc-lead" style="font-size:1rem">売上目標と施策ごとのKPIを入れると、KPIツリーが妥当かを判定します。リードの過不足、受注とつながらないKPI、CPLの上限などを、結論とツリーの図で示します。</p>
-        <p class="kc-hint">無料・入力した数字はサーバーに送りません（計算はすべてブラウザの中）・空欄は一般的な値で計算・結果はA4横のPDFで出せます</p>
-        <p class="kc-hint">全6ステップ：KPIツリー → 施策と期間 → 施策のKPI → 費用と撤退（任意）→ 判定 → PDF</p>
-        <div class="kc-row" style="margin-top:20px">
-          <a class="kc-btn" href="/tools/kpi-check/setup/1"><span>はじめる</span><span aria-hidden="true">→</span></a>
-          <a class="kc-btn2" href="/tools/kpi-check/setup/5?sample=1">サンプルで結果を見る →</a>
+<BaseLayout title={`${TOOL_TITLE}｜期初のKPIが売上目標とつながっているかを診断｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-check.png">
+  <Breadcrumb items={breadcrumbItems} />
+
+  <!-- H1まわりは /library・/tools と同じ形。.kc の外に置く（.kc p の margin:0 を受けないように） -->
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">そのKPIで、売上目標に届くか。始める前に確かめる。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを、直すところと確認するところに分けて示します。</p>
+  </div>
+
+  <main class="kc" id="kc">
+    <!-- ===== 入口 ===== -->
+    <section id="kc-intro">
+      <div class="kc-hero">
+        <div>
+          <label class="kc-ent kc-drop" id="kc-drop" for="kc-file">
+            <small>KPI管理表（M-B-04）で作った</small>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M12 11v8"/></svg>
+            <b>KPI管理表（.xlsx）をここに置く</b>
+            <p>読み込むだけで診断します。月別の計画も確かめます</p>
+            <span class="kc-btn">ファイルを選ぶ</span>
+            <span class="kc-hint">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
+          </label>
+          <input type="file" id="kc-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+          <p class="kc-busy" id="kc-busy" role="status" hidden>読み込んでいます…</p>
+          <p class="kc-err" id="kc-err" role="alert" hidden></p>
+        </div>
+        <div class="kc-ent">
+          <small>自分の表・頭の中にある</small>
+          <b>画面で数字を入れて診断する</b>
+          <p>前提と、チャネル別の年間の件数・費用を入れます。<br />率は入れません（件数から出します）</p>
+          <button type="button" class="kc-btn" id="kc-start">入力して診断する<span aria-hidden="true">→</span></button>
         </div>
       </div>
-      <figure class="kc-shot"><img src="/images/tools/kpi-check-preview.png" width="1339" height="1165" alt="判定の画面の例：結論、全体のツリー、確認が必要な指摘" loading="eager" /><figcaption>判定の画面（サンプル）</figcaption></figure>
-    </div>
-    <div class="kc-resume" id="kc-resume" hidden></div>
-  </div>
+      <p class="kc-hint">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）・<a href="/tools/kpi-check?sample=1">結果の見本を見る（基本モデルの安定期）→</a></p>
+
+      <h2 class="kc-sec">わかること</h2>
+      <div class="kc-g3">
+        <div class="kc-card"><em>A</em><b>つながり</b><p>計画の数が、売上目標から逆算した必要な数に足りるか。件数の順や、月別と年間の合計が合っているか。</p></div>
+        <div class="kc-card"><em>B</em><b>率の現実性</b><p>有効リード率・商談化率・受注率が、目安（基本モデルの安定期）から大きく外れていないか。</p></div>
+        <div class="kc-card"><em>C</em><b>コスト</b><p>チャネルのCPLが許容CPL以下か。全体のCAC・回収期間が上限以内か。ROI（1年）がマイナスでないか。</p></div>
+      </div>
+      <p class="kc-hint">判定は「直す」「確認」「問題なし」の3つ。数字の定義は<a href="/standards/metrics">数字の定義</a>と同じです。</p>
+
+      <div class="kc-dl">
+        <div><b>KPIをまだ作っていないなら</b><p>KPI管理表作成キットで、計画の数字を入れるだけでKPI管理表（Excel）を作れます。作るときに同じ判定もします。<a href={KPI_SHEET_URL}>KPI管理表</a>をDLして直接記入することもできます。</p></div>
+        <a class="kc-btn2" href="/tools/kpi-sheet-maker">KPI管理表作成キットへ →</a>
+      </div>
+    </section>
+
+    <!-- ===== 入力 ===== -->
+    <section id="kc-input" hidden>
+      <div class="kc-bar">
+        <p class="kc-meta">前提と、チャネル別の年間の計画を入れます（金額は万円）</p>
+        <div class="kc-acts">
+          <button type="button" class="kc-link" id="kc-example">記入例を入れる</button>
+          <button type="button" class="kc-link" id="kc-clear">入力をすべて消す</button>
+          <button type="button" class="kc-btn2" id="kc-home">入口に戻る</button>
+        </div>
+      </div>
+      <form id="kc-form" novalidate>
+        <h2 class="kc-st">1. 前提</h2>
+        <div class="kc-f">
+          {
+            PRE.map((f) => (
+              <div class="kc-field">
+                <label class="kc-lb" for={`kc-${f.key}`}>
+                  {f.label}
+                  {f.note && <small>{f.note}</small>}
+                </label>
+                <div class="kc-ip">
+                  <input id={`kc-${f.key}`} name={f.key} type="number" inputmode="decimal" min="0" step="any" placeholder={f.key === "common" ? "0" : ""} />
+                  <span>{f.unit}</span>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <h2 class="kc-st">2. チャネル別の計画（年間）<small>使わないチャネルは空欄のまま</small></h2>
+        <div class="kc-chs">
+          {
+            CHANNELS.map((name, i) => (
+              <fieldset class="kc-ch">
+                <legend>{name}</legend>
+                <div class="kc-f">
+                  {FIELDS.map((f) => (
+                    <div class="kc-field">
+                      <label class="kc-lb" for={`kc-${i}-${f.key}`}>{f.label}</label>
+                      <div class="kc-ip">
+                        <input id={`kc-${i}-${f.key}`} name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" placeholder="0" />
+                        <span>{f.unit}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p class="kc-rates" data-rates={i}></p>
+              </fieldset>
+            ))
+          }
+        </div>
+        <p class="kc-hint">率（有効リード率・商談化率・受注率）は入れません。件数から自動で出します。記入例は架空の会社（基本モデル）の安定期の数字です</p>
+
+        <div class="kc-go">
+          <button type="submit" class="kc-btn">診断する<span aria-hidden="true">→</span></button>
+        </div>
+        <p class="kc-err" id="kc-ferr" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <!-- ===== 結果 ===== -->
+    <section id="kc-result" hidden>
+      <div class="kc-bar">
+        <p class="kc-meta" id="kc-meta"></p>
+        <div class="kc-acts">
+          <button type="button" class="kc-btn2" id="kc-edit">数字を直す</button>
+          <button type="button" class="kc-btn2" id="kc-again">入口に戻る</button>
+          <button type="button" class="kc-btn" id="kc-pdf">PDFで保存</button>
+        </div>
+      </div>
+      <p class="kc-err" id="kc-perr" role="alert" hidden></p>
+      <div id="kc-report"></div>
+    </section>
+  </main>
 
   <ToolFooter path="/tools/kpi-check" />
 </BaseLayout>
