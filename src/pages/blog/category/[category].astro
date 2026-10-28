@@ -180,14 +180,17 @@ const breadcrumbItems = [
 
       for (const section of sections) {
         let sectionHits = 0;
-        for (const column of ["post", "resource"]) {
-          const items = Array.from(section.querySelectorAll<HTMLElement>(`[data-item][data-kind="${column}"]`));
+        // 左（main）は記事と資料の混合リスト、右（resource）は代表資料1件
+        for (const column of ["main", "resource"]) {
+          const columnEl = section.querySelector<HTMLElement>(`[data-column="${column}"]`);
+          if (!columnEl) continue;
+          const items = Array.from(columnEl.querySelectorAll<HTMLElement>("[data-item]"));
           const list = section.querySelector<HTMLElement>(`[data-list="${column}"]`);
           const expanded = list?.dataset.expanded === "true";
           let columnHits = 0;
           for (const item of items) {
             const text = normalize(item.dataset.search || "");
-            const hit = (kind === "all" || kind === column) && words.every((w) => text.includes(w));
+            const hit = (kind === "all" || kind === item.dataset.kind) && words.every((w) => text.includes(w));
             if (hit) {
               columnHits++;
               matched.add(hrefOf(item));
@@ -197,8 +200,7 @@ const breadcrumbItems = [
           sectionHits += columnHits;
           const more = section.querySelector<HTMLElement>(`[data-more="${column}"]`);
           if (more) more.hidden = active || expanded;
-          const columnEl = section.querySelector<HTMLElement>(`[data-column="${column}"]`);
-          if (columnEl) columnEl.hidden = active && columnHits === 0;
+          columnEl.hidden = active && columnHits === 0;
         }
         section.querySelectorAll<HTMLElement>("[data-related], [data-tools]").forEach((el) => (el.hidden = active));
         section.hidden = active && sectionHits === 0;
