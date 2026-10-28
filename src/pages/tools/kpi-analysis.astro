@@ -11,6 +11,7 @@
 // 計算：src/lib/kpiAnalysis.ts　画面：src/scripts/kpi-analysis/app.ts　xlsxの読み込み：src/scripts/kpi-analysis/xlsx.ts
 // 結果の見本（?sample=1）：src/data/kpi-analysis-sample.json（scripts/build-kpi-analysis-sample.py で作る）
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import "@/styles/kpi-analysis.css";
 
@@ -20,18 +21,29 @@ const TOOL_DESCRIPTION =
 // KPI管理表（M-B-04）の資料ページ。資料のページができたら差し替える
 const KPI_SHEET_URL = "/resources";
 
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/kpi-analysis" },
+];
+
 // 入口の「結果のイメージ」（課題の地図の縮小版）。r＝赤、o＝オレンジ、g＝灰、e＝これから
 const MINI = ["goooorooeeee", "ggrrgggeeeee", "gggggggeeeee"].map((s) => s.split(""));
 ---
 
 <BaseLayout title={`${TOOL_TITLE}｜続いている課題と打ち手の効果を確率で分析｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-analysis.png">
-  <main class="ka" id="ka">
-    <p class="ka-eyebrow"><a href="/tools">便利ツール</a></p>
+  <Breadcrumb items={breadcrumbItems} />
 
+  <!-- H1まわりは /library・/tools と同じ形（2026-10-28）。.ka の外に置く（.ka p の margin:0 を受けないように） -->
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">毎月の振り返りを、勘ではなく数字で。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきのグラフで見られます。</p>
+  </div>
+
+  <main class="ka" id="ka">
     <!-- ===== 入口 ===== -->
     <section id="ka-intro">
-      <h1 class="ka-h1">{TOOL_TITLE}</h1>
-      <p class="ka-lead">KPI管理表を読み込むと、<b>続いている課題</b>と<b>打ち手が効いたか</b>を、確率つきのグラフで見られます。毎月の振り返りを、勘ではなく数字で。</p>
 
       <div class="ka-hero">
         <div>

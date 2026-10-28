@@ -1,19 +1,14 @@
-/* KPI分析ツール（/tools/kpi-analysis）
+/* 施策効果診断キット（旧KPI分析ツール、/tools/kpi-analysis）
    サイトのトンマナに合わせて角丸なし・白黒。色は判定（赤＝下回っている・悪くなった、オレンジ＝たぶん・確認）にだけ使う。
    クラス接頭辞 ka-。PDF（html2canvas で画像にする）も同じ見た目を使う。 */
 
 .ka { --ink: #0b0b12; --sub: #4f5057; --mute: #74757c; --faint: #a3a3a8; --line: #dedee2; --bg: #f5f5f6; --calc: #ececee;
   --red: #c81e1e; --red-bg: #fbe3e3; --org: #c2560c; --org-bg: #fdecd9;
-  max-width: 1060px; margin: 0 auto; padding: 1.5rem 1.25rem 3.5rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+  max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.25rem 3.5rem; /* 幅は /library と同じ（max-w-6xl px-5） */ color: var(--ink); font-variant-numeric: tabular-nums; }
 .ka p { margin: 0; }
 .ka *, .ka *::before, .ka *::after { box-sizing: border-box; }
 .ka a { color: inherit; }
 .ka [hidden] { display: none !important; }
-.ka-eyebrow { font-size: 0.8rem; color: var(--mute); letter-spacing: 0.08em; margin-bottom: 6px !important; }
-.ka-eyebrow a { text-decoration: none; }
-.ka-h1 { font-size: 1.8rem; font-weight: 800; line-height: 1.4; margin: 0 0 8px; }
-.ka-lead { font-size: 1rem; color: var(--sub); line-height: 1.8; }
-.ka-lead b { color: var(--ink); }
 .ka-hint { font-size: 0.8rem; color: var(--mute); line-height: 1.65; margin-top: 6px !important; }
 .ka-sec { font-size: 1.05rem; font-weight: 800; margin: 2.2rem 0 0.8rem; padding-bottom: 6px; border-bottom: 1.5px solid var(--ink); }
 
