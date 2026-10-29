@@ -1,12 +1,12 @@
 ---
 // 資料ダウンロード完了後のサンクスページ（カテゴリごとに1ページを静的生成）。
-//   /resources/thanks/[category]  … そのカテゴリの資料をDLした人向け
-//   /resources/thanks/general     … カテゴリ未設定の資料をDLした人向け
+//   /lab/whitepapers/thanks/[category]  … そのカテゴリの資料をDLした人向け
+//   /lab/whitepapers/thanks/general     … カテゴリ未設定の資料をDLした人向け
 // 遷移元は src/pages/resources/[slug].astro の資料DLフォーム（成功時に自動遷移）。
 //
 // 構成（上から）: お礼 → TOOLS（無料ツール。そのカテゴリのツール、無ければ全ツールの先頭）
 //                → OTHER DOWNLOADS（そのカテゴリの記事・資料を混合で3件。今ダウンロードした資料は除外）→ お問い合わせCTA
-// GA4: ページ自体が /resources/thanks/... という固有URLなので、GTM/GA4の page_view で計測できる。
+// GA4: ページ自体が /lab/whitepapers/thanks/... という固有URLなので、GTM/GA4の page_view で計測できる。
 //      DLの「イベント」（resource_download）はフォーム側で送信済みのため、このページでは二重に送らない。
 // ?slug=<資料slug> が付いている場合のみ、クライアント側で「今ダウンロードした資料名」を表示し、
 //      関連一覧から同じ資料を外す（静的ページのため、この情報だけはブラウザ側で出し分ける）。
@@ -50,7 +50,7 @@ const resourceTitleMap = Object.fromEntries(getAllResources().map((r) => [r.slug
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
   { name: "ダウンロードありがとうございました", href: Astro.url.pathname },
 ];
 ---
@@ -119,7 +119,7 @@ const breadcrumbItems = [
               <p class="text-xs font-bold tracking-widest text-neutral-400">OTHER DOWNLOADS</p>
               <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">関連するその他の記事・資料</h2>
             </div>
-            <a href="/library" class="shrink-0 text-sm font-medium text-brand-700 hover:underline">
+            <a href="/lab" class="shrink-0 text-sm font-medium text-brand-700 hover:underline">
               記事・資料一覧へ →
             </a>
           </div>

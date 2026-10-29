@@ -11,7 +11,7 @@ interface Props {
 
 const { resource } = Astro.props;
 const cover = resource.thumbnail || resource.coverImage;
-const href = `/resources/${resource.slug}`;
+const href = `/lab/whitepapers/${resource.slug}`;
 ---
 
 <aside class="mt-12 border border-brand-200 bg-brand-50 p-6 sm:p-8" aria-label="資料ダウンロード">

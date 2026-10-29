@@ -152,12 +152,12 @@ export function getRichTextPlain(page, name) {
 }
 /**
  * buildNotionLinkMap() の結果（NotionページID → サイト内URL）から、記事DBの公開記事を
- * 指しているページIDだけを「/blog/xxxx」のxxxx部分（スラッグ）に変換する。該当しなければ""。
+ * 指しているページIDだけを「/lab/blog/xxxx」のxxxx部分（スラッグ）に変換する。該当しなければ""。
  */
 function resolveBlogSlugFromLinkMap(pageId, linkMap) {
   if (!pageId) return "";
   const url = linkMap?.get(pageId);
-  const prefix = "/blog/";
+  const prefix = "/lab/blog/";
   return url && url.startsWith(prefix) ? url.slice(prefix.length) : "";
 }
 
@@ -176,7 +176,7 @@ function resolveBlogSlugFromLinkMap(pageId, linkMap) {
  * なっていた（2026-09-10発覚）。
  *
  * ここではプロパティの実際の型を見て、メンション先／リレーション先のページIDを
- * buildNotionLinkMap() の結果（NotionページID → サイト内URL）で引き、"/blog/xxxx" 形式の
+ * buildNotionLinkMap() の結果（NotionページID → サイト内URL）で引き、"/lab/blog/xxxx" 形式の
  * URLからスラッグ部分を取り出す。解決できない場合（リンク先が記事DBの公開記事でない、
  * プロパティが空、など）は、可能な範囲で従来通りプレーンテキストとして扱う（後方互換）。
  */
@@ -309,15 +309,50 @@ export function makeAnchorFactory() {
 
 /**
  * linkMap を渡すと、Notionの「@」メンションでページを選んで貼ったリンクを、
- * Notion内部のURLではなくサイト内の実URL（/blog/xxx, /resources/xxx）に変換する
+ * Notion内部のURLではなくサイト内の実URL（/lab/blog/xxx, /lab/whitepapers/xxx）に変換する
  * （buildNotionLinkMap() の返り値である Map<NotionページID, サイト内URL> を渡す）。
  * メンション先がマップに無い（未公開・対象外のページ等）場合はリンクなしの単なるテキストにする。
  */
+// 2026-10-29 URL構造の変更：本文に直接書かれた旧パスのリンク（/blog/…・/resources/…・/library、
+// https://mktg.ax/blog/… のような絶対URLも含む）を新しいパスへ置き換える。
+// 旧URLは public/_redirects で301転送しているのでリンク切れにはならないが、転送を挟まない正しいURLにしておく。
+const SITE_HOSTS = new Set(["mktg.ax", "www.mktg.ax", "mktg-ax.pages.dev"]);
+const LEGACY_PATH_RULES = [
+  [/^\/blog\/category(?=\/|$)/, "/lab/category"],
+  [/^\/blog\/tag(?=\/|$)/, "/lab/tag"],
+  [/^\/blog(?=\/|$)/, "/lab/blog"],
+  [/^\/resources(?=\/|$)/, "/lab/whitepapers"],
+  [/^\/library(?=\/|$)/, "/lab"],
+];
+function rewriteLegacyPath(pathname) {
+  for (const [rx, to] of LEGACY_PATH_RULES) {
+    if (rx.test(pathname)) return pathname.replace(rx, to);
+  }
+  return pathname;
+}
+export function rewriteLegacySiteHref(href) {
+  if (!href || typeof href !== "string") return href;
+  if (href.startsWith("/") && !href.startsWith("//")) {
+    const m = href.match(/^([^?#]*)(.*)$/);
+    return rewriteLegacyPath(m[1]) + m[2];
+  }
+  try {
+    const u = new URL(href);
+    if (!SITE_HOSTS.has(u.hostname)) return href;
+    const next = rewriteLegacyPath(u.pathname);
+    if (next === u.pathname) return href;
+    u.pathname = next;
+    return u.toString();
+  } catch {
+    return href;
+  }
+}
+
 export function transformRichText(richText, linkMap) {
   if (!Array.isArray(richText)) return [];
   return richText.map((t) => {
     const a = t.annotations || {};
-    let href = t.href || t.text?.link?.url || null;
+    let href = rewriteLegacySiteHref(t.href || t.text?.link?.url || null);
     if (t.type === "mention" && t.mention?.type === "page" && t.mention.page?.id) {
       href = linkMap?.get(t.mention.page.id) || null;
     }
@@ -343,7 +378,7 @@ export function richTextToPlain(richText) {
 // 記事本文への「一番最初のタグ」自動リンク
 // ------------------------------------------------------------
 
-// /blog/tag/[tag] のURL変換ルール（src/lib/routeSlug.tsのtoRouteSlug()と同じロジック）。
+// /lab/tag/[tag] のURL変換ルール（src/lib/routeSlug.tsのtoRouteSlug()と同じロジック）。
 // scripts側（.mjs）からTSファイルをimportできないため、ここに同じ1行だけ複製している
 // （scripts/generate-tag-redirects.mjsの既存コメントも参照）。「/」を含むタグ名でも
 // ビルドが壊れないよう、URL上だけ全角スラッシュ「／」に置き換える。
@@ -353,7 +388,7 @@ function toRouteSlugForAutoLink(name) {
 
 /**
  * 記事本文中に、その記事の「一番最初のタグ」（tags[0]）と完全一致する文言が出てきたら、
- * 本文全体でちょうど1箇所だけ、自動的にそのタグページ（/blog/tag/タグ名）へのリンクに変換する。
+ * 本文全体でちょうど1箇所だけ、自動的にそのタグページ（/lab/tag/タグ名）へのリンクに変換する。
  *
  * - 見出し（H1〜H4）自身の文言は対象外（見出しブロックの下の子ブロックは対象内）。
  * - コードブロックの中も対象外（コードの意味を壊さないため）。
@@ -369,7 +404,7 @@ export function autoLinkFirstTagKeyword(blocks, tagName) {
   const keyword = (tagName || "").trim();
   if (!keyword) return blocks;
 
-  const tagHref = `/blog/tag/${encodeURIComponent(toRouteSlugForAutoLink(keyword))}`;
+  const tagHref = `/lab/tag/${encodeURIComponent(toRouteSlugForAutoLink(keyword))}`;
   const state = { done: false };
 
   const HEADING_TYPES = new Set(["heading_1", "heading_2", "heading_3", "heading_4"]);
@@ -994,7 +1029,7 @@ async function transformBlock(block, makeAnchor, idHint, linkMap) {
 
 /**
  * 記事DB・資料DBの「公開」がオンのページを軽くリスト取得し、
- * NotionページID → サイト内URL（/blog/xxx, /resources/xxx）のマップを作る。
+ * NotionページID → サイト内URL（/lab/blog/xxx, /lab/whitepapers/xxx）のマップを作る。
  * サムネイル生成や本文取得はせず、スラッグ解決に必要な最小限のプロパティだけを見るため高速。
  * 記事本文中で「@」から他の記事・資料ページをメンションしてリンクを貼れるようにするための下準備。
  */
@@ -1014,7 +1049,7 @@ export async function buildNotionLinkMap(token) {
         if (status !== POST_STATUS.published && status !== POST_STATUS.editing) continue;
         const title = getTitleText(page, PROP.title) || "";
         const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
-        linkMap.set(page.id, `/blog/${slug}`);
+        linkMap.set(page.id, `/lab/blog/${slug}`);
       }
     } catch (err) {
       console.warn(`  [notion] 記事間リンク用の一覧取得に失敗しました（記事DB）: ${err.message}`);
@@ -1031,7 +1066,7 @@ export async function buildNotionLinkMap(token) {
       for (const page of pages) {
         const title = getTitleText(page, RESOURCE_PROP.title) || "";
         const slug = resolveSlug(getRichTextPlain(page, RESOURCE_PROP.slug), page.id, title);
-        linkMap.set(page.id, `/resources/${slug}`);
+        linkMap.set(page.id, `/lab/whitepapers/${slug}`);
       }
     } catch (err) {
       console.warn(`  [notion] 記事間リンク用の一覧取得に失敗しました（資料DB）: ${err.message}`);
@@ -1042,7 +1077,7 @@ export async function buildNotionLinkMap(token) {
 }
 
 // ============================================================
-// 資料ダウンロードページ（/resources）用の追加ヘルパー
+// 資料ダウンロードページ（/lab/whitepapers）用の追加ヘルパー
 // Notion側の「資料DB」（ブログ記事とは別のデータベース）のプロパティ名・変換ロジック。
 // ============================================================
 

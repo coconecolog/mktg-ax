@@ -14,7 +14,7 @@ export const HOME_HERO = {
     "自社の判断基準を。戦略の立案から運用・改善、社内への提案まで。",
     "施策の優先順位と成果を見える化する実務メディアです。",
   ],
-  primaryCta: { label: "記事・資料を見る", href: "/library" },
+  primaryCta: { label: "記事・資料を見る", href: "/lab" },
   secondaryCta: { label: "キットを使ってみる", href: "/tools" },
   // 右側の画像（public/images/home/ に置いたファイル）。画像もリンクになります（リンク先は imageLink.href）
   image: {
@@ -22,7 +22,7 @@ export const HOME_HERO = {
     alt: "KPIツリーのイメージ。売上目標（KGI）からリード獲得・商談転換（CSF）、MQL数・CPL・商談率・受注率（KPI）に分け、月次で追う。",
   },
   // 画像の下のリンク（線つきのテキストリンク）
-  imageLink: { label: "KPIツリーの作り方と例を読む", href: "/blog/kpi-tree" },
+  imageLink: { label: "KPIツリーの作り方と例を読む", href: "/lab/blog/kpi-tree" },
 };
 
 // ------------------------------------------------------------
@@ -124,7 +124,7 @@ export const HOME_PDCA = {
         name: "年間計画シート（KPIと予算）",
         coverTitle: "年間\n予算表",
         typeLabel: "スプレッドシート",
-        href: "/resources/kgi-kpi-backcast-sheet",
+        href: "/lab/whitepapers/kgi-kpi-backcast-sheet",
         guide: "キットを使わず、スプレッドシートをダウンロードして直接入力しても作れます。表はKPI管理表の「はじめに入力」と同じなので、そのまま貼りつけられます。",
       },
     },
@@ -140,7 +140,7 @@ export const HOME_PDCA = {
         name: "KPI管理表",
         coverTitle: "KPI\n管理表",
         typeLabel: "スプレッドシート",
-        href: "/resources/kpi-management-template",
+        href: "/lab/whitepapers/kpi-management-template",
         guide: "キットを使わず、スプレッドシートをダウンロードして直接入力しても作れます。",
       },
     },
@@ -156,7 +156,7 @@ export const HOME_PDCA = {
         name: "KPI管理表",
         coverTitle: "KPI\n管理表",
         typeLabel: "スプレッドシート",
-        href: "/resources/kpi-management-template",
+        href: "/lab/whitepapers/kpi-management-template",
         guide: "毎月の実績をKPI管理表に入れて、このキットにアップするだけで診断が終わります。",
       },
     },
@@ -170,7 +170,7 @@ export const HOME_LATEST = {
   eyebrow: "新着記事",
   heading: "いまの実務に、必要な知識を。",
   count: 3,
-  allLink: { label: "記事・資料をすべて見る", href: "/library" },
+  allLink: { label: "記事・資料をすべて見る", href: "/lab" },
 };
 
 // ------------------------------------------------------------

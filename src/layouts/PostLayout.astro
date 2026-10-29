@@ -49,8 +49,8 @@ const relatedItems = post.category
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: post.title, href: `/blog/${post.slug}` },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
+  { name: post.title, href: `/lab/blog/${post.slug}` },
 ];
 
 
@@ -183,7 +183,7 @@ const dateLabel = (iso: string) =>
                 ))}
               </div>
               <p class="mt-6 text-center">
-                <a href="/library" class="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline">
+                <a href="/lab" class="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline">
                   ライブラリ（記事・資料）一覧へ
                 </a>
               </p>

@@ -4,7 +4,7 @@
 // - サブカテゴリ専用のページは作らず、ページ内アンカー（#Slug）で各テーマへ移動する
 // - ページ番号のページネーションは廃止。件数の多いテーマは「もっと見る」ボタンで開く
 // - 「すべて／記事／無料資料」の切り替えと「このカテゴリ内を検索」は、ページ内のJSで絞り込む
-// 旧URL（/blog/category/{slug}/2・/blog・/resources）は public/_redirects でこのページへ301転送している。
+// 旧URL（/blog/category/{slug}・/blog/category/{slug}/2・…/blog・…/resources）は public/_redirects でこのページへ301転送している。
 import type { GetStaticPaths } from "astro";
 import type { Category } from "@/lib/types";
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -61,7 +61,7 @@ const jsonLd = faqSchema ? [collectionSchema, faqSchema] : collectionSchema;
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
   { name: category.name, href: categoryPath },
 ];
 

@@ -21,7 +21,7 @@ const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ブログ", href: "/blog" },
+  { name: "ブログ", href: "/lab/blog" },
 ];
 ---
 
@@ -52,7 +52,7 @@ const breadcrumbItems = [
           )
         }
 
-        <Pagination page={page} basePath="/blog" />
+        <Pagination page={page} basePath="/lab/blog" />
       </div>
 
       <aside class="lg:sticky lg:top-24 lg:self-start">

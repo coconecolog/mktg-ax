@@ -37,8 +37,8 @@ const jsonLd = faqSchema ? [resourceSchema, faqSchema] : resourceSchema;
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
-  { name: resource.title, href: `/resources/${resource.slug}` },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
+  { name: resource.title, href: `/lab/whitepapers/${resource.slug}` },
 ];
 
 const dateLabel = (iso: string) =>
@@ -49,11 +49,11 @@ const [targetTocHeading, ...targetTocItems] = resource.targetToc;
 
 const author = resource.author ? getAuthorByName(resource.author) : undefined;
 
-// 送信完了後に遷移するサンクスページ。カテゴリごとに静的ページ（/resources/thanks/[category]）があり、
-// カテゴリ未設定の資料は /resources/thanks/general に遷移する。
+// 送信完了後に遷移するサンクスページ。カテゴリごとに静的ページ（/lab/whitepapers/thanks/[category]）があり、
+// カテゴリ未設定の資料は /lab/whitepapers/thanks/general に遷移する。
 // ?slug= は、サンクスページ側で「今ダウンロードした資料」を名前表示・おすすめから除外するために渡す。
 const thanksCategorySegment = resource.category ? encodeURIComponent(getCategorySlug(resource.category)) : "general";
-const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
+const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
 ---
 
 <BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={jsonLd}>
@@ -343,7 +343,7 @@ const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURICo
 <script>
   // 資料ダウンロードフォームの送信処理。
   // 送信先は Cloudflare Pages Functions（functions/api/resource-download.js）。
-  // エラー時はフォーム直下にメッセージを表示。成功時はサンクスページ（/resources/thanks/[category]）へ遷移する。
+  // エラー時はフォーム直下にメッセージを表示。成功時はサンクスページ（/lab/whitepapers/thanks/[category]）へ遷移する。
   const form = document.getElementById("resource-download-form") as HTMLFormElement | null;
   const messageEl = document.getElementById("rdf-message");
   const submitBtn = document.getElementById("rdf-submit") as HTMLButtonElement | null;
@@ -381,7 +381,7 @@ const thanksUrl = `/resources/thanks/${thanksCategorySegment}?slug=${encodeURICo
         // 成功後はサンクスページへ遷移する。GA4計測（GTM経由）が遷移で途切れないよう、
         // dataLayer の eventCallback（GTMが該当タグを送り終えたら呼ばれる）で遷移し、
         // 万一コールバックが来なくても1.5秒後には必ず遷移する（二重遷移は go() 内で防止）。
-        const thanksUrl = form.dataset.thanksUrl || "/resources";
+        const thanksUrl = form.dataset.thanksUrl || "/lab/whitepapers";
         let moved = false;
         const go = () => {
           if (moved) return;

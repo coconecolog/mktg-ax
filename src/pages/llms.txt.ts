@@ -19,7 +19,7 @@ ${standards}
 ## サイト
 
 - [便利ツール](${siteUrl}/tools): 予算・KPIの計算・診断ツール
-- [ライブラリ（記事・資料）](${siteUrl}/library): 記事とダウンロード資料の一覧
+- [ライブラリ（記事・資料）](${siteUrl}/lab): 記事とダウンロード資料の一覧
 `;
   return new Response(body, {
     headers: { "Content-Type": "text/plain; charset=utf-8" },

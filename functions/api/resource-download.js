@@ -1,4 +1,4 @@
-// 資料ダウンロードフォーム（src/pages/resources/[slug].astro）の送信を受け取る
+// 資料ダウンロードフォーム（src/pages/lab/whitepapers/[slug].astro）の送信を受け取る
 // Cloudflare Pages Function。
 //   POST /api/resource-download
 //

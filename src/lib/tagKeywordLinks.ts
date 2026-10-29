@@ -41,7 +41,7 @@ function buildTerms(): Term[] {
     .map((name) => ({
       name,
       path: getTagPath(name),
-      legacyPath: `/blog/tag/${encodeURIComponent(toRouteSlug(name))}`,
+      legacyPath: `/lab/tag/${encodeURIComponent(toRouteSlug(name))}`,
       asciiStart: isAsciiAlnum(name[0]),
       asciiEnd: isAsciiAlnum(name[name.length - 1]),
     }));

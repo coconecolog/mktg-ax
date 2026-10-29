@@ -214,7 +214,7 @@ async function collectGsc(token, siteUrl, periods) {
 // ------------------------------------------------------------
 
 async function listArticleUrls(siteUrl) {
-  // サイトマップから /blog/{記事} のURLを集める（カテゴリ・タグ・ページ送りは除く）
+  // サイトマップから /lab/blog/{記事} のURLを集める（カテゴリ・タグ・ページ送りは除く）
   const origin = siteUrl.startsWith("sc-domain:") ? `https://${siteUrl.slice(10)}` : siteUrl.replace(/\/$/, "");
   const fetchText = async (url) => {
     const res = await fetch(url);
@@ -225,7 +225,7 @@ async function listArticleUrls(siteUrl) {
   const index = await fetchText(`${origin}/sitemap-index.xml`);
   const urls = [];
   for (const sitemap of locs(index)) urls.push(...locs(await fetchText(sitemap)));
-  return urls.filter((u) => /\/blog\/(?!category\/|tag\/|\d+$)[^/]+$/.test(new URL(u).pathname));
+  return urls.filter((u) => /^\/lab\/blog\/(?!\d+$)[^/]+$/.test(new URL(u).pathname));
 }
 
 async function inspectUrls(token, siteUrl, urls) {

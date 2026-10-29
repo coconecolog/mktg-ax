@@ -48,8 +48,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "年間計画シート（KPIと予算）", href: "/blog/category/budget-roi" },
-      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/resources/budget-justification-sheet" },
+      { type: "resource", title: "年間計画シート（KPIと予算）", href: "/lab/category/budget-roi" },
+      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/lab/whitepapers/budget-justification-sheet" },
     ],
   },
 
@@ -114,8 +114,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "年間計画シート（KPIと予算）", href: "/blog/category/budget-roi" },
-      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/resources/budget-justification-sheet" },
+      { type: "resource", title: "年間計画シート（KPIと予算）", href: "/lab/category/budget-roi" },
+      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/lab/whitepapers/budget-justification-sheet" },
     ],
   },
 
@@ -148,8 +148,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "KPI管理表（スプレッドシート）", href: "/resources/kpi-management-template" },
-      { type: "resource", title: "KPIをツリーに分解する5ステップ", href: "/resources/kpi-tree-template" },
+      { type: "resource", title: "KPI管理表（スプレッドシート）", href: "/lab/whitepapers/kpi-management-template" },
+      { type: "resource", title: "KPIをツリーに分解する5ステップ", href: "/lab/whitepapers/kpi-tree-template" },
     ],
   },
 
@@ -182,8 +182,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "KPI管理表（M-B-04）", href: "/resources" },
-      { type: "resource", title: "KPIをツリーに分解する5ステップ", href: "/resources/kpi-tree-template" },
+      { type: "resource", title: "KPI管理表（M-B-04）", href: "/lab/whitepapers" },
+      { type: "resource", title: "KPIをツリーに分解する5ステップ", href: "/lab/whitepapers/kpi-tree-template" },
     ],
   },
 
@@ -230,8 +230,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "予実管理表（KPI達成率×ROI）", href: "/blog/category/budget-roi" },
-      { type: "resource", title: "月次・年間報告テンプレート", href: "/resources/monthly-annual-report-template" },
+      { type: "resource", title: "予実管理表（KPI達成率×ROI）", href: "/lab/category/budget-roi" },
+      { type: "resource", title: "月次・年間報告テンプレート", href: "/lab/whitepapers/monthly-annual-report-template" },
     ],
   },
 
@@ -261,9 +261,9 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       {
         type: "post",
         title: "新規1社にいくらまでかけてよいか｜BtoBのCAC回収期間とLTVを粗利で出す",
-        href: "/blog/cac-payback-period-btob",
+        href: "/lab/blog/cac-payback-period-btob",
       },
-      { type: "post", title: "BtoBマーケの評価軸は「リード数」から「CAC」へ", href: "/blog/lead-volume-to-unit-economics" },
+      { type: "post", title: "BtoBマーケの評価軸は「リード数」から「CAC」へ", href: "/lab/blog/lead-volume-to-unit-economics" },
     ],
   },
 
@@ -286,8 +286,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/resources/budget-justification-sheet" },
-      { type: "post", title: "広告費の相場は売上の何%？", href: "/blog/advertising-cost-market-rate" },
+      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/lab/whitepapers/budget-justification-sheet" },
+      { type: "post", title: "広告費の相場は売上の何%？", href: "/lab/blog/advertising-cost-market-rate" },
     ],
   },
 
@@ -313,8 +313,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/resources/budget-justification-sheet" },
-      { type: "resource", title: "90日計画テンプレート", href: "/resources/90-day-plan-template" },
+      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/lab/whitepapers/budget-justification-sheet" },
+      { type: "resource", title: "90日計画テンプレート", href: "/lab/whitepapers/90-day-plan-template" },
     ],
   },
 
@@ -345,7 +345,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       {
         type: "post",
         title: "生成AIのマーケティング活用、どの業務から任せる？",
-        href: "/blog/generative-ai-marketing-use-cases",
+        href: "/lab/blog/generative-ai-marketing-use-cases",
       },
     ],
   },
