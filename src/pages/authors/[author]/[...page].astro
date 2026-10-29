@@ -36,7 +36,7 @@ const { author, page } = Astro.props as { author: Author; page: Page<LibraryItem
 const allCategories = getAllCategories();
 const counts = getLibraryCountsByAuthor(author.name);
 const authorBasePath = `/authors/${encodeURIComponent(toRouteSlug(author.name))}`;
-const tabHrefs = { all: authorBasePath, post: `${authorBasePath}/blog`, resource: `${authorBasePath}/resources` };
+const tabHrefs = { all: authorBasePath, post: `${authorBasePath}/blog`, resource: `${authorBasePath}/whitepapers` };
 
 const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 const sidebarTags = getAllTags();
@@ -52,7 +52,7 @@ const authorSchema = buildAuthorSchema({
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
   { name: author.name, href: authorBasePath },
 ];
 ---

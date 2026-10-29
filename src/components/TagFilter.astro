@@ -1,6 +1,6 @@
 ---
 // タグ絞り込み。静的サイトなのでJSでフィルタするのではなく、
-// タグごとに実際のページ（/blog/tag/xxx）へのリンクにしている（SEO・キャッシュの面でも有利）。
+// タグごとに実際のページ（/lab/tag/xxx）へのリンクにしている（SEO・キャッシュの面でも有利）。
 import { getTagPath } from "@/lib/posts";
 
 interface Props {
@@ -12,7 +12,7 @@ const { tags, activeTag } = Astro.props;
 ---
 
 <div class="flex flex-wrap gap-2">
-  <a href="/blog"
+  <a href="/lab/blog"
     class={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
       !activeTag
         ? "border-brand-600 bg-brand-600 text-white"

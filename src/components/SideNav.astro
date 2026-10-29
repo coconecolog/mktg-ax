@@ -37,7 +37,7 @@ const cover = resource ? resource.thumbnail || resource.coverImage : null;
       <div class={toc.length > 0 ? "lg:mt-8 lg:border-t lg:border-neutral-300 lg:pt-6" : ""}>
         <p class="text-sm font-bold text-ink-950">関連する資料</p>
         <div class="mt-3 bg-neutral-100 p-5">
-          <a href={`/resources/${resource.slug}`} class="block" aria-hidden="true" tabindex="-1">
+          <a href={`/lab/whitepapers/${resource.slug}`} class="block" aria-hidden="true" tabindex="-1">
             {cover ? (
               <img src={cover} alt="" class="w-full border border-neutral-200 bg-white" loading="lazy" />
             ) : (
@@ -53,11 +53,11 @@ const cover = resource ? resource.thumbnail || resource.coverImage : null;
           </a>
           <p class="mt-4 text-xs font-bold text-neutral-500">無料資料</p>
           <p class="mt-2 text-base font-extrabold leading-snug text-ink-950">
-            <a href={`/resources/${resource.slug}`} class="text-ink-950 no-underline hover:underline">{resource.title}</a>
+            <a href={`/lab/whitepapers/${resource.slug}`} class="text-ink-950 no-underline hover:underline">{resource.title}</a>
           </p>
           {resource.contents && <p class="mt-3 text-xs font-bold leading-relaxed text-ink-950">{resource.contents}</p>}
           {resource.description && <p class="mt-3 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-neutral-600">{resource.description}</p>}
-          <a href={`/resources/${resource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800">
+          <a href={`/lab/whitepapers/${resource.slug}`} class="mt-5 flex items-center justify-between bg-ink-950 px-4 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800">
             資料を見る
             <span aria-hidden="true">→</span>
           </a>

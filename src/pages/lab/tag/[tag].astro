@@ -7,7 +7,7 @@
 // 構成: パンくず → H1「〇〇とは？」＋定義文 → ページ内リンク列 →
 //       左: 「〇〇に関する記事・資料」（記事・資料を新しい順。形式の絞り込みとTAG_PAGE_SIZE件ずつのページ送りはページ内JS）→ 解説エリア（TagBody）
 //       右: SideNav（記事ページと共通。目次＝「記事・資料」＋本文の見出し2 → 関連する資料＝このタグの最新資料1件）→ タグ一覧（BlogSidebar）
-// URLは /blog/tag/{slug} の1つだけ（ライブラリページと同じ扱い）。旧URL（/blog・/resources タブ、/2 などのページ送り）は
+// URLは /lab/tag/{slug} の1つだけ（ライブラリページと同じ扱い）。旧URL（/blog/tag/{slug}、…/blog・…/resources タブ、/2 などのページ送り）は
 // public/_redirects でこのページへ301転送している。
 // 記事のラベルは自動: 記事の「サブカテゴリ」名（無ければ先頭のカテゴリ名）。
 import type { GetStaticPaths } from "astro";
@@ -106,7 +106,7 @@ const jsonLd = faqSchema ? [tagSchema, faqSchema] : tagSchema;
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
   { name: tagName, href: tagPath },
 ];
 ---

@@ -56,7 +56,7 @@ export const HOME_TOOLS_ITEMS = [
 export const NAV_LINKS = [
   { href: "/", label: "トップ", children: [] },
   { href: "/tools", label: "キット一覧", children: TOOLS_NAV_ITEMS },
-  { href: "/library", label: "ラボ（記事・資料）", children: [] },
+  { href: "/lab", label: "ラボ（記事・資料）", children: [] },
   { href: "/service", label: "サービスについて", children: [] },
   { href: "/contact", label: "お問い合わせ", children: [] },
 ] as const;
@@ -72,7 +72,7 @@ export const CATEGORY_TAG_PAGE_SIZE = 6;
 export const CATEGORY_SECTION_POST_LIMIT = 4; // まずはこの記事から1件＋3件
 
 // タグページ（2026-10-15リニューアル）の「〇〇に関する記事・資料」で、1ページに表示する記事数。
-// URLは /blog/tag/{slug} の1つだけで、ページ送りはページ内のJSで行う（全記事のリンクはHTMLに入っている）。
+// URLは /lab/tag/{slug} の1つだけで、ページ送りはページ内のJSで行う（全記事のリンクはHTMLに入っている）。
 export const TAG_PAGE_SIZE = 3;
 
 // ラボ（記事・資料統合）ページで1ページに表示する件数

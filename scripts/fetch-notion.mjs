@@ -106,7 +106,7 @@ async function fetchCategories(token, linkMap) {
     } else if (usedSlugs.has(slugRaw)) {
       console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「${slugRaw}」は他のカテゴリと重複しています。無視します。`);
     } else if (slugRaw === "general") {
-      // 「general」はカテゴリ未設定の資料用サンクスページ（/resources/thanks/general）と衝突するため使えない
+      // 「general」はカテゴリ未設定の資料用サンクスページ（/lab/whitepapers/thanks/general）と衝突するため使えない
       console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「general」は予約語のため使えません。無視します。`);
     } else {
       slug = slugRaw;

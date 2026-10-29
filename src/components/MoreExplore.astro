@@ -64,7 +64,7 @@ const otherCategories = categories.filter((c) => c.name !== excludeCategory);
           {popularPosts.map((post, i) => (
             <li class="flex gap-3">
               <span class="mt-0.5 shrink-0 text-sm font-bold text-brand-500">{i + 1}</span>
-              <a href={`/blog/${post.slug}`} class="text-sm leading-snug text-neutral-700 hover:text-brand-700">
+              <a href={`/lab/blog/${post.slug}`} class="text-sm leading-snug text-neutral-700 hover:text-brand-700">
                 {post.title}
               </a>
             </li>

@@ -1,5 +1,5 @@
 /**
- * カテゴリ名・タグ名をURLの1セグメント（例: /blog/category/[category]/ の[category]部分）として
+ * カテゴリ名・タグ名をURLの1セグメント（例: /lab/category/[category]/ の[category]部分）として
  * 安全に使うための変換ヘルパー。
  *
  * 背景（2026-09-08）: マスターカテゴリDBに「目標管理・KPI/KGI設計」のように「/」を含む名前が

@@ -17,7 +17,7 @@ import "@/styles/kpi-check.css";
 const TOOL_TITLE = "KPI妥当性診断キット";
 const TOOL_DESCRIPTION =
   "自分で作ったKPIが売上目標とつながっているか、数字に無理がないかを、期のはじめに診断する無料のキットです。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れると、直すところと確認するところをその場で示します。結果はA4縦のPDFで保存できます。";
-const KPI_SHEET_URL = "/resources/kpi-management-template";
+const KPI_SHEET_URL = "/lab/whitepapers/kpi-management-template";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
@@ -46,7 +46,7 @@ const FIELDS = [
 <BaseLayout title={`${TOOL_TITLE}｜期初のKPIが売上目標とつながっているかを診断｜MKTG.AX`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-check.png">
   <Breadcrumb items={breadcrumbItems} />
 
-  <!-- H1まわりは /library・/tools と同じ形。.kc の外に置く（.kc p の margin:0 を受けないように） -->
+  <!-- H1まわりは /lab・/tools と同じ形。.kc の外に置く（.kc p の margin:0 を受けないように） -->
   <div class="mx-auto max-w-6xl px-5 pt-10">
     <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
     <p class="mt-4 text-lg font-bold text-ink-950">そのKPIで、売上目標に届くか。始める前に確かめる。</p>

@@ -70,7 +70,7 @@ export const MAIN_TOOLS = [
 
 // /tools のキット（やりたいこと別）。
 // resource は小さく添える資料の案内。href を null にすると「準備中」の表示になる。resource を null にすると行を出さない。
-// 2026-10-29：年間予算表（M-B-03、/resources/kgi-kpi-backcast-sheet）はKPI管理表「はじめに入力」と同じ中身で独立。予算作成キットはフェーズ2で年間予算表の.xlsxを出力、予算案診断キットは貼りつけ・アップ・画面入力の3つの入口。
+// 2026-10-29：年間予算表（M-B-03、/lab/whitepapers/kgi-kpi-backcast-sheet）はKPI管理表「はじめに入力」と同じ中身で独立。予算作成キットはフェーズ2で年間予算表の.xlsxを出力、予算案診断キットは貼りつけ・アップ・画面入力の3つの入口。
 export type KitResource = {
   before: string;
   label: string;
@@ -106,7 +106,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "予算作成キット",
         button: "予算を作る",
         href: "/tools/budget-simulator",
-        resource: { before: "計画書と同じ形のシートで管理するなら", label: "年間予算表", after: "", href: "/resources/kgi-kpi-backcast-sheet" },
+        resource: { before: "計画書と同じ形のシートで管理するなら", label: "年間予算表", after: "", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
       },
       {
         icon: "file-search",
@@ -116,7 +116,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "予算案診断キット",
         button: "診断する",
         href: "/tools/budget-checker",
-        // フェーズ2：{ before: "", label: "年間予算表", after: "で作っていれば、読み込むだけで診断できます", href: "/resources/kgi-kpi-backcast-sheet" }
+        // フェーズ2：{ before: "", label: "年間予算表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" }
         resource: null,
       },
     ],
@@ -132,7 +132,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "KPI管理表作成キット",
         button: "管理表を作る",
         href: "/tools/kpi-sheet-maker",
-        resource: { before: "キットを使わないなら", label: "KPI管理表", after: "をDLして直接記入", href: "/resources/kpi-management-template" },
+        resource: { before: "キットを使わないなら", label: "KPI管理表", after: "をDLして直接記入", href: "/lab/whitepapers/kpi-management-template" },
       },
       {
         icon: "scan-search",
@@ -141,7 +141,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "KPI妥当性診断キット",
         button: "診断する",
         href: "/tools/kpi-check",
-        resource: { before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/resources/kpi-management-template" },
+        resource: { before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kpi-management-template" },
       },
       {
         icon: "file-chart-column",
@@ -150,7 +150,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "施策効果診断キット",
         button: "診断する",
         href: "/tools/kpi-analysis",
-        resource: { before: "先に", label: "KPI管理表", after: "をDLしておくと、読み込むだけで使えます", href: "/resources/kpi-management-template" },
+        resource: { before: "先に", label: "KPI管理表", after: "をDLしておくと、読み込むだけで使えます", href: "/lab/whitepapers/kpi-management-template" },
       },
     ],
   },

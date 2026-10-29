@@ -86,9 +86,9 @@ export function getTagSlug(name: string): string {
   return getTagByName(name)?.slug || toRouteSlug(name);
 }
 
-/** タグページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /blog/tag/roi */
+/** タグページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /lab/tag/roi */
 export function getTagPath(name: string): string {
-  return `/blog/tag/${encodeURIComponent(getTagSlug(name))}`;
+  return `/lab/tag/${encodeURIComponent(getTagSlug(name))}`;
 }
 
 /** マスターカテゴリDBの全カテゴリ（Notion側の並び順のまま）。 */
@@ -108,9 +108,9 @@ export function getCategorySlug(name: string): string {
   return getCategoryByName(name)?.slug || toRouteSlug(name);
 }
 
-/** カテゴリページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /blog/category/strategy */
+/** カテゴリページのパス（先頭スラッシュ付き・末尾スラッシュなし）。例: /lab/category/strategy */
 export function getCategoryPath(name: string): string {
-  return `/blog/category/${encodeURIComponent(getCategorySlug(name))}`;
+  return `/lab/category/${encodeURIComponent(getCategorySlug(name))}`;
 }
 
 /** マスターサブカテゴリDBの全サブカテゴリ（「並び順」の小さい順）。 */

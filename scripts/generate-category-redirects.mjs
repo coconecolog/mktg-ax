@@ -1,15 +1,19 @@
 // カテゴリページを英字Slug化したことに伴う、旧URL（日本語）→新URL（英字）の301リダイレクトを生成する。
-// `astro build` の後に実行し、dist/_redirects（Cloudflare Pagesのリダイレクト定義）の末尾へ追記する。
+// `astro build` の後に実行し、dist/_redirects（Cloudflare Pagesのリダイレクト定義）の先頭へ書き込む。
+// 先頭に置くのは、Cloudflare Pagesでは「上にあるルールが優先」かつ「静的ルールは動的ルール（:placeholder・*）より前に書く」
+// 決まりのため（2026-10-29 URL構造の変更で /blog/category/:cat → /lab/category/:cat の動的ルールを足したので、
+// 日本語URLの行がそれより後ろにあると、日本語のまま /lab/category/{日本語}（404）へ飛んでしまう）。
 // タグ用の scripts/generate-tag-redirects.mjs と同じ方式で、このスクリプトが管理するブロックだけを
 // 目印コメントで挟んで毎回書き直す（何度実行しても重複しない。タグ側のブロックには触らない）。
 //
 // 対象: マスターカテゴリDBに英字Slugが設定されているカテゴリのうち、旧URL（カテゴリ名そのもの）と新URLが異なるもの。
-// 転送するページは、ビルド済みの dist/blog/category/{英字Slug}.html と dist/blog/category/{英字Slug}/ 配下を
+// 転送するページは、ビルド済みの dist/lab/category/{英字Slug}.html と dist/lab/category/{英字Slug}/ 配下を
 // 実際に走査して決める。2026-10-12のリニューアルでカテゴリページは1ページ（{英字Slug}.html）だけになった。
-// 旧日本語URLのページ送り・タブ（/blog/category/{日本語}/2 など）は、public/_redirects の
-// 「/blog/category/:cat/…」のルールでいったん /blog/category/{日本語} へ転送され、続けてこのブロックの行で英字URLへ転送される。
+// 2026-10-29のURL構造の変更（/blog/category → /lab/category）で、旧URL（/blog/category/{日本語}）から新URL（/lab/category/{英字}）へ
+// 1回で転送する行を書く。旧日本語URLのページ送り・タブ（/blog/category/{日本語}/2 など）は、public/_redirects の
+// 「/blog/category/:cat/…」のルールでいったん /lab/category/{日本語} へ転送されるので、その受け皿の行も書く。
 // ページ数を件数から計算しないので、1ページあたり件数（CATEGORY_TAG_PAGE_SIZE）を変えても追従する。
-// あわせて、資料DL後のサンクスページ（/resources/thanks/{カテゴリ}）の旧URL→新URLも転送する（2026-09-25追加）。
+// あわせて、資料DL後のサンクスページ（/resources/thanks/{日本語} → /lab/whitepapers/thanks/{英字}）も転送する（2026-09-25追加）。
 // 日本語URLは「そのままの文字」と「%エンコード」の2通りを書く（どちらで届いても一致するように）。
 // Cloudflare Pagesの静的リダイレクトは上限2,000行（動的リダイレクト（*）は上限100行のため使わない）。
 import fs from "node:fs";
@@ -17,7 +21,7 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, "dist");
-const CATEGORY_DIST = path.join(DIST, "blog/category");
+const CATEGORY_DIST = path.join(DIST, "lab/category");
 const START = "# >>> category-slug-redirects（scripts/generate-category-redirects.mjs が自動生成。手で編集しないこと）";
 const END = "# <<< category-slug-redirects";
 
@@ -29,7 +33,7 @@ function readJson(rel) {
   }
 }
 
-/** dist/blog/category/{slug}.html と {slug}/ 配下のHTMLから、URLの末尾部分（"", "/2", "/blog", "/blog/2" …）を集める */
+/** dist/lab/category/{slug}.html と {slug}/ 配下のHTMLから、URLの末尾部分（"", "/2" …）を集める */
 function collectTails(slug) {
   const tails = [];
   if (fs.existsSync(path.join(CATEGORY_DIST, `${slug}.html`))) tails.push("");
@@ -72,20 +76,24 @@ for (const category of postsCache.categories || []) {
     continue;
   }
   for (const tail of tails) {
-    const to = `/blog/category/${slug}${tail}`;
-    const fromRaw = `/blog/category/${oldSeg}${tail}`;
-    const fromEnc = `/blog/category/${encodeURIComponent(oldSeg)}${tail}`;
-    lines.push(`${fromRaw} ${to} 301`);
-    if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
+    const to = `/lab/category/${slug}${tail}`;
+    for (const base of ["/blog/category", "/lab/category"]) {
+      const fromRaw = `${base}/${oldSeg}${tail}`;
+      const fromEnc = `${base}/${encodeURIComponent(oldSeg)}${tail}`;
+      lines.push(`${fromRaw} ${to} 301`);
+      if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
+    }
   }
 
   // サンクスページ（noindex・サイトマップ対象外。ブックマーク等で旧URLに来た場合の保険）
-  if (fs.existsSync(path.join(DIST, "resources/thanks", `${slug}.html`))) {
-    const to = `/resources/thanks/${slug}`;
-    const fromRaw = `/resources/thanks/${oldSeg}`;
-    const fromEnc = `/resources/thanks/${encodeURIComponent(oldSeg)}`;
-    lines.push(`${fromRaw} ${to} 301`);
-    if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
+  if (fs.existsSync(path.join(DIST, "lab/whitepapers/thanks", `${slug}.html`))) {
+    const to = `/lab/whitepapers/thanks/${slug}`;
+    for (const base of ["/resources/thanks", "/lab/whitepapers/thanks"]) {
+      const fromRaw = `${base}/${oldSeg}`;
+      const fromEnc = `${base}/${encodeURIComponent(oldSeg)}`;
+      lines.push(`${fromRaw} ${to} 301`);
+      if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
+    }
   }
 }
 
@@ -101,9 +109,10 @@ const endIdx = existing.indexOf(END);
 if (startIdx !== -1 && endIdx !== -1) {
   existing = (existing.slice(0, startIdx) + existing.slice(endIdx + END.length)).trimEnd();
 }
-const block = lines.length > 0 ? `\n\n${START}\n${lines.join("\n")}\n${END}\n` : "\n";
+// 先頭に置く（静的ルールは動的ルールより前。理由はファイル冒頭のコメント）
+const block = lines.length > 0 ? `${START}\n${lines.join("\n")}\n${END}\n\n` : "";
 fs.mkdirSync(path.dirname(redirectsPath), { recursive: true });
-const output = existing.trimEnd() + block;
+const output = (block + existing.trim()).replace(/\n{3,}/g, "\n\n") + "\n";
 fs.writeFileSync(redirectsPath, output, "utf-8");
 
 console.log(`[category-redirects] 301リダイレクト ${lines.length} 行を dist/_redirects に書き出しました。`);

@@ -32,7 +32,7 @@ function toIsoDateTime(value: string | null | undefined): string | undefined {
 }
 
 export function buildArticleSchema(post: Post) {
-  const url = new URL(`/blog/${post.slug}`, SITE_URL).toString();
+  const url = new URL(`/lab/blog/${post.slug}`, SITE_URL).toString();
   const imageUrl = post.thumbnail ? new URL(post.thumbnail, SITE_URL).toString() : undefined;
 
 return {
@@ -226,7 +226,7 @@ export function buildTagPageSchema(params: {
   tagName: string;
   pageTitle: string;
   description: string;
-  path: string; // 例: /blog/tag/ROI
+  path: string; // 例: /lab/tag/ROI
   items: TagSchemaItem[]; // このページに表示している記事・資料
   itemsStartIndex: number; // 0始まり。ページネーション2ページ目以降の position 連番用
   totalItems: number;
@@ -313,7 +313,7 @@ export function buildResourceSchema(params: {
   authorName: string | null;
 }) {
   const { title, description, slug, thumbnail, fileUrl, tags, publishedAt, updatedAt, authorName } = params;
-  const url = new URL(`/resources/${slug}`, SITE_URL).toString();
+  const url = new URL(`/lab/whitepapers/${slug}`, SITE_URL).toString();
   const imageUrl = thumbnail ? new URL(thumbnail, SITE_URL).toString() : undefined;
   const isPdf = !!fileUrl && /\.pdf(\?|$)/i.test(fileUrl);
   return {

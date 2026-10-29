@@ -34,7 +34,7 @@ const STORE = "mktgax-kpi-check-v3";
 const OLD_KEYS = ["mktgax-kpi-check-v1", "mktgax-kpi-check-registered", "mktgax-kpi-check-last"];
 const LIB_PDF = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
 const LIB_CANVAS = "https://cdn.jsdelivr.net/npm/html2canvas-pro@2.5.0/dist/html2canvas-pro.min.js";
-const KPI_SHEET_URL = "/resources/kpi-management-template";
+const KPI_SHEET_URL = "/lab/whitepapers/kpi-management-template";
 const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", "labor"];
 const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
 

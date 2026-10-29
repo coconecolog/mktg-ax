@@ -42,11 +42,11 @@ const focusSteps = getSubcategoriesByCategory(HOME_FOCUS.category)
     let link: { kind: "post" | "resource"; title: string; href: string } | null = null;
     const repPost = sub.representativePostId ? allPosts.find((p) => p.id === sub.representativePostId) : undefined;
     if (repPost) {
-      link = { kind: "post", title: repPost.title, href: `/blog/${repPost.slug}` };
+      link = { kind: "post", title: repPost.title, href: `/lab/blog/${repPost.slug}` };
     } else {
       const repResource = sub.representativeResourceId ? getResourceById(sub.representativeResourceId) : undefined;
       if (repResource) {
-        link = { kind: "resource", title: repResource.title, href: `/resources/${repResource.slug}` };
+        link = { kind: "resource", title: repResource.title, href: `/lab/whitepapers/${repResource.slug}` };
       } else {
         const latest = focusItems.find((item) => item.subcategoryIds.includes(sub.id));
         if (latest) link = { kind: latest.kind, title: latest.title, href: latest.href };
@@ -193,7 +193,7 @@ const latestPosts = getLibraryItems("post")
               {/* 関連資料（tools の resourceSlug。資料DBから題名・公開日・説明を表示） */}
               {tool.resource && (
                 <div class="mt-6 grid grid-cols-[72px_minmax(0,1fr)] gap-4">
-                  <a href={`/resources/${tool.resource.slug}`} class="block" aria-hidden="true" tabindex="-1">
+                  <a href={`/lab/whitepapers/${tool.resource.slug}`} class="block" aria-hidden="true" tabindex="-1">
                     <div class="aspect-[3/4] w-full border border-neutral-200 bg-white p-2">
                       <p class="text-[0.45rem] font-bold">MKTG.AX</p>
                       <div class="mt-1 h-[2px] bg-ink-950"></div>
@@ -209,12 +209,12 @@ const latestPosts = getLibraryItems("post")
                       {HOME_FOCUS.resourceTypeLabel}　/　{formatDate(tool.resource.publishedAt)}
                     </p>
                     <p class="mt-1.5 font-extrabold leading-snug">
-                      <a href={`/resources/${tool.resource.slug}`} class="hover:underline">{tool.resource.title}</a>
+                      <a href={`/lab/whitepapers/${tool.resource.slug}`} class="hover:underline">{tool.resource.title}</a>
                     </p>
                     {tool.resource.description && (
                       <p class="mt-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-600">{tool.resource.description}</p>
                     )}
-                    <a href={`/resources/${tool.resource.slug}`} class="mt-2 inline-flex items-center gap-2 text-sm font-bold hover:underline">
+                    <a href={`/lab/whitepapers/${tool.resource.slug}`} class="mt-2 inline-flex items-center gap-2 text-sm font-bold hover:underline">
                       {HOME_FOCUS.resourceCtaLabel}
                       <span aria-hidden="true">→</span>
                     </a>

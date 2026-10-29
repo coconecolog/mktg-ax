@@ -1,32 +1,85 @@
-# 記事スラッグ変更に伴う301リダイレクト（末尾スラッシュ統一ルールより前に書くこと）
-/blog/ma-roi   /blog/marketing-roi 301
-/blog/ma-roi/  /blog/marketing-roi 301
-/blog/ma-person-dependent   /blog/marketing-talent-development 301
-/blog/ma-person-dependent/  /blog/marketing-talent-development 301
-/blog/advertising-expense-to-sales-ratio  /blog/marketing-budget-justification 301
-/blog/advertising-expense-to-sales-ratio/  /blog/marketing-budget-justification 301
-# 2026-10-12 ライブラリ・カテゴリページのリニューアルで廃止したURLの301リダイレクト（末尾スラッシュ統一ルールより前に書くこと）
-# ライブラリ: ページ送り・「ブログ記事」「無料資料」タブはページ内の絞り込み（/library?type=…）に統合
-/library/blog            /library?type=post 301
-/library/blog/*          /library?type=post 301
-/library/resources       /library?type=resource 301
-/library/resources/*     /library?type=resource 301
-/library/*               /library 301
-# カテゴリ: ページ送り（/2…）・「ブログ記事」「無料資料」タブは、カテゴリトップ1ページに統合
-/blog/category/:cat/blog        /blog/category/:cat 301
-/blog/category/:cat/blog/*      /blog/category/:cat 301
-/blog/category/:cat/resources   /blog/category/:cat 301
-/blog/category/:cat/resources/* /blog/category/:cat 301
-/blog/category/:cat/:page       /blog/category/:cat 301
-# 2026-10-15 タグページのリニューアルで廃止したURLの301リダイレクト（末尾スラッシュ統一ルールより前に書くこと）
-# タグ: ページ送り（/2…）・「ブログ記事」「無料資料」タブは、タグページ本体（/blog/tag/{slug}）1ページに統合
-/blog/tag/:tag/blog        /blog/tag/:tag 301
-/blog/tag/:tag/blog/*      /blog/tag/:tag 301
-/blog/tag/:tag/resources   /blog/tag/:tag 301
-/blog/tag/:tag/resources/* /blog/tag/:tag 301
-/blog/tag/:tag/:page       /blog/tag/:tag 301
-# 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL（ステップのページ・お知らせメールの配信停止）。末尾スラッシュ統一ルールより前に書くこと
-/tools/kpi-check/*            /tools/kpi-check 301
+# Cloudflare Pages のリダイレクト定義
+# ・上にあるルールが優先される。静的ルール（固定のURL）は動的ルール（:placeholder・*）より前に書く。
+# ・ビルド時に scripts/generate-tag-redirects.mjs・generate-category-redirects.mjs が、日本語URL→英字URLの静的ルールを
+#   dist/_redirects の先頭へ追記する（このファイルには書かない）。
+# ・2026-10-29 URL構造の変更（SEO）：/blog・/resources・/library を /lab 配下へ移した。
+#     /library                     → /lab
+#     /blog                        → /lab/blog
+#     /blog/{記事}                 → /lab/blog/{記事}
+#     /blog/category/{カテゴリ}    → /lab/category/{カテゴリ}
+#     /blog/tag/{タグ}             → /lab/tag/{タグ}
+#     /resources                   → /lab/whitepapers
+#     /resources/{資料}            → /lab/whitepapers/{資料}
+#     /resources/thanks/{カテゴリ} → /lab/whitepapers/thanks/{カテゴリ}
+#     /authors/{著者}/resources    → /authors/{著者}/whitepapers
+#   過去に作った転送（旧スラッグ・廃止したタブ）も、2回の転送にならないよう転送先を新しいURLへ直接向けている。
+
+# ===== 静的ルール =====
+
+# 記事スラッグ変更に伴う301リダイレクト
+/blog/ma-roi                                /lab/blog/marketing-roi 301
+/blog/ma-roi/                               /lab/blog/marketing-roi 301
+/blog/ma-person-dependent                   /lab/blog/marketing-talent-development 301
+/blog/ma-person-dependent/                  /lab/blog/marketing-talent-development 301
+/blog/advertising-expense-to-sales-ratio    /lab/blog/marketing-budget-justification 301
+/blog/advertising-expense-to-sales-ratio/   /lab/blog/marketing-budget-justification 301
+
+# 一覧ページ（2026-10-29 URL構造の変更）
+/library          /lab 301
+/library/         /lab 301
+/blog             /lab/blog 301
+/blog/            /lab/blog 301
+/resources        /lab/whitepapers 301
+/resources/       /lab/whitepapers 301
+
+# 2026-10-12 ライブラリのリニューアルで廃止したURL（ページ内の絞り込み /lab?type=… に統合）
+/library/blog          /lab?type=post 301
+/library/resources     /lab?type=resource 301
+
+# 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL
 /api/kpi-check-unsubscribe    /tools/kpi-check 302
-# 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（Cloudflare Pages）
+
+# ===== 動的ルール（上ほど優先。細かい条件を先に書く） =====
+
+# 2026-10-12 ライブラリのリニューアルで廃止したURL（ページ送り・タブ）
+/library/blog/*        /lab?type=post 301
+/library/resources/*   /lab?type=resource 301
+/library/*             /lab 301
+
+# カテゴリ：2026-10-12に廃止したページ送り・タブも、カテゴリトップへまとめて転送する
+/blog/category/:cat/blog          /lab/category/:cat 301
+/blog/category/:cat/blog/*        /lab/category/:cat 301
+/blog/category/:cat/resources     /lab/category/:cat 301
+/blog/category/:cat/resources/*   /lab/category/:cat 301
+/blog/category/:cat/:page         /lab/category/:cat 301
+/blog/category/:cat/              /lab/category/:cat 301
+/blog/category/:cat               /lab/category/:cat 301
+
+# タグ：2026-10-15に廃止したページ送り・タブも、タグページへまとめて転送する
+/blog/tag/:tag/blog          /lab/tag/:tag 301
+/blog/tag/:tag/blog/*        /lab/tag/:tag 301
+/blog/tag/:tag/resources     /lab/tag/:tag 301
+/blog/tag/:tag/resources/*   /lab/tag/:tag 301
+/blog/tag/:tag/:page         /lab/tag/:tag 301
+/blog/tag/:tag/              /lab/tag/:tag 301
+/blog/tag/:tag               /lab/tag/:tag 301
+
+# 記事・ブログ一覧のページ送り（/blog/2 → /lab/blog/2 もこの行で転送される）
+/blog/:slug/   /lab/blog/:slug 301
+/blog/:slug    /lab/blog/:slug 301
+
+# 資料（サンクスページを先に書く）
+/resources/thanks/:cat/   /lab/whitepapers/thanks/:cat 301
+/resources/thanks/:cat    /lab/whitepapers/thanks/:cat 301
+/resources/:slug/         /lab/whitepapers/:slug 301
+/resources/:slug          /lab/whitepapers/:slug 301
+
+# 著者ページの資料タブ
+/authors/:author/resources     /authors/:author/whitepapers 301
+/authors/:author/resources/*   /authors/:author/whitepapers/:splat 301
+
+# 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL（ステップのページ）
+/tools/kpi-check/*   /tools/kpi-check 301
+
+# 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（必ず最後に書く）
 /*/ /:splat 301

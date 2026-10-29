@@ -14,7 +14,7 @@ export default defineConfig({
   output: "static",
   trailingSlash: "never",
   // 出力を `blog/x.html` 形式（file）にする。既定の directory 形式（`blog/x/index.html`）だと
-  // Cloudflare Pages が「/blog/x → /blog/x/」へ自動リダイレクトし、canonical / サイトマップ（スラッシュなし）と矛盾する。
+  // Cloudflare Pages が「/lab/blog/x → /lab/blog/x/」へ自動リダイレクトし、canonical / サイトマップ（スラッシュなし）と矛盾する。
   build: {
     format: "file",
   },
@@ -23,9 +23,9 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      filter: (page) => !page.includes("/internal-links") && !page.includes("/resources/thanks") && !page.includes("/contact/thanks") &&
+      filter: (page) => !page.includes("/internal-links") && !page.includes("/lab/whitepapers/thanks") && !page.includes("/contact/thanks") &&
         // タグページの「ブログ記事」「無料資料」タブは本体ページへcanonicalを向けているため、サイトマップには載せない
-        !/\/blog\/tag\/[^/]+\/(blog|resources)(\/|$)/.test(page),
+        !/\/lab\/tag\/[^/]+\/(blog|whitepapers)(\/|$)/.test(page),
     }),
   ],
 });

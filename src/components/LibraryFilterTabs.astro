@@ -1,6 +1,6 @@
 ---
 // ライブラリページ・カテゴリページ共通の「すべて / ブログ記事 / 無料資料・eBook」絞り込みタブ。
-// hrefsを渡さない場合はライブラリページ（/library配下）のリンクになる。
+// hrefsを渡さない場合はライブラリページ（/lab配下）のリンクになる。
 // カテゴリページ等、別の場所で使う場合は hrefs で行き先を上書きする。
 interface Props {
   active: "all" | "post" | "resource";
@@ -10,7 +10,7 @@ interface Props {
 
 const { active, counts, hrefs } = Astro.props;
 
-const defaultHrefs = { all: "/library", post: "/library?type=post", resource: "/library?type=resource" };
+const defaultHrefs = { all: "/lab", post: "/lab?type=post", resource: "/lab?type=resource" };
 const resolvedHrefs = hrefs || defaultHrefs;
 
 const tabs = [

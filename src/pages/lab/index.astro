@@ -3,8 +3,8 @@
 // 上:「カテゴリから探す」… カテゴリごとにサブカテゴリ（テーマ）を並べ、カテゴリページの該当テーマ（#アンカー）へ案内する
 // 下:「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う
 // 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
-// 「記事だけ」「資料だけ」の一覧へも /library?type=post・/library?type=resource でリンクできる。
-// 旧URL（/library/2・/library/blog・/library/resources）は public/_redirects でここへ301転送している。
+// 「記事だけ」「資料だけ」の一覧へも /lab?type=post・/lab?type=resource でリンクできる。
+// 旧URL（/library・/library/2・/library/blog・/library/resources）は public/_redirects でここへ301転送している。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
@@ -37,7 +37,7 @@ const pageDescription =
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/library" },
+  { name: "ライブラリ（記事・資料）", href: "/lab" },
 ];
 ---
 
