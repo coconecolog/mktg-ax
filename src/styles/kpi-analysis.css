@@ -43,7 +43,6 @@
 /* KPI管理表をお持ちでない方へ（資料のサムネイル＋文＋ボタン） */
 .ka-dl { display: flex; align-items: center; gap: 14px; border: 1px solid var(--line); background: var(--bg); padding: 14px 16px; margin-top: 12px; flex-wrap: wrap; }
 .ka-doc { flex: 0 0 auto; width: 58px; height: 76px; background: #fff; border: 1px solid var(--line); padding: 7px 6px; display: flex; flex-direction: column; gap: 3px; }
-.ka-doc small { font-size: 6px; font-weight: 800; letter-spacing: 0.02em; }
 .ka-doc i { display: block; height: 2px; background: var(--ink); }
 .ka-doc b { font-size: 7.5px; font-weight: 800; margin-top: 3px; line-height: 1.2; }
 .ka-doc em { display: block; height: 3px; background: var(--calc); }
