@@ -14,6 +14,7 @@ import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
 import { getCategoryGuide } from "@/lib/library";
+import { getCategoryMeerkat } from "@/lib/categoryMeerkat";
 import { buildCollectionPageSchema, buildFaqSchema } from "@/lib/schema";
 
 export const getStaticPaths = (() => {
@@ -46,15 +47,8 @@ function relatedFor(index: number) {
     }));
 }
 
-// カテゴリごとのミーアキャット（2026-10-29）。カテゴリ名の語で決める（「戦略・市場分析」に「分析」が含まれるため、戦略を先に判定する）
-const MEERKATS: [string, string][] = [
-  ["戦略", "/images/meerkat/standing.svg"],
-  ["予算", "/images/meerkat/circle.svg"],
-  ["KPI", "/images/meerkat/flask-hold.svg"],
-  ["組織", "/images/meerkat/parent-child.svg"],
-  ["分析", "/images/meerkat/in-flask.svg"],
-];
-const meerkat = MEERKATS.find(([word]) => category.name.includes(word))?.[1] ?? null;
+// カテゴリごとのミーアキャット（src/lib/categoryMeerkat.ts。サービスページと共通）
+const meerkat = getCategoryMeerkat(category.name);
 
 // 検索の「形式」ボタン（/lab と同じ形。件数はカテゴリ内の重複なしの件数）
 const kindFilters = [
