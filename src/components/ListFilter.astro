@@ -1,0 +1,167 @@
+---
+// 一覧ページ（資料一覧・ブログ）の絞り込みバー（2026-10-29追加）。
+// 左に「カテゴリ」、右に「キーワード検索」を1行で並べる（スマホでは2段）。
+//
+// 絞り込む対象は target で指定した要素の中の [data-row]。各行には次の属性を付けておく。
+//   data-categories … カテゴリ名を「|」区切りで（例: "KPI・効果測定|予算配分・投資判断"）
+//   data-search     … キーワード検索の対象にする文字列（タイトル・説明・カテゴリ名など）
+//   data-paged-out  … 絞り込みをしていないときに隠しておく行（ページ送りで2ページ目以降に出る行）
+// ページ内に次の要素があれば、あわせて切り替える。
+//   [data-filter-status] … 件数の表示（絞り込み中は「条件に合う◯◯ N件」にする）
+//   [data-filter-empty]  … 0件のときに出すメッセージ
+//   [data-filter-off]    … 絞り込み中は隠す要素（ページ送りなど）
+//
+// mode="redirect" のときはページ内で絞り込まず、action のURLへ移動する（ブログの2ページ目以降で使う）。
+// 状態はURLのクエリ（?category=kpi-measurement&q=予算）と同期するので、絞り込んだ一覧へリンクできる。
+import { getAllCategories, getCategorySlug } from "@/lib/posts";
+
+interface Props {
+  /** 絞り込む行を含む要素のセレクター（例: "[data-filter-list]"） */
+  target?: string;
+  /** フォームの送信先（redirect のときに移動するURL） */
+  action: string;
+  /** 検索欄の例文 */
+  placeholder: string;
+  /** 件数表示の単位（「条件に合う資料 3件」の「資料」） */
+  unit: string;
+  mode?: "inline" | "redirect";
+}
+
+const { target = "[data-filter-list]", action, placeholder, unit, mode = "inline" } = Astro.props;
+const categories = getAllCategories().map((c) => ({ name: c.name, slug: getCategorySlug(c.name) }));
+---
+
+<form
+  data-list-filter
+  data-target={target}
+  data-mode={mode}
+  data-unit={unit}
+  action={action}
+  method="get"
+  role="search"
+  class="mt-8 bg-neutral-100 p-4 sm:p-5"
+>
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-5">
+    <div class="flex items-center gap-3">
+      <label for="list-filter-category" class="shrink-0 text-xs font-bold text-ink-950">カテゴリ</label>
+      <select
+        id="list-filter-category"
+        name="category"
+        data-filter-category
+        class="h-12 min-w-0 flex-1 border border-neutral-300 bg-white px-3 text-sm text-ink-950 md:w-48 md:flex-none"
+      >
+        <option value="">すべてのカテゴリ</option>
+        {categories.map((c) => <option value={c.slug} data-name={c.name}>{c.name}</option>)}
+      </select>
+      <button
+        type="button"
+        data-filter-clear
+        class="shrink-0 text-xs text-neutral-500 underline-offset-2 hover:text-ink-950 hover:underline"
+      >
+        条件をクリア
+      </button>
+    </div>
+
+    <div class="flex min-w-0 flex-1 gap-2">
+      <label class="flex h-12 min-w-0 flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 focus-within:border-ink-950">
+        <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+        <span class="sr-only">キーワードで検索</span>
+        <input
+          type="search"
+          name="q"
+          data-filter-q
+          placeholder={placeholder}
+          class="w-full min-w-0 bg-transparent text-sm text-ink-950 placeholder:text-neutral-400 focus:outline-none"
+        />
+      </label>
+      <button type="submit" class="h-12 shrink-0 bg-ink-950 px-6 text-sm font-bold text-white hover:opacity-90">検索する</button>
+    </div>
+  </div>
+</form>
+
+<script>
+  const normalize = (text: string) => text.normalize("NFKC").toLowerCase().trim();
+
+  document.querySelectorAll<HTMLFormElement>("form[data-list-filter]").forEach((form) => {
+    const categorySelect = form.querySelector<HTMLSelectElement>("[data-filter-category]")!;
+    const qInput = form.querySelector<HTMLInputElement>("[data-filter-q]")!;
+    const clearButton = form.querySelector<HTMLButtonElement>("[data-filter-clear]")!;
+    const params = new URLSearchParams(location.search);
+
+    // 移動するだけのモード（ブログの2ページ目以降）：カテゴリを選んだら送信する
+    if (form.dataset.mode === "redirect") {
+      categorySelect.addEventListener("change", () => form.requestSubmit());
+      // 空の条件はURLに載せない
+      form.addEventListener("submit", () => {
+        if (!qInput.value.trim()) qInput.disabled = true;
+        if (!categorySelect.value) categorySelect.disabled = true;
+      });
+      clearButton.addEventListener("click", () => {
+        categorySelect.value = "";
+        qInput.value = "";
+      });
+      return;
+    }
+
+    const list = document.querySelector<HTMLElement>(form.dataset.target || "[data-filter-list]");
+    if (!list) return;
+    const rows = Array.from(list.querySelectorAll<HTMLElement>("[data-row]"));
+    const searchIndex = new Map(rows.map((row) => [row, normalize(row.dataset.search || "")]));
+    const status = document.querySelector<HTMLElement>("[data-filter-status]");
+    const defaultStatus = status?.textContent || "";
+    const empty = document.querySelector<HTMLElement>("[data-filter-empty]");
+    const offWhileFiltering = Array.from(document.querySelectorAll<HTMLElement>("[data-filter-off]"));
+    const unit = form.dataset.unit || "";
+
+    // URLのクエリから初期状態を読む
+    const categoryParam = params.get("category") || "";
+    if (Array.from(categorySelect.options).some((o) => o.value === categoryParam)) categorySelect.value = categoryParam;
+    qInput.value = params.get("q") || "";
+
+    function writeUrl() {
+      const next = new URLSearchParams();
+      if (categorySelect.value) next.set("category", categorySelect.value);
+      if (qInput.value.trim()) next.set("q", qInput.value.trim());
+      const query = next.toString();
+      history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}${location.hash}`);
+    }
+
+    function render() {
+      const categoryName = categorySelect.selectedOptions[0]?.dataset.name || "";
+      const words = normalize(qInput.value).split(/\s+/).filter(Boolean);
+      const filtering = Boolean(categoryName || words.length);
+
+      let matched = 0;
+      rows.forEach((row) => {
+        if (!filtering) {
+          row.hidden = row.hasAttribute("data-paged-out");
+          return;
+        }
+        const inCategory = !categoryName || (row.dataset.categories || "").split("|").includes(categoryName);
+        const text = searchIndex.get(row) || "";
+        const hit = inCategory && words.every((w) => text.includes(w));
+        row.hidden = !hit;
+        if (hit) matched++;
+      });
+
+      if (status) status.textContent = filtering ? `条件に合う${unit} ${matched}件` : defaultStatus;
+      if (empty) empty.hidden = !filtering || matched > 0;
+      offWhileFiltering.forEach((el) => (el.hidden = filtering));
+      writeUrl();
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      render();
+    });
+    qInput.addEventListener("input", render);
+    categorySelect.addEventListener("change", render);
+    clearButton.addEventListener("click", () => {
+      categorySelect.value = "";
+      qInput.value = "";
+      render();
+    });
+
+    render();
+  });
+</script>
