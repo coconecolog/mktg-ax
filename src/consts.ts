@@ -61,7 +61,7 @@ export const NAV_LINKS = [
   { href: "/contact", label: "お問い合わせ", children: [] },
 ] as const;
 
-export const POSTS_PER_PAGE = 10;
+export const POSTS_PER_PAGE = 12; // 記事一覧は3列なので3の倍数にする（2026-10-29）
 
 // カテゴリページで1ページに表示する記事数（ブログ一覧とは別に6件区切りにしたいため分けている）
 export const CATEGORY_TAG_PAGE_SIZE = 6;

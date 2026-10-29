@@ -1,4 +1,5 @@
 ---
+// ページ送り（2026-10-29：/lab のページ送りと同じ見た目に変更。角なし・墨色、ページが多いときは「1 … 前後 … 最終」で表示）
 import type { Page } from "astro";
 
 interface Props {
@@ -12,42 +13,47 @@ function pageUrl(n: number): string {
   return n <= 1 ? basePath : `${basePath}/${n}`;
 }
 
-const pages = Array.from({ length: page.lastPage }, (_, i) => i + 1);
+// 7ページ以内なら全部、それ以上は「1 … 前後 … 最終」の形にする（null は「…」）
+const current = page.currentPage;
+const total = page.lastPage;
+const pages: (number | null)[] = [];
+if (total <= 7) {
+  for (let p = 1; p <= total; p++) pages.push(p);
+} else {
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  pages.push(1);
+  if (start > 2) pages.push(null);
+  for (let p = start; p <= end; p++) pages.push(p);
+  if (end < total - 1) pages.push(null);
+  pages.push(total);
+}
 ---
 
 {
-  page.lastPage > 1 && (
-    <nav aria-label="ページネーション" class="mt-12 flex items-center justify-center gap-2">
-      {page.url.prev ? (
-        <a href={page.url.prev} class="rounded-full border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 hover:border-brand-300 hover:text-brand-700">
-          前へ
-        </a>
-      ) : (
-        <span class="rounded-full border border-neutral-100 px-4 py-2 text-sm font-medium text-neutral-300">前へ</span>
+  total > 1 && (
+    <nav aria-label="ページ送り" class="mt-12 flex flex-wrap items-center justify-center gap-2 text-sm">
+      {page.url.prev && (
+        <a href={page.url.prev} class="px-2 py-2 text-ink-950 hover:underline">← 前へ</a>
       )}
-
-      <ul class="flex items-center gap-1">
-        {pages.map((n) => (
-          <li>
-            <a
-              href={pageUrl(n)}
-              aria-current={n === page.currentPage ? "page" : undefined}
-              class={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium ${
-                n === page.currentPage ? "bg-brand-600 text-white" : "text-neutral-600 hover:bg-neutral-50"
-              }`}
-            >
-              {n}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      {page.url.next ? (
-        <a href={page.url.next} class="rounded-full border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 hover:border-brand-300 hover:text-brand-700">
-          次へ
-        </a>
-      ) : (
-        <span class="rounded-full border border-neutral-100 px-4 py-2 text-sm font-medium text-neutral-300">次へ</span>
+      {pages.map((n) =>
+        n === null ? (
+          <span class="px-2 text-neutral-300">…</span>
+        ) : (
+          <a
+            href={pageUrl(n)}
+            aria-current={n === current ? "page" : undefined}
+            aria-label={`${n}ページ目`}
+            class={`flex h-9 min-w-9 items-center justify-center border px-2 tabular-nums ${
+              n === current ? "border-ink-950 bg-ink-950 text-white" : "border-neutral-300 bg-white text-ink-950 hover:border-ink-950"
+            }`}
+          >
+            {n}
+          </a>
+        ),
+      )}
+      {page.url.next && (
+        <a href={page.url.next} class="px-2 py-2 text-ink-950 hover:underline">次へ →</a>
       )}
     </nav>
   )
