@@ -32,7 +32,11 @@ const links = [
   title="お問い合わせありがとうございました"
   description="お問い合わせを受け付けました。担当者よりメールでご連絡いたします。"
   noindex
-    <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 md:pb-20">
+  pagefindIgnore
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 md:pb-20">
     <!-- お礼（/lab と同じH1まわりの形） -->
     <div class="flex items-center justify-between gap-8">
       <div>
@@ -92,11 +96,6 @@ const links = [
           ))
         }
       </ul>
-    </section>
-  </div>
-         ))
-        }
-      </div>
     </section>
   </div>
 </BaseLayout>
