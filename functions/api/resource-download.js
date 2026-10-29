@@ -189,7 +189,7 @@ export async function onRequestPost({ request, env }) {
           to: notifyTo,
           // 通知メールにそのまま「返信」すればDLした本人に届くようにする
           reply_to: email,
-          subject: `【MeerKitLab 資料DL】${resourceTitle || "資料"}（${name} 様）`,
+          subject: `【通知：MeerKitLab 資料DL】${resourceTitle || "資料"}（${name} 様）`,
           html: notifyHtml,
         }),
       });

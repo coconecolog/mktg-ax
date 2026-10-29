@@ -151,7 +151,7 @@ export async function onRequestPost({ request, env }) {
         to: CONTACT_NOTIFY_TO.split(",").map((s) => s.trim()).filter(Boolean),
         // 通知メールにそのまま「返信」すれば問い合わせ者本人に届くようにする
         reply_to: email,
-        subject: `【MeerKitLab お問い合わせ】${inquiryType}（${name} 様）`,
+        subject: `【通知：MeerKitLab お問い合わせ】${inquiryType}（${name} 様）`,
         html,
       }),
     });
