@@ -74,6 +74,10 @@
 /resources/:slug/         /lab/whitepapers/:slug 301
 /resources/:slug          /lab/whitepapers/:slug 301
 
+# 配布済みのPDF資料に書かれていた /download/{資料} のリンク（2026-10-29 ドメイン変更時に資料側は /lab/whitepapers/ へ直した）
+/download/:slug/          /lab/whitepapers/:slug 301
+/download/:slug           /lab/whitepapers/:slug 301
+
 # 著者ページの資料タブ
 /authors/:author/resources     /authors/:author/whitepapers 301
 /authors/:author/resources/*   /authors/:author/whitepapers/:splat 301

@@ -11,7 +11,7 @@ function renderPage({ title, message }) {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>${title} | MKTG.AX</title>
+<title>${title} | MeerKitLab</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background:#FAF9F9; margin:0; padding:0; }
   .card { max-width: 480px; margin: 96px auto; background:#fff; border-radius:16px; padding:40px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align:center; }

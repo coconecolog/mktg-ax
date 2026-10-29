@@ -1,4 +1,4 @@
-# MKTG.AX サイト運用ガイド
+# MeerKitLab サイト運用ガイド
 
 このリポジトリは、Notion に書いた記事を Astro + Tailwind CSS でサイト化し、GitHub Actions 経由で Cloudflare Pages に自動デプロイする仕組みです。
 
@@ -61,9 +61,9 @@ Cloudflare Pages（本番サイト）
    | `CLOUDFLARE_API_TOKEN` | 2-2の手順3で発行したAPIトークン |
    | `CLOUDFLARE_ACCOUNT_ID` | 2-2の手順1で控えたアカウントID |
 
-   （`PUBLIC_SITE_URL` / `PUBLIC_GA4_ID` / `PUBLIC_CLARITY_ID` / `PUBLIC_GSC_VERIFICATION` は任意。設定しなくても `https://mktg-ax.pages.dev` で動きます。詳しくは4章。）
+   （`PUBLIC_SITE_URL` / `PUBLIC_GA4_ID` / `PUBLIC_CLARITY_ID` / `PUBLIC_GSC_VERIFICATION` は任意。設定しなくても `https://meerkitlab.com` で動きます。詳しくは4章。）
 
-3. Actionsタブ →「Deploy to Cloudflare Pages」→「Run workflow」で初回デプロイを実行する。数分待つと `https://mktg-ax.pages.dev` でサイトが公開されます。
+3. Actionsタブ →「Deploy to Cloudflare Pages」→「Run workflow」で初回デプロイを実行する。数分待つと `https://meerkitlab.com` でサイトが公開されます。
 
 ---
 
@@ -77,12 +77,12 @@ Notionでいつもどおり記事を書き、「公開」チェックをONにす
 
 ## 4. サイトURL・独自ドメインについて
 
-現在のサイトURLは `astro.config.mjs` と `src/consts.ts` の両方に `https://mktg-ax.pages.dev` として設定してあります。**この値は「内部リンクが正しいURLか」の判定などに使われる重要な値なので、絶対に空欄やダミー文字列のままにしないでください。**
+現在のサイトURLは `astro.config.mjs` と `src/consts.ts` の両方に `https://meerkitlab.com` として設定してあります。**この値は「内部リンクが正しいURLか」の判定などに使われる重要な値なので、絶対に空欄やダミー文字列のままにしないでください。**
 
 独自ドメインを設定したときは、以下の**両方**を新しいURLに書き換えてください（漏れると内部リンク判定やOGP・サイトマップがおかしくなります）。
 
-- `astro.config.mjs` … `const SITE_URL = process.env.PUBLIC_SITE_URL || "https://mktg-ax.pages.dev";` の右側
-- `src/consts.ts` … `export const SITE_URL = ... || "https://mktg-ax.pages.dev";` の右側
+- `astro.config.mjs` … `const SITE_URL = process.env.PUBLIC_SITE_URL || "https://meerkitlab.com";` の右側
+- `src/consts.ts` … `export const SITE_URL = ... || "https://meerkitlab.com";` の右側
 
 （GitHub Secretsに `PUBLIC_SITE_URL` を登録する方法でも上書きできますが、ファイルを直接書き換えるほうが分かりやすいのでおすすめです。）
 

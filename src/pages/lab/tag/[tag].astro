@@ -81,7 +81,7 @@ const articlesHeading = `${tagName}に関する記事・資料`;
 const sideToc = [{ anchor: ARTICLES_ANCHOR, text: shortLabel(articlesHeading) }, ...headings.map((h) => ({ anchor: h.anchor, text: shortLabel(h.text) }))];
 
 // ---- SEO ----
-// titleタグ。マスタータグDBの「SEOタイトル」を使う（末尾の「 | MKTG.AX」はSEO.astroが自動で付ける）。
+// titleタグ。マスタータグDBの「SEOタイトル」を使う（末尾の「 | MeerKitLab」はSEO.astroが自動で付ける）。
 const pageTitle = tagInfo?.seoTitle || `${tagName}とは？意味・解説と関連記事・資料一覧`;
 // meta description。マスタータグDBの「ディスクリプション」→ 無ければ説明文の先頭120字 → 無ければ定型文
 const definition = (tagInfo?.description || "").trim();

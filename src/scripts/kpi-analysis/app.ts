@@ -87,7 +87,7 @@ function render() {
   html.push(sectionC(a));
   html.push(sectionD(a));
   html.push(howHtml());
-  html.push(`<p class="ka-pdffoot">施策効果診断キット｜MKTG.AX　mktg.ax/tools/kpi-analysis　確率はベイズ推定による目安です</p>`);
+  html.push(`<p class="ka-pdffoot">施策効果診断キット｜MeerKitLab　meerkitlab.com/tools/kpi-analysis　確率はベイズ推定による目安です</p>`);
   $("ka-report")!.innerHTML = html.join("");
   bindReport();
 }

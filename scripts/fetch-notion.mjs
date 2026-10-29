@@ -265,9 +265,9 @@ async function fetchTags(token, linkMap) {
       slug = slugRaw;
       usedSlugs.add(slugRaw);
     }
-    // titleタグ。末尾に「| MKTG.AX」を書いてしまっても二重にならないよう取り除く。
+    // titleタグ。末尾に「| MeerKitLab」を書いてしまっても二重にならないよう取り除く。
     const seoTitle =
-      getRichTextPlain(page, TAG_PROP.seoTitle).trim().replace(/\s*[|｜]\s*MKTG\.AX\s*$/i, "") || null;
+      getRichTextPlain(page, TAG_PROP.seoTitle).trim().replace(/\s*[|｜]\s*(MeerKitLab|MKTG\.AX)\s*$/i, "") || null;
     if (!seoTitle) {
       console.warn(`[fetch-notion] タグ「${name}」にSEOタイトルが未設定です（仮のタイトルになります）。`);
     }

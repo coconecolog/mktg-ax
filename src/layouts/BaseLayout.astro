@@ -28,7 +28,7 @@ const { title, description, ogImage, noindex, jsonLd, pagefindIgnore, canonicalP
 const toolPath = Astro.url.pathname.replace(/\/index(\.html)?$/, "").replace(/\.html$/, "").replace(/\/+$/, "");
 const toolSchema = /^\/tools\/[^/]+$/.test(toolPath)
   ? buildToolSchema({
-      name: title.replace(/\s*[|｜]\s*MKTG\.AX\s*$/, ""),
+      name: title.replace(/\s*[|｜]\s*(MeerKitLab|MKTG\.AX)\s*$/, ""),
       description,
       path: toolPath,
     })

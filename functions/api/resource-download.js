@@ -13,8 +13,8 @@
 //   SUPABASE_URL              例: https://xxxxx.supabase.co
 //   SUPABASE_SERVICE_ROLE_KEY Supabase → Settings → API → service_role キー
 //   RESEND_API_KEY            Resend → API Keys
-//   RESEND_FROM_ADDRESS       例: MKTG.AX <notify@mktg.ax>（Resendで検証済みドメインのアドレス）
-//   PUBLIC_SITE_URL           例: https://mktg.ax （末尾にスラッシュを付けない）
+//   RESEND_FROM_ADDRESS       例: MeerKitLab <notify@meerkitlab.com>（Resendで検証済みドメインのアドレス）
+//   PUBLIC_SITE_URL           例: https://meerkitlab.com （末尾にスラッシュを付けない）
 
 function isValidEmail(value) {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -125,7 +125,7 @@ export async function onRequestPost({ request, env }) {
     <p>今後のご案内が不要な場合は、以下より配信停止いただけます。<br />
     <a href="${unsubscribeUrl}">配信停止はこちら</a></p>
     <hr />
-    <p style="color:#888;font-size:12px;">MKTG.AX（${PUBLIC_SITE_URL}）</p>
+    <p style="color:#888;font-size:12px;">MeerKitLab（${PUBLIC_SITE_URL}）</p>
   `;
 
   try {
@@ -138,7 +138,7 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify({
         from: RESEND_FROM_ADDRESS,
         to: email,
-        subject: `【MKTG.AX】${resourceTitle || "資料"}のダウンロードリンク`,
+        subject: `【MeerKitLab】${resourceTitle || "資料"}のダウンロードリンク`,
         html,
       }),
     });

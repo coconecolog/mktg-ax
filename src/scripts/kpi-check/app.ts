@@ -246,7 +246,7 @@ function render() {
 
   h.push(nextHtml(d));
   h.push(howHtml());
-  h.push(`<p class="kc-pdffoot">KPI妥当性診断キット｜MKTG.AX　mktg.ax/tools/kpi-check　数字の定義：mktg.ax/standards/metrics</p>`);
+  h.push(`<p class="kc-pdffoot">KPI妥当性診断キット｜MeerKitLab　meerkitlab.com/tools/kpi-check　数字の定義：meerkitlab.com/standards/metrics</p>`);
   $("kc-report")!.innerHTML = h.join("");
 }
 
