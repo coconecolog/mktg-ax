@@ -130,7 +130,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       {
         question: "どのファイルを読み込めますか？",
         answer:
-          "MKTG.AXのKPI管理表（M-B-04）を、Excel（.xlsx）で保存したファイルです。Googleスプレッドシートで使っている場合は「ファイル → ダウンロード → Microsoft Excel（.xlsx）」で保存してください。読むのは「はじめに入力」シートだけです。自分の表で作ったKPIは、画面で入力して診断できます。",
+          "MeerKitLabのKPI管理表（M-B-04）を、Excel（.xlsx）で保存したファイルです。Googleスプレッドシートで使っている場合は「ファイル → ダウンロード → Microsoft Excel（.xlsx）」で保存してください。読むのは「はじめに入力」シートだけです。自分の表で作ったKPIは、画面で入力して診断できます。",
       },
       {
         question: "率は入れなくてよいのですか？",
@@ -159,7 +159,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       {
         question: "どのファイルを読み込めますか？",
         answer:
-          "MKTG.AXのKPI管理表（M-B-04）を、Excel（.xlsx）で保存したファイルです。Googleスプレッドシートで使っている場合は「ファイル → ダウンロード → Microsoft Excel（.xlsx）」で保存してください。読むのは「はじめに入力」「毎月の実績入力」「施策ログ」の3シートだけです。シート名は変えずに使ってください（説明の行を足したり消したりしても読めます）。",
+          "MeerKitLabのKPI管理表（M-B-04）を、Excel（.xlsx）で保存したファイルです。Googleスプレッドシートで使っている場合は「ファイル → ダウンロード → Microsoft Excel（.xlsx）」で保存してください。読むのは「はじめに入力」「毎月の実績入力」「施策ログ」の3シートだけです。シート名は変えずに使ってください（説明の行を足したり消したりしても読めます）。",
       },
       {
         question: "「確率」はどうやって出していますか？",

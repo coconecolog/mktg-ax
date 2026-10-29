@@ -18,7 +18,7 @@ const DRY_RUN = args.includes("--dry-run");
 const dateArg = args.find((a) => a.startsWith("--date="))?.slice(7);
 
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_ADDRESS } = process.env;
-const SITE = (process.env.PUBLIC_SITE_URL || "https://mktg.ax").replace(/\/+$/, "");
+const SITE = (process.env.PUBLIC_SITE_URL || "https://meerkitlab.com").replace(/\/+$/, "");
 const TOOL_URL = `${SITE}/tools/monthly-report`;
 const BEFORE_DAYS = 3;
 
@@ -100,8 +100,8 @@ function buildEmail(sub, rem) {
   const date = jpDate(rem.reportDate);
   const subject =
     rem.kind === "before"
-      ? `【MKTG.AX】月次報告まであと${BEFORE_DAYS}営業日です（${date}）`
-      : `【MKTG.AX】今日は月次報告の日です（${date}）`;
+      ? `【MeerKitLab】月次報告まであと${BEFORE_DAYS}営業日です（${date}）`
+      : `【MeerKitLab】今日は月次報告の日です（${date}）`;
   const lead =
     rem.kind === "before"
       ? `報告日の${date}まで、あと${BEFORE_DAYS}営業日です。<br />今月のリード・商談・受注の数字をそろえて、月次報告を作りましょう。`
@@ -113,8 +113,8 @@ function buildEmail(sub, rem) {
     <p style="color:#888;font-size:12px;">報告日を変えたいときは、ツールで報告日を変えて登録し直してください。<br />
     このお知らせが不要な場合は、こちらから配信を停止できます：<a href="${unsubscribeUrl}">配信停止</a></p>
     <hr />
-    <p style="color:#888;font-size:12px;">MKTG.AX（${SITE}）</p>`;
-  const text = `${lead.replace(/<br \/>/g, "\n")}\n\n先月ダウンロードしたPDFをツールで読み込むと、前月までの数字が入った状態から始められます。\n${TOOL_URL}\n\n配信停止：${unsubscribeUrl}\n\nMKTG.AX（${SITE}）`;
+    <p style="color:#888;font-size:12px;">MeerKitLab（${SITE}）</p>`;
+  const text = `${lead.replace(/<br \/>/g, "\n")}\n\n先月ダウンロードしたPDFをツールで読み込むと、前月までの数字が入った状態から始められます。\n${TOOL_URL}\n\n配信停止：${unsubscribeUrl}\n\nMeerKitLab（${SITE}）`;
   return {
     from: RESEND_FROM_ADDRESS,
     to: sub.email,

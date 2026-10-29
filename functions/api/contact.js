@@ -141,7 +141,7 @@ export async function onRequestPost({ request, env }) {
         to: CONTACT_NOTIFY_TO,
         // 通知メールにそのまま「返信」すれば問い合わせ者本人に届くようにする
         reply_to: email,
-        subject: `【MKTG.AX お問い合わせ】${inquiryType}（${name} 様）`,
+        subject: `【MeerKitLab お問い合わせ】${inquiryType}（${name} 様）`,
         html,
       }),
     });

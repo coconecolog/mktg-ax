@@ -781,7 +781,7 @@ const breadcrumbItems = [
     const footLeft = (extra: string) =>
       `着地見込み＝受注済みの累計＋進行中の商談×受注率＋期内に受注できる新規分（計画）。${extra}`;
     if (!r) {
-      return `<div class="mr-report">${head}<div class="r-empty">${problems.map(esc).join("<br />")}</div><div class="r-foot"><span>${footLeft("")}</span><span>MKTG.AX マーケ月次報告メーカー｜mktg.ax/tools/monthly-report</span></div></div>`;
+      return `<div class="mr-report">${head}<div class="r-empty">${problems.map(esc).join("<br />")}</div><div class="r-foot"><span>${footLeft("")}</span><span>MeerKitLab マーケ月次報告メーカー｜meerkitlab.com/tools/monthly-report</span></div></div>`;
     }
 
     const rows = buildTable(data, r);
@@ -907,7 +907,7 @@ const breadcrumbItems = [
         <div class="r-top">${moves}${rates}${dark}</div>
         ${table}
         <div class="r-bottom">${chart}${issueBox}</div>
-        <div class="r-foot"><span>${esc(footLeft(extras.join("")))}</span><span>MKTG.AX マーケ月次報告メーカー｜mktg.ax/tools/monthly-report</span></div>
+        <div class="r-foot"><span>${esc(footLeft(extras.join("")))}</span><span>MeerKitLab マーケ月次報告メーカー｜meerkitlab.com/tools/monthly-report</span></div>
       </div>`;
   }
 
@@ -1033,8 +1033,8 @@ const breadcrumbItems = [
     const img = await pdf.embedPng(pngBytes);
     page.drawImage(img, { x: 0, y: 0, width: W, height: H });
     pdf.setTitle(`マーケティング月次報告 ${lastReport.label}`);
-    pdf.setCreator("MKTG.AX マーケ月次報告メーカー（mktg.ax/tools/monthly-report）");
-    pdf.setProducer("MKTG.AX");
+    pdf.setCreator("MeerKitLab マーケ月次報告メーカー（meerkitlab.com/tools/monthly-report）");
+    pdf.setProducer("MeerKitLab");
     pdf.setLanguage("ja-JP");
 
     const payload = { ...data, v: DATA_VERSION, email: getRegistered() || undefined };

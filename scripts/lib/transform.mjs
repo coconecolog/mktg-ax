@@ -111,7 +111,7 @@ export const TAG_PROP = {
   // 2026-09-08にNotion側のプロパティ名を「代表記事（Slug）」から「代表記事」に変更したため追従。
   representativeSlug: "代表記事",
   // 2026-09-21追加: タグページのURL用英字Slug（テキスト。半角英小文字・数字・ハイフンのみ）と、
-  // タグページ専用のtitleタグ（テキスト。「| MKTG.AX」はサイト側で自動付与するので書かない）。
+  // タグページ専用のtitleタグ（テキスト。「| MeerKitLab」はサイト側で自動付与するので書かない）。
   slug: "Slug",
   seoTitle: "SEOタイトル",
   // 2026-10-15追加: タグページのmeta description（テキスト。120字前後）。
@@ -314,9 +314,9 @@ export function makeAnchorFactory() {
  * メンション先がマップに無い（未公開・対象外のページ等）場合はリンクなしの単なるテキストにする。
  */
 // 2026-10-29 URL構造の変更：本文に直接書かれた旧パスのリンク（/blog/…・/resources/…・/library、
-// https://mktg.ax/blog/… のような絶対URLも含む）を新しいパスへ置き換える。
+// https://meerkitlab.com/blog/… のような絶対URLも含む）を新しいパスへ置き換える。
 // 旧URLは public/_redirects で301転送しているのでリンク切れにはならないが、転送を挟まない正しいURLにしておく。
-const SITE_HOSTS = new Set(["mktg.ax", "www.mktg.ax", "mktg-ax.pages.dev"]);
+const SITE_HOSTS = new Set(["meerkitlab.com", "www.meerkitlab.com", "mktg.ax", "www.mktg.ax", "mktg-ax.pages.dev"]);
 const LEGACY_PATH_RULES = [
   [/^\/blog\/category(?=\/|$)/, "/lab/category"],
   [/^\/blog\/tag(?=\/|$)/, "/lab/tag"],

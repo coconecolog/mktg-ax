@@ -111,7 +111,7 @@ export interface Tag {
   name: string;
   /** タグページのURL用の英字Slug（半角英小文字・数字・ハイフン）。未設定・不正ならnull（タグ名がそのままURLになる）。 */
   slug: string | null;
-  /** タグページ専用のtitleタグ（「| MKTG.AX」は含まない）。未設定ならnull。 */
+  /** タグページ専用のtitleタグ（「| MeerKitLab」は含まない）。未設定ならnull。 */
   seoTitle: string | null;
   /** 「説明文」。タグページのH1直下に出す「〇〇とは」の定義文（200〜500字想定） */
   description: string;

@@ -20,7 +20,7 @@ export const STANDARD_PAGES: StandardPage[] = [
     path: "/standards",
     title: "モデル企業の全体像",
     description:
-      "MKTG.AXの記事・資料・ツールの記入例に使う、架空の製造業（従業員100名・売上15億円）の前提。導入期・成長期・安定期の3つの時期の数字と、想定する読者（ペルソナ）。",
+      "MeerKitLabの記事・資料・ツールの記入例に使う、架空の製造業（従業員100名・売上15億円）の前提。導入期・成長期・安定期の3つの時期の数字と、想定する読者（ペルソナ）。",
     lastUpdated: "2026-10-21",
     datePublished: "2026-10-20",
   },
@@ -38,7 +38,7 @@ export const STANDARD_PAGES: StandardPage[] = [
     path: "/standards/metrics",
     title: "数字の定義（KPI・予算）",
     description:
-      "MKTG.AXで使うKPI・予算の数字の定義。人件費込みの費用、目標の逆算、CPL・CAC・ROI・回収期間・CACの上限・許容CPLの式と判定の基準、撤退の判断、使わないものとその理由。",
+      "MeerKitLabで使うKPI・予算の数字の定義。人件費込みの費用、目標の逆算、CPL・CAC・ROI・回収期間・CACの上限・許容CPLの式と判定の基準、撤退の判断、使わないものとその理由。",
     lastUpdated: "2026-10-23",
     datePublished: "2026-10-20",
   },

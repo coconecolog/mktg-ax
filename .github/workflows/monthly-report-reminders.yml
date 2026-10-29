@@ -3,7 +3,7 @@ name: マーケ月次報告メーカー お知らせメール
 # 毎日 日本時間 9:07 に、報告日の3営業日前・当日の登録者へお知らせメールを送る。
 # 使うSecrets（リポジトリの Settings → Secrets and variables → Actions）:
 #   MKTG_AX_SUPABASE_URL, MKTG_AX_SUPABASE_SERVICE_ROLE_KEY,
-#   MKTG_AX_RESEND_API_KEY, MKTG_AX_RESEND_FROM_ADDRESS, MKTG_AX_PUBLIC_SITE_URL（既存）
+#   MKTG_AX_RESEND_API_KEY, MKTG_AX_RESEND_FROM_ADDRESS（既存）。サイトURLは https://meerkitlab.com を直接書いている
 on:
   schedule:
     - cron: "7 0 * * *" # UTC 0:07 = 日本時間 9:07
@@ -37,4 +37,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.MKTG_AX_SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.MKTG_AX_RESEND_API_KEY }}
           RESEND_FROM_ADDRESS: ${{ secrets.MKTG_AX_RESEND_FROM_ADDRESS }}
-          PUBLIC_SITE_URL: ${{ secrets.MKTG_AX_PUBLIC_SITE_URL }}
+          PUBLIC_SITE_URL: https://meerkitlab.com
