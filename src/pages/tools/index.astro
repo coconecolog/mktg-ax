@@ -1,6 +1,6 @@
 ---
-// キット一覧（/tools）。2026-10-28 やりたいこと別のキット構成にリニューアル。
-// 見出しまわりは /lab に合わせる。キット・その他の文言は src/data/tools.ts を編集する。
+// Kit一覧（/tools）。2026-10-28 やりたいこと別のKit構成にリニューアル。
+// 見出しまわりは /lab に合わせる。Kit・その他の文言は src/data/tools.ts を編集する。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
@@ -9,18 +9,18 @@ import { ICONS, KIT_GROUPS, OTHER_TOOLS } from "@/data/tools";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "キット一覧", href: "/tools" },
+  { name: "Kit一覧", href: "/tools" },
 ];
 
 const pageDescription =
-  "作成キットは、画面で入力しながら判定まで行います。ほかの方法で作った計画は、診断キットで確かめられます。";
+  "作成Kitは、画面で入力しながら判定まで行います。ほかの方法で作った計画は、診断Kitで確かめられます。";
 
 const schemaItems = [
   ...KIT_GROUPS.flatMap((g) => g.kits.map((k) => ({ href: k.href, title: k.name }))),
   ...OTHER_TOOLS.map((t) => ({ href: t.href, title: t.title })),
 ];
 const toolsSchema = buildCollectionPageSchema({
-  name: "キット一覧",
+  name: "Kit一覧",
   description: pageDescription,
   path: "/tools",
   items: schemaItems,
@@ -28,7 +28,7 @@ const toolsSchema = buildCollectionPageSchema({
 ---
 
 <BaseLayout
-  title="キット一覧"
+  title="Kit一覧"
   description={pageDescription}
   ogImage="/open-graph/tools.png"
   jsonLd={toolsSchema}
@@ -37,11 +37,11 @@ const toolsSchema = buildCollectionPageSchema({
   <Breadcrumb items={breadcrumbItems} />
 
   <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 text-ink-950">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">キット一覧</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">やりたいことから、キットを選ぶ。</p>
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">Kit一覧</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">やりたいことから、Kitを選ぶ。</p>
     <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
 
-    <!-- キット（予算・KPI） -->
+    <!-- Kit（予算・KPI） -->
     <div class="mt-12 grid grid-cols-1 gap-x-6 gap-y-12 md:grid-cols-2">
       {
         KIT_GROUPS.map((group) => (
