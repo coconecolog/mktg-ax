@@ -15,7 +15,7 @@
 //   SUPABASE_SERVICE_ROLE_KEY 既存のものを流用
 //   RESEND_API_KEY             既存のものを流用
 //   RESEND_FROM_ADDRESS        既存のものを流用
-//   CONTACT_NOTIFY_TO          お問い合わせ通知の送り先（新規追加が必要）
+//   CONTACT_NOTIFY_TO          お問い合わせ通知の送り先。複数のときはカンマ区切り（例: a@example.com,b@example.com）
 //
 // 事前準備: Supabaseの「SQL Editor」で supabase/contact_messages.sql を実行し、
 // contact_messages テーブルを作成しておくこと。
@@ -147,7 +147,8 @@ export async function onRequestPost({ request, env }) {
       },
       body: JSON.stringify({
         from: RESEND_FROM_ADDRESS,
-        to: CONTACT_NOTIFY_TO,
+        // 「a@example.com,b@example.com」のようにカンマ区切りで複数の宛先を書けるようにする（Resendは配列で受け取る）
+        to: CONTACT_NOTIFY_TO.split(",").map((s) => s.trim()).filter(Boolean),
         // 通知メールにそのまま「返信」すれば問い合わせ者本人に届くようにする
         reply_to: email,
         subject: `【MeerKitLab お問い合わせ】${inquiryType}（${name} 様）`,
