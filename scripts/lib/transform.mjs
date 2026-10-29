@@ -328,6 +328,7 @@ export function makeAnchorFactory() {
 // https://meerkitlab.com/blog/… のような絶対URLも含む）を新しいパスへ置き換える。
 // 旧URLは public/_redirects で301転送しているのでリンク切れにはならないが、転送を挟まない正しいURLにしておく。
 const SITE_HOSTS = new Set(["meerkitlab.com", "www.meerkitlab.com", "mktg.ax", "www.mktg.ax", "mktg-ax.pages.dev"]);
+const CANONICAL_HOST = "meerkitlab.com";
 const LEGACY_PATH_RULES = [
   [/^\/blog\/category(?=\/|$)/, "/lab/category"],
   [/^\/blog\/tag(?=\/|$)/, "/lab/tag"],
@@ -351,7 +352,12 @@ export function rewriteLegacySiteHref(href) {
     const u = new URL(href);
     if (!SITE_HOSTS.has(u.hostname)) return href;
     const next = rewriteLegacyPath(u.pathname);
-    if (next === u.pathname) return href;
+    // 2026-10-30 ドメイン変更：旧ドメイン（mktg.ax など）の絶対URLは新ドメインに置き換える
+    // （サイト内リンクとして扱われ、Cloudflareの転送も挟まなくなる）
+    const nextHost = CANONICAL_HOST;
+    if (next === u.pathname && u.hostname === nextHost && u.protocol === "https:") return href;
+    u.protocol = "https:";
+    u.hostname = nextHost;
     u.pathname = next;
     return u.toString();
   } catch {
