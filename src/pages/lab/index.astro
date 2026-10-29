@@ -1,7 +1,9 @@
 ---
-// Lab（記事・資料）トップ（2026-10-12リニューアル）。
-// 上:「カテゴリから探す」… カテゴリごとにサブカテゴリ（テーマ）を並べ、カテゴリページの該当テーマ（#アンカー）へ案内する
-// 下:「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う
+// Lab（記事・資料）トップ（2026-10-12リニューアル、2026-10-29 右ナビ化）。
+// H1エリア:右寄せでミーアキャット（public/images/logo/meerkat-symbol.svg）
+// メイン:「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う。
+//         その下に記事一覧（/lab/blog）・無料資料一覧（/lab/whitepapers）への導線
+// 右ナビ:「カテゴリから探す」（カテゴリ名のみ）→「Kitで、すぐ作る」（src/data/tools.ts の各グループの先頭Kit）。スマホではメインの下に表示
 // 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
 // 「記事だけ」「資料だけ」の一覧へも /lab?type=post・/lab?type=resource でリンクできる。
 // 旧URL（/library・/library/2・/library/blog・/library/resources）は public/_redirects でここへ301転送している。
@@ -9,7 +11,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { getLibraryItems } from "@/lib/library";
-import { getAllCategories, getCategoryPath, getCategorySlug, getSubcategoriesByCategory, getSubcategoryPath } from "@/lib/posts";
+import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
+import { KIT_GROUPS } from "@/data/tools";
 import { LIBRARY_PAGE_SIZE } from "@/consts";
 
 const items = getLibraryItems("all");
@@ -20,8 +23,10 @@ const categories = getAllCategories().map((c) => ({
   name: c.name,
   slug: getCategorySlug(c.name),
   path: getCategoryPath(c.name),
-  subcategories: getSubcategoriesByCategory(c.name).map((s) => ({ name: s.name, path: getSubcategoryPath(s) })),
 }));
+
+// 右ナビのKit誘導：各グループの先頭（予算作成Kit・KPI管理表作成Kit）
+const navKits = KIT_GROUPS.map((g) => g.kits[0]).filter(Boolean);
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo" }).replaceAll("/", ".");
@@ -45,47 +50,19 @@ const breadcrumbItems = [
   <Breadcrumb items={breadcrumbItems} />
 
   <div class="mx-auto max-w-6xl px-5 pt-10 pb-16">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">Lab（記事・資料）</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
-    <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
+    <div class="flex items-center justify-between gap-8">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">Lab（記事・資料）</h1>
+        <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
+        <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
+      </div>
+      <img src="/images/logo/meerkat-symbol.svg" alt="" width="160" height="160" class="hidden h-32 w-32 shrink-0 sm:block lg:h-40 lg:w-40" />
+    </div>
 
-    {/* カテゴリから探す */}
-    {
-      categories.length > 0 && (
-        <section class="mt-12">
-          <div class="flex flex-wrap items-end justify-between gap-2">
-            <h2 class="text-xl font-bold text-ink-950">カテゴリから探す</h2>
-            <p class="text-xs text-neutral-500">いま取り組みたいテーマを選んでください</p>
-          </div>
-          <ul class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {categories.map((c) => (
-              <li class="flex flex-col border border-neutral-300 bg-white p-4">
-                <a href={c.path} class="border-b border-neutral-300 pb-4 text-[15px] font-bold text-ink-950 hover:underline">{c.name}</a>
-                {c.subcategories.length > 0 && (
-                  <ul class="text-xs text-neutral-600">
-                    {c.subcategories.map((s) => (
-                      <li class="border-b border-neutral-200 last:border-b-0">
-                        {s.path ? (
-                          <a href={s.path} class="block py-3 leading-relaxed hover:text-ink-950 hover:underline">{s.name}</a>
-                        ) : (
-                          <span class="block py-3 leading-relaxed">{s.name}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <a href={c.path} class="group mt-auto flex items-center justify-between pt-5 text-xs font-bold text-ink-950">
-                  カテゴリを見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )
-    }
-
+    <div class="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-10">
+    <div class="min-w-0">
     {/* すべての記事・資料 */}
-    <section class="mt-14 border-t-2 border-ink-950 pt-8" data-library data-page-size={LIBRARY_PAGE_SIZE}>
+    <section class="border-t-2 border-ink-950 pt-8" data-library data-page-size={LIBRARY_PAGE_SIZE}>
       <div class="flex flex-wrap items-end justify-between gap-2">
         <h2 class="text-xl font-bold text-ink-950" id="all-items">すべての記事・資料</h2>
         <p class="text-xs text-neutral-500">カテゴリを横断して探せます</p>
@@ -175,6 +152,76 @@ const breadcrumbItems = [
 
       <nav data-pager aria-label="ページ送り" class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm"></nav>
     </section>
+
+    {/* 記事一覧・無料資料一覧への導線 */}
+    <ul class="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <li>
+        <a href="/lab/blog" class="group flex items-center justify-between border border-neutral-300 bg-white p-5 hover:border-ink-950">
+          <span>
+            <span class="block text-[15px] font-bold text-ink-950">記事一覧を見る</span>
+            <span class="mt-1 block text-xs text-neutral-500">ノウハウ記事 {counts.post}本</span>
+          </span>
+          <span aria-hidden="true" class="text-ink-950 transition-transform group-hover:translate-x-1">→</span>
+        </a>
+      </li>
+      <li>
+        <a href="/lab/whitepapers" class="group flex items-center justify-between border border-neutral-300 bg-white p-5 hover:border-ink-950">
+          <span>
+            <span class="block text-[15px] font-bold text-ink-950">無料資料一覧を見る</span>
+            <span class="mt-1 block text-xs text-neutral-500">テンプレート・資料 {counts.resource}点</span>
+          </span>
+          <span aria-hidden="true" class="text-ink-950 transition-transform group-hover:translate-x-1">→</span>
+        </a>
+      </li>
+    </ul>
+    </div>
+
+    {/* 右ナビ（スマホではメインの下） */}
+    <aside class="space-y-8">
+      {
+        categories.length > 0 && (
+          <nav aria-labelledby="nav-categories" class="border-t-2 border-ink-950 pt-5">
+            <h2 id="nav-categories" class="text-sm font-bold text-ink-950">カテゴリから探す</h2>
+            <ul class="mt-3 border-t border-neutral-300">
+              {categories.map((c) => (
+                <li class="border-b border-neutral-300">
+                  <a href={c.path} class="group flex items-center justify-between py-3.5 text-sm text-ink-950 hover:underline">
+                    {c.name}
+                    <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+
+      {
+        navKits.length > 0 && (
+          <div class="border border-neutral-300 bg-neutral-100 p-5">
+            <h2 class="text-sm font-bold text-ink-950">Kitで、すぐ作る</h2>
+            <p class="mt-2 text-xs leading-relaxed text-neutral-500">予算もKPI管理表も、画面で入力するだけで作れます。</p>
+            <ul class="mt-4 space-y-2">
+              {navKits.map((k) => (
+                <li>
+                  <a href={k.href} class="group block border border-neutral-300 bg-white p-3.5 hover:border-ink-950">
+                    <span class="block text-xs text-neutral-500">{k.situation}</span>
+                    <span class="mt-1 flex items-center justify-between text-sm font-bold text-ink-950">
+                      {k.name}
+                      <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <a href="/tools" class="group mt-4 flex items-center justify-center gap-3 bg-ink-950 px-4 py-3 text-xs font-bold text-white hover:opacity-90">
+              Kit一覧を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+            </a>
+          </div>
+        )
+      }
+    </aside>
+    </div>
   </div>
 
   <ContactCta />
