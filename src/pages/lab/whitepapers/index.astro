@@ -1,6 +1,8 @@
 ---
+// 資料一覧（2026-10-29：/lab と同じトンマナに変更し、カテゴリ・キーワードの絞り込みバーを追加）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
+import ListFilter from "@/components/ListFilter.astro";
 import { getAllResources } from "@/lib/resources";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 
@@ -19,30 +21,52 @@ const breadcrumbItems = [
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-6xl px-5 py-12">
-    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">資料一覧</h1>
-    <p class="mt-3 text-neutral-500">
+  <section class="mx-auto max-w-6xl px-5 pt-10 pb-16">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">資料一覧</h1>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">
       業務にそのまま使える無料テンプレート・ホワイトペーパーをご用意しています。
     </p>
 
     {
       resources.length > 0 ? (
-        <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {resources.map((resource) => (
-            <a href={`/lab/whitepapers/${resource.slug}`}
-              class="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-shadow hover:shadow-lg"
-            >
-              <div class="aspect-video w-full overflow-hidden bg-neutral-50">
-                <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-              </div>
-              <div class="p-5">
-                {resource.category && <span class="text-xs font-medium text-brand-600">{resource.category}</span>}
-                <h3 class="mt-1 line-clamp-2 font-bold text-ink-950 group-hover:text-brand-700">{resource.title}</h3>
-                <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{resource.description}</p>
-              </div>
-            </a>
-          ))}
-        </div>
+        <>
+          <ListFilter action="/lab/whitepapers" placeholder="資料を検索　例：予算案、KPI、営業連携" unit="資料" />
+
+          <p class="mt-6 border-b border-neutral-300 pb-4 text-sm font-bold text-ink-950" data-filter-status aria-live="polite">
+            {resources.length}件の資料
+          </p>
+
+          <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-filter-list>
+            {resources.map((resource) => (
+              <a
+                href={`/lab/whitepapers/${resource.slug}`}
+                data-row
+                data-categories={resource.category || ""}
+                data-search={`${resource.title} ${resource.description} ${resource.category || ""}`}
+                class="group flex flex-col border border-neutral-200 bg-white transition-colors hover:border-ink-950"
+              >
+                <div class="aspect-video w-full overflow-hidden border-b border-neutral-200 bg-neutral-100">
+                  <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" loading="lazy" decoding="async" class="h-full w-full object-cover" />
+                </div>
+                <div class="flex flex-1 flex-col p-5">
+                  <span class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center bg-ink-950 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">無料資料</span>
+                    {resource.category && <span class="text-xs text-neutral-500">{resource.category}</span>}
+                  </span>
+                  <h3 class="mt-2 line-clamp-2 font-bold leading-relaxed text-ink-950 group-hover:underline">{resource.title}</h3>
+                  <p class="mt-2 line-clamp-2 text-xs leading-relaxed text-neutral-500">{resource.description}</p>
+                  <span class="mt-auto flex items-center gap-2 pt-4 text-xs font-bold text-ink-950">
+                    資料を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+
+          <p data-filter-empty hidden class="py-12 text-center text-sm text-neutral-500">
+            条件に合う資料が見つかりませんでした。キーワードやカテゴリを変えてお試しください。
+          </p>
+        </>
       ) : (
         <p class="mt-10 text-neutral-400">まだ資料がありません。</p>
       )
