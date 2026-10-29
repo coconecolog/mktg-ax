@@ -3,7 +3,7 @@
 // SITE_URL は astro.config.mjs の `site` と必ず同じ値にしてください（内部リンク判定・OGP・sitemapに影響）。
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || "https://mktg-ax.pages.dev";
 
-export const SITE_NAME = "MKTG.AX";
+export const SITE_NAME = "MeerKitLab";
 // 修正後（SITE_TAGLINEはFooter・OGP画像でも使うので変更しない。
 // トップページ見出し専用に、改行位置を配列で明示できる定数を追加）
 export const SITE_TAGLINE = "マーケティング責任者のための 分析ツール&情報メディア";
