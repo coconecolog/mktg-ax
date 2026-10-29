@@ -46,6 +46,16 @@ function relatedFor(index: number) {
     }));
 }
 
+// カテゴリごとのミーアキャット（2026-10-29）。カテゴリ名の語で決める（「戦略・市場分析」に「分析」が含まれるため、戦略を先に判定する）
+const MEERKATS: [string, string][] = [
+  ["戦略", "/images/meerkat/standing.svg"],
+  ["予算", "/images/meerkat/circle.svg"],
+  ["KPI", "/images/meerkat/flask-hold.svg"],
+  ["組織", "/images/meerkat/parent-child.svg"],
+  ["分析", "/images/meerkat/in-flask.svg"],
+];
+const meerkat = MEERKATS.find(([word]) => category.name.includes(word))?.[1] ?? null;
+
 // 検索の「形式」ボタン（/lab と同じ形。件数はカテゴリ内の重複なしの件数）
 const kindFilters = [
   { key: "all", label: "すべて", count: guide.counts.all },
@@ -85,10 +95,15 @@ const breadcrumbItems = [
 
   <div class="mx-auto max-w-6xl px-5 pt-10 pb-6" data-guide>
     {/* ページ見出し */}
-    <p class="text-xs font-bold tracking-wider text-ink-950">CATEGORY GUIDE</p>
-    <h1 class="mt-3 text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{category.name}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
-    {category.description && <p class="mt-3 text-sm leading-relaxed text-neutral-500 whitespace-pre-line">{category.description}</p>}
+    <div class="flex items-end justify-between gap-6">
+      <div class="min-w-0">
+        <p class="text-xs font-bold tracking-wider text-ink-950">CATEGORY GUIDE</p>
+        <h1 class="mt-3 text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{category.name}</h1>
+        <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
+        {category.description && <p class="mt-3 text-sm leading-relaxed text-neutral-500 whitespace-pre-line">{category.description}</p>}
+      </div>
+      {meerkat && <img src={meerkat} alt="" aria-hidden="true" class="h-24 w-24 shrink-0 sm:mr-8 sm:h-36 sm:w-36" />}
+    </div>
 
     {/* いま、取り組みたいテーマは？ */}
     {
