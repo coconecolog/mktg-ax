@@ -60,7 +60,7 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ ok: false, error: "入力内容をご確認ください。" }, { status: 400 });
   }
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_ADDRESS, PUBLIC_SITE_URL } = env;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_ADDRESS, PUBLIC_SITE_URL, CONTACT_NOTIFY_TO } = env;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !RESEND_API_KEY || !RESEND_FROM_ADDRESS || !PUBLIC_SITE_URL) {
     console.error(
@@ -159,6 +159,47 @@ export async function onRequestPost({ request, env }) {
       { ok: false, error: "資料の送付メールを送信できませんでした。お手数ですがお問い合わせください。" },
       { status: 502 },
     );
+  }
+
+  // 3. 運営者へ「資料がDLされた」通知を送る（お問い合わせと同じ宛先 CONTACT_NOTIFY_TO。カンマ区切りで複数可）。
+  //    あくまで通知なので、失敗してもDLした人には成功を返す（失敗はログにのみ残す）。宛先が未設定なら送らない。
+  const notifyTo = (CONTACT_NOTIFY_TO || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (notifyTo.length > 0) {
+    const safeCompany = escapeHtml(company || "（未入力）");
+    const safeEmail = escapeHtml(email);
+    const safeSlug = escapeHtml(resourceSlug);
+    const notifyHtml = `
+      <p>サイトから資料がダウンロードされました。</p>
+      <table cellpadding="6" style="border-collapse:collapse;">
+        <tr><td style="color:#888;">資料</td><td>${safeTitle}（${safeSlug}）</td></tr>
+        <tr><td style="color:#888;">お名前</td><td>${safeName}</td></tr>
+        <tr><td style="color:#888;">会社名</td><td>${safeCompany}</td></tr>
+        <tr><td style="color:#888;">メールアドレス</td><td>${safeEmail}</td></tr>
+      </table>
+    `;
+    try {
+      const notifyRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: RESEND_FROM_ADDRESS,
+          to: notifyTo,
+          // 通知メールにそのまま「返信」すればDLした本人に届くようにする
+          reply_to: email,
+          subject: `【MeerKitLab 資料DL】${resourceTitle || "資料"}（${name} 様）`,
+          html: notifyHtml,
+        }),
+      });
+      if (!notifyRes.ok) {
+        const errText = await notifyRes.text();
+        console.error("[resource-download] 運営者への通知メール送信に失敗しました（DL自体は完了）:", notifyRes.status, errText);
+      }
+    } catch (err) {
+      console.error("[resource-download] 運営者への通知メール送信中にエラーが発生しました（DL自体は完了）:", err);
+    }
   }
 
   return Response.json({ ok: true });
