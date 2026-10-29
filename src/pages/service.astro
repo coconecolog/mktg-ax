@@ -1,9 +1,18 @@
 ---
+// サービスについて（2026-10-29リニューアル。Figma「MKTG.AX — サービスについて」をもとに作成）
+// - 導入：ミーアキャットを3体、読み込むたびにランダムに並べる
+// - テーマ：カテゴリごとのミーアキャット（src/lib/categoryMeerkat.ts。カテゴリページと共通）
+// - 活用例：FEATURED_THEME のカテゴリの、テーマ（サブカテゴリ）上位3つと各テーマの代表記事・代表資料を出す
+//   扱うテーマを変えるときは FEATURED_THEME の category を変える（文言は THEME_COPY に足す。無ければカテゴリ説明を使う）
+// - 運営者：執筆者リストDB（Notion）から取得。アイコンは執筆者画像
+// - 末尾は全ページ共通の ContactCta（カテゴリ一覧・タグ一覧・ご要望）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import { SITE_NAME } from "@/consts";
-import { getAllAuthors } from "@/lib/posts";
+import { getAllAuthors, getAllCategories, getCategoryPath } from "@/lib/posts";
+import { getCategoryGuide } from "@/lib/library";
+import { getCategoryMeerkat, ALL_MEERKATS } from "@/lib/categoryMeerkat";
 import { toRouteSlug } from "@/lib/routeSlug";
 
 const breadcrumbItems = [
@@ -11,255 +20,367 @@ const breadcrumbItems = [
   { name: "サービスについて", href: "/service" },
 ];
 
-// 「型ファーストで、迷いをなくす。」の3つの特徴カード
-const topFeatures = [
+// 「読んで終わらず、実務を進める。」
+const howToUse = [
   {
-    icon: "⚙️",
-    iconBg: "bg-teal-100",
-    title: "実務を助ける「動的ツール」",
-    description: "ROAS/CAC計算機・AEO診断で手戻りをゼロに",
+    mark: "A",
+    title: "記事から、実行へ。",
+    steps: ["記事で\n大枠を理解", "テンプレート・\nチェックリストDL", "記入して\n社内提案へ"],
+    description: "課題の捉え方と手順を記事で確認。そのまま手を動かせる資料を入手し、自社の計画や提案に使えます。",
   },
   {
-    icon: "🛡️",
-    iconBg: "bg-blue-100",
-    title: "上層部説得の「型」",
-    description: "予算獲得プレゼン&ROI試算シートで社内を通す",
-  },
-  {
-    icon: "💬",
-    iconBg: "bg-rose-100",
-    title: "現場の悩み",
-    description: "「予算が取れない」「1人目で何から手をつけるべきか迷う」「営業と揉める」といった、泥臭い課題を言語化。",
+    mark: "B",
+    title: "ツールから、継続活用へ。",
+    steps: ["自社の数字で\n試算・診断", "前提や\n妥当性を確認", "出力して\n継続活用"],
+    description: "ツール単独でも、資料と組み合わせても。PDF・印刷・スプレッドシートなど、対応する形式で実務に活用できます。",
   },
 ];
 
-// 「現場で活用できる3つのコンテンツ&ツール」
-const contentBlocks = [
+// 「現場で使える、3つのコンテンツ。」
+const contents = [
   {
-    sectionLabel: "便利ツール（Webツール）",
-    tag: "即試せる実践Webツール",
-    title: "実務の試算・診断をブラウザ上で完結するWebツール群",
-    description:
-      "ROAS/CACシミュレーターやSEO・AEO診断など、役員説明に必要な数値試算や自社サイトの課題把握をその場で即座に行えるインタラクティブなWebツールを提供。",
-    href: "/tools",
-    buttonLabel: "ツール一覧を見る",
-    buttonClass: "bg-ink-950 hover:bg-ink-900",
-  },
-  {
-    sectionLabel: "資料（ホワイトペーパー）",
-    tag: "即戦力テンプレート&ガイド",
-    title: "現場でそのまま使える実用アセット・テンプレート集",
-    description:
-      "社内説得用パワポ、ROI試算シート、営業連携SLA運用ルールなど、1人目デジマーが実務でそのまま活用できる資料を無料でダウンロードいただけます。",
-    href: "/lab?type=resource",
-    buttonLabel: "資料一覧を見る",
-    buttonClass: "bg-ink-950 hover:bg-ink-900",
-  },
-  {
-    sectionLabel: "ブログ（実践記事）",
-    tag: "1人目デジマー実践ノウハウ",
-    title: "「事業者の立場で泥をすすった」体験に基づく実践ノウハウ集",
-    description:
-      "抽象的なマーケティング理論ではなく、明日出社してそのまま使えるレベルに落とし込んだ現場主義の記事を定期配信中。",
+    number: "01",
+    label: "ARTICLES",
+    name: "記事",
+    lead: "判断の基準と、手順を理解する。",
+    description: "戦略・KPI・予算の考え方を、現場の課題に沿って解説。数字の定義や判断の根拠から確認できます。",
+    examples: ["マーケティング予算の考え方", "CPL・CAC・ROIの捉え方"],
     href: "/lab?type=post",
-    buttonLabel: "記事一覧を見る",
-    buttonClass: "bg-ink-950 hover:bg-ink-900",
+    linkLabel: "記事を読む",
+  },
+  {
+    number: "02",
+    label: "RESOURCES",
+    name: "資料",
+    lead: "記入例を見ながら、実践する。",
+    description: "読み物だけで終わらない、課題解決のためのテンプレートとチェックリスト。自社の数字や状況を記入して使えます。",
+    examples: ["年間予算表", "KPI管理表"],
+    href: "/lab?type=resource",
+    linkLabel: "資料を探す",
+  },
+  {
+    number: "03",
+    label: "KIT",
+    name: "Webツール（Kit）",
+    lead: "自社の数字で、試算・診断する。",
+    description: "入力した条件をもとに、施策や予算を検討。案の作成だけでなく、前提や妥当性の確認にも使えます。",
+    examples: ["予算作成キット／予算案診断キット", "KPI管理表作成キット／KPI妥当性診断キット"],
+    href: "/tools",
+    linkLabel: "Kitを使う",
   },
 ];
 
-// 「MeerKitLabが大切にしていること」
+// 活用例で扱うテーマ。今はKPI（検索ボリュームで決定）。強いテーマに変えるときは category を変える。
+const FEATURED_THEME = { category: "KPI" };
+
+// テーマごとの文言。カテゴリ名に key の語を含むものに使う。無いテーマはカテゴリ名・カテゴリ説明で出す
+const THEME_COPY: Record<string, { heading: string; lead: string; body: string; output: { title: string; body: string } }> = {
+  KPI: {
+    heading: "たとえば、KPIの「なぜ？」に答える。",
+    lead: "目標をつくるだけでなく、\n説明できるKPIへ。",
+    body: "KPIを決めるだけでは、責任者やチームが同じ方向を見て動きにくい。目標の根拠、測定の仕方、判断の基準を整理し、説明しやすい形にまとめることが必要です。",
+    output: {
+      title: "KPI・目標値＋測定ルール＋振り返り",
+      body: "設定・月次レビュー・経営説明にも使える形に整理します。",
+    },
+  },
+};
+
+const categories = getAllCategories();
+const featuredCategory = categories.find((c) => c.name.includes(FEATURED_THEME.category)) ?? null;
+const featuredCopyKey = featuredCategory ? Object.keys(THEME_COPY).find((key) => featuredCategory.name.includes(key)) : undefined;
+const featuredCopy = featuredCopyKey ? THEME_COPY[featuredCopyKey] : undefined;
+// テーマ（サブカテゴリ）の上位3つ。記事・資料が1件もないテーマは飛ばす
+const featuredSteps = featuredCategory
+  ? getCategoryGuide(featuredCategory.name)
+      .sections.filter((s) => s.subcategory !== null && (s.posts.length > 0 || s.resources.length > 0))
+      .slice(0, 3)
+  : [];
+
+// 「取り組みたいテーマから、選ぶ。」の説明（カテゴリ名の語で決める。無ければカテゴリ説明の1行目）
+const TOPIC_DESCRIPTIONS: [string, string][] = [
+  ["戦略", "市場を捉え、狙う顧客と選ばれる理由を整理する。"],
+  ["予算", "限られた予算を、根拠を持って配分する。"],
+  ["KPI", "目標と指標をつなぎ、成果を同じ基準で確認する。"],
+  ["組織", "役割と運用を整え、少人数でも回せる体制をつくる。"],
+  ["分析", "自社のデータとAIを、判断と改善に役立てる。"],
+];
+const topics = categories.map((c, i) => ({
+  number: String(i + 1).padStart(2, "0"),
+  name: c.name,
+  href: getCategoryPath(c.name),
+  meerkat: getCategoryMeerkat(c.name),
+  description:
+    TOPIC_DESCRIPTIONS.find(([word]) => c.name.includes(word))?.[1] ?? (c.description || "").split("\n")[0],
+}));
+
+// 「実務の判断を、前に進めるために。」
 const values = [
-  {
-    title: "型とツールがあるから、明日からすぐ動ける",
-    description: "単なる情報提供に終わらせず、実務でそのまま活用できるテンプレートやWebツールを直接提供します。",
-  },
-  {
-    title: "上層部の説得から現場の実務までカバー",
-    description: "単なる手法論だけでなく、予算獲得や役員報告に必要な説得ロジックはもちろん、日々の運用も重視します。",
-  },
-  {
-    title: "限られた人・予算で成果を出す現場主義",
-    description: "大手企業前提の理想論ではなく、少人数・限られた予算でも現実的に回せる再現性の高いノウハウにこだわります。",
-  },
-  {
-    title: "マーケティングを組織に定着させる体制・評価支援",
-    description: "営業など他部署とのスムーズな連携づくりや社内での評価獲得など、担当者が孤立せず組織を動かすための視点も大切にしています。",
-  },
+  { title: "型とツールで、すぐ動ける", description: "考え方に加え、数字の定義・記入例・フォーマットまで。理解したことを、次の一手に移せる形で届けます。" },
+  { title: "説明から、日々の運用まで", description: "上層部への予算説明や社内提案だけでなく、日々の施策管理や振り返りにも。意思決定と運用をつなぎます。" },
+  { title: "限られた人・予算で回せる現場主義", description: "理想論だけではなく、少人数の現場で使えることを大切に。取り組む順番や確認すべき点を具体的に示します。" },
+  { title: "ひとりで抱えず、同じ基準で話せる", description: "担当者が孤立しないように。自社の数字と客観的な基準をもとに、営業・経営と議論するための土台をつくります。" },
 ];
 
-// 「運営について」。以前は氏名未定のため仮のテキストを直書きしていたが、
-// 執筆者リストDB（記事・資料の執筆者カードと同じデータソース）から取得するように変更。
-// 表示するメンバーを増減・変更したい場合は、Notion側の執筆者リストDBを編集してください。
+// 運営者（執筆者リストDB）。表示するメンバーはNotion側の執筆者リストDBで増減する
 const members = getAllAuthors();
+
+// 導入のミーアキャット（初期表示の3体。ページ読み込み時にスクリプトでランダムに入れ替える）
+const heroMeerkats = ALL_MEERKATS.slice(0, 3);
 ---
 
 <BaseLayout
   title="サービスについて"
-  description={`${SITE_NAME}が提供する、企業向けマーケティング支援サービスのご案内です。`}
+  description={`${SITE_NAME}は、施策と予算の判断基準を、経営に通る数字で示す実務メディア＆分析プラットフォームです。`}
   ogImage="/open-graph/service.png"
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-5xl px-5 py-12">
-    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">サービスについて</h1>
-    <p class="mt-4 text-xl font-bold text-ink-950">明日から使える「型」を。</p>
-    <p class="mt-4 leading-relaxed text-neutral-600">
-      {SITE_NAME}は、企業のマーケティング担当者や経営層に向けた実践型プラットフォームです。限られた人・予算の中でも、現場が今日から動ける実践知に加え、即戦力となるテンプレートや実務を自動化・可視化するWebツール（シミュレーター・診断等）を提供します。
-    </p>
-    <div class="mt-6 flex flex-wrap gap-3">
-      <a href="/lab" class="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
-        ライブラリを見る
-      </a>
-      <a href="/tools" class="rounded-full border border-neutral-200 px-6 py-3 text-sm font-bold text-ink-950 hover:border-brand-300">
-        便利ツールを見る
-      </a>
-    </div>
-  </section>
+  {/* 導入 */}
+  <section class="mx-auto max-w-6xl px-5 pt-10 pb-16 md:pb-20">
+    <p class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">SERVICE</p>
+    <h1 class="mt-4 text-3xl font-bold tracking-tight text-ink-950 md:text-[38px]">サービスについて</h1>
 
-  <section class="border-t border-neutral-100 bg-neutral-50 py-16">
-    <div class="mx-auto max-w-5xl px-5">
-      <h2 class="text-2xl font-bold tracking-tight text-ink-950">型ファーストで、迷いをなくす。</h2>
-      <p class="mt-3 text-neutral-500">
-        {SITE_NAME}の記事とホワイトペーパーは、読んで終わりにしません。現場でそのまま使えるテンプレートとセットでお届けします。
-      </p>
-      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {
-          topFeatures.map((feature) => (
-            <div class="rounded-2xl border border-neutral-100 bg-white p-6">
-              <span class={`flex h-10 w-10 items-center justify-center rounded-full text-lg ${feature.iconBg}`}>
-                {feature.icon}
-              </span>
-              <h3 class="mt-4 font-bold text-ink-950">{feature.title}</h3>
-              <p class="mt-2 text-sm leading-relaxed text-neutral-500">{feature.description}</p>
-            </div>
-          ))
-        }
-      </div>
-      <p class="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-neutral-500">
-        「読むだけ」で終わらないコンテンツと、AIの検索にも届く情報設計（AEO）。<br>この2つを軸に、記事とテンプレートを作っています。
-      </p>
-    </div>
-  </section>
-
-  <section class="py-16">
-    <div class="mx-auto max-w-5xl px-5">
-      <h2 class="text-2xl font-bold tracking-tight text-ink-950">現場で活用できる3つのコンテンツ&ツール</h2>
-      <p class="mt-3 text-neutral-500">
-        ニーズに合わせて、ツールでの自動診断、資料のダウンロード、記事からのナレッジ取得をシームレスに行えます。
-      </p>
-      <div class="mt-8 flex flex-col gap-6">
-        {
-          contentBlocks.map((block, i) => (
-            <div class="rounded-2xl border border-neutral-100 bg-white p-6 sm:p-8">
-              <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-xs font-bold text-brand-700">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <h3 class="text-lg font-bold text-ink-950">{block.sectionLabel}</h3>
-                  </div>
-                  <span class="mt-4 inline-block rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
-                    {block.tag}
-                  </span>
-                  <p class="mt-3 text-base font-bold leading-snug text-ink-950">{block.title}</p>
-                  <p class="mt-2 text-sm leading-relaxed text-neutral-500">{block.description}</p>
-                </div>
-                <a href={block.href} class={`shrink-0 rounded-full px-6 py-3 text-sm font-bold text-white ${block.buttonClass}`}>
-                  {block.buttonLabel} →
-                </a>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <section class="border-t border-neutral-100 bg-neutral-50 py-16">
-    <div class="mx-auto max-w-5xl px-5">
-      <h2 class="text-2xl font-bold tracking-tight text-ink-950">MeerKitLabが大切にしていること</h2>
-      <div class="mt-8 divide-y divide-neutral-200 border-t border-neutral-200">
-        {
-          values.map((value, i) => (
-            <div class="flex gap-5 py-6">
-              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 bg-white text-xs font-bold text-brand-700">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h3 class="font-bold text-ink-950">{value.title}</h3>
-                <p class="mt-1.5 text-sm leading-relaxed text-neutral-500">{value.description}</p>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <section class="py-16">
-    <div class="mx-auto max-w-5xl px-5">
-      <h2 class="text-2xl font-bold tracking-tight text-ink-950">運営について</h2>
-      <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {
-          members.map((member) => (
-            <div class="rounded-2xl border border-neutral-100 p-6">
-              <div class="flex items-center gap-4">
-                {member.image ? (
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    class="aspect-square h-20 w-20 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xl">
-                    👤
-                  </span>
-                )}
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="font-bold text-ink-950">{member.name}</span>
-                    {member.title && (
-                      <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-                        {member.title}
-                      </span>
-                    )}
-                  </div>
-                  {member.expertise && (
-                    <p class="mt-1 whitespace-pre-line text-sm font-bold leading-relaxed text-ink-950">
-                      {member.expertise}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {member.bio && (
-                <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-500">{member.bio}</p>
-              )}
-
-              <a href={`/authors/${encodeURIComponent(toRouteSlug(member.name))}`}
-                class="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-700"
-              >
-                この執筆者の記事・資料一覧を見る →
-              </a>
-            </div>
-          ))
-        }
-      </div>
-
-      <div class="mt-10 flex flex-col items-start justify-between gap-4 rounded-2xl border border-neutral-100 bg-brand-50 p-8 sm:flex-row sm:items-center">
-        <div>
-          <h3 class="font-bold text-ink-950">ホワイトペーパー掲載にご興味のある企業様へ</h3>
-          <p class="mt-2 max-w-xl text-sm leading-relaxed text-neutral-600">
-            {SITE_NAME}では、企業の課題解決に役立つ資料の掲載企業様を募集しています。掲載は成果報酬型、初期費用はかかりません。
-          </p>
+    <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:gap-[60px]">
+      <div>
+        <p class="text-[32px] font-bold leading-[1.5] text-ink-950 md:text-[46px]">施策と予算の判断に、<br />根拠と使える型を。</p>
+        <p class="mt-6 text-base font-bold text-[#4f5057]">明日から使える「型」を。</p>
+        <div class="mt-8 flex items-end gap-6 sm:gap-10" data-hero-meerkats>
+          {heroMeerkats.map((src) => <img src={src} alt="" aria-hidden="true" class="h-20 w-20 sm:h-28 sm:w-28" />)}
         </div>
-        <a href="/contact" class="shrink-0 rounded-full border border-brand-300 bg-white px-6 py-3 text-sm font-bold text-brand-700 hover:border-brand-400">
-          掲載についてお問い合わせ
-        </a>
+      </div>
+      <div class="flex flex-col gap-6">
+        <p class="text-lg font-bold leading-[1.9] text-ink-950 md:text-[21px]">少人数でマーケティングを担う、BtoB中小企業の責任者のために。</p>
+        <p class="text-[15px] leading-[1.9] text-[#4f5057]">{SITE_NAME}は、施策と予算の判断基準を、経営に通る数字で示す実務メディア＆分析プラットフォームです。</p>
+        <p class="text-[15px] leading-[1.9] text-[#4f5057]">記事で考え方を整理し、実践型の資料やWebツールで自社の数字に落とし込む。勘や代理店任せにせず、自前の客観的な判断基準を持つために。</p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a href="/lab" class="flex h-[52px] items-center justify-between gap-6 whitespace-nowrap border border-ink-950 bg-ink-950 px-[22px] text-sm font-bold text-white hover:bg-ink-900">
+            Lab（記事・資料）を見る<span class="text-xl font-normal" aria-hidden="true">→</span>
+          </a>
+          <a href="/tools" class="flex h-[52px] items-center justify-between gap-6 whitespace-nowrap border border-ink-950 bg-white px-[22px] text-sm font-bold text-ink-950 hover:bg-neutral-50">
+            ツール（Kit）を使ってみる<span class="text-xl font-normal" aria-hidden="true">→</span>
+          </a>
+        </div>
       </div>
     </div>
   </section>
+
+  {/* 読んで終わらず、実務を進める。 */}
+  <section class="mx-auto max-w-6xl px-5 pb-16 md:pb-20">
+    <div class="h-[2px] bg-ink-950"></div>
+    <div class="mt-6 flex items-center justify-between gap-4">
+      <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">読んで終わらず、実務を進める。</h2>
+      <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">HOW TO USE</p>
+    </div>
+    <p class="mt-5 text-[15px] leading-[1.9] text-[#4f5057]">記事で理解し、資料で実践する。まず試算する。いまの課題に合う入口から始められます。</p>
+    <div class="mt-8 grid gap-6 md:grid-cols-2">
+      {
+        howToUse.map((h) => (
+          <div class="border border-[#dedee2] bg-white p-6 md:p-7">
+            <p class="flex items-center gap-4 text-ink-950">
+              <span class="text-[28px] font-semibold">{h.mark}</span>
+              <span class="text-[19px] font-bold">{h.title}</span>
+            </p>
+            <div class="mt-6 flex items-center gap-1 sm:gap-2">
+              {h.steps.map((step, i) => (
+                <>
+                  <p class="flex min-h-[78px] flex-1 items-center justify-center whitespace-pre-line bg-[#f8f7f9] p-1.5 text-center text-xs sm:p-2.5 sm:text-sm font-bold leading-[1.7] text-ink-950">{step}</p>
+                  {i < h.steps.length - 1 && <span class="shrink-0 text-lg text-[#7b7c83]" aria-hidden="true">→</span>}
+                </>
+              ))}
+            </div>
+            <p class="mt-6 text-sm leading-[1.9] text-[#4f5057]">{h.description}</p>
+          </div>
+        ))
+      }
+    </div>
+    <p class="mt-8 text-xs leading-[1.9] text-[#4f5057]">※ 出力形式・利用条件はツールごとに異なります。各ツールの案内をご確認ください。</p>
+  </section>
+
+  {/* 現場で使える、3つのコンテンツ。 */}
+  <section class="mx-auto max-w-6xl px-5 pb-16 md:pb-20">
+    <div class="h-[2px] bg-ink-950"></div>
+    <div class="mt-6 flex items-center justify-between gap-4">
+      <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">現場で使える、3つのコンテンツ。</h2>
+      <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">CONTENTS</p>
+    </div>
+    <div class="mt-8 grid gap-6 md:grid-cols-3">
+      {
+        contents.map((c) => (
+          <div class="flex flex-col border border-[#dedee2] bg-white p-6 md:p-7">
+            <div class="flex items-center justify-between">
+              <span class="text-[32px] font-medium text-ink-950">{c.number}</span>
+              <span class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">{c.label}</span>
+            </div>
+            <h3 class="mt-5 text-[27px] font-bold text-ink-950">{c.name}</h3>
+            <p class="mt-5 text-[15px] font-bold leading-[1.9] text-ink-950">{c.lead}</p>
+            <p class="mt-3 text-sm leading-[1.9] text-[#4f5057]">{c.description}</p>
+            <div class="mt-5 h-px bg-[#dedee2]"></div>
+            <p class="mt-5 text-[11px] font-semibold tracking-wider text-[#7b7c83]">EXAMPLES</p>
+            <ul class="mt-2 space-y-1 text-xs leading-[1.9] text-[#4f5057]">
+              {c.examples.map((ex) => <li>{ex}</li>)}
+            </ul>
+            <a href={c.href} class="mt-auto pt-6 text-sm font-bold text-ink-950 hover:underline">{c.linkLabel}<span class="ml-4" aria-hidden="true">→</span></a>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {/* 活用例（FEATURED_THEME のテーマ。テーマの上位3つと代表記事・代表資料） */}
+  {
+    featuredCategory && featuredSteps.length > 0 && (
+      <section class="mx-auto max-w-6xl px-5 pb-16 md:pb-20">
+        <div class="h-[2px] bg-ink-950"></div>
+        <div class="mt-6 flex items-center justify-between gap-4">
+          <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">{featuredCopy?.heading ?? `たとえば、${featuredCategory.name}に取り組む。`}</h2>
+          <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">USE CASE / {FEATURED_THEME.category}</p>
+        </div>
+        <div class="mt-8 grid gap-10 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14">
+          <div>
+            <p class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">FROM PLAN TO PROPOSAL</p>
+            <p class="mt-5 whitespace-pre-line text-2xl font-bold leading-[1.6] text-ink-950">{featuredCopy?.lead ?? featuredCategory.name}</p>
+            {(featuredCopy?.body ?? featuredCategory.description) && (
+              <p class="mt-5 text-[15px] leading-[1.9] text-[#4f5057]">{featuredCopy?.body ?? featuredCategory.description}</p>
+            )}
+            {featuredCopy && (
+              <div class="mt-6 border border-[#dedee2] bg-white p-[22px]">
+                <p class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">OUTPUT</p>
+                <p class="mt-3 text-[15px] font-bold leading-[1.8] text-ink-950">{featuredCopy.output.title}</p>
+                <p class="mt-3 text-[13px] leading-[1.9] text-[#4f5057]">{featuredCopy.output.body}</p>
+              </div>
+            )}
+            <a href={getCategoryPath(featuredCategory.name)} class="mt-6 inline-block text-sm font-bold text-ink-950 hover:underline">
+              {featuredCategory.name}の記事・資料をすべて見る<span class="ml-2" aria-hidden="true">→</span>
+            </a>
+          </div>
+          <div>
+            <ol>
+              {featuredSteps.map((s) => {
+                const post = s.posts[0];
+                const resource = s.resources[0];
+                return (
+                  <li class="flex gap-5 border-b border-[#dedee2] py-6 first:pt-0">
+                    <span class="w-9 shrink-0 text-2xl text-[#7b7c83] tabular-nums">{s.number}</span>
+                    <div class="min-w-0">
+                      <p class="text-lg font-bold leading-[1.5] text-ink-950">{s.name}</p>
+                      {s.summary && <p class="mt-2 text-sm leading-[1.9] text-[#4f5057]">{s.summary}</p>}
+                      <ul class="mt-3 space-y-2">
+                        {post && (
+                          <li class="flex items-baseline gap-3">
+                            <span class="shrink-0 text-[11px] font-bold text-[#7b7c83]">記事</span>
+                            <a href={post.href} class="text-sm font-bold text-ink-950 hover:underline">{post.title}<span class="ml-1" aria-hidden="true">→</span></a>
+                          </li>
+                        )}
+                        {resource && (
+                          <li class="flex items-baseline gap-3">
+                            <span class="shrink-0 text-[11px] font-bold text-[#7b7c83]">資料</span>
+                            <a href={resource.href} class="text-sm font-bold text-ink-950 hover:underline">{resource.title}<span class="ml-1" aria-hidden="true">→</span></a>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+            <p class="mt-4 text-xs leading-[1.9] text-[#7b7c83]">※ すべての手順を行う必要はありません。必要な記事・資料を選んで使えます。</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {/* 取り組みたいテーマから、選ぶ。 */}
+  {topics.length > 0 && (
+  <section class="mx-auto max-w-6xl px-5 pb-16 md:pb-20">
+    <div class="h-[2px] bg-ink-950"></div>
+    <div class="mt-6 flex items-center justify-between gap-4">
+      <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">取り組みたいテーマから、選ぶ。</h2>
+      <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">TOPICS</p>
+    </div>
+    <ul class="mt-8 border-t border-[#dedee2]">
+      {
+        topics.map((t) => (
+          <li class="border-b border-[#dedee2] bg-white">
+            <a href={t.href} class="group flex items-center gap-4 px-4 py-3 sm:gap-6 sm:px-6">
+              <span class="w-6 shrink-0 text-xs text-[#7b7c83] tabular-nums">{t.number}</span>
+              <span class="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-6">
+                <span class="text-base font-bold text-ink-950 sm:w-56 sm:shrink-0 sm:text-lg">{t.name}</span>
+                <span class="hidden h-14 w-14 shrink-0 sm:block">{t.meerkat && <img src={t.meerkat} alt="" aria-hidden="true" class="h-14 w-14" />}</span>
+                <span class="text-sm leading-[1.8] text-[#4f5057]">{t.description}</span>
+              </span>
+              <span class="shrink-0 text-xl text-ink-950 transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+  )}
+
+  {/* 実務の判断を、前に進めるために。 */}
+  <section class="mx-auto max-w-6xl px-5 pb-16 md:pb-20">
+    <div class="h-[2px] bg-ink-950"></div>
+    <div class="mt-6 flex items-center justify-between gap-4">
+      <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">実務の判断を、前に進めるために。</h2>
+      <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">OUR APPROACH</p>
+    </div>
+    <div class="mt-8 grid gap-8 md:grid-cols-2 md:gap-x-14">
+      {
+        values.map((v, i) => (
+          <div class="border-b border-[#dedee2] pb-6">
+            <p class="flex items-center gap-4">
+              <span class="text-xs text-[#7b7c83] tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+              <span class="text-lg font-bold text-ink-950 md:text-xl">{v.title}</span>
+            </p>
+            <p class="mt-4 text-[15px] leading-[1.9] text-[#4f5057]">{v.description}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {/* 現場を知る、2人で運営しています。 */}
+  {members.length > 0 && (
+  <section class="mx-auto max-w-6xl px-5 pb-16 md:pb-20">
+    <div class="h-[2px] bg-ink-950"></div>
+    <div class="mt-6 flex items-center justify-between gap-4">
+      <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">現場を知る、{members.length}人で運営しています。</h2>
+      <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">ABOUT US</p>
+    </div>
+    <p class="mt-5 text-[15px] leading-[1.9] text-[#4f5057]">分析と運用、それぞれの実務経験をもとに、記事・資料・ツールをつくっています。</p>
+    <div class="mt-8 grid gap-12 md:grid-cols-2 md:gap-16">
+      {
+        members.map((m) => (
+          <div class="flex flex-col">
+            <div class="flex items-center justify-between gap-4 border-b border-[#dedee2] pb-5">
+              <span class="text-[26px] font-bold text-ink-950">{m.name}</span>
+              {m.title && <span class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">{m.title}</span>}
+            </div>
+            <div class="mt-5 flex items-center justify-between gap-6">
+              {m.expertise && <p class="min-w-0 whitespace-pre-line text-lg font-bold leading-[1.8] text-ink-950 md:text-xl">{m.expertise}</p>}
+              {m.image && <img src={m.image} alt={m.name} class="aspect-square h-20 w-20 shrink-0 rounded-full object-cover sm:h-24 sm:w-24" />}
+            </div>
+            {m.bio && <p class="mt-5 whitespace-pre-line text-sm leading-[1.9] text-[#4f5057]">{m.bio}</p>}
+            <a href={`/authors/${encodeURIComponent(toRouteSlug(m.name))}`} class="mt-5 text-sm font-bold text-ink-950 hover:underline">
+              {m.name}の記事・資料を見る<span class="ml-4" aria-hidden="true">→</span>
+            </a>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+  )}
 
   <ContactCta />
 </BaseLayout>
+
+<script is:inline define:vars={{ all: ALL_MEERKATS }}>
+  // 導入のミーアキャットを、読み込むたびにランダムな3体に入れ替える
+  const imgs = document.querySelectorAll("[data-hero-meerkats] img");
+  const pool = [...all].sort(() => Math.random() - 0.5);
+  imgs.forEach((img, i) => {
+    if (pool[i]) img.setAttribute("src", pool[i]);
+  });
+</script>
