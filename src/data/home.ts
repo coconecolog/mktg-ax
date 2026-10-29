@@ -170,7 +170,7 @@ export const HOME_LATEST = {
   eyebrow: "新着記事",
   heading: "いまの実務に、必要な知識を。",
   count: 3,
-  allLink: { label: "記事・資料をすべて見る", href: "/lab" },
+  allLink: { label: "Lab（記事・資料）をすべて見る", href: "/lab" },
 };
 
 // ------------------------------------------------------------
