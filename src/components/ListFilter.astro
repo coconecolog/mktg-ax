@@ -1,6 +1,6 @@
 ---
 // 一覧ページ（資料一覧・ブログ）の絞り込みバー（2026-10-29追加）。
-// 左に「カテゴリ」、右に「キーワード検索」「検索する」「条件をクリア」を1行で並べる（スマホでは2段）。
+// 左から「キーワード検索（＋検索する）」「カテゴリ」「条件をクリア」を1行で並べる（スマホでは2段）。
 //
 // 絞り込む対象は target で指定した要素の中の [data-row]。各行には次の属性を付けておく。
 //   data-categories … カテゴリ名を「|」区切りで（例: "KPI・効果測定|予算配分・投資判断"）
@@ -42,19 +42,6 @@ const categories = getAllCategories().map((c) => ({ name: c.name, slug: getCateg
   class="mt-8 bg-neutral-100 p-4 sm:p-5"
 >
   <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-5">
-    <div class="flex items-center gap-3">
-      <label for="list-filter-category" class="shrink-0 text-xs font-bold text-ink-950">カテゴリ</label>
-      <select
-        id="list-filter-category"
-        name="category"
-        data-filter-category
-        class="h-12 min-w-0 flex-1 border border-neutral-300 bg-white px-3 text-sm text-ink-950 md:w-48 md:flex-none"
-      >
-        <option value="">すべてのカテゴリ</option>
-        {categories.map((c) => <option value={c.slug} data-name={c.name}>{c.name}</option>)}
-      </select>
-    </div>
-
     <div class="flex min-w-0 flex-1 gap-2">
       <label class="flex h-12 min-w-0 flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 focus-within:border-ink-950">
         <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
@@ -68,6 +55,19 @@ const categories = getAllCategories().map((c) => ({ name: c.name, slug: getCateg
         />
       </label>
       <button type="submit" class="h-12 shrink-0 bg-ink-950 px-6 text-sm font-bold text-white hover:opacity-90">検索する</button>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <label for="list-filter-category" class="shrink-0 text-xs font-bold text-ink-950">カテゴリ</label>
+      <select
+        id="list-filter-category"
+        name="category"
+        data-filter-category
+        class="h-12 min-w-0 flex-1 border border-neutral-300 bg-white px-3 text-sm text-ink-950 md:w-48 md:flex-none"
+      >
+        <option value="">すべてのカテゴリ</option>
+        {categories.map((c) => <option value={c.slug} data-name={c.name}>{c.name}</option>)}
+      </select>
       <button
         type="button"
         data-filter-clear
