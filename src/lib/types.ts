@@ -135,6 +135,21 @@ export interface Author {
   image: string | null;
   /** 表示順（「並び順」プロパティ、小さい順）。未設定ならnull（末尾に表示される）。取得時点で既にソート済みのため、通常はこの値を直接参照する必要はない */
   order: number | null;
+  // ---- 執筆者ページ（プロフィール）用。2026-10-29追加。古いキャッシュでは無いので、posts.tsで既定値を入れる ----
+  /** 「キャッチコピー」：名前の下の一文 */
+  catchcopy: string;
+  /** 「専門タグ」（マルチセレクト、Notionで並べた順） */
+  tags: string[];
+  /** 「経歴」：段落は空行区切り */
+  career: string;
+  /** 「主な実績」：1行1件 */
+  achievements: string[];
+  /** 「方針の見出し」：「EDITORIAL POLICY（執筆・検証スタンス）」の形なら英字と日本語に分けて表示 */
+  policyHeading: string;
+  /** 「方針1・2の見出し／本文」。どちらも空の方針は入れない */
+  policies: { title: string; body: string }[];
+  /** 「メッセージ」 */
+  message: string;
 }
 
 export interface PostsCache {
