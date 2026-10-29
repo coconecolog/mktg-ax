@@ -32,7 +32,16 @@ function loadCache(): PostsCache {
       seoTitle: t.seoTitle ?? null,
     }));
     // 執筆者一覧（執筆者リストDB）も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
-    const authors = parsed.authors || [];
+    const authors = (parsed.authors || []).map((a) => ({
+      ...a,
+      catchcopy: a.catchcopy ?? "",
+      tags: a.tags ?? [],
+      career: a.career ?? "",
+      achievements: a.achievements ?? [],
+      policyHeading: a.policyHeading ?? "",
+      policies: a.policies ?? [],
+      message: a.message ?? "",
+    }));
     // サブカテゴリ一覧（マスターサブカテゴリDB。2026-10-12追加）も、古いキャッシュに耐えるようにする
     const subcategories = (parsed.subcategories || []).map((s) => ({ ...s, toolIds: s.toolIds || [] }));
     return { ...parsed, posts, categories, subcategories, tags, authors };

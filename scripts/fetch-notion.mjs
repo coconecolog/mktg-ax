@@ -31,6 +31,7 @@ import {
   getNumber,
   getDateISO,
   getFirstFileUrl,
+  getMultiSelectNames,
   getRelationIds,
   resolveSlug,
   makeAnchorFactory,
@@ -327,7 +328,21 @@ async function fetchAuthors(token) {
     const imageSourceUrl = getFirstFileUrl(page, AUTHOR_PROP.image);
     const image = imageSourceUrl ? await downloadImage(imageSourceUrl, `author-${page.id}`) : null;
 
-    authors.push({ name, title, expertise, bio, image, order });
+    // 執筆者ページ（プロフィール）用。未入力の項目は空のまま（ページ側でその枠を出さない）
+    const catchcopy = getRichTextPlain(page, AUTHOR_PROP.catchcopy).trim();
+    const tags = getMultiSelectNames(page, AUTHOR_PROP.tags);
+    const career = getRichTextPlain(page, AUTHOR_PROP.career).trim();
+    const achievements = splitBulletLines(getRichTextPlain(page, AUTHOR_PROP.achievements));
+    const policyHeading = getRichTextPlain(page, AUTHOR_PROP.policyHeading).trim();
+    const policies = [
+      [AUTHOR_PROP.policy1Title, AUTHOR_PROP.policy1Body],
+      [AUTHOR_PROP.policy2Title, AUTHOR_PROP.policy2Body],
+    ]
+      .map(([t, b]) => ({ title: getRichTextPlain(page, t).trim(), body: getRichTextPlain(page, b).trim() }))
+      .filter((p) => p.title || p.body);
+    const message = getRichTextPlain(page, AUTHOR_PROP.message).trim();
+
+    authors.push({ name, title, expertise, bio, image, order, catchcopy, tags, career, achievements, policyHeading, policies, message });
   }
 
   // 表示順は「並び順」プロパティ（数値、小さい順）を正としてソートする。マスターカテゴリDBと同じ理由

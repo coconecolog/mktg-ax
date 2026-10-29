@@ -78,9 +78,14 @@
 /download/:slug/          /lab/whitepapers/:slug 301
 /download/:slug           /lab/whitepapers/:slug 301
 
-# 著者ページの資料タブ
-/authors/:author/resources     /authors/:author/whitepapers 301
-/authors/:author/resources/*   /authors/:author/whitepapers/:splat 301
+# 著者ページ（2026-10-29 記事・資料の一覧をやめ、プロフィールだけのページにした）
+/authors/:author/resources     /authors/:author 301
+/authors/:author/resources/*   /authors/:author 301
+/authors/:author/whitepapers   /authors/:author 301
+/authors/:author/whitepapers/* /authors/:author 301
+/authors/:author/blog          /authors/:author 301
+/authors/:author/blog/*        /authors/:author 301
+/authors/:author/:page         /authors/:author 301
 
 # 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL（ステップのページ）
 /tools/kpi-check/*   /tools/kpi-check 301
