@@ -1,9 +1,8 @@
 ---
 // フッターのリンクは3カラムに手動で分類して表示している（NAV_LINKSのフラット表示はしていない）。
-// 「ツール」カラムは ツールDB（Notion）から自動生成されるため、ツールの追加・変更はNotion側の編集だけで自動反映される。
+// 4カラム目は「数字の基準」（/standards 配下）への案内。
 // 色はすべて src/styles/global.css の brand-* トークン経由（デザインレギュレーション準拠。hexのハードコード禁止）。
 import { SITE_NAME, SITE_TAGLINE } from "@/consts";
-import { getToolNavItems } from "@/lib/tools";
 const year = new Date().getFullYear();
 ---
 
@@ -20,7 +19,6 @@ const year = new Date().getFullYear();
           <li><a href="/" class="text-sm text-brand-100 hover:text-white">トップ</a></li>
           <li><a href="/tools" class="text-sm text-brand-100 hover:text-white">Kit一覧</a></li>
           <li><a href="/lab" class="text-sm text-brand-100 hover:text-white">Lab（記事・資料）</a></li>
-          <li><a href="/standards" class="text-sm text-brand-100 hover:text-white">モデル企業の全体像</a></li>
         </ul>
       </div>
       <div>
@@ -33,17 +31,12 @@ const year = new Date().getFullYear();
         </ul>
       </div>
       <div>
-        <h3 class="text-xs font-bold uppercase tracking-wider text-brand-400">Kit</h3>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-brand-400">数字の基準</h3>
+        <p class="mt-4 text-sm leading-relaxed text-brand-300">すべての記事・資料・ツール（Kit）は、同じ定義で計算しています。</p>
         <ul class="mt-4 space-y-2.5">
-          {
-            getToolNavItems().map((tool) => (
-              <li>
-                <a href={tool.href} class="text-sm text-brand-100 hover:text-white">
-                  {tool.label}
-                </a>
-              </li>
-            ))
-          }
+          <li><a href="/standards" class="text-sm text-brand-100 hover:text-white">モデル企業を見る</a></li>
+          <li><a href="/standards/model" class="text-sm text-brand-100 hover:text-white">施策と数字を見る</a></li>
+          <li><a href="/standards/metrics" class="text-sm text-brand-100 hover:text-white">数字の定義を見る</a></li>
         </ul>
       </div>
     </div>
