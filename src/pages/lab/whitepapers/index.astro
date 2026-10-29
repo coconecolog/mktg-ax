@@ -1,8 +1,9 @@
 ---
-// 資料一覧（2026-10-29：/lab と同じトンマナに変更し、カテゴリ・キーワードの絞り込みバーを追加）
+// 資料一覧（2026-10-29：/lab と同じトンマナに変更し、カテゴリ・キーワードの絞り込みバーと共通フッターを追加）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ListFilter from "@/components/ListFilter.astro";
+import ContactCta from "@/components/ContactCta.astro";
 import { getAllResources } from "@/lib/resources";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 
@@ -10,6 +11,7 @@ const resources = getAllResources();
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
+  { name: "Lab（記事・資料）", href: "/lab" },
   { name: "資料一覧", href: "/lab/whitepapers" },
 ];
 ---
@@ -72,4 +74,6 @@ const breadcrumbItems = [
       )
     }
   </section>
+
+  <ContactCta />
 </BaseLayout>
