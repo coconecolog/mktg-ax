@@ -3,7 +3,7 @@
 // カテゴリ内の記事・資料を、サブカテゴリ（マスターサブカテゴリDB）ごとのブロックに分けて1ページで表示する。
 // - サブカテゴリ専用のページは作らず、ページ内アンカー（#Slug）で各テーマへ移動する
 // - ページ番号のページネーションは廃止。件数の多いテーマは「もっと見る」ボタンで開く
-// - 「すべて／記事／無料資料」の切り替えと「このカテゴリ内を検索」は、ページ内のJSで絞り込む
+// - 「形式（すべて／記事／無料資料）」「テーマ」「このカテゴリ内を検索」は、ページ内のJSで絞り込む（2026-10-29：/lab と同じ検索レイアウトに変更）
 // 旧URL（/blog/category/{slug}・/blog/category/{slug}/2・…/blog・…/resources）は public/_redirects でこのページへ301転送している。
 import type { GetStaticPaths } from "astro";
 import type { Category } from "@/lib/types";
@@ -46,6 +46,13 @@ function relatedFor(index: number) {
     }));
 }
 
+// 検索の「形式」ボタン（/lab と同じ形。件数はカテゴリ内の重複なしの件数）
+const kindFilters = [
+  { key: "all", label: "すべて", count: guide.counts.all },
+  { key: "post", label: "記事", count: guide.counts.post },
+  { key: "resource", label: "無料資料", count: guide.counts.resource },
+];
+
 // 構造化データ（カテゴリ = 「そのテーマの総合ページ」。CollectionPage + ItemList、本文にFAQがあればFAQPageも）
 const pageTitle = `${category.name}｜カテゴリ一覧`;
 const pageDescription = category.description || `${category.name}に関する記事・資料の一覧です。`;
@@ -86,45 +93,75 @@ const breadcrumbItems = [
     {/* いま、取り組みたいテーマは？ */}
     {
       themeSections.length > 0 && (
-        <div class="mt-10">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-sm font-bold text-ink-950">いま、取り組みたいテーマは？</p>
-            <p class="text-xs text-neutral-500">順番に読む必要はありません</p>
-          </div>
-          <ul class={`mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 ${themeSections.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
-            {themeSections.map((s) => (
-              <li>
-                <a href={`#${s.anchor}`} class="group flex h-full flex-col border border-neutral-300 bg-white p-4 transition-colors hover:border-ink-950">
-                  <span class="flex items-center justify-between text-xs text-neutral-500">
-                    <span class="tabular-nums">{s.number}</span>
-                    <span aria-hidden="true" class="text-ink-950 transition-transform group-hover:translate-y-0.5">↓</span>
-                  </span>
-                  <span class="mt-3 block text-[15px] font-bold text-ink-950">{s.name}</span>
-                  {s.summary && <span class="mt-1.5 block text-xs leading-relaxed text-neutral-500">{s.summary}</span>}
-                  <span class="mt-auto block pt-3 text-xs text-neutral-400">
-                    {s.resources.length > 0 ? `記事 ${s.posts.length} / 無料資料 ${s.resources.length}` : `記事 ${s.posts.length}`}
+        <div class="mt-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
+          {/* 2026-10-29：テーマを矢羽根で横に並べる（スマホは縦に並べる） */}
+          <ul class="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:gap-0">
+            {themeSections.map((s, i) => (
+              <li class={`min-w-0 lg:flex-1 ${i > 0 ? "lg:-ml-2" : ""}`}>
+                <a href={`#${s.anchor}`} class={`chev group block h-full bg-neutral-300 p-px transition-colors hover:bg-ink-950 ${i === 0 ? "chev-first" : ""}`}>
+                  <span class={`chev flex h-full items-center gap-4 bg-white py-4 pr-8 pl-4 ${i === 0 ? "chev-first" : "lg:pl-8"}`}>
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink-950 text-sm font-bold tabular-nums text-white">{s.number}</span>
+                    <span class="min-w-0">
+                      <span class="block text-[15px] font-bold text-ink-950">{s.name}</span>
+                      <span class="mt-1 block text-xs text-neutral-500">
+                        記事 <span class="font-bold text-ink-950 tabular-nums">{s.posts.length}</span>
+                        {s.resources.length > 0 && (
+                          <>
+                            <span class="mx-1.5 text-neutral-300">/</span>無料資料 <span class="font-bold text-ink-950 tabular-nums">{s.resources.length}</span>
+                          </>
+                        )}
+                      </span>
+                    </span>
                   </span>
                 </a>
               </li>
             ))}
           </ul>
+          <p class="shrink-0 text-xs leading-relaxed text-neutral-500 lg:w-24">順番に読む必要はありません</p>
         </div>
       )
     }
 
-    {/* 検索・絞り込み */}
-    <form data-search-form role="search" class="mt-8 flex w-full gap-2 lg:w-1/2">
-      <label class="flex min-w-0 flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 py-3">
-        <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8" /><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-        <span class="sr-only">このカテゴリ内を検索</span>
-        <input type="search" data-search-input placeholder="このカテゴリ内を検索　例：予算案、ROI、稟議書" class="w-full bg-transparent text-sm text-ink-950 placeholder:text-neutral-400 focus:outline-none" />
-      </label>
-      <button type="submit" class="shrink-0 bg-ink-950 px-5 py-3 text-sm font-bold text-white hover:opacity-90">検索する</button>
+    {/* 検索・絞り込み（/lab と同じレイアウト。カテゴリの代わりにテーマで絞り込む） */}
+    <form data-search-form role="search" class="mt-8 bg-neutral-100 p-4 sm:p-5">
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <label class="flex flex-1 items-center gap-3 border border-neutral-300 bg-white px-4 py-3">
+          <svg class="h-4 w-4 shrink-0 text-neutral-500" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8" /><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+          <span class="sr-only">このカテゴリ内を検索</span>
+          <input type="search" data-search-input placeholder="このカテゴリ内を検索　例：予算案、ROI、稟議書" class="w-full bg-transparent text-sm text-ink-950 placeholder:text-neutral-400 focus:outline-none" />
+        </label>
+        <button type="submit" class="bg-ink-950 px-6 py-3 text-sm font-bold text-white hover:opacity-90">検索する</button>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-ink-950">形式</span>
+          <div class="flex gap-1.5" role="group" aria-label="形式で絞り込む">
+            {
+              kindFilters.map((f) => (
+                <button type="button" data-type={f.key} aria-pressed={f.key === "all" ? "true" : "false"} class="border border-neutral-300 bg-white px-3.5 py-2 text-xs font-bold text-ink-950 transition-colors aria-pressed:border-ink-950 aria-pressed:bg-ink-950 aria-pressed:text-white">
+                  {f.label} <span class="font-normal tabular-nums">{f.count}</span>
+                </button>
+              ))
+            }
+          </div>
+        </div>
+        {
+          guide.sections.length > 1 && (
+            <label class="flex items-center gap-3">
+              <span class="text-xs font-bold text-ink-950">テーマ</span>
+              <select data-theme class="min-w-48 border border-neutral-300 bg-white px-3 py-2 text-xs text-ink-950">
+                <option value="">すべてのテーマ</option>
+                {guide.sections.map((s) => <option value={s.anchor}>{s.number ? `${s.number} ${s.name}` : s.name}</option>)}
+              </select>
+            </label>
+          )
+        }
+        <button type="button" data-clear class="text-xs text-neutral-500 underline-offset-2 hover:text-ink-950 hover:underline">条件をクリア</button>
+      </div>
     </form>
 
-    <div class="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs">
+    <div class="mt-6 text-xs">
       <p class="font-bold text-ink-950" data-status aria-live="polite">{guide.counts.all}件すべてを表示</p>
-      <p class="text-neutral-500">記事 {guide.counts.post}件 / 無料資料 {guide.counts.resource}件</p>
     </div>
 
     {/* テーマ（サブカテゴリ）ごとのブロック */}
@@ -170,15 +207,24 @@ const breadcrumbItems = [
     const hrefOf = (el: HTMLElement) => (el.matches("a") ? el.getAttribute("href") : el.querySelector("a")?.getAttribute("href")) || "";
     const allCount = new Set(Array.from(root.querySelectorAll<HTMLElement>("[data-item]")).map(hrefOf)).size;
 
-    const kind: string = "all"; // 形式の絞り込みボタンは廃止（常に記事・資料の両方を対象）
+    const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-type]"));
+    const themeSelect = root.querySelector<HTMLSelectElement>("[data-theme]");
+    let kind = "all";
+    let theme = "";
     let query = "";
 
     function render() {
       const words = normalize(query).split(/\s+/).filter(Boolean);
+      // active：形式かキーワードで絞り込み中（「もっと見る」で隠れている分も含めて、条件に合う全件を出す）
       const active = kind !== "all" || words.length > 0;
       const matched = new Set<string>();
 
       for (const section of sections) {
+        // テーマを選んでいるときは、そのテーマのブロックだけを出す
+        if (theme && section.id !== theme) {
+          section.hidden = true;
+          continue;
+        }
         let sectionHits = 0;
         // 左（main）は記事と資料の混合リスト、右（resource）は代表資料1件
         for (const column of ["main", "resource"]) {
@@ -206,9 +252,31 @@ const breadcrumbItems = [
         section.hidden = active && sectionHits === 0;
       }
 
-      if (status) status.textContent = active ? `${matched.size}件を表示` : `${allCount}件すべてを表示`;
-      if (empty) empty.hidden = !active || matched.size > 0;
+      const filtered = active || theme !== "";
+      if (status) status.textContent = filtered ? `${matched.size}件を表示` : `${allCount}件すべてを表示`;
+      if (empty) empty.hidden = !filtered || matched.size > 0;
     }
+
+    typeButtons.forEach((button) =>
+      button.addEventListener("click", () => {
+        kind = button.dataset.type || "all";
+        typeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+        render();
+      }),
+    );
+    themeSelect?.addEventListener("change", () => {
+      theme = themeSelect.value;
+      render();
+    });
+    root.querySelector<HTMLButtonElement>("[data-clear]")?.addEventListener("click", () => {
+      kind = "all";
+      theme = "";
+      query = "";
+      if (input) input.value = "";
+      if (themeSelect) themeSelect.value = "";
+      typeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.type === "all")));
+      render();
+    });
 
     form?.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -230,3 +298,15 @@ const breadcrumbItems = [
     );
   }
 </script>
+
+<style>
+  /* テーマの矢羽根（PCだけ。スマホは四角のまま縦に並べる） */
+  @media (min-width: 1024px) {
+    .chev {
+      clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
+    }
+    .chev-first {
+      clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
+    }
+  }
+</style>

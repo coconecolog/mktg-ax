@@ -59,7 +59,10 @@ const hasRight = section.resources.length > 0 || related.length > 0;
           {(featuredPost || listItems.length > 0) && <p class="text-sm font-bold text-ink-950">記事で理解する</p>}
 
           {featuredPost && (
-            <a href={featuredPost.href} data-item data-kind="post" data-search={searchText(featuredPost)} class="group mt-4 flex items-start gap-5 border-b border-neutral-300 pb-6">
+            <a href={featuredPost.href} data-item data-kind="post" data-search={searchText(featuredPost)} class="group mt-4 flex flex-col items-start gap-4 border-b border-neutral-300 pb-6 sm:flex-row sm:gap-5">
+              <span class="block aspect-video w-full shrink-0 overflow-hidden bg-neutral-100 sm:w-60">
+                <img src={featuredPost.thumbnail || DEFAULT_OG_IMAGE} alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+              </span>
               <span class="min-w-0 flex-1">
                 <span class="flex items-center gap-2">
                   <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
@@ -68,7 +71,7 @@ const hasRight = section.resources.length > 0 || related.length > 0;
                 <span class="mt-3 block text-lg font-bold leading-relaxed text-ink-950 group-hover:underline sm:text-xl">{featuredPost.title}</span>
                 {featuredPost.description && <span class="mt-2 line-clamp-2 text-sm text-neutral-500">{featuredPost.description}</span>}
               </span>
-              <span aria-hidden="true" class="mt-8 shrink-0 text-lg text-ink-950 transition-transform group-hover:translate-x-1">→</span>
+              <span aria-hidden="true" class="hidden mt-8 shrink-0 text-lg sm:block text-ink-950 transition-transform group-hover:translate-x-1">→</span>
             </a>
           )}
 
@@ -77,6 +80,9 @@ const hasRight = section.resources.length > 0 || related.length > 0;
               {listItems.map((item, i) => (
                 <li data-item data-kind={item.kind} data-search={searchText(item)} data-extra={i >= visibleRows ? "" : undefined} hidden={i >= visibleRows} class="border-b border-neutral-300">
                   <a href={item.href} class="group flex items-center gap-4 py-4">
+                    <span class="block aspect-video w-20 shrink-0 overflow-hidden bg-neutral-100 sm:w-24">
+                      <img src={item.thumbnail || DEFAULT_OG_IMAGE} alt="" loading="lazy" class="h-full w-full object-cover" />
+                    </span>
                     <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">{item.kind === "resource" ? "無料資料" : "記事"}</span>
                     <span class="min-w-0 flex-1 text-sm font-medium leading-relaxed text-ink-950 group-hover:underline sm:text-[15px]">{item.title}</span>
                     <span aria-hidden="true" class="shrink-0 text-ink-950 transition-transform group-hover:translate-x-1">→</span>
@@ -87,7 +93,7 @@ const hasRight = section.resources.length > 0 || related.length > 0;
           )}
 
           {extraCount > 0 && (
-            <button type="button" data-more="main" class="mt-5 flex w-full items-center justify-center gap-2 border border-ink-950 bg-white px-4 py-3 text-sm font-bold text-ink-950 transition-colors hover:bg-ink-950 hover:text-white">
+            <button type="button" data-more="main" class="mt-3 flex w-full items-center justify-center gap-2 px-4 py-3 text-xs font-bold text-neutral-500 transition-colors hover:text-ink-950">
               記事・資料をもっと見る（残り{extraCount}件）<span aria-hidden="true">↓</span>
             </button>
           )}
