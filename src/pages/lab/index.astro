@@ -1,5 +1,5 @@
 ---
-// ライブラリ（記事・資料）トップ（2026-10-12リニューアル）。
+// Lab（記事・資料）トップ（2026-10-12リニューアル）。
 // 上:「カテゴリから探す」… カテゴリごとにサブカテゴリ（テーマ）を並べ、カテゴリページの該当テーマ（#アンカー）へ案内する
 // 下:「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う
 // 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
@@ -37,15 +37,15 @@ const pageDescription =
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/lab" },
+  { name: "Lab（記事・資料）", href: "/lab" },
 ];
 ---
 
-<BaseLayout title="ライブラリ（記事・資料）" description={pageDescription} ogImage="/open-graph/default.png" pagefindIgnore>
+<BaseLayout title="Lab（記事・資料）" description={pageDescription} ogImage="/open-graph/default.png" pagefindIgnore>
   <Breadcrumb items={breadcrumbItems} />
 
   <div class="mx-auto max-w-6xl px-5 pt-10 pb-16">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">ライブラリ（記事・資料）</h1>
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">Lab（記事・資料）</h1>
     <p class="mt-4 text-lg font-bold text-ink-950">記事で理解し、資料で実践する。</p>
     <p class="mt-3 text-sm leading-relaxed text-neutral-500">{pageDescription}</p>
 
