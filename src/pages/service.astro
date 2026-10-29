@@ -5,7 +5,7 @@
 // - 活用例：FEATURED_THEME のカテゴリの、テーマ（サブカテゴリ）上位3つと各テーマの代表記事・代表資料を出す
 //   扱うテーマを変えるときは FEATURED_THEME の category を変える（文言は THEME_COPY に足す。無ければカテゴリ説明を使う）
 // - 運営者：執筆者リストDB（Notion）から取得。アイコンは執筆者画像
-// - 末尾は全ページ共通の ContactCta（カテゴリ一覧・タグ一覧・ご要望）
+// - 末尾は全ページ共通の ContactCta（ご要望）。カテゴリ一覧・タグ一覧はテーマ一覧と重なるため出さない
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
@@ -138,8 +138,7 @@ const heroMeerkats = ALL_MEERKATS.slice(0, 3);
 
   {/* 導入 */}
   <section class="mx-auto max-w-6xl px-5 pt-10 pb-16 md:pb-20">
-    <p class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">SERVICE</p>
-    <h1 class="mt-4 text-3xl font-bold tracking-tight text-ink-950 md:text-[38px]">サービスについて</h1>
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">サービスについて</h1>
 
     <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:gap-[60px]">
       <div>
@@ -373,7 +372,7 @@ const heroMeerkats = ALL_MEERKATS.slice(0, 3);
   </section>
   )}
 
-  <ContactCta />
+  <ContactCta showSiteIndex={false} />
 </BaseLayout>
 
 <script is:inline define:vars={{ all: ALL_MEERKATS }}>
