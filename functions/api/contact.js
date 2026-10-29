@@ -31,7 +31,16 @@ function escapeHtml(value) {
   );
 }
 
-const INQUIRY_TYPES = ["一般のお問い合わせ", "サービス・ご相談について", "資料掲載について", "記事・取材について", "その他"];
+const INQUIRY_TYPES = [
+  "一般のお問い合わせ",
+  "サービス・ご相談について",
+  "使い方・サポート",
+  "バグ報告",
+  "機能提案・要望",
+  "資料掲載について",
+  "記事・取材について",
+  "その他",
+];
 
 export async function onRequestPost({ request, env }) {
   let body;
