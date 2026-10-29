@@ -1,6 +1,6 @@
 ---
 // 一覧ページ（資料一覧・ブログ）の絞り込みバー（2026-10-29追加）。
-// 左に「カテゴリ」、右に「キーワード検索」を1行で並べる（スマホでは2段）。
+// 左に「カテゴリ」、右に「キーワード検索」「検索する」「条件をクリア」を1行で並べる（スマホでは2段）。
 //
 // 絞り込む対象は target で指定した要素の中の [data-row]。各行には次の属性を付けておく。
 //   data-categories … カテゴリ名を「|」区切りで（例: "KPI・効果測定|予算配分・投資判断"）
@@ -53,13 +53,6 @@ const categories = getAllCategories().map((c) => ({ name: c.name, slug: getCateg
         <option value="">すべてのカテゴリ</option>
         {categories.map((c) => <option value={c.slug} data-name={c.name}>{c.name}</option>)}
       </select>
-      <button
-        type="button"
-        data-filter-clear
-        class="shrink-0 text-xs text-neutral-500 underline-offset-2 hover:text-ink-950 hover:underline"
-      >
-        条件をクリア
-      </button>
     </div>
 
     <div class="flex min-w-0 flex-1 gap-2">
@@ -75,6 +68,13 @@ const categories = getAllCategories().map((c) => ({ name: c.name, slug: getCateg
         />
       </label>
       <button type="submit" class="h-12 shrink-0 bg-ink-950 px-6 text-sm font-bold text-white hover:opacity-90">検索する</button>
+      <button
+        type="button"
+        data-filter-clear
+        class="shrink-0 px-1 text-xs text-neutral-500 underline-offset-2 hover:text-ink-950 hover:underline"
+      >
+        条件をクリア
+      </button>
     </div>
   </div>
 </form>
