@@ -1,4 +1,6 @@
 ---
+// 2026-10-29: サイト共通の型（角丸なし・白黒、H1まわりは/labと同じ形、黒の2px線＋見出し＋英字ラベル）にそろえた。
+// お問い合わせ種別は functions/api/contact.js の INQUIRY_TYPES と必ず同じにする。
 // お問い合わせフォームは functions/api/contact.js（Cloudflare Pages Function）経由で
 // Resendから運営者宛に通知メールを送信する。SNS導線は開設まではダミー表示のまま。
 // CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください
@@ -19,28 +21,37 @@ const faqItems = [
     answer: "通常2〜3営業日以内にご返信いたします。内容によりお時間をいただく場合がございます。",
   },
   {
-    question: "提供されているツールやテンプレートの使い方が分からない時は質問できますか？",
+    question: "Kitや資料の使い方が分からない時は質問できますか？",
     answer:
-      "カテゴリで「使い方・サポート」をお選びいただき、該当ページや具体的な状況をお知らせください。なお、個別環境への設定代行や独自のカスタマイズ対応は対象外となります。",
+      "お問い合わせ種別で「使い方・サポート」をお選びいただき、該当ページや具体的な状況をお知らせください。なお、個別環境への設定代行や独自のカスタマイズ対応は対象外となります。",
   },
   {
     question: "記事の誤脱字やツールの不具合（動作不良）を見つけた場合はどこから連絡すればよいですか？",
-    answer: "カテゴリで「バグ報告」をお選びのうえ、該当ページのURLと不具合の内容をお送りください。確認のうえ速やかに修正・改善を行います。",
+    answer: "お問い合わせ種別で「バグ報告」をお選びのうえ、該当ページのURLと不具合の内容をお送りください。確認のうえ速やかに修正・改善を行います。",
   },
   {
     question: "新しいツールや書いてほしい記事テーマのリクエストはできますか？",
     answer:
-      "カテゴリで「機能提案・要望」をお選びのうえご意見をお寄せください。いただいたご要望はすべて拝読し、今後のコンテンツ・ツール開発の参考にさせていただきます。",
+      "お問い合わせ種別で「機能提案・要望」をお選びのうえご意見をお寄せください。いただいたご要望はすべて拝読し、今後のコンテンツ・ツール開発の参考にさせていただきます。",
   },
 ];
 
-const snsLinks = [
-  { icon: "X", name: "X" },
-  { icon: "🧵", name: "Threads" },
-  { icon: "📷", name: "Instagram" },
-  { icon: "💼", name: "LinkedIn" },
-  { icon: "▶️", name: "YouTube" },
+const inquiryTypes = [
+  "一般のお問い合わせ",
+  "サービス・ご相談について",
+  "使い方・サポート",
+  "バグ報告",
+  "機能提案・要望",
+  "資料掲載について",
+  "記事・取材について",
+  "その他",
 ];
+
+const snsLinks = ["X", "Threads", "Instagram", "LinkedIn", "YouTube"];
+
+const inputClass =
+  "mt-2 w-full border border-[#c9c9cf] bg-white px-3 py-2.5 text-sm text-ink-950 placeholder:text-neutral-400 focus:border-ink-950 focus:outline-none";
+const labelClass = "text-[13px] font-bold text-ink-950";
 ---
 
 <BaseLayout
@@ -51,79 +62,57 @@ const snsLinks = [
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-5xl px-5 py-12">
-    <p class="text-sm font-bold uppercase tracking-wider text-brand-600">Contact</p>
-    <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-950">お問い合わせ</h1>
-    <p class="mt-4 leading-relaxed text-neutral-500">
-      サービスに関するご相談、資料の掲載、記事・取材のご依頼など、お気軽にご連絡ください。内容を確認のうえ、担当より折り返しご連絡いたします。
-    </p>
-
-    <FaqAccordion items={faqItems} heading="よくあるご質問" />
-
-    <div class="mx-auto mt-12 max-w-2xl">
-      <div class="text-center">
-        <h2 class="text-lg font-bold text-ink-950">お問い合わせフォーム</h2>
-        <p class="mt-2 text-sm text-neutral-500">下記フォームよりお気軽にご連絡ください。</p>
+  <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 md:pb-20">
+    {/* 導入（/lab と同じ形） */}
+    <div class="flex items-center justify-between gap-8">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">お問い合わせ</h1>
+        <p class="mt-4 text-lg font-bold text-ink-950">ご相談・ご要望を、お気軽に。</p>
+        <p class="mt-3 text-sm leading-relaxed text-neutral-500">
+          サービスに関するご相談、資料の掲載、記事・取材のご依頼など、お気軽にご連絡ください。内容を確認のうえ、担当より折り返しご連絡いたします。
+        </p>
       </div>
+      <img src="/images/logo/meerkat-symbol.svg" alt="" width="160" height="160" class="hidden h-32 w-32 shrink-0 sm:block lg:h-40 lg:w-40" />
+    </div>
 
-      <form id="contact-form" class="mt-6 rounded-2xl border border-neutral-100 bg-white px-6 py-6 md:px-8">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    {/* お問い合わせフォーム */}
+    <section class="mt-12">
+      <div class="h-[2px] bg-ink-950"></div>
+      <div class="mt-6 flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">お問い合わせフォーム</h2>
+        <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">FORM</p>
+      </div>
+      <p class="mt-5 text-[15px] leading-[1.9] text-[#4f5057]">* は必須項目です。</p>
+
+      <form id="contact-form" class="mt-8 max-w-3xl">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label for="cf-name" class="text-xs font-medium text-neutral-600">お名前<span class="ml-0.5 text-brand-600">*</span></label>
-            <input
-              id="cf-name"
-              name="name"
-              type="text"
-              required
-              placeholder="山田 太郎"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            />
+            <label for="cf-name" class={labelClass}>お名前<span class="ml-0.5">*</span></label>
+            <input id="cf-name" name="name" type="text" required placeholder="山田 太郎" class={inputClass} />
           </div>
           <div>
-            <label for="cf-company" class="text-xs font-medium text-neutral-600">会社名</label>
-            <input
-              id="cf-company"
-              name="company"
-              type="text"
-              placeholder="株式会社サンプル"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            />
+            <label for="cf-company" class={labelClass}>会社名</label>
+            <input id="cf-company" name="company" type="text" placeholder="株式会社サンプル" class={inputClass} />
           </div>
           <div>
-            <label for="cf-email" class="text-xs font-medium text-neutral-600">メールアドレス<span class="ml-0.5 text-brand-600">*</span></label>
-            <input
-              id="cf-email"
-              name="email"
-              type="email"
-              required
-              placeholder="you@example.com"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-            />
+            <label for="cf-email" class={labelClass}>メールアドレス<span class="ml-0.5">*</span></label>
+            <input id="cf-email" name="email" type="email" required placeholder="you@example.com" class={inputClass} />
           </div>
           <div>
-            <label for="cf-type" class="text-xs font-medium text-neutral-600">お問い合わせ種別<span class="ml-0.5 text-brand-600">*</span></label>
-            <select
-              id="cf-type"
-              name="inquiryType"
-              required
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950"
-            >
-              <option>一般のお問い合わせ</option>
-              <option>サービス・ご相談について</option>
-              <option>資料掲載について</option>
-              <option>記事・取材について</option>
-              <option>その他</option>
+            <label for="cf-type" class={labelClass}>お問い合わせ種別<span class="ml-0.5">*</span></label>
+            <select id="cf-type" name="inquiryType" required class={`${inputClass} rounded-none`}>
+              {inquiryTypes.map((t) => <option>{t}</option>)}
             </select>
           </div>
           <div class="sm:col-span-2">
-            <label for="cf-message" class="text-xs font-medium text-neutral-600">お問い合わせ内容<span class="ml-0.5 text-brand-600">*</span></label>
+            <label for="cf-message" class={labelClass}>お問い合わせ内容<span class="ml-0.5">*</span></label>
             <textarea
               id="cf-message"
               name="message"
               required
-              rows="5"
+              rows="6"
               placeholder="お問い合わせ内容をご記入ください"
-              class="mt-1.5 w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
+              class={`${inputClass} resize-none`}
             ></textarea>
           </div>
         </div>
@@ -134,11 +123,11 @@ const snsLinks = [
           <input id="cf-website" name="website" type="text" tabindex={-1} autocomplete="off" />
         </div>
 
-        <label class="mt-5 flex items-start gap-2">
-          <input id="cf-consent" name="consent" type="checkbox" required class="mt-0.5" />
-          <span class="text-xs leading-relaxed text-neutral-500">
+        <label class="mt-6 flex items-start gap-2">
+          <input id="cf-consent" name="consent" type="checkbox" required class="mt-1 accent-ink-950" />
+          <span class="text-[13px] leading-[1.9] text-[#4f5057]">
             ご入力いただいた情報は、お問い合わせへの対応のために利用します。
-            <a href="/privacy" class="text-brand-600 underline">個人情報保護方針</a>
+            <a href="/privacy" class="font-bold text-ink-950 underline underline-offset-2">個人情報保護方針</a>
             に同意のうえ送信します。
           </span>
         </label>
@@ -146,35 +135,40 @@ const snsLinks = [
         <button
           id="cf-submit"
           type="submit"
-          class="mt-6 rounded-full bg-brand-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+          class="mt-6 flex h-[52px] w-full items-center justify-between gap-6 border border-ink-950 bg-ink-950 px-[22px] text-sm font-bold text-white hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-72"
         >
-          送信する
+          送信する<span class="text-xl font-normal" aria-hidden="true">→</span>
         </button>
         <p id="cf-result" class="mt-3 hidden text-xs leading-relaxed" role="status"></p>
-        <p class="mt-3 text-xs text-neutral-400">送信いただいた内容は、お問い合わせへの対応以外の目的では使用いたしません。</p>
+        <p class="mt-3 text-xs leading-[1.9] text-[#7b7c83]">送信いただいた内容は、お問い合わせへの対応以外の目的では使用いたしません。</p>
       </form>
-    </div>
+    </section>
 
-    <div class="mt-12">
-      <h2 class="text-lg font-bold text-ink-950">SNS</h2>
-      <div class="mt-6 rounded-2xl border border-neutral-100 bg-white p-6">
-        <p class="text-xs leading-relaxed text-neutral-500">各種SNSアカウントは現在準備中です。開設まで今しばらくお待ちください。</p>
-        <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
-          {
-            snsLinks.map((sns) => (
-              <div class="flex flex-col gap-2 rounded-xl border border-neutral-100 p-3 opacity-60">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-sm">{sns.icon}</span>
-                <span class="text-xs font-bold text-ink-950">{sns.name}</span>
-                <span class="w-fit rounded-full border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-                  準備中
-                </span>
-              </div>
-            ))
-          }
-        </div>
+    {/* よくあるご質問 */}
+    <section class="mt-16 md:mt-20">
+      <FaqAccordion items={faqItems} heading="よくあるご質問" label="FAQ" />
+    </section>
+
+    {/* SNS */}
+    <section class="mt-16 md:mt-20">
+      <div class="h-[2px] bg-ink-950"></div>
+      <div class="mt-6 flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">SNS</h2>
+        <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">SOCIAL</p>
       </div>
-    </div>
-  </section>
+      <p class="mt-5 text-[15px] leading-[1.9] text-[#4f5057]">各種SNSアカウントは現在準備中です。開設まで今しばらくお待ちください。</p>
+      <ul class="mt-8 grid grid-cols-2 border-l border-t border-[#dedee2] sm:grid-cols-5">
+        {
+          snsLinks.map((name) => (
+            <li class="flex flex-col gap-2 border-b border-r border-[#dedee2] bg-white p-4">
+              <span class="text-sm font-bold text-ink-950">{name}</span>
+              <span class="text-[11px] font-semibold tracking-wider text-[#7b7c83]">準備中</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
 
   <script>
     const form = document.getElementById("contact-form") as HTMLFormElement | null;
@@ -197,7 +191,7 @@ const snsLinks = [
       };
 
       submitBtn.disabled = true;
-      resultEl.classList.remove("hidden", "text-red-600", "text-emerald-600");
+      resultEl.classList.remove("hidden", "text-red-600", "text-ink-950");
       resultEl.classList.add("text-neutral-500");
       resultEl.textContent = "送信中です…";
 
@@ -234,7 +228,7 @@ const snsLinks = [
             (el as HTMLInputElement | HTMLButtonElement).disabled = true;
           });
           resultEl.classList.remove("text-neutral-500");
-          resultEl.classList.add("text-emerald-600");
+          resultEl.classList.add("text-ink-950");
           resultEl.textContent = "送信しました。ページを移動します…";
         } else {
           submitBtn.disabled = false;
