@@ -1,12 +1,13 @@
 ---
+// 記事一覧（2026-10-29：資料一覧と同じ作りに変更。右カラムを外し、カテゴリ・キーワードの絞り込みバーと共通フッターを追加）
 import type { GetStaticPaths } from "astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ListFilter from "@/components/ListFilter.astro";
 import PostCard from "@/components/PostCard.astro";
 import Pagination from "@/components/Pagination.astro";
-import BlogSidebar from "@/components/BlogSidebar.astro";
-import { getAllCategories, getAllPosts, getAllTags, getPopularPosts } from "@/lib/posts";
+import ContactCta from "@/components/ContactCta.astro";
+import { getAllPosts } from "@/lib/posts";
 import { POSTS_PER_PAGE } from "@/consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -15,76 +16,68 @@ export const getStaticPaths = (async ({ paginate }) => {
 }) satisfies GetStaticPaths;
 
 const { page } = Astro.props;
-const tags = getAllTags();
 // 1ページ目には全記事を載せ、2ページ目以降に出る記事は隠しておく（絞り込みのときに全記事から探せるように）。
 // 2ページ目以降で絞り込むと、1ページ目（/lab/blog?category=…&q=…）へ移動して絞り込む。
 const isFirstPage = page.currentPage === 1;
 const pageSlugs = new Set(page.data.map((p) => p.slug));
 const listPosts = isFirstPage ? getAllPosts() : page.data;
-const categories = getAllCategories();
-const sidebarPopularPosts = getPopularPosts(5).map((p) => ({ slug: p.slug, title: p.title }));
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ブログ", href: "/lab/blog" },
+  { name: "Lab（記事・資料）", href: "/lab" },
+  { name: "記事一覧", href: "/lab/blog" },
 ];
 ---
 
 <BaseLayout
-  title="ブログ"
+  title={isFirstPage ? "記事一覧" : `記事一覧（${page.currentPage}ページ目）`}
   description="マーケティング分析・施策・マーケット情報についての記事一覧です。"
   ogImage="/open-graph/default.png"
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <div class="mx-auto max-w-6xl px-5 pt-10 pb-16">
-    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
-      <div class="min-w-0">
-        <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">ブログ</h1>
-        <p class="mt-3 text-sm leading-relaxed text-neutral-500">マーケティング分析・施策・マーケット情報をお届けします。</p>
+  <section class="mx-auto max-w-6xl px-5 pt-10 pb-16">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">記事一覧</h1>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">マーケティング分析・施策・マーケット情報をお届けします。</p>
 
-        <ListFilter
-          action="/lab/blog"
-          placeholder="記事を検索　例：予算案、KPI"
-          unit="記事"
-          mode={isFirstPage ? "inline" : "redirect"}
-        />
+    <ListFilter
+      action="/lab/blog"
+      placeholder="記事を検索　例：予算案、KPI、営業連携"
+      unit="記事"
+      mode={isFirstPage ? "inline" : "redirect"}
+    />
 
-        <p class="mt-6 border-b border-neutral-300 pb-4 text-sm font-bold text-ink-950" data-filter-status aria-live="polite">
-          {page.total}件中 {page.total === 0 ? 0 : page.start + 1}–{page.total === 0 ? 0 : page.end + 1}件を表示
-        </p>
+    <p class="mt-6 border-b border-neutral-300 pb-4 text-sm font-bold text-ink-950" data-filter-status aria-live="polite">
+      {page.total}件中 {page.total === 0 ? 0 : page.start + 1}–{page.total === 0 ? 0 : page.end + 1}件を表示
+    </p>
 
-        {
-          listPosts.length > 0 ? (
-            <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-filter-list>
-              {listPosts.map((post) => (
-                <div
-                  data-row
-                  data-categories={post.categories.join("|")}
-                  data-search={`${post.title} ${post.description} ${post.categories.join(" ")}`}
-                  data-paged-out={pageSlugs.has(post.slug) ? undefined : ""}
-                  hidden={!pageSlugs.has(post.slug)}
-                  class="flex"
-                >
-                  <PostCard post={post} />
-                </div>
-              ))}
+    {
+      listPosts.length > 0 ? (
+        <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-filter-list>
+          {listPosts.map((post) => (
+            <div
+              data-row
+              data-categories={post.categories.join("|")}
+              data-search={`${post.title} ${post.description} ${post.categories.join(" ")}`}
+              data-paged-out={pageSlugs.has(post.slug) ? undefined : ""}
+              hidden={!pageSlugs.has(post.slug)}
+              class="flex"
+            >
+              <PostCard post={post} />
             </div>
-          ) : (
-            <p class="mt-10 text-neutral-400">まだ記事がありません。</p>
-          )
-        }
+          ))}
+        </div>
+      ) : (
+        <p class="mt-10 text-neutral-400">まだ記事がありません。</p>
+      )
+    }
 
-        <p data-filter-empty hidden class="py-12 text-center text-sm text-neutral-500">
-          条件に合う記事が見つかりませんでした。キーワードやカテゴリを変えてお試しください。
-        </p>
+    <p data-filter-empty hidden class="py-12 text-center text-sm text-neutral-500">
+      条件に合う記事が見つかりませんでした。キーワードやカテゴリを変えてお試しください。
+    </p>
 
-        <div data-filter-off><Pagination page={page} basePath="/lab/blog" /></div>
-      </div>
+    <div data-filter-off><Pagination page={page} basePath="/lab/blog" /></div>
+  </section>
 
-      <aside class="lg:sticky lg:top-24 lg:self-start">
-        <BlogSidebar categories={categories} popularPosts={sidebarPopularPosts} tags={tags} />
-      </aside>
-    </div>
-  </div>
+  <ContactCta />
 </BaseLayout>
