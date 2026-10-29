@@ -10,12 +10,12 @@ export const HOME_HERO = {
   eyebrow: "少人数でマーケティングを担う、BtoB企業へ",
   titleLines: ["施策の優先順位も、", "投資の根拠も。", "自社の数字で判断する。"],
   descriptionLines: [
-    "少人数体制でマーケティングを担う方に、記事・資料・分析キットで",
+    "少人数体制でマーケティングを担う方に、記事・資料・分析ツールで",
     "自社の判断基準を。戦略の立案から運用・改善、社内への提案まで。",
     "施策の優先順位と成果を見える化する実務メディアです。",
   ],
-  primaryCta: { label: "記事・資料を見る", href: "/lab" },
-  secondaryCta: { label: "キットを使ってみる", href: "/tools" },
+  primaryCta: { label: "Lab（記事・資料）を見る", href: "/lab" },
+  secondaryCta: { label: "ツール（Kit）を使ってみる", href: "/tools" },
   // 右側の画像（public/images/home/ に置いたファイル）。画像もリンクになります（リンク先は imageLink.href）
   image: {
     src: "/images/home/kpi-illustration.svg",
@@ -31,7 +31,7 @@ export const HOME_HERO = {
 // ------------------------------------------------------------
 export const HOME_STANDARDS = {
   eyebrow: "共通基準",
-  headingLines: ["すべての記事・資料・キットは、", "同じ定義で計算しています。"],
+  headingLines: ["すべての記事・資料・ツール（Kit）は、", "同じ定義で計算しています。"],
   items: [
     { label: "前提の共有", title: "架空の製造業の前提", link: { label: "モデル企業を見る", href: "/standards" } },
     { label: "具体のシミュレーション", title: "予算・リード・受注の内訳", link: { label: "施策と数字を見る", href: "/standards/model" } },
@@ -56,11 +56,11 @@ export const HOME_FOCUS = {
   category: "KPI・効果測定",
   stepCount: 3,
   stepLabel: "STEP",
-  // キット（左から順に表示）。行を増やす・消すときは { ... }, のまとまりごと操作してください。
+  // Kit（左から順に表示）。行を増やす・消すときは { ... }, のまとまりごと操作してください。
   tools: [
     {
-      label: "キット",
-      name: "施策効果診断キット",
+      label: "Kit",
+      name: "施策効果診断Kit",
       description:
         "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。ファイルは送信せず、ブラウザの中だけで読みます。",
       note: "",
@@ -69,8 +69,8 @@ export const HOME_FOCUS = {
       cta: { label: "KPIを分析する", href: "/tools/kpi-analysis" },
     },
     {
-      label: "キット",
-      name: "KPI妥当性診断キット",
+      label: "Kit",
+      name: "KPI妥当性診断Kit",
       description:
         "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れるだけです。",
       note: "期のはじめにKPIを決めるときに。結果はA4縦のPDFで出せます。",
@@ -78,7 +78,7 @@ export const HOME_FOCUS = {
       cta: { label: "KPIを診断する", href: "/tools/kpi-check" },
     },
   ],
-  // キットの下の関連資料の文言
+  // Kitの下の関連資料の文言
   resourceTypeLabel: "無料資料",
   resourceCtaLabel: "無料で資料をもらう",
   postTag: "記事",
@@ -99,24 +99,24 @@ export const HOME_ISSUES = {
 };
 
 // ------------------------------------------------------------
-// 計画から改善、報告まで（3つのステップのキット）
+// 計画から改善、報告まで（3つのステップのKit）
 // ・resource は「あわせて使う資料」（1つ）。href を null にするとリンクなしで「準備中」と出ます
 // ・resource.label は資料の上の見出し（カードごとに変えられる）。coverTitle は表紙に出す名前（改行は \n）。guide は資料の下の案内文（空なら出さない）
-// ・2026-10-28：作成キットは作成時に判定までするので、診断キットは「あわせて使う」に出さない
+// ・2026-10-28：作成Kitは作成時に判定までするので、診断Kitは「あわせて使う」に出さない
 // ------------------------------------------------------------
 export const HOME_PDCA = {
   heading: "計画から改善、報告まで。",
   sub: "予算とKPIを1本でつなぐ、3つのステップ",
-  note: "キットと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
+  note: "Kitと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
   relatedLabel: "あわせて使う資料",
   comingSoonLabel: "準備中",
-  listLink: { label: "キット一覧", href: "/tools" },
+  listLink: { label: "Kit一覧", href: "/tools" },
   steps: [
     {
       step: "01",
       phase: "計画",
       purpose: "投資の根拠をつくる",
-      name: "予算作成キット",
+      name: "予算作成Kit",
       description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
       href: "/tools/budget-simulator",
       resource: {
@@ -125,14 +125,14 @@ export const HOME_PDCA = {
         coverTitle: "年間\n予算表",
         typeLabel: "スプレッドシート",
         href: "/lab/whitepapers/kgi-kpi-backcast-sheet",
-        guide: "キットを使わず、スプレッドシートをダウンロードして直接入力しても作れます。表はKPI管理表の「はじめに入力」と同じなので、そのまま貼りつけられます。",
+        guide: "予算作成Kitを使わず、スプレッドシートをダウンロードして直接入力しても作れます。表はKPI管理表の「はじめに入力」と同じなので、そのまま貼りつけられます。",
       },
     },
     {
       step: "02",
       phase: "管理",
       purpose: "追う数字を決める",
-      name: "KPI管理表作成キット",
+      name: "KPI管理表作成Kit",
       description: "計画の数字を入れるだけで、毎月の予実と撤退の判断まで自動で出るKPI管理表ができます。",
       href: "/tools/kpi-sheet-maker",
       resource: {
@@ -141,14 +141,14 @@ export const HOME_PDCA = {
         coverTitle: "KPI\n管理表",
         typeLabel: "スプレッドシート",
         href: "/lab/whitepapers/kpi-management-template",
-        guide: "キットを使わず、スプレッドシートをダウンロードして直接入力しても作れます。",
+        guide: "KPI管理表作成Kitを使わず、スプレッドシートをダウンロードして直接入力しても作れます。",
       },
     },
     {
       step: "03",
       phase: "改善・報告",
       purpose: "打ち手を見直して伝える",
-      name: "施策効果診断キット",
+      name: "施策効果診断Kit",
       description: "KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきで示します。",
       href: "/tools/kpi-analysis",
       resource: {
@@ -157,7 +157,7 @@ export const HOME_PDCA = {
         coverTitle: "KPI\n管理表",
         typeLabel: "スプレッドシート",
         href: "/lab/whitepapers/kpi-management-template",
-        guide: "毎月の実績をKPI管理表に入れて、このキットにアップするだけで診断が終わります。",
+        guide: "毎月の実績をKPI管理表に入れて、このKitにアップするだけで診断が終わります。",
       },
     },
   ],
@@ -181,10 +181,10 @@ export const HOME_LATEST = {
 export const HOME_REQUEST = {
   eyebrow: "ご要望・ご質問",
   heading: "取り上げてほしいテーマや、使い方の質問を。",
-  description: "記事・資料・分析キットへのご要望やご質問を受け付けています。いただいた内容は、今後のコンテンツづくりの参考にします。",
+  description: "記事・資料・各種ツール（Kit）へのご要望やご質問を受け付けています。いただいた内容は、今後のコンテンツづくりの参考にします。",
   examples: [
     "こんなテーマの記事や資料を読みたい",
-    "分析キットの使い方・入力のしかたがわからない",
+    "分析Kitの使い方・入力のしかたがわからない",
     "資料の記入例や、記事の内容についてもっと知りたい",
   ],
   link: { label: "要望・質問を送る", href: "/contact" },
