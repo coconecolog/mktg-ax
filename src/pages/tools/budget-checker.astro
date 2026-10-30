@@ -9,10 +9,11 @@
 // - NGが残っていてもダウンロードできる（その旨を出す）
 // 判定と状態：src/lib/budgetCheck.ts　Excelの書き込み：src/lib/budget-sheet.ts　画面：src/scripts/budget-checker/app.ts
 // ひな形：public/files/tools/budget-sheet-template.xlsx（scripts/build-budget-sheet-template.py で作る）
-// 記入例：/tools/budget-checker?sample=1（基本モデルの安定期。年間予算表の記入例と同じ数字）
+// サンプル画面：/tools/budget-checker/sample（基本モデルの安定期。診断画面と年間予算表の完成イメージをタブで切り替え）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
+import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import { AI_PROMPT } from "@/lib/budgetCheck";
 import "@/styles/budget-checker.css";
@@ -36,16 +37,6 @@ const ICON = {
   file: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6M8 13h8M8 17h8M12 11v8"],
   key: "M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10",
 };
-const PRE = [
-  { key: "goal", label: "売上目標" },
-  { key: "price", label: "平均受注単価" },
-  { key: "gmPct", label: "粗利率（%）" },
-  { key: "paybackYears", label: "回収期間（年）" },
-  { key: "leadTime", label: "リードタイム（月）" },
-  { key: "common", label: "共通費" },
-] as const;
-const FIELDS = ["leads", "valid", "deals", "wins", "ext", "labor"] as const;
-const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals: "商談数", wins: "受注数", ext: "外部費用", labor: "人件費" } as const;
 ---
 
 <BaseLayout title={`${TOOL_TITLE}｜予算案を診断して直し、年間予算表に仕上げる｜MeerKitLab`} description={TOOL_DESCRIPTION} ogImage="/open-graph/default.png">
@@ -76,20 +67,20 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
         <li class="bk-step">
           <p class="bk-step-h"><span class="bk-no">2</span>診断する</p>
           <p class="bk-step-p">数字を直すと判定がすぐ変わる。NGがなくなるまで直す</p>
-          <a class="bk-th bk-th-2" href="/tools/budget-checker?sample=1" aria-label="診断画面の見本を見る">
+          <a class="bk-th bk-th-2" href="/tools/budget-checker/sample" aria-label="診断画面の見本を見る">
             <div class="bk-th-grid bk-th-g5">
               {Array.from({ length: 5 }).map(() => <i class="k" />)}
               {Array.from({ length: 35 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 33 ? "r" : "b"} />)}
             </div>
             <div class="bk-th-alert"><span>1 直す</span><span class="o">0 確認</span><i /><i class="s" /><i /><i class="s" /><em>メールのCPL</em></div>
           </a>
-          <a class="bk-sample" href="/tools/budget-checker?sample=1">診断画面の見本を見る →</a>
+          <a class="bk-sample" href="/tools/budget-checker/sample">診断画面の見本を見る →</a>
         </li>
         <li class="bk-arrow" aria-hidden="true">→</li>
         <li class="bk-step">
           <p class="bk-step-h"><span class="bk-no">3</span>年間予算表 完成</p>
           <p class="bk-step-p">直した数字と診断結果が入った年間予算表（Excel）をダウンロード</p>
-          <a class="bk-th bk-th-3" href="/tools/budget-checker?sample=1&view=sheet" aria-label="年間予算表の見本を見る">
+          <a class="bk-th bk-th-3" href="/tools/budget-checker/sample?tab=sheet" aria-label="年間予算表の見本を見る">
             <i class="bk-th-title" />
             <div class="bk-th-grid bk-th-g9">
               {Array.from({ length: 9 }).map(() => <i class="k" />)}
@@ -101,7 +92,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
             </div>
             <span class="bk-th-tabs"><b>年間予算表</b><b>診断結果</b></span>
           </a>
-          <a class="bk-sample" href="/tools/budget-checker?sample=1&view=sheet">年間予算表の見本を見る →</a>
+          <a class="bk-sample" href="/tools/budget-checker/sample?tab=sheet">年間予算表の見本を見る →</a>
         </li>
       </ol>
 
@@ -158,7 +149,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
 
       <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
       <p class="bk-err" id="bk-err" role="alert" hidden></p>
-      <p class="bk-hint">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）・<a href="/tools/budget-checker?sample=1">記入例で試す（基本モデルの安定期）→</a></p>
+      <p class="bk-hint">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）・<a href="/tools/budget-checker/sample">サンプル画面を見る（基本モデルの安定期）→</a></p>
 
       <div class="bk-next">
         <span>予算をまだ作っていないなら</span>
@@ -178,147 +169,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
       </div>
       <div class="bk-notes" id="bk-notes" hidden></div>
 
-      <div class="bk-views" role="tablist" aria-label="表示">
-        <button type="button" role="tab" class="bk-view" id="bk-v-diag" aria-selected="true">診断画面</button>
-        <button type="button" role="tab" class="bk-view" id="bk-v-sheet" aria-selected="false">年間予算表（完成イメージ）</button>
-        <span class="bk-tab-n" id="bk-v-note">ダウンロードするExcelと同じ中身です</span>
-      </div>
-
-      <div class="bk-sheetview" id="bk-sheetview" hidden>
-        <div class="bk-sheettabs">
-          <button type="button" class="bk-stab" id="bk-s-main" aria-selected="true">年間予算表（施策別）</button>
-          <button type="button" class="bk-stab" id="bk-s-diag" aria-selected="false">診断結果</button>
-          <button type="button" class="bk-btn bk-sheet-dl" id="bk-dl2">年間予算表をDL（Excel）</button>
-        </div>
-        <div class="bk-sheet" id="bk-sheet"></div>
-        <p class="bk-sheet-back"><button type="button" class="bk-link" id="bk-back-diag">← 診断画面に戻って数字を直す</button></p>
-      </div>
-
-      <div class="bk-grid" id="bk-diagview">
-        <form class="bk-left" id="bk-form" novalidate autocomplete="off">
-          <div class="bk-tabs" role="tablist">
-            <button type="button" role="tab" class="bk-tab" id="bk-tab-y" aria-selected="true" aria-controls="bk-pane-y">年間</button>
-            <button type="button" role="tab" class="bk-tab" id="bk-tab-m" aria-selected="false" aria-controls="bk-pane-m">月別<i class="bk-dot" id="bk-mdot" hidden></i></button>
-            <span class="bk-tab-n" id="bk-tab-n">月別のリード数・有効リード数は、年間÷12が入っています。直したいときだけ開きます</span>
-          </div>
-
-          <div id="bk-pane-y" role="tabpanel">
-            <h3 class="bk-st">1. 前提</h3>
-            <div class="bk-tw">
-              <table class="bk-t">
-                <thead><tr><th>期首</th>{PRE.map((p) => <th>{p.label}</th>)}</tr></thead>
-                <tbody>
-                  <tr>
-                    <td class="in">
-                      <div class="bk-start">
-                        <input name="startYear" type="number" inputmode="numeric" min="2000" max="2100" aria-label="期首の年" />
-                        <select name="startMonth" aria-label="期首の月">{Array.from({ length: 12 }).map((_, i) => <option value={String(i + 1)}>{i + 1}月</option>)}</select>
-                      </div>
-                    </td>
-                    {PRE.map((p) => <td class="in"><input name={p.key} type="number" inputmode="decimal" min="0" step="any" aria-label={p.label} /></td>)}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="bk-tw bk-tw-s">
-              <table class="bk-t bk-t-s">
-                <thead><tr><th class="c">1社あたりの月の粗利</th><th class="c">CACの上限</th><th class="c">許容CPL</th></tr></thead>
-                <tbody><tr><td class="calc" data-out="monthlyProfit">—</td><td class="calc" data-out="cacLimit">—</td><td class="calc" data-out="allowableCpl">—</td></tr></tbody>
-              </table>
-            </div>
-
-            <h3 class="bk-st">2. チャネル別の計画（年間）</h3>
-            <div class="bk-tw">
-              <table class="bk-t">
-                <thead>
-                  <tr><th class="bk-ch">チャネル</th><th>リード数</th><th>有効リード数</th><th>商談数</th><th>受注数</th><th>外部費用</th><th>人件費</th><th class="c">CPL</th><th class="c">CAC</th></tr>
-                </thead>
-                <tbody>
-                  {
-                    CHANNELS.map((name, i) => (
-                      <tr>
-                        <td class="lb">{name}</td>
-                        {FIELDS.map((k) => (
-                          <td class="in"><input name={`ch${i}.${k}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${FIELD_LABEL[k]}`} /></td>
-                        ))}
-                        <td class="calc" data-out={`cpl${i}`}>—</td>
-                        <td class="calc" data-out={`cac${i}`}>—</td>
-                      </tr>
-                    ))
-                  }
-                  <tr class="sum">
-                    <td class="lb">合計</td>
-                    {FIELDS.map((k) => <td class="calc" data-out={`total.${k}`}>—</td>)}
-                    <td class="calc" data-out="total.cpl">—</td>
-                    <td class="calc" data-out="total.cac">—</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="bk-hint">水色＝入力　灰色＝自動計算　単位 万円　率は入れません（件数から出します）</p>
-          </div>
-
-          <div id="bk-pane-m" role="tabpanel" hidden>
-            <p class="bk-hint" style="margin-bottom:8px">展示会のように特定の月に集中するチャネルだけ直します。直したチャネルは、年間の数字を変えても月別はそのままです。</p>
-            {
-              CHANNELS.map((name, i) => (
-                <div class="bk-mblock" id={`bk-m${i}`}>
-                  <div class="bk-mhead">
-                    <h3 class="bk-st">{name}</h3>
-                    <button type="button" class="bk-link" data-reset={i}>年間÷12に戻す</button>
-                  </div>
-                  <div class="bk-tw">
-                    <table class="bk-t bk-t-m">
-                      <thead>
-                        <tr>
-                          <th class="bk-ch" />
-                          {Array.from({ length: 12 }).map((_, k) => <th data-mlabel={k}>{((3 + k) % 12) + 1}月</th>)}
-                          <th class="c">年間</th>
-                          <th class="c">計画との差</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(["leads", "valid"] as const).map((k) => (
-                          <tr>
-                            <td class="lb">{k === "leads" ? "リード数" : "有効リード数"}</td>
-                            {Array.from({ length: 12 }).map((_, m) => (
-                              <td class="in"><input name={`m${i}.${k}.${m}`} type="number" inputmode="numeric" min="0" step="1" aria-label={`${name}の${m + 1}か月目`} /></td>
-                            ))}
-                            <td class="calc" data-out={`m${i}.${k}.sum`}>—</td>
-                            <td class="calc" data-out={`m${i}.${k}.diff`}>—</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))
-            }
-            <p class="bk-hint">外部費用・人件費の月別は、ダウンロードした年間予算表に年額÷12の式で入ります。違う月はExcelで上書きしてください</p>
-          </div>
-        </form>
-
-        <aside class="bk-panel" id="bk-panel" aria-label="判定">
-          <div class="bk-counts">
-            <div class="fix"><b id="bk-c-fix">0</b>直す</div>
-            <div class="check"><b id="bk-c-check">0</b>確認</div>
-            <div class="ok"><b id="bk-c-ok">0</b>問題なし</div>
-          </div>
-          <p class="bk-wait" id="bk-wait" hidden></p>
-          <div id="bk-res">
-            <p class="bk-ph">目標に届くか</p>
-            <div id="bk-goal"></div>
-            <p class="bk-ph">コストは上限以内か</p>
-            <div id="bk-cost"></div>
-            <div id="bk-list"></div>
-          </div>
-          <div class="bk-out">
-            <p class="bk-remain" id="bk-remain" hidden></p>
-            <button type="button" class="bk-btn bk-dl" id="bk-dl">年間予算表をDL（Excel）</button>
-            <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
-          </div>
-        </aside>
-      </div>
+      <BudgetGrid />
 
       <div class="bk-mbar" id="bk-mbar">
         <span class="fix"><b id="bk-m-fix">0</b>直す</span>

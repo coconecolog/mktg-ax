@@ -1,0 +1,69 @@
+---
+// src/pages/tools/budget-checker/sample.astro
+//
+// 予算案診断キットのサンプル画面（/tools/budget-checker/sample）2026-10-30
+// 記入例（基本モデルの安定期）で、「診断画面」と「年間予算表（完成イメージ）」をタブで切り替えて見せる。1ページで完結し、ほかの画面には移らない。
+// - 年間予算表のタブは ?tab=sheet で開く（キットの入口の「3 年間予算表 完成」から）
+// - 数字は変えられるが保存しない。ダウンロードはなし（キットへのリンク）
+// 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-mode="sample"）
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
+import "@/styles/budget-checker.css";
+
+const TOOL_TITLE = "予算案診断キット";
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "便利ツール", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/budget-checker" },
+  { name: "サンプル画面", href: "/tools/budget-checker/sample" },
+];
+---
+
+<BaseLayout
+  title={`${TOOL_TITLE} サンプル画面｜診断画面と年間予算表の完成イメージ｜MeerKitLab`}
+  description="予算案診断キットのサンプル画面です。架空の会社（基本モデル）の安定期の数字で、診断画面と、ダウンロードできる年間予算表（Excel）の完成イメージを確かめられます。"
+  ogImage="/open-graph/default.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}<span class="bk-h1-sub">サンプル画面</span></h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">AIや自社で作った予算案を取りこみ、目標に届くか・コストが上限以内かを判定します。画面でNGを直すと、そのまま稟議に使える年間予算表（Excel）になります。</p>
+  </div>
+
+  <main class="bk" id="bk" data-mode="sample">
+    <p class="bk-back"><a href="/tools/budget-checker">← 予算案診断キットに戻る</a></p>
+
+    <section id="bk-work">
+      <div class="bk-views" role="tablist" aria-label="表示">
+        <button type="button" role="tab" class="bk-view" id="bk-v-diag" aria-selected="true">診断画面</button>
+        <button type="button" role="tab" class="bk-view" id="bk-v-sheet" aria-selected="false">年間予算表（完成イメージ）</button>
+        <span class="bk-tab-n" id="bk-v-note">水色の欄を直すと、右の判定がすぐ変わります</span>
+      </div>
+      <p class="bk-hint bk-sample-n">記入例：架空の会社（基本モデル）の安定期の数字です。数字を変えると判定と年間予算表が変わります（保存はされません）</p>
+
+      <div class="bk-sheetview" id="bk-sheetview" hidden>
+        <div class="bk-sheettabs">
+          <button type="button" class="bk-stab" id="bk-s-main" aria-selected="true">年間予算表（施策別）</button>
+          <button type="button" class="bk-stab" id="bk-s-diag" aria-selected="false">診断結果</button>
+          <a class="bk-btn bk-sheet-dl" href="/tools/budget-checker">自分の予算案で診断する<span aria-hidden="true">→</span></a>
+        </div>
+        <div class="bk-sheet" id="bk-sheet"></div>
+      </div>
+
+      <BudgetGrid sample />
+
+      <div class="bk-mbar" id="bk-mbar">
+        <span class="fix"><b id="bk-m-fix">0</b>直す</span>
+        <span class="check"><b id="bk-m-check">0</b>確認</span>
+        <button type="button" class="bk-btn2" id="bk-mopen">判定を見る</button>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import "@/scripts/budget-checker/app";
+</script>
