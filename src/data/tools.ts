@@ -126,7 +126,7 @@ export const KIT_GROUPS: KitGroup[] = [
       {
         icon: "sheet",
         situation: "KPI管理表がほしい",
-        description: "画面で計画の数字を入れると、妥当性を確かめてからKPI管理表（Excel）を作ります。",
+        description: "売上目標と今期の実績から逆算し、チャネルに分割すると、判定つきのKPI管理表（Excel）ができます。",
         name: "KPI管理表作成Kit",
         button: "管理表を作る",
         href: "/tools/kpi-sheet-maker",

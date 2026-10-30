@@ -8,7 +8,7 @@
 // 必要な数をこのキットの逆算（今期の率）に差しかえる
 import { BASE_RATES, CHANNELS, diagnoseBudget, emptyState, fmt, syncMonthly, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
 import { EXAMPLE } from "@/lib/kpi-sheet-maker";
-import { KITS } from "@/lib/planKits";
+import { KITS, type PlanKit } from "@/lib/planKits";
 
 export type Stage = "leads" | "valid" | "deals" | "wins";
 export type AutoKey = "valid" | "deals" | "wins";
@@ -88,6 +88,24 @@ export function applyMake(st: MakeState): MakeState {
   return st;
 }
 
+/**
+ * AIの案・年間予算表（.xlsx）から読んだ状態を、作る系のKitの状態にする（KPI管理表作成Kit）
+ * - 今期の実績は空（基本モデルの率で逆算）。読んだ有効リード数・商談数・受注数は「上書き」として残す（↺で自動に戻せる）
+ */
+export function toMake(st: BudgetState): MakeState {
+  const m: MakeState = { ...st, actual: { leads: NaN, valid: NaN, deals: NaN, wins: NaN }, ovr: CHANNELS.map(noOvr) };
+  m.input.channels.forEach((c, i) => {
+    m.ovr[i] = { valid: c.valid > 0, deals: c.deals > 0, wins: c.wins > 0 };
+  });
+  if (m.input.channels.some((c) => c.valid > 0 || c.deals > 0 || c.wins > 0))
+    m.notes = [
+      ...m.notes,
+      "読み込んだ有効リード数・商談数・受注数は、上書きした数字（水色）として入れています。↺を押すと、リード数から率で自動に配り直します。",
+      "「2. 今期の実績」を入れると、来期に必要な数を今期の率で出します（空欄のときは基本モデルの率）。",
+    ];
+  return applyMake(m);
+}
+
 /** 上書きをやめて自動に戻す */
 export function resetOvr(st: MakeState, i: number, k: AutoKey) {
   st.ovr[i][k] = false;
@@ -102,8 +120,8 @@ const STAGES = [
 ] as const;
 
 /** 判定：予算案診断キットと同じ。必要な数だけ、今期の率で逆算した数にする */
-export function diagnoseMake(st: MakeState): BudgetDiagnosis {
-  const d = diagnoseBudget(st, KITS.make);
+export function diagnoseMake(st: MakeState, kit: PlanKit = KITS.make): BudgetDiagnosis {
+  const d = diagnoseBudget(st, kit);
   const need = needCounts(st);
   if (!d.ready || !d.r || !need) return d;
   const r = d.r;
@@ -144,6 +162,6 @@ export function diagnoseMake(st: MakeState): BudgetDiagnosis {
   const sums = (s: "fix" | "check") => d.items.filter((i) => i.status === s && i.summary).map((i) => i.summary!);
   if (c.fix) d.conclusion = `直すところが${c.fix}つあります（${sums("fix").join("／")}）。${c.check ? `ほかに確認が${c.check}つあります。` : ""}`;
   else if (c.check) d.conclusion = `直すところはありません。確認が${c.check}つあります（${sums("check").join("／")}）。`;
-  else d.conclusion = `直すところも、確認するところもありません。この予算で年間予算表を仕上げられます。`;
+  else d.conclusion = `直すところも、確認するところもありません。この${kit.subject}で${kit.doc}を仕上げられます。`;
   return d;
 }

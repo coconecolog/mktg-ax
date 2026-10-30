@@ -5,7 +5,8 @@
 // - intro（/tools/budget-checker・/tools/kpi-check）：入口3つ（AIの案／.xlsx／画面で入力）。読み込んだ数字を localStorage に入れて input に移る
 // - input（…/input）：入力の画面（左＝入力、右＝判定）。localStorage から始め、入力のたびに判定し直して保存する
 // - sample（…/sample）：記入例だけを表示する（保存・ダウンロードはしない）
-// 予算作成Kit（data-kit="make"、2026-10-30）：入口は「画面で作成をはじめる」だけ。今期の実績と、自動配分の欄（上書き可）がある（src/lib/budgetMake.ts）
+// 作る系のKit（予算作成Kit data-kit="make"・KPI管理表作成Kit data-kit="kpimake"、2026-10-30）：今期の実績と、自動配分の欄（上書き可）がある（src/lib/budgetMake.ts）
+//   予算作成Kitの入口は「画面で作成をはじめる」だけ。KPI管理表作成KitはAI・.xlsxの入口もあり、読んだ数字は toMake で作る系の状態にする
 // 入れた数字やファイルはサーバーに送らない
 import {
   BASE_RATES,
@@ -30,10 +31,10 @@ import { fillPlanWorkbook, planFileName } from "@/lib/budget-sheet";
 import { KITS, readSheets, type KitId } from "@/lib/planKits";
 import { readBook } from "@/scripts/kpi-analysis/xlsx";
 import { diagHtml, sheetHtml } from "@/scripts/budget-checker/preview";
-import { AUTO_KEYS, applyMake, diagnoseMake, makeEmpty, makeSample, needCounts, rates, resetOvr, type AutoKey, type MakeState } from "@/lib/budgetMake";
+import { AUTO_KEYS, applyMake, diagnoseMake, makeEmpty, makeSample, needCounts, rates, resetOvr, toMake, type AutoKey, type MakeState } from "@/lib/budgetMake";
 
 const KIT = KITS[((document.getElementById("bk")?.dataset.kit ?? "budget") as KitId)] ?? KITS.budget;
-const MAKE = KIT.id === "make";
+const MAKE = KIT.maker;
 const STORE = KIT.store;
 const TEMPLATE = KIT.template;
 const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
@@ -56,7 +57,7 @@ let st: BudgetState = MAKE ? makeEmpty() : emptyState();
 const ms = () => st as MakeState;
 const blank = (): BudgetState => (MAKE ? makeEmpty() : emptyState());
 const sample = (): BudgetState => (MAKE ? makeSample() : sampleState());
-const diag = (): BudgetDiagnosis => (MAKE ? diagnoseMake(ms()) : diagnoseBudget(st, KIT));
+const diag = (): BudgetDiagnosis => (MAKE ? diagnoseMake(ms(), KIT) : diagnoseBudget(st, KIT));
 const ACT_KEYS = ["leads", "valid", "deals", "wins"] as const;
 
 // ---------- 保存 ----------
@@ -478,7 +479,8 @@ async function handleFile(file: File) {
   $("bk-busy").hidden = false;
   try {
     const book = await readBook(file, readSheets(KIT));
-    goInput(stateFromBook(book, file.name, KIT));
+    const read = stateFromBook(book, file.name, KIT);
+    goInput(MAKE ? toMake(read) : read);
   } catch (e) {
     showIntroError(e instanceof ReadError ? e.message : `ファイルを読めませんでした。${KIT.doc}（.xlsx）を選んでください。`);
     console.error(e);
@@ -674,7 +676,8 @@ $("bk-import")?.addEventListener("click", () => {
     return;
   }
   try {
-    goInput(stateFromAi(text));
+    const read = stateFromAi(text);
+    goInput(MAKE ? toMake(read) : read);
   } catch (e) {
     showIntroError(e instanceof ReadError ? e.message : "読み込めませんでした。");
   }

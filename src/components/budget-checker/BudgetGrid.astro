@@ -3,7 +3,7 @@
 // 予算案診断キット・KPI妥当性診断キットの入力（左）と判定（右）。各キットの /input と見本のページ（/sample）で共通
 // kit＝キット（src/lib/planKits.ts）。KPI妥当性診断キットだけ、判定に「率は目安の範囲か」を出す
 // 動きは src/scripts/budget-checker/app.ts。sample＝見本のページ（ダウンロードの代わりにキットへのリンク、記入例・すべて消すはなし）
-// 2026-10-30：予算作成Kit（kit="make"）は「2. 今期の実績と、来期に必要な数」を足し、チャネルの有効リード数・商談数・受注数を自動配分（灰色、上書きすると水色・↺で戻す）にする
+// 2026-10-30：作る系のKit（予算作成Kit kit="make"・KPI管理表作成Kit kit="kpimake"）は「2. 今期の実績と、来期に必要な数」を足し、チャネルの有効リード数・商談数・受注数を自動配分（灰色、上書きすると水色・↺で戻す）にする
 // 2026-10-30：タブは「1 年間を入力 → 2 月別で調整」（どちらも黒、開いている方に黄色の線と✓）。ダウンロードは判定の枠の外に独立し、判定の上に置く
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import { KITS, type KitId } from "@/lib/planKits";
@@ -14,7 +14,7 @@ interface Props {
 }
 const { sample = false, kit: kitId = "budget" } = Astro.props;
 const kit = KITS[kitId];
-const MAKE = kitId === "make";
+const MAKE = kit.maker;
 const AUTO = new Set(["valid", "deals", "wins"]);
 const ACT = [
   { key: "leads", label: "リード数" },
@@ -212,7 +212,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
             <p class="bk-remain" id="bk-remain" hidden></p>
             {
               sample ? (
-                <a class="bk-btn bk-dl" href={kit.path}>{MAKE ? "自分の予算を作る" : `自分の${kit.subject}で診断する`}<span aria-hidden="true">→</span></a>
+                <a class="bk-btn bk-dl" href={kit.path}>{kit.cta}<span aria-hidden="true">→</span></a>
               ) : (
                 <button type="button" class="bk-btn bk-dl" id="bk-dl">{kit.doc}をダウンロード（Excel）</button>
               )
