@@ -256,10 +256,13 @@ a.bk-th:hover { border-color: var(--ink); }
 /* 入力の画面（/tools/budget-checker/input）：使い方 */
 .bk-howto { border: 1.5px solid var(--ink); background: #fff; padding: 14px 16px; margin-bottom: 1.4rem; }
 .bk-howto-h { font-size: 0.95rem; font-weight: 800; margin: 0 0 10px; }
-.bk-howto-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.bk-howto-b { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.bk-howto-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .bk-howto-l li { display: flex; gap: 10px; align-items: flex-start; }
 .bk-howto-l .bk-tno { background: var(--ink); color: #fff; border-color: var(--ink); margin-top: 1px; }
 .bk-howto-l b { display: block; font-size: 0.88rem; }
 .bk-howto-l p { font-size: 0.8rem; color: var(--sub); line-height: 1.6; margin-top: 2px !important; }
-.bk-howto-f { font-size: 0.8rem; color: var(--sub); line-height: 1.7; border-top: 1px solid var(--line); margin-top: 12px !important; padding-top: 10px; }
-@media (max-width: 760px) { .bk-howto-l { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+.bk-howto-n { list-style: none; margin: 0; padding: 10px 14px; background: var(--bg); font-size: 0.8rem; line-height: 1.7; }
+.bk-howto-n li { padding-left: 1em; text-indent: -1em; }
+.bk-howto-n li::before { content: "・"; }
+@media (max-width: 760px) { .bk-howto-b, .bk-howto-l { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
