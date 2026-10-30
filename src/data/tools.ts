@@ -51,7 +51,7 @@ export const MAIN_TOOLS = [
     icon: "scan-search",
     titleLines: ["KPI妥当性", "診断キット"],
     description: "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを、期のはじめに診断します。",
-    detail: "KPI管理表（Excel）の読み込みにも対応。結果はA4縦のPDFで出せます。",
+    detail: "画面でNGを直すと、そのままKPI管理表（Excel）になります。",
     note: "期のはじめにKPIを決めるときに",
     href: "/tools/kpi-check",
   },

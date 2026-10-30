@@ -1,6 +1,6 @@
 /* 予算案診断キット（/tools/budget-checker）2026-10-30 作り直し
    サイトのトンマナに合わせて角丸なし・白黒。色は判定（直す＝赤、確認＝オレンジ）と、入力欄（水色）・計算（灰色）にだけ使う。
-   クラス接頭辞 bk-。色の値は KPI妥当性診断キット（kpi-check.css）と同じ。 */
+   クラス接頭辞 bk-。KPI妥当性診断キット（/tools/kpi-check）も同じ画面なので、このCSSを使う。 */
 
 .bk { --ink: #0b0b12; --sub: #4f5057; --mute: #74757c; --faint: #a3a3a8; --line: #dedee2; --bg: #f5f5f6; --calc: #ececee; --in: #eaf3f8; --in-line: #b9d3e4;
   --red: #c81e1e; --red-bg: #fbe3e3; --org: #c2560c; --org-bg: #fdecd9;
@@ -74,9 +74,8 @@ a.bk-th:hover { border-color: var(--ink); }
   .bk-sample { align-self: flex-start; margin-top: 2px; }
 }
 
-/* 必要な数字（左、1〜2のステップの幅）と、年間予算表のDL（右、3のステップの幅） */
-.bk-row2 { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr); gap: 8px; margin: 16px 0 1.8rem; }
-.bk-need { grid-column: 1 / 4; background: var(--bg); padding: 14px 16px; }
+/* 必要な数字と、資料のDL（1つの枠。DLは枠の内側の右、3のステップと同じくらいの幅） */
+.bk-need { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: center; background: var(--bg); border: 1px solid var(--line); padding: 14px 16px; margin: 16px 0 1.8rem; }
 .bk-need-top { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px !important; }
 .bk-need-top b { font-size: 0.95rem; }
 .bk-need-top span { font-size: 0.78rem; color: var(--mute); }
@@ -84,15 +83,14 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-need dt { font-size: 0.8rem; color: var(--sub); white-space: nowrap; }
 .bk-need dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .bk-tag { display: inline-block; border: 1px solid var(--line); background: #fff; padding: 3px 10px; font-size: 0.82rem; }
-.bk-need-dl { grid-column: 5; display: flex; flex-direction: column; gap: 6px; justify-content: center; background: var(--bg); border: 1px solid var(--line); padding: 14px 16px; text-decoration: none; }
+.bk-need-dl { display: flex; flex-direction: column; gap: 6px; justify-content: center; background: #fff; border: 1px solid var(--line); padding: 14px 16px; text-decoration: none; }
 .bk-need-dl:hover { border-color: var(--ink); }
 .bk-need-dl small { font-size: 0.74rem; color: var(--sub); }
 .bk-need-dl b { font-size: 0.95rem; }
 .bk-need-dl .bk-btn2 { align-self: stretch; margin-top: 4px; }
 .bk-ft { display: inline-block; font-size: 0.66rem; font-weight: 800; background: var(--ink); color: #fff; padding: 1px 5px; margin-right: 6px; vertical-align: 1px; }
 @media (max-width: 760px) {
-  .bk-row2 { grid-template-columns: minmax(0, 1fr); }
-  .bk-need, .bk-need-dl { grid-column: auto; }
+  .bk-need { grid-template-columns: minmax(0, 1fr); }
   .bk-need dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .bk-need dd { margin-bottom: 6px; }
 }
@@ -190,6 +188,7 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-ph:first-child { margin-top: 0 !important; }
 .bk-row { display: flex; justify-content: space-between; font-size: 0.78rem; gap: 6px; }
 .bk-row span:last-child { white-space: nowrap; }
+.bk-row.is-check span:last-child { color: var(--org); font-weight: 800; }
 .bk-meter { height: 6px; background: var(--bg); margin: 2px 0 7px; position: relative; }
 .bk-meter i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); }
 .bk-meter.fix i { background: var(--red); }

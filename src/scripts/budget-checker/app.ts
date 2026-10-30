@@ -1,15 +1,15 @@
 // src/scripts/budget-checker/app.ts
 //
-// 予算案診断キットの画面。判定と状態は src/lib/budgetCheck.ts、Excelは src/lib/budget-sheet.ts。
-// #bk の data-mode で動きを分ける
-// - intro（/tools/budget-checker）：入口3つ（AIの案／年間予算表の.xlsx／画面で入力）。読み込んだ数字を localStorage に入れて input に移る
-// - input（/tools/budget-checker/input）：入力の画面（左＝入力、右＝判定）。localStorage から始め、入力のたびに判定し直して保存する
-// - sample（/tools/budget-checker/sample）：記入例だけを表示する（保存・ダウンロードはしない）
+// 予算案診断キット・KPI妥当性診断キットの画面。判定と状態は src/lib/budgetCheck.ts、Excelは src/lib/budget-sheet.ts。
+// #bk の data-kit でキット（budget／kpi、違いは src/lib/planKits.ts）、data-mode で動きを分ける
+// - intro（/tools/budget-checker・/tools/kpi-check）：入口3つ（AIの案／.xlsx／画面で入力）。読み込んだ数字を localStorage に入れて input に移る
+// - input（…/input）：入力の画面（左＝入力、右＝判定）。localStorage から始め、入力のたびに判定し直して保存する
+// - sample（…/sample）：記入例だけを表示する（保存・ダウンロードはしない）
 // 入れた数字やファイルはサーバーに送らない
 import {
+  BASE_RATES,
   CHANNELS,
   ReadError,
-  SHEET_BUDGET,
   diagnoseBudget,
   emptyState,
   fmt,
@@ -25,17 +25,19 @@ import {
   type ChannelInput,
 } from "@/lib/budgetCheck";
 import { calc } from "@/lib/kpi-sheet-maker";
-import { budgetFileName, fillBudgetWorkbook } from "@/lib/budget-sheet";
+import { fillPlanWorkbook, planFileName } from "@/lib/budget-sheet";
+import { KITS, readSheets, type KitId } from "@/lib/planKits";
 import { readBook } from "@/scripts/kpi-analysis/xlsx";
 import { diagHtml, sheetHtml } from "@/scripts/budget-checker/preview";
 
-const STORE = "mktgax-budget-checker-v2";
-const TEMPLATE = "/files/tools/budget-sheet-template.xlsx";
+const KIT = KITS[((document.getElementById("bk")?.dataset.kit ?? "budget") as KitId)] ?? KITS.budget;
+const STORE = KIT.store;
+const TEMPLATE = KIT.template;
 const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
 const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", "labor"];
 const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
 
-const INPUT_URL = "/tools/budget-checker/input";
+const INPUT_URL = `${KIT.path}/input`;
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -145,7 +147,7 @@ function updateMonthLabels() {
 }
 
 function update() {
-  const d = diagnoseBudget(st);
+  const d = diagnoseBudget(st, KIT);
   lastDiag = d;
 
   // 自動計算の欄（前提がそろわなくても、出せるものは出す）
@@ -197,8 +199,8 @@ let view: "diag" | "sheet" = "diag";
 let sheetTab: "main" | "diag" = "main";
 
 function renderSheet() {
-  const d = lastDiag ?? diagnoseBudget(st);
-  $("bk-sheet").innerHTML = sheetTab === "main" ? sheetHtml(st) : diagHtml(st, d);
+  const d = lastDiag ?? diagnoseBudget(st, KIT);
+  $("bk-sheet").innerHTML = sheetTab === "main" ? sheetHtml(st, KIT) : diagHtml(st, d, new Date(), KIT);
   $("bk-s-main").setAttribute("aria-selected", String(sheetTab === "main"));
   $("bk-s-diag").setAttribute("aria-selected", String(sheetTab === "diag"));
 }
@@ -283,6 +285,22 @@ function renderPanel(d: BudgetDiagnosis) {
       : meter("CAC", fmt(r.total.cac), `上限 ${fmt(r.cacLimit)}`, r.cacLimit ? r.total.cac / r.cacLimit : 0, cacOver ? "check" : "") +
         meter("回収期間", fmt(r.total.paybackMonths, 1), `${fmt(limitMonths, 1)}か月`, limitMonths ? (r.total.paybackMonths ?? 0) / limitMonths : 0, cacOver ? "check" : "")) +
     `<div class="bk-row"><span>ROI（1年）</span><span>${esc(pct(r.roi))}</span></div>`;
+
+  // 率は目安の範囲か（KPI妥当性診断キットだけ。目安は基本モデルの安定期、半分未満・2倍超で「確認」）
+  const rateBox = document.getElementById("bk-rate");
+  if (rateBox) {
+    const rows = [
+      ["有効リード率", r.total.validRate, BASE_RATES.valid],
+      ["商談化率", r.total.dealRate, BASE_RATES.deal],
+      ["受注率", r.total.winRate, BASE_RATES.win],
+    ] as const;
+    rateBox.innerHTML = rows
+      .map(([label, v, base]) => {
+        const out = v !== null && (v / base < 0.5 - 1e-9 || v / base > 2 + 1e-9);
+        return `<div class="bk-row${out ? " is-check" : ""}"><span>${esc(label)}</span><span>${esc(pct(v))} ／ 目安 ${esc(pct(base))}</span></div>`;
+      })
+      .join("");
+  }
 
   const list = (status: "fix" | "check", head: string) => {
     const its = d.items.filter((i) => i.status === status);
@@ -383,10 +401,10 @@ async function handleFile(file: File) {
   showIntroError("");
   $("bk-busy").hidden = false;
   try {
-    const book = await readBook(file, [SHEET_BUDGET]);
-    goInput(stateFromBook(book, file.name));
+    const book = await readBook(file, readSheets(KIT));
+    goInput(stateFromBook(book, file.name, KIT));
   } catch (e) {
-    showIntroError(e instanceof ReadError ? e.message : "ファイルを読めませんでした。年間予算表（.xlsx）を選んでください。");
+    showIntroError(e instanceof ReadError ? e.message : `ファイルを読めませんでした。${KIT.doc}（.xlsx）を選んでください。`);
     console.error(e);
   } finally {
     $("bk-busy").hidden = true;
@@ -413,7 +431,7 @@ function loadZip(): Promise<any> {
 async function download() {
   const err = $("bk-dlerr");
   err.hidden = true;
-  const d = lastDiag ?? diagnoseBudget(st);
+  const d = lastDiag ?? diagnoseBudget(st, KIT);
   const inp = st.input;
   const bad: string[] = [];
   if (!(Number.isInteger(inp.startYear) && inp.startYear >= 2000 && inp.startYear <= 2100)) bad.push("期首");
@@ -430,7 +448,7 @@ async function download() {
   const picker = (window as any).showSaveFilePicker;
   if (typeof picker === "function") {
     try {
-      handle = await picker({ suggestedName: budgetFileName(st), types: [{ description: "Excel", accept: { [XLSX_MIME]: [".xlsx"] } }] });
+      handle = await picker({ suggestedName: planFileName(st, KIT), types: [{ description: "Excel", accept: { [XLSX_MIME]: [".xlsx"] } }] });
     } catch (e) {
       if ((e as DOMException)?.name === "AbortError") return; // 保存をやめた
       handle = null; // 開けない環境（埋め込みなど）は通常のダウンロード
@@ -451,7 +469,7 @@ async function download() {
     const zip = await JSZip.loadAsync(buf);
     const files: Record<string, string> = {};
     for (const n of Object.keys(zip.files)) if (/\.(xml|rels)$/.test(n)) files[n] = await zip.file(n).async("string");
-    const changed = fillBudgetWorkbook(files, st, d);
+    const changed = fillPlanWorkbook(files, st, d, KIT);
     for (const [n, xml] of Object.entries(changed)) zip.file(n, xml);
     const blob: Blob = await zip.generateAsync({ type: "blob", mimeType: XLSX_MIME, compression: "DEFLATE" });
     if (handle) {
@@ -461,7 +479,7 @@ async function download() {
     } else {
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = budgetFileName(st);
+      a.download = planFileName(st, KIT);
       document.body.appendChild(a);
       a.click();
       a.remove();

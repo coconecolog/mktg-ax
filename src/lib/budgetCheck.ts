@@ -1,6 +1,7 @@
 // src/lib/budgetCheck.ts
 //
-// 予算案診断キット（/tools/budget-checker）の読み込み・判定・状態。画面は src/scripts/budget-checker/app.ts。
+// 予算案診断キット（/tools/budget-checker）とKPI妥当性診断キット（/tools/kpi-check）の読み込み・判定・状態。
+// 画面は src/scripts/budget-checker/app.ts。キットごとの違いは src/lib/planKits.ts。
 // 2026-10-30 作り直し：入口3つ（AIで整えて貼りつける／年間予算表（.xlsx）を読み込む／画面で入力する）→
 // 左＝入力・右＝判定の画面でNGを直す → 年間予算表（M-B-03、Excel）に「診断結果」シートを足してダウンロード。
 // - 入力の項目は年間予算表（施策別）と同じ（KPI管理表の「はじめに入力」とも同じ）。件数と費用を入れ、率は入れない
@@ -8,12 +9,11 @@
 //   予算案で抜けやすいところ（人件費・リードを生まない費用）の判定だけ、このキットで足す
 // - 月別のリード数・有効リード数：最初は年間÷12（KPI管理表作成キットと同じ分け方）。月別を直したチャネルは年間を変えても上書きしない
 import { CHANNELS, EXAMPLE, calc, splitMonthly, validate, type ChannelInput, type SheetInput, type SheetResult } from "@/lib/kpi-sheet-maker";
-import { diagnose, fmt, pct, readPlanSheet, ReadError, type MonthlyPlan, type Status } from "@/lib/kpiCheck";
+import { BASE_RATES, diagnose, fmt, pct, readPlanSheet, ReadError, type MonthlyPlan, type Status } from "@/lib/kpiCheck";
 import type { Book } from "@/lib/kpiAnalysis";
+import { KITS, SHEET_BUDGET, readSheets, sheetLabel, type PlanKit } from "@/lib/planKits";
 
-export { CHANNELS, ReadError, fmt, pct, type SheetInput, type ChannelInput, type SheetResult, type Status, type MonthlyPlan };
-
-export const SHEET_BUDGET = "年間予算表（施策別）";
+export { BASE_RATES, CHANNELS, ReadError, fmt, pct, SHEET_BUDGET, type SheetInput, type ChannelInput, type SheetResult, type Status, type MonthlyPlan };
 
 export type Source = "ai" | "xlsx" | "form" | "sample";
 export const SOURCE_LABEL: Record<Source, string> = { ai: "AIの案", xlsx: "年間予算表", form: "画面で入力", sample: "記入例（基本モデルの安定期）" };
@@ -81,10 +81,14 @@ export function resetMonthly(st: BudgetState, i: number) {
   syncMonthly(st);
 }
 
-// ---------- 年間予算表（.xlsx）を読む ----------
+// ---------- 年間予算表・KPI管理表（.xlsx）を読む ----------
+// 「年間予算表（施策別）」と「はじめに入力」は同じ表なので、キットの資料を先に探し、なければもう一方を読む
 
-export function stateFromBook(book: Book, fileName: string): BudgetState {
-  const src = readPlanSheet(book, fileName, SHEET_BUDGET, "年間予算表（M-B-03）");
+export function stateFromBook(book: Book, fileName: string, kit: PlanKit = KITS.budget): BudgetState {
+  const sheet = readSheets(kit).find((s) => book[s]);
+  if (!sheet)
+    throw new ReadError(`「${SHEET_BUDGET}」または「はじめに入力」シートが見つかりません。年間予算表（M-B-03）かKPI管理表（M-B-04）のファイルか確かめてください（シート名は変えずに使います）。`);
+  const src = readPlanSheet(book, fileName, sheet, sheetLabel(sheet));
   const st = emptyState();
   st.source = "xlsx";
   st.fileName = fileName;
@@ -103,7 +107,7 @@ export function stateFromBook(book: Book, fileName: string): BudgetState {
     if (i < 0) skipped.push(name);
     else st.input.channels[i] = { ...inp.channels[k] };
   });
-  if (skipped.length) st.notes.push(`チャネル「${skipped.join("・")}」は、年間予算表の6つのチャネルにないため読み込んでいません。`);
+  if (skipped.length) st.notes.push(`チャネル「${skipped.join("・")}」は、6つのチャネルにないため読み込んでいません。`);
   syncMonthly(st);
   for (const m of src.monthly ?? []) {
     const i = CHANNELS.indexOf(m.name as (typeof CHANNELS)[number]);
@@ -118,9 +122,9 @@ export function stateFromBook(book: Book, fileName: string): BudgetState {
 
 export const AI_FORMAT = "mktgax-budget-v2";
 
-export const AI_PROMPT = `あなたは、マーケティング予算案の数字を決まった形に書き直すアシスタントです。
+export const aiPrompt = (kit: PlanKit = KITS.budget) => `あなたは、${kit.aiWhat}の数字を決まった形に書き直すアシスタントです。
 
-このチャットで作った来期のマーケティング予算案（この上の会話、または下に貼る予算案・資料）を、次のJSONの形に変換してください。
+このチャットで作った${kit.aiSource}を、次のJSONの形に変換してください。
 
 ルール
 - 予算案に書かれている数字だけを使う。書かれていない数字は null にする。推測で埋めない
@@ -152,6 +156,7 @@ export const AI_PROMPT = `あなたは、マーケティング予算案の数字
   ],
   "notes": ["変換で行ったこと"]
 }`;
+export const AI_PROMPT = aiPrompt();
 
 const n = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
@@ -250,6 +255,7 @@ export function stateFromAi(text: string): BudgetState {
 
 export type Group = "A" | "B" | "C" | "D";
 export const GROUP_LABEL: Record<Group, string> = { A: "つながり", B: "率の現実性", C: "コスト", D: "予算案で抜けやすいところ" };
+export const groupLabel = (g: Group, kit: PlanKit = KITS.budget) => (g === "D" ? kit.groupD : GROUP_LABEL[g]);
 
 export interface BItem {
   group: Group;
@@ -277,7 +283,7 @@ export interface BudgetDiagnosis {
 const used = (c: ChannelInput) => c.leads > 0 || c.valid > 0 || c.deals > 0 || c.wins > 0 || c.ext > 0 || c.labor > 0;
 const sum = (a: number[]) => a.reduce((s, x) => s + x, 0);
 
-export function diagnoseBudget(st: BudgetState): BudgetDiagnosis {
+export function diagnoseBudget(st: BudgetState, kit: PlanKit = KITS.budget): BudgetDiagnosis {
   const inp = st.input;
   const { errors } = validate(inp);
   const missing = errors.filter((e) => !CHANNELS.includes(e as (typeof CHANNELS)[number]));
@@ -387,7 +393,7 @@ export function diagnoseBudget(st: BudgetState): BudgetDiagnosis {
     conclusion = `直すところが${counts.fix}つあります（${sums("fix").join("／")}）。`;
     if (counts.check) conclusion += `ほかに確認が${counts.check}つあります。`;
   } else if (counts.check) conclusion = `直すところはありません。確認が${counts.check}つあります（${sums("check").join("／")}）。`;
-  else conclusion = "直すところも、確認するところもありません。この予算案で年間予算表を仕上げられます。";
+  else conclusion = `直すところも、確認するところもありません。この${kit.subject}で${kit.doc}を仕上げられます。`;
 
   return { ready: true, missing: [], r, items, counts, conclusion, marks, monthlyOff };
 }

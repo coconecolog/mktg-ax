@@ -1,6 +1,6 @@
 // src/lib/kpiCheck.ts
 //
-// KPI妥当性診断キット（/tools/kpi-check）の読み込みと判定。画面は src/scripts/kpi-check/app.ts。
+// KPI妥当性診断キット（/tools/kpi-check）・予算案診断キットの読み込みと判定のもと。2つのキットは src/lib/budgetCheck.ts からこれを使う（画面は src/scripts/budget-checker/app.ts）。
 // 2026-10-28 作り直し：新しい数字の定義（6チャネル・有効リード・平均受注単価）にそろえ、期初の診断だけにした
 // （毎月の判定とお知らせメールはなくした。毎月の振り返りは KPI管理表（M-B-04）と施策効果診断キットの役割）。
 // - 入口は2つ：KPI管理表（M-B-04）の .xlsx を読み込む／画面で入力する。どちらも同じ SheetInput にして判定する
