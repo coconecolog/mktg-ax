@@ -1,7 +1,7 @@
 ---
 // src/pages/tools/budget-checker.astro
 //
-// 予算案診断キット（旧予算案チェッカー、/tools/budget-checker）2026-10-30 作り直し
+// 予算案診断Kit（旧予算案チェッカー、/tools/budget-checker）2026-10-30 作り直し
 // AIや自社で作った予算案を取りこみ、診断して直し、年間予算表（M-B-03、Excel）に仕上げる。
 // - 3ステップ：入力する → 診断する（左＝入力、右＝判定。直すと判定がすぐ変わる）→ 年間予算表 完成（Excelをダウンロード）
 // - 入口は3つ：AIで整えて貼りつける／年間予算表（.xlsx）を読み込む／画面で入力する。どれも同じ入力の画面（/tools/budget-checker/input、別ページ）に移る
@@ -18,9 +18,9 @@ import { aiPrompt } from "@/lib/budgetCheck";
 import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "予算案診断キット";
+const TOOL_TITLE = "予算案診断Kit";
 const TOOL_DESCRIPTION =
-  "AIや自社で作ったマーケティング予算案を取りこみ、目標に届くか・コストが上限以内かを診断する無料のキットです。画面でNGを直すと、そのまま稟議に使える年間予算表（Excel）になります。";
+  "AIや自社で作ったマーケティング予算案を取りこみ、目標に届くか・コストが上限以内かを診断する無料のツール（Kit）です。画面でNGを直すと、そのまま稟議に使える年間予算表（Excel）になります。";
 const SHEET_URL = "/lab/whitepapers/kgi-kpi-backcast-sheet";
 
 const breadcrumbItems = [
@@ -155,7 +155,7 @@ const ICON = {
 
       <div class="bk-next">
         <span>予算をまだ作っていないなら</span>
-        <a href="/tools/budget-simulator">予算作成キットへ →</a>
+        <a href="/tools/budget-simulator">予算作成Kitへ →</a>
       </div>
     </section>
   </main>
