@@ -80,16 +80,18 @@ const ICON = {
           <p class="bk-step-h"><span class="bk-no">3</span>年間予算表 完成</p>
           <p class="bk-step-p">直した数字と診断結果が入った年間予算表（Excel）をダウンロード</p>
           <a class="bk-th bk-th-3" href="/tools/budget-checker/sample?tab=sheet" aria-label="年間予算表の見本を見る">
-            <i class="bk-th-title" />
-            <div class="bk-th-grid bk-th-g9">
-              {Array.from({ length: 9 }).map(() => <i class="k" />)}
-              {Array.from({ length: 9 }).map(() => <i class="b" />)}
-            </div>
-            <div class="bk-th-grid bk-th-g9">
-              {Array.from({ length: 9 }).map(() => <i class="k" />)}
-              {Array.from({ length: 45 }).map((_, i) => <i class={i % 9 === 0 ? "" : i % 9 > 4 ? "" : "b"} />)}
-            </div>
-            <span class="bk-th-tabs"><b>年間予算表</b><b>診断結果</b></span>
+            <span class="bk-xl">
+              <span class="bk-xl-file">
+                <span class="bk-xl-fold" />
+                <span class="bk-xl-grid">
+                  {Array.from({ length: 5 }).map(() => <i class="k" />)}
+                  {Array.from({ length: 20 }).map((_, i) => <i class={i % 5 === 1 || i % 5 === 2 ? "b" : ""} />)}
+                </span>
+              </span>
+              <span class="bk-xl-tag">XLSX</span>
+              <span class="bk-xl-dl"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg></span>
+            </span>
+            <span class="bk-xl-name">年間予算表.xlsx</span>
           </a>
           <a class="bk-sample" href="/tools/budget-checker/sample?tab=sheet">年間予算表の見本を見る →</a>
         </li>
