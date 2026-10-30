@@ -4,7 +4,7 @@
 // - xlsx は zip。JSZip（jsDelivr）を、ファイルを読むときだけ読み込む
 // - 式のセルは、保存されている計算後の値を使う（Googleスプレッドシート・Excelとも保存時に値が入る）
 // - 形は scripts/build-kpi-analysis-sample.py と同じ：{"シート名": {"A7": 46478, "G7": "文字", ...}}
-// - KPI妥当性診断キット（/tools/kpi-check）も、読むシートを want で指定して使う（「はじめに入力」だけ）
+// - KPI妥当性診断キット・予算案診断キットも、読むシートを want で指定して使う（「はじめに入力」「年間予算表（施策別）」）
 import { SHEET_ACTUAL, SHEET_LOG, SHEET_PLAN, ReadError, type Book, type Cells } from "@/lib/kpiAnalysis";
 
 const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";

@@ -1,14 +1,18 @@
 // src/lib/budget-sheet.ts
 //
-// 予算案診断キット：年間予算表（M-B-03）のひな形に入力を書き込み、「診断結果」シートを作る。
-// ひな形: public/files/tools/budget-sheet-template.xlsx（Drive「M-B-03」の書き出しから scripts/build-budget-sheet-template.py で作る）
-// - 年間予算表（施策別）：前提（A7〜F7・K7）、チャネル別の計画（B・D・F・H・J・K列の11〜16行）、
+// 予算案診断キット・KPI妥当性診断キット：ひな形に入力を書き込み、「診断結果」シートを作る（キットの違いは src/lib/planKits.ts）。
+// ひな形: 予算案診断キット＝public/files/tools/budget-sheet-template.xlsx（Drive「M-B-03」の書き出しから scripts/build-budget-sheet-template.py で作る）
+//         KPI妥当性診断キット＝public/files/tools/kpi-check-template.xlsx（Drive「M-B-04」の書き出しから scripts/build-kpi-check-template.py で作る）
+// - 年間予算表（施策別）・KPI管理表の「はじめに入力」（セルの位置は同じ）：前提（A7〜F7・K7）、チャネル別の計画（B・D・F・H・J・K列の11〜16行）、
 //   月別のリード数・有効リード数（38＋6k行・39＋6k行のC〜N列）、月の見出し（30行・37＋6k行）
 // - 診断結果：ダウンロードした時点の判定を値で書く（Excelで数字を直しても変わらない。シートの上にその旨を書く）
 // - DOMやライブラリに頼らない（xlsxの中のXMLを文字列で書き換える）
 import { excelDate, sheetPaths, setCell, CHANNELS } from "@/lib/kpi-sheet-maker";
-import { DIAG_SHEET_PATH, S } from "@/lib/budgetSheetStyles";
-import { GROUP_LABEL, SHEET_BUDGET, monthLabels, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
+import { KITS, type PlanKit, type SheetStyles } from "@/lib/planKits";
+import { groupLabel, monthLabels, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
+
+/** 診断結果シートの書式（キットのひな形ごとに番号が違う。diagSheetXml の最初で切り替える） */
+let S: SheetStyles = KITS.budget.styles;
 
 const MONTH_COLS = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
 const CH_COLS = { leads: "B", valid: "D", deals: "F", wins: "H", ext: "J", labor: "K" } as const;
@@ -60,14 +64,15 @@ const num = (v: number | null | undefined, s: number = S.int): C => ({ v: v === 
 /** 折り返す文の行の高さ。per＝1行に入る全角の字数の目安（B〜J列の結合で約48字、A〜J列で約58字） */
 const lineHt = (text: string, per = 48) => Math.max(1, Math.ceil(text.length / per)) * 15 + 6;
 
-export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnosis, today: Date): string {
+export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnosis, today: Date, kit: PlanKit = KITS.budget): string {
+  S = kit.styles;
   const inp = st.input;
   const sh = new Sheet();
   const ymd = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-  sh.add([c("来期マーケティング予算案の診断", S.title)], 24);
-  const r2 = sh.add([c(`期首 ${inp.startYear}/${inp.startMonth}/1　単位 万円　診断日 ${ymd}（${SOURCE_NOTE[st.source]}）`, S.note)]);
+  sh.add([c(kit.diagTitle, S.title)], 24);
+  const r2 = sh.add([c(`期首 ${inp.startYear}/${inp.startMonth}/1　単位 万円　診断日 ${ymd}（${sourceNote(st.source, kit)}）`, S.note)]);
   sh.merge(r2, "A", "J");
-  const r3 = sh.add([c("この日に診断した結果です。年間予算表のシートで数字を直したあとは、予算案診断キットで読み込んで診断し直してください。", S.note)]);
+  const r3 = sh.add([c(`この日に診断した結果です。${kit.sheet}のシートで数字を直したあとは、${kit.name}で読み込んで診断し直してください。`, S.note)]);
   sh.merge(r3, "A", "J");
   sh.blank();
 
@@ -135,7 +140,7 @@ export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnos
       const rh = sh.add([c("判定", S.head), c("内容と直し方", S.head)]);
       sh.merge(rh, "B", "J");
       for (const it of list) {
-        const text = `【${GROUP_LABEL[it.group]}】${it.reason}${it.todo ? `　→ ${it.todo}` : ""}`;
+        const text = `【${groupLabel(it.group, kit)}】${it.reason}${it.todo ? `　→ ${it.todo}` : ""}`;
         const rr = sh.add([c(it.status === "fix" ? "直す" : "確認", it.status === "fix" ? S.fix : S.check), c(text, S.labelWrap)], lineHt(text));
         sh.merge(rr, "B", "J");
       }
@@ -145,7 +150,7 @@ export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnos
       sh.blank();
       sh.add([c("問題なし", S.sec)]);
       for (const it of oks) {
-        const text = `【${GROUP_LABEL[it.group]}】${it.title}：${it.reason}`;
+        const text = `【${groupLabel(it.group, kit)}】${it.title}：${it.reason}`;
         const rr = sh.add([c("問題なし", S.center), c(text, S.labelWrap)], lineHt(text));
         sh.merge(rr, "B", "J");
       }
@@ -161,26 +166,22 @@ export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnos
     }
   }
   sh.blank();
-  const rf = sh.add([c("判定の基準は MeerKitLab「数字の定義」（meerkitlab.com/standards/metrics）による。CPL・CAC・回収期間は外部費用＋人件費で計算する。作成：予算案診断キット（meerkitlab.com/tools/budget-checker）", S.note)]);
+  const rf = sh.add([c(`判定の基準は MeerKitLab「数字の定義」（meerkitlab.com/standards/metrics）による。CPL・CAC・回収期間は外部費用＋人件費で計算する。作成：${kit.name}（meerkitlab.com${kit.path}）`, S.note)]);
   sh.merge(rf, "A", "J");
 
   return template.replace(/<sheetData\s*\/>|<sheetData>[\s\S]*?<\/sheetData>/, sh.xml());
 }
 
-const SOURCE_NOTE: Record<BudgetState["source"], string> = {
-  ai: "AIの案を読み込んで作成",
-  xlsx: "年間予算表を読み込んで作成",
-  form: "画面で入力して作成",
-  sample: "記入例（基本モデルの安定期）",
-};
+const sourceNote = (src: BudgetState["source"], kit: PlanKit): string =>
+  ({ ai: "AIの案を読み込んで作成", xlsx: "ファイルを読み込んで作成", form: "画面で入力して作成", sample: "記入例（基本モデルの安定期）" })[src] ?? kit.name;
 
-// ---------- 年間予算表（施策別） ----------
+// ---------- 年間予算表（施策別）・はじめに入力 ----------
 
-export function fillBudgetWorkbook(files: Record<string, string>, st: BudgetState, d: BudgetDiagnosis, today = new Date()): Record<string, string> {
+export function fillPlanWorkbook(files: Record<string, string>, st: BudgetState, d: BudgetDiagnosis, kit: PlanKit = KITS.budget, today = new Date()): Record<string, string> {
   const paths = sheetPaths(files["xl/workbook.xml"], files["xl/_rels/workbook.xml.rels"]);
-  const p = paths[SHEET_BUDGET];
-  if (!p || files[p] === undefined) throw new Error(`ひな形にシート「${SHEET_BUDGET}」がありません`);
-  if (files[DIAG_SHEET_PATH] === undefined) throw new Error("ひな形に「診断結果」シートがありません");
+  const p = paths[kit.sheet];
+  if (!p || files[p] === undefined) throw new Error(`ひな形にシート「${kit.sheet}」がありません`);
+  if (files[kit.diagPath] === undefined) throw new Error("ひな形に「診断結果」シートがありません");
   const inp = st.input;
   const v = (x: number) => (Number.isFinite(x) ? x : 0);
 
@@ -207,8 +208,14 @@ export function fillBudgetWorkbook(files: Record<string, string>, st: BudgetStat
     });
   });
 
-  return { [p]: x, [DIAG_SHEET_PATH]: diagSheetXml(files[DIAG_SHEET_PATH], st, d, today) };
+  const out: Record<string, string> = { [p]: x, [kit.diagPath]: diagSheetXml(files[kit.diagPath], st, d, today, kit) };
+  for (const [name, ref, value] of kit.extraCells(inp.startMonth)) {
+    const q = paths[name];
+    if (!q || files[q] === undefined) throw new Error(`ひな形にシート「${name}」がありません`);
+    out[q] = setCell(out[q] ?? files[q], ref, value);
+  }
+  return out;
 }
 
-export const budgetFileName = (st: BudgetState) => `年間予算表_${st.input.startYear}年度.xlsx`;
+export const planFileName = (st: BudgetState, kit: PlanKit = KITS.budget) => kit.fileName(st.input.startYear);
 

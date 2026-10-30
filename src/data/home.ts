@@ -72,8 +72,8 @@ export const HOME_FOCUS = {
       label: "Kit",
       name: "KPI妥当性診断Kit",
       description:
-        "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れるだけです。",
-      note: "期のはじめにKPIを決めるときに。結果はA4縦のPDFで出せます。",
+        "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。画面で直すと、そのままKPI管理表（Excel）になります。",
+      note: "期のはじめにKPIを決めるときに。",
       resourceSlug: null,
       cta: { label: "KPIを診断する", href: "/tools/kpi-check" },
     },

@@ -1,9 +1,10 @@
 // src/scripts/budget-checker/preview.ts
 //
-// 予算案診断キット：ダウンロードする年間予算表（Excel）の完成イメージを、画面にHTMLで出す。
-// - 「年間予算表（施策別）」：ひな形（年間予算表 M-B-03）の式と同じ計算で、同じ並びの表を出す
+// 予算案診断キット・KPI妥当性診断キット：ダウンロードするExcelの完成イメージを、画面にHTMLで出す。
+// - 「年間予算表（施策別）」「はじめに入力」（同じ表）：ひな形の式と同じ計算で、同じ並びの表を出す
 // - 「診断結果」：src/lib/budget-sheet.ts の診断結果シートと同じ中身
-import { CHANNELS, GROUP_LABEL, fmt, monthLabels, pct, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
+import { CHANNELS, fmt, groupLabel, monthLabels, pct, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
+import { KITS, type PlanKit } from "@/lib/planKits";
 import { calc } from "@/lib/kpi-sheet-maker";
 
 const esc = (s: unknown) =>
@@ -20,14 +21,14 @@ const C = (v: string): Cell => ({ v, k: "calc" });
 const L = (v: string): Cell => ({ v, k: "lb" });
 
 /** 年間予算表（施策別）の完成イメージ */
-export function sheetHtml(st: BudgetState): string {
+export function sheetHtml(st: BudgetState, kit: PlanKit = KITS.budget): string {
   const inp = st.input;
   const r = calc({ ...inp, goal: z(inp.goal), price: z(inp.price), gmPct: z(inp.gmPct), paybackYears: z(inp.paybackYears), leadTime: z(inp.leadTime) });
   const labels = monthLabels(inp.startMonth || 4);
   const ratio = (a: number | null) => (a === null ? "0%" : pct(a));
   const f1 = (v: number | null) => fmt(z(v), 1);
   const f0 = (v: number | null) => fmt(z(v), 0);
-  let h = `<p class="bk-pv-title">年間予算表</p><p class="bk-pv-n">水色＝入力　灰色＝自動計算　単位：万円</p>`;
+  let h = `<p class="bk-pv-title">${kit.id === "kpi" ? "はじめに入力" : "年間予算表"}</p><p class="bk-pv-n">水色＝入力　灰色＝自動計算　単位：万円</p>`;
 
   h += `<p class="bk-pv-h1">【1】年間予算計画を立てる</p><p class="bk-pv-h">1. 前提の入力</p>`;
   h += table([
@@ -134,11 +135,11 @@ export function sheetHtml(st: BudgetState): string {
 }
 
 /** 診断結果シートの完成イメージ（budget-sheet.ts の diagSheetXml と同じ中身） */
-export function diagHtml(st: BudgetState, d: BudgetDiagnosis, today = new Date()): string {
+export function diagHtml(st: BudgetState, d: BudgetDiagnosis, today = new Date(), kit: PlanKit = KITS.budget): string {
   const inp = st.input;
   const ymd = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-  let h = `<p class="bk-pv-title">来期マーケティング予算案の診断</p><p class="bk-pv-n">期首 ${inp.startYear}/${inp.startMonth}/1　単位 万円　診断日 ${ymd}</p>
-<p class="bk-pv-n">この日に診断した結果です。年間予算表のシートで数字を直したあとは、予算案診断キットで読み込んで診断し直してください。</p>`;
+  let h = `<p class="bk-pv-title">${esc(kit.diagTitle)}</p><p class="bk-pv-n">期首 ${inp.startYear}/${inp.startMonth}/1　単位 万円　診断日 ${ymd}</p>
+<p class="bk-pv-n">この日に診断した結果です。${esc(kit.sheet)}のシートで数字を直したあとは、${esc(kit.name)}で読み込んで診断し直してください。</p>`;
   if (!d.ready || !d.r) return h + `<p class="bk-pv-p">前提（${esc(d.missing.join("・"))}）が入っていないため、診断していません。</p>`;
   const r = d.r;
   h += `<div class="bk-pv-cnt"><span class="${d.counts.fix ? "fix" : ""}">直す ${d.counts.fix}</span><span class="${d.counts.check ? "check" : ""}">確認 ${d.counts.check}</span><span>問題なし ${d.counts.ok}</span></div>`;
@@ -193,13 +194,13 @@ export function diagHtml(st: BudgetState, d: BudgetDiagnosis, today = new Date()
     ? `<ul class="bk-pv-list">${list
         .map(
           (it) =>
-            `<li><span class="bk-tg ${it.status}">${it.status === "fix" ? "直す" : "確認"}</span>【${esc(GROUP_LABEL[it.group])}】${esc(it.reason)}${it.todo ? `　→ ${esc(it.todo)}` : ""}</li>`,
+            `<li><span class="bk-tg ${it.status}">${it.status === "fix" ? "直す" : "確認"}</span>【${esc(groupLabel(it.group, kit))}】${esc(it.reason)}${it.todo ? `　→ ${esc(it.todo)}` : ""}</li>`,
         )
         .join("")}</ul>`
     : `<p class="bk-pv-p">直すところも、確認するところもありません。</p>`;
   const oks = d.items.filter((it) => it.status === "ok");
   if (oks.length) {
-    h += `<p class="bk-pv-h">問題なし</p><ul class="bk-pv-list">${oks.map((it) => `<li>【${esc(GROUP_LABEL[it.group])}】${esc(it.title)}：${esc(it.reason)}</li>`).join("")}</ul>`;
+    h += `<p class="bk-pv-h">問題なし</p><ul class="bk-pv-list">${oks.map((it) => `<li>【${esc(groupLabel(it.group, kit))}】${esc(it.title)}：${esc(it.reason)}</li>`).join("")}</ul>`;
   }
   if (st.notes.length) h += `<p class="bk-pv-h">読み込みのときのお知らせ</p><ul class="bk-pv-list">${st.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
   return h;

@@ -1,170 +1,162 @@
 ---
 // src/pages/tools/kpi-check.astro
 //
-// KPI妥当性診断キット（旧KPI妥当性チェッカー、/tools/kpi-check）2026-10-28 作り直し
-// 自分で作ったKPIが、売上目標とつながっているか・数字に無理がないかを、期のはじめに確かめる。
-// - 入口は2つ：KPI管理表（M-B-04）の .xlsx を読み込む／画面で入力する（項目は M-B-04「はじめに入力」と同じ）
-// - 判定：A つながり（必要な数・件数の順・月別と年間）／B 率の現実性／C コスト（CPL・CAC・ROI）。結果はA4縦のPDF
-// - 毎月の判定とお知らせメールはなくした（毎月の振り返りは KPI管理表と施策効果診断キット）
-// 計算と判定：src/lib/kpiCheck.ts　画面：src/scripts/kpi-check/app.ts　xlsxの読み込み：src/scripts/kpi-analysis/xlsx.ts
-// 結果の見本：/tools/kpi-check?sample=1（基本モデルの安定期。M-B-04の記入例と同じ数字）
+// KPI妥当性診断キット（旧KPI妥当性チェッカー、/tools/kpi-check）2026-10-30 作り直し（予算案診断キットと同じ型）
+// 自分やAIで作ったKPIを取りこみ、診断して直し、KPI管理表（M-B-04、Excel）に仕上げる。
+// - 3ステップ：入力する → 診断する（左＝入力、右＝判定。直すと判定がすぐ変わる）→ KPI管理表 完成（Excelをダウンロード）
+// - 入口は3つ：AIで整えて貼りつける／KPI管理表（.xlsx）を読み込む（年間予算表も読める）／画面で入力する。どれも /tools/kpi-check/input に移る
+// - 入力の項目はKPI管理表の「はじめに入力」と同じ（年間予算表（施策別）とも同じ）。ダウンロードするExcelはKPI管理表の全シート＋「診断結果」（PDFはなし）
+// - NGが残っていてもダウンロードできる
+// 画面・判定・Excelは予算案診断キットと共通（キットの違いは src/lib/planKits.ts）。判定に「率は目安の範囲か」を足している
+// ひな形：public/files/tools/kpi-check-template.xlsx（scripts/build-kpi-check-template.py で作る）
+// サンプル画面：/tools/kpi-check/sample（基本モデルの安定期。診断画面とKPI管理表の完成イメージをタブで切り替え）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
-import "@/styles/kpi-check.css";
+import { aiPrompt } from "@/lib/budgetCheck";
+import { KITS } from "@/lib/planKits";
+import "@/styles/budget-checker.css";
 
 const TOOL_TITLE = "KPI妥当性診断キット";
 const TOOL_DESCRIPTION =
-  "自分で作ったKPIが売上目標とつながっているか、数字に無理がないかを、期のはじめに診断する無料のキットです。KPI管理表（Excel）を読み込むか、チャネル別の件数と費用を入れると、直すところと確認するところをその場で示します。結果はA4縦のPDFで保存できます。";
-const KPI_SHEET_URL = "/lab/whitepapers/kpi-management-template";
+  "自分やAIで作ったKPIを取りこみ、売上目標とつながっているか・率やコストに無理がないかを、期のはじめに診断する無料のキットです。画面でNGを直すと、そのまま期初から使えるKPI管理表（Excel）になります。";
+const SHEET_URL = "/lab/whitepapers/kpi-management-template";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "便利ツール", href: "/tools" },
+  { name: "Kit一覧", href: "/tools" },
   { name: TOOL_TITLE, href: "/tools/kpi-check" },
 ];
 
-const PRE = [
-  { key: "goal", label: "マーケ経由の売上目標", note: "", unit: "万円" },
-  { key: "price", label: "平均受注単価", note: "新規の受注1件あたり", unit: "万円" },
-  { key: "gmPct", label: "粗利率", note: "", unit: "%" },
-  { key: "paybackYears", label: "回収期間", note: "獲得の費用を取り返す年数", unit: "年" },
-  { key: "leadTime", label: "リードタイム", note: "リード獲得から受注まで", unit: "か月" },
-  { key: "common", label: "共通費", note: "どの施策にも配らない費用（任意）", unit: "万円" },
-] as const;
-const FIELDS = [
-  { key: "leads", label: "リード数", unit: "件" },
-  { key: "valid", label: "有効リード数", unit: "件" },
-  { key: "deals", label: "商談数", unit: "件" },
-  { key: "wins", label: "受注数", unit: "件" },
-  { key: "ext", label: "外部費用", unit: "万円" },
-  { key: "labor", label: "人件費", unit: "万円" },
-] as const;
+const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
+const CH_TAGS = ["リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
+// アイコン（入口のカードと同じ）
+const ICON = {
+  ai: ["M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"],
+  file: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6M8 13h8M8 17h8M12 11v8"],
+  key: "M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10",
+};
 ---
 
-<BaseLayout title={`${TOOL_TITLE}｜期初のKPIが売上目標とつながっているかを診断｜MeerKitLab`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-check.png">
+<BaseLayout title={`${TOOL_TITLE}｜期初のKPIを診断して直し、KPI管理表に仕上げる｜MeerKitLab`} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/kpi-check.png">
   <Breadcrumb items={breadcrumbItems} />
 
-  <!-- H1まわりは /lab・/tools と同じ形。.kc の外に置く（.kc p の margin:0 を受けないように） -->
+  <!-- H1まわりは /lab・/tools と同じ形。.bk の外に置く -->
   <div class="mx-auto max-w-6xl px-5 pt-10">
     <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">そのKPIで、売上目標に届くか。始める前に確かめる。</p>
-    <p class="mt-3 text-sm leading-relaxed text-neutral-500">自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを、直すところと確認するところに分けて示します。</p>
+    <p class="mt-4 text-lg font-bold text-ink-950">作ったKPIを、診断して直し、KPI管理表に仕上げる。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">自分やAIで作ったKPIを取りこみ、売上目標とつながっているか・率やコストに無理がないかを判定します。画面でNGを直すと、そのまま期初から使えるKPI管理表（Excel）になります。</p>
   </div>
 
-  <main class="kc" id="kc">
+  <main class="bk" id="bk" data-kit="kpi" data-mode="intro">
     <!-- ===== 入口 ===== -->
-    <section id="kc-intro">
-      <div class="kc-hero">
+    <section id="bk-intro">
+      <h2 class="bk-h2">3ステップで、KPIを診断し、KPI管理表が完成します。</h2>
+      <ol class="bk-steps">
+        <li class="bk-step">
+          <p class="bk-step-h"><span class="bk-no">1</span>入力する</p>
+          <p class="bk-step-p">3つのどれかで取りこむ</p>
+          <div class="bk-th bk-th-1" aria-hidden="true">
+            <span class="bk-th-e"><svg viewBox="0 0 24 24"><path d={ICON.ai[0]} /><path d={ICON.ai[1]} /></svg>AIの案を貼りつける</span>
+            <span class="bk-th-e"><svg viewBox="0 0 24 24"><path d={ICON.file[0]} /><path d={ICON.file[1]} /></svg>KPI管理表を読み込む</span>
+            <span class="bk-th-e"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" /><path d={ICON.key} /></svg>画面で入力する</span>
+          </div>
+        </li>
+        <li class="bk-arrow" aria-hidden="true">→</li>
+        <li class="bk-step">
+          <p class="bk-step-h"><span class="bk-no">2</span>診断する</p>
+          <p class="bk-step-p">数字を直すと判定がすぐ変わる。NGがなくなるまで直す</p>
+          <a class="bk-th bk-th-2" href="/tools/kpi-check/sample" aria-label="診断画面の見本を見る">
+            <div class="bk-th-grid bk-th-g5">
+              {Array.from({ length: 5 }).map(() => <i class="k" />)}
+              {Array.from({ length: 35 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 33 ? "r" : "b"} />)}
+            </div>
+            <div class="bk-th-alert"><span>1 直す</span><span class="o">0 確認</span><i /><i class="s" /><i /><i class="s" /><em>メールのCPL</em></div>
+          </a>
+          <a class="bk-sample" href="/tools/kpi-check/sample">診断画面の見本を見る →</a>
+        </li>
+        <li class="bk-arrow" aria-hidden="true">→</li>
+        <li class="bk-step">
+          <p class="bk-step-h"><span class="bk-no">3</span>KPI管理表 完成</p>
+          <p class="bk-step-p">直した数字と診断結果が入ったKPI管理表（Excel）をダウンロード</p>
+          <a class="bk-th bk-th-3" href="/tools/kpi-check/sample?tab=sheet" aria-label="KPI管理表の見本を見る">
+            <span class="bk-xl">
+              <span class="bk-xl-file">
+                <span class="bk-xl-fold" />
+                <span class="bk-xl-grid">
+                  {Array.from({ length: 5 }).map(() => <i class="k" />)}
+                  {Array.from({ length: 20 }).map((_, i) => <i class={i % 5 === 1 || i % 5 === 2 ? "b" : ""} />)}
+                </span>
+              </span>
+              <span class="bk-xl-tag">XLSX</span>
+              <span class="bk-xl-dl"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg></span>
+            </span>
+            <span class="bk-xl-name">KPI管理表.xlsx</span>
+          </a>
+          <a class="bk-sample" href="/tools/kpi-check/sample?tab=sheet">KPI管理表の見本を見る →</a>
+        </li>
+      </ol>
+
+      <div class="bk-need">
         <div>
-          <label class="kc-ent kc-drop" id="kc-drop" for="kc-file">
-            <small>KPI管理表（M-B-04）で作った</small>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M12 11v8"/></svg>
-            <b>KPI管理表（.xlsx）をここに置く</b>
-            <p>読み込むだけで診断します。月別の計画も確かめます</p>
-            <span class="kc-btn">ファイルを選ぶ</span>
-            <span class="kc-hint">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
-          </label>
-          <input type="file" id="kc-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
-          <p class="kc-busy" id="kc-busy" role="status" hidden>読み込んでいます…</p>
-          <p class="kc-err" id="kc-err" role="alert" hidden></p>
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄でかまいません</span></p>
+          <dl>
+            <dt>前提</dt>
+            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>チャネル別（年間）</dt>
+            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+          </dl>
         </div>
-        <div class="kc-ent">
-          <small>自分の表・頭の中にある</small>
-          <b>画面で数字を入れて診断する</b>
-          <p>前提と、チャネル別の年間の件数・費用を入れます。<br />率は入れません（件数から出します）</p>
-          <button type="button" class="kc-btn" id="kc-start">入力して診断する<span aria-hidden="true">→</span></button>
+        <a class="bk-need-dl" href={SHEET_URL}>
+          <small>スプレッドシートで入力したい方向け</small>
+          <b><span class="bk-ft">スプレッドシート</span>KPI管理表</b>
+          <span class="bk-btn2">無料でDL</span>
+        </a>
+      </div>
+
+      <h2 class="bk-h2">診断をはじめる</h2>
+      <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
+      <div class="bk-ents">
+        <div class="bk-ent">
+          <small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" /></svg>AIや手元の資料で作った</small>
+          <b>AIで整えて貼りつける</b>
+          <p>プロンプトをAIに渡し、返ってきた結果を貼る</p>
+          <button type="button" class="bk-btn" id="bk-ai-open" aria-expanded="false" aria-controls="bk-ai">はじめる<span aria-hidden="true">→</span></button>
+        </div>
+        <label class="bk-ent bk-drop" id="bk-drop" for="bk-file">
+          <small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h8M12 11v8" /></svg>KPI管理表・年間予算表に入力した</small>
+          <b>KPI管理表（.xlsx）を読み込む</b>
+          <p>ファイルを置くだけで診断（年間予算表も読めます）</p>
+          <span class="bk-btn">ファイルを選ぶ</span>
+        </label>
+        <input type="file" id="bk-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+        <div class="bk-ent">
+          <small><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" /></svg>数字が頭の中にある</small>
+          <b>画面で入力する</b>
+          <p>必要な数字を画面の表に入れる</p>
+          <button type="button" class="bk-btn" id="bk-start">入力する<span aria-hidden="true">→</span></button>
         </div>
       </div>
-      <p class="kc-hint">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）・<a href="/tools/kpi-check?sample=1">結果の見本を見る（基本モデルの安定期）→</a></p>
 
-      <h2 class="kc-sec">わかること</h2>
-      <div class="kc-g3">
-        <div class="kc-card"><em>A</em><b>つながり</b><p>計画の数が、売上目標から逆算した必要な数に足りるか。件数の順や、月別と年間の合計が合っているか。</p></div>
-        <div class="kc-card"><em>B</em><b>率の現実性</b><p>有効リード率・商談化率・受注率が、目安（基本モデルの安定期）から大きく外れていないか。</p></div>
-        <div class="kc-card"><em>C</em><b>コスト</b><p>チャネルのCPLが許容CPL以下か。全体のCAC・回収期間が上限以内か。ROI（1年）がマイナスでないか。</p></div>
+      <div class="bk-ai" id="bk-ai" hidden>
+        <p class="bk-ai-st">① このプロンプトをコピーして、KPIを作ったAIのチャットに貼る（手元の資料があれば一緒に貼る）</p>
+        <pre class="bk-prompt" id="bk-prompt" set:text={aiPrompt(KITS.kpi)}></pre>
+        <button type="button" class="bk-btn2" id="bk-copy">プロンプトをコピー</button>
+        <p class="bk-ai-st">② AIが返した結果を、ここに貼る</p>
+        <textarea class="bk-paste" id="bk-paste" rows="6" placeholder="AIが返したJSON（```json から ``` まで）をそのまま貼りつけます" aria-label="AIが返した結果"></textarea>
+        <p class="bk-ai-st">③ 読み込む</p>
+        <button type="button" class="bk-btn" id="bk-import">読み込む<span aria-hidden="true">→</span></button>
       </div>
-      <p class="kc-hint">判定は「直す」「確認」「問題なし」の3つ。数字の定義は<a href="/standards/metrics">数字の定義</a>と同じです。</p>
 
-      <div class="kc-dl">
-        <div><b>KPIをまだ作っていないなら</b><p>KPI管理表作成キットで、計画の数字を入れるだけでKPI管理表（Excel）を作れます。作るときに同じ判定もします。<a href={KPI_SHEET_URL}>KPI管理表</a>をDLして直接記入することもできます。</p></div>
-        <a class="kc-btn2" href="/tools/kpi-sheet-maker">KPI管理表作成キットへ →</a>
+      <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
+      <p class="bk-err" id="bk-err" role="alert" hidden></p>
+      <p class="bk-hint">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）・<a href="/tools/kpi-check/sample">サンプル画面を見る（基本モデルの安定期）→</a></p>
+
+      <div class="bk-next">
+        <span>KPIをまだ作っていないなら</span>
+        <a href="/tools/kpi-sheet-maker">KPI管理表作成キットへ →</a>
       </div>
-    </section>
-
-    <!-- ===== 入力 ===== -->
-    <section id="kc-input" hidden>
-      <div class="kc-bar">
-        <p class="kc-meta">前提と、チャネル別の年間の計画を入れます（金額は万円）</p>
-        <div class="kc-acts">
-          <button type="button" class="kc-link" id="kc-example">記入例を入れる</button>
-          <button type="button" class="kc-link" id="kc-clear">入力をすべて消す</button>
-          <button type="button" class="kc-btn2" id="kc-home">入口に戻る</button>
-        </div>
-      </div>
-      <form id="kc-form" novalidate>
-        <h2 class="kc-st">1. 前提</h2>
-        <div class="kc-f">
-          {
-            PRE.map((f) => (
-              <div class="kc-field">
-                <label class="kc-lb" for={`kc-${f.key}`}>
-                  {f.label}
-                  {f.note && <small>{f.note}</small>}
-                </label>
-                <div class="kc-ip">
-                  <input id={`kc-${f.key}`} name={f.key} type="number" inputmode="decimal" min="0" step="any" placeholder={f.key === "common" ? "0" : ""} />
-                  <span>{f.unit}</span>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-
-        <h2 class="kc-st">2. チャネル別の計画（年間）<small>使わないチャネルは空欄のまま</small></h2>
-        <div class="kc-chs">
-          {
-            CHANNELS.map((name, i) => (
-              <fieldset class="kc-ch">
-                <legend>{name}</legend>
-                <div class="kc-f">
-                  {FIELDS.map((f) => (
-                    <div class="kc-field">
-                      <label class="kc-lb" for={`kc-${i}-${f.key}`}>{f.label}</label>
-                      <div class="kc-ip">
-                        <input id={`kc-${i}-${f.key}`} name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" placeholder="0" />
-                        <span>{f.unit}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p class="kc-rates" data-rates={i}></p>
-              </fieldset>
-            ))
-          }
-        </div>
-        <p class="kc-hint">率（有効リード率・商談化率・受注率）は入れません。件数から自動で出します。記入例は架空の会社（基本モデル）の安定期の数字です</p>
-
-        <div class="kc-go">
-          <button type="submit" class="kc-btn">診断する<span aria-hidden="true">→</span></button>
-        </div>
-        <p class="kc-err" id="kc-ferr" role="alert" hidden></p>
-      </form>
-    </section>
-
-    <!-- ===== 結果 ===== -->
-    <section id="kc-result" hidden>
-      <div class="kc-bar">
-        <p class="kc-meta" id="kc-meta"></p>
-        <div class="kc-acts">
-          <button type="button" class="kc-btn2" id="kc-edit">数字を直す</button>
-          <button type="button" class="kc-btn2" id="kc-again">入口に戻る</button>
-          <button type="button" class="kc-btn" id="kc-pdf">PDFで保存</button>
-        </div>
-      </div>
-      <p class="kc-err" id="kc-perr" role="alert" hidden></p>
-      <div id="kc-report"></div>
     </section>
   </main>
 
@@ -172,5 +164,5 @@ const FIELDS = [
 </BaseLayout>
 
 <script>
-  import "@/scripts/kpi-check/app";
+  import "@/scripts/budget-checker/app";
 </script>
