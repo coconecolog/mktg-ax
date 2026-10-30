@@ -72,7 +72,7 @@ export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnos
   sh.add([c(kit.diagTitle, S.title)], 24);
   const r2 = sh.add([c(`期首 ${inp.startYear}/${inp.startMonth}/1　単位 万円　診断日 ${ymd}（${sourceNote(st.source, kit)}）`, S.note)]);
   sh.merge(r2, "A", "J");
-  const r3 = sh.add([c(`この日に診断した結果です。${kit.sheet}のシートで数字を直したあとは、${kit.name}で読み込んで診断し直してください。`, S.note)]);
+  const r3 = sh.add([c(`この日に診断した結果です。${kit.sheet}のシートで数字を直したあとは、${kit.rediag}で読み込んで診断し直してください。`, S.note)]);
   sh.merge(r3, "A", "J");
   sh.blank();
 

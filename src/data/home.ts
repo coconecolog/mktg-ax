@@ -117,7 +117,7 @@ export const HOME_PDCA = {
       phase: "計画",
       purpose: "投資の根拠をつくる",
       name: "予算作成Kit",
-      description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
+      description: "売上目標から必要なリード数と予算を逆算し、CPL・CACまで判定した年間予算表（Excel）を作ります。",
       href: "/tools/budget-simulator",
       resource: {
         label: "あわせて使う資料",

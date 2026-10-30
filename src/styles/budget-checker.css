@@ -273,3 +273,26 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-howto-n li { padding-left: 1em; text-indent: -1em; }
 .bk-howto-n li::before { content: "・"; }
 @media (max-width: 760px) { .bk-howto-b, .bk-howto-l { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+
+/* 予算作成Kit：自動配分の欄（灰色。上書きすると水色、↺で自動に戻す） 2026-10-30 */
+.bk-t td.in.auto { background: var(--calc); position: relative; }
+.bk-t td.in.auto input { color: var(--sub); }
+.bk-t td.in.auto.is-ovr { background: var(--in); }
+.bk-t td.in.auto.is-ovr input { color: #0c447c; padding-left: 20px; }
+.bk-ovr-x { display: none; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); border: 0; background: none; padding: 0; font-size: 0.8rem; line-height: 1; color: var(--sub); cursor: pointer; }
+.bk-t td.in.auto.is-ovr .bk-ovr-x { display: block; }
+.bk-ovr-x:hover { color: var(--ink); }
+.bk-t td.is-short { color: var(--red); font-weight: 800; }
+.bk-t td.in.auto.is-fix { background: var(--red-bg); }
+.bk-t td.in.auto.is-check { background: var(--org-bg); }
+.bk-t td.in.auto.is-fix input { color: var(--red); }
+.bk-t td.in.auto.is-check input { color: var(--org); }
+
+/* 予算作成Kitの入口 2026-10-30 */
+.bk-for { border: 1.5px solid var(--ink); background: #fff; padding: 10px 14px; font-size: 0.85rem; font-weight: 700; margin: 0 0 28px !important; }
+.bk-for a { text-decoration: underline; margin-left: 6px; white-space: nowrap; }
+.bk-th-need { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 22px 18px 10px; position: relative; }
+.bk-th-need div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); font-size: 0.78rem; padding: 2px 0; }
+.bk-th-need b { background: var(--calc); padding: 0 8px; }
+.bk-th-need em { position: absolute; right: 10px; top: 6px; font-style: normal; font-size: 0.68rem; color: var(--sub); }
+.bk-start-btn { width: 100%; max-width: 420px; justify-content: center; padding: 18px 12px; font-size: 1.05rem; margin: 4px 0 10px; }
