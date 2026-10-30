@@ -1,16 +1,16 @@
 ---
 // src/pages/tools/kpi-check/sample.astro
 //
-// KPI妥当性診断キットのサンプル画面（/tools/kpi-check/sample）2026-10-30。予算案診断キットのサンプル画面と同じ作り
+// KPI妥当性診断Kitのサンプル画面（/tools/kpi-check/sample）2026-10-30。予算案診断Kitのサンプル画面と同じ作り
 // 記入例（基本モデルの安定期）で、「診断画面」と「KPI管理表（完成イメージ：はじめに入力・診断結果）」をタブで切り替えて見せる
-// - KPI管理表のタブは ?tab=sheet で開く。数字は変えられるが保存しない。ダウンロードはなし（キットへのリンク）
+// - KPI管理表のタブは ?tab=sheet で開く。数字は変えられるが保存しない。ダウンロードはなし（Kitへのリンク）
 // 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-kit="kpi" data-mode="sample"）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "KPI妥当性診断キット";
+const TOOL_TITLE = "KPI妥当性診断Kit";
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
@@ -21,7 +21,7 @@ const breadcrumbItems = [
 
 <BaseLayout
   title={`${TOOL_TITLE} サンプル画面｜診断画面とKPI管理表の完成イメージ｜MeerKitLab`}
-  description="KPI妥当性診断キットのサンプル画面です。架空の会社（基本モデル）の安定期の数字で、診断画面と、ダウンロードできるKPI管理表（Excel）の完成イメージを確かめられます。"
+  description="KPI妥当性診断Kitのサンプル画面です。架空の会社（基本モデル）の安定期の数字で、診断画面と、ダウンロードできるKPI管理表（Excel）の完成イメージを確かめられます。"
   ogImage="/open-graph/default.png"
 >
   <Breadcrumb items={breadcrumbItems} />
@@ -33,7 +33,7 @@ const breadcrumbItems = [
   </div>
 
   <main class="bk" id="bk" data-kit="kpi" data-mode="sample">
-    <p class="bk-back"><a href="/tools/kpi-check">← KPI妥当性診断キットに戻る</a></p>
+    <p class="bk-back"><a href="/tools/kpi-check">← KPI妥当性診断Kitに戻る</a></p>
 
     <section id="bk-work">
       <div class="bk-views" role="tablist" aria-label="表示">

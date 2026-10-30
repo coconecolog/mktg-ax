@@ -129,7 +129,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
   "/tools/kpi-check": {
     faq: [
       {
-        question: "何ができるキットですか？",
+        question: "何ができるKitですか？",
         answer:
           "自分やAIで作った期初のKPIを取りこみ、売上目標とつながっているか・率やコストに無理がないかを診断します。画面で数字を直すと判定がすぐ変わり、直し終えたらKPI管理表（Excel）として持ち帰れます。Excelには、ダウンロードした時点の診断結果のシートも入ります。",
       },
@@ -155,7 +155,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       {
         question: "毎月の実績も判定できますか？",
         answer:
-          "このキットは期のはじめの診断だけです。毎月の予実と撤退の判断はダウンロードしたKPI管理表で、課題と打ち手の効果の振り返りは施策効果診断キットで行います。",
+          "このKitは期のはじめの診断だけです。毎月の予実と撤退の判断はダウンロードしたKPI管理表で、課題と打ち手の効果の振り返りは施策効果診断Kitで行います。",
       },
       {
         question: "入れた数字はどこかに送られますか？",
