@@ -75,7 +75,7 @@ a.bk-th:hover { border-color: var(--ink); }
 }
 
 /* 必要な数字と、資料のDL（1つの枠。DLは枠の内側の右、3のステップと同じくらいの幅） */
-.bk-need { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: center; background: var(--bg); border: 1px solid var(--line); padding: 14px 16px; margin: 16px 0 1.8rem; }
+.bk-need { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: center; background: var(--bg); border: 1px solid var(--line); padding: 14px 16px; margin: 16px 0 1.8rem; }
 .bk-need-top { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px !important; }
 .bk-need-top b { font-size: 0.95rem; }
 .bk-need-top span { font-size: 0.78rem; color: var(--mute); }
@@ -83,11 +83,16 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-need dt { font-size: 0.8rem; color: var(--sub); white-space: nowrap; }
 .bk-need dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .bk-tag { display: inline-block; border: 1px solid var(--line); background: #fff; padding: 3px 10px; font-size: 0.82rem; }
-.bk-need-dl { display: flex; flex-direction: column; gap: 6px; justify-content: center; background: #fff; border: 1px solid var(--line); padding: 14px 16px; text-decoration: none; }
-.bk-need-dl:hover { border-color: var(--ink); }
-.bk-need-dl small { font-size: 0.74rem; color: var(--sub); }
-.bk-need-dl b { font-size: 0.95rem; }
-.bk-need-dl .bk-btn2 { align-self: stretch; margin-top: 4px; }
+.bk-need-dl { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 14px; background: #fff; border: 1px solid var(--line); padding: 14px 16px; }
+.bk-doc { flex: 0 0 auto; width: 58px; height: 76px; background: #fff; border: 1px solid var(--line); padding: 7px 6px; display: flex; flex-direction: column; gap: 3px; }
+.bk-doc i { display: block; height: 2px; background: var(--ink); }
+.bk-doc b { font-size: 7.5px; font-weight: 800; margin-top: 3px; line-height: 1.2; }
+.bk-doc em { display: block; height: 3px; background: var(--calc); }
+.bk-need-dl-t { flex: 1 1 180px; min-width: 0; }
+.bk-need-dl-t b { display: block; font-size: 0.95rem; margin-top: 5px; }
+.bk-need-dl-t p { font-size: 0.78rem; color: var(--sub); line-height: 1.6; margin-top: 2px !important; }
+.bk-tag-o { display: inline-block; font-size: 0.68rem; font-weight: 700; border: 1px solid var(--ink); padding: 1px 6px; line-height: 1.5; background: #fff; }
+.bk-need-dl .bk-btn2 { margin-left: auto; font-size: 0.85rem; padding: 9px 16px; }
 .bk-ft { display: inline-block; font-size: 0.66rem; font-weight: 800; background: var(--ink); color: #fff; padding: 1px 5px; margin-right: 6px; vertical-align: 1px; }
 @media (max-width: 760px) {
   .bk-need { grid-template-columns: minmax(0, 1fr); }
@@ -105,8 +110,11 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-ent p { font-size: 0.8rem; color: var(--sub); line-height: 1.6; }
 .bk-ent .bk-btn { margin-top: auto; width: 100%; }
 .bk-ent > p + .bk-btn, .bk-ent > p + span.bk-btn { margin-top: 8px; }
-.bk-drop { cursor: pointer; }
-.bk-drop.is-over { background: var(--bg); border-style: dashed; }
+.bk-drop { cursor: pointer; border-style: dashed; align-items: center; justify-content: center; text-align: center; }
+.bk-drop.is-over { background: var(--bg); border-style: solid; }
+.bk-drop-ic { width: 30px; height: 30px; fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.bk-drop-hint { font-size: 0.74rem; color: var(--mute); line-height: 1.6; }
+.bk-ent.bk-drop .bk-btn { width: auto; margin: 4px 0 0; }
 
 /* AIの案 */
 .bk-ai { border: 1.5px solid var(--ink); border-top-width: 3px; padding: 14px 16px; margin-top: 12px; background: #fff; }

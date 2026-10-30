@@ -106,11 +106,15 @@ const NEED = [
             <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
           </dl>
         </div>
-        <a class="bk-need-dl" href={SHEET_URL}>
-          <small>画面で作らない方は、同じ表をスプレッドシートで</small>
-          <b><span class="bk-ft">スプレッドシート</span>年間予算表</b>
-          <span class="bk-btn2">無料でDL</span>
-        </a>
+        <div class="bk-need-dl">
+          <div class="bk-doc" aria-hidden="true"><i></i><b>年間予算表</b><em></em><em></em></div>
+          <div class="bk-need-dl-t">
+            <span class="bk-tag-o">スプレッドシートで作りたい方へ</span>
+            <b>年間予算表（無料）</b>
+            <p>画面ではなくスプレッドシートで予算を作りたい方向けの資料です。このKitで作るものと同じ年間予算表に、直接入力できます。</p>
+          </div>
+          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
+        </div>
       </div>
 
       <h2 class="bk-h2">作成をはじめる</h2>

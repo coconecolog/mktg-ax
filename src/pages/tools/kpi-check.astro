@@ -108,11 +108,15 @@ const ICON = {
             <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
           </dl>
         </div>
-        <a class="bk-need-dl" href={SHEET_URL}>
-          <small>スプレッドシートで入力したい方向け</small>
-          <b><span class="bk-ft">スプレッドシート</span>KPI管理表</b>
-          <span class="bk-btn2">無料でDL</span>
-        </a>
+        <div class="bk-need-dl">
+          <div class="bk-doc" aria-hidden="true"><i></i><b>KPI管理表</b><em></em><em></em></div>
+          <div class="bk-need-dl-t">
+            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
+            <b>KPI管理表（無料）</b>
+            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、下の枠に置くと同じ診断ができます。</p>
+          </div>
+          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
+        </div>
       </div>
 
       <h2 class="bk-h2">診断をはじめる</h2>
@@ -125,10 +129,12 @@ const ICON = {
           <button type="button" class="bk-btn" id="bk-ai-open" aria-expanded="false" aria-controls="bk-ai">はじめる<span aria-hidden="true">→</span></button>
         </div>
         <label class="bk-ent bk-drop" id="bk-drop" for="bk-file">
-          <small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h8M12 11v8" /></svg>KPI管理表・年間予算表に入力した</small>
-          <b>KPI管理表（.xlsx）を読み込む</b>
-          <p>ファイルを置くだけで診断（年間予算表も読めます）</p>
+          <svg class="bk-drop-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h8M12 11v8" /></svg>
+          <b>KPI管理表（.xlsx）をここに置く</b>
+          <span class="bk-drop-hint">年間予算表も読めます</span>
+          <span class="bk-drop-hint">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
           <span class="bk-btn">ファイルを選ぶ</span>
+          <span class="bk-drop-hint">ファイルは送信されず、ブラウザの中だけで読みます</span>
         </label>
         <input type="file" id="bk-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
         <div class="bk-ent">
