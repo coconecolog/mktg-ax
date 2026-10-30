@@ -25,7 +25,7 @@ interface C {
   v: V;
   s: number;
 }
-class Sheet {
+export class Sheet {
   rows: { cells: (C | null)[]; ht?: number }[] = [];
   merges: string[] = [];
   add(cells: (C | null)[], ht?: number) {
@@ -62,7 +62,7 @@ class Sheet {
 const c = (v: V, s: number = S.text): C => ({ v, s });
 const num = (v: number | null | undefined, s: number = S.int): C => ({ v: v === null || v === undefined || !Number.isFinite(v) ? "—" : v, s: v === null || v === undefined || !Number.isFinite(v) ? S.center : s });
 /** 折り返す文の行の高さ。per＝1行に入る全角の字数の目安（B〜J列の結合で約48字、A〜J列で約58字） */
-const lineHt = (text: string, per = 48) => Math.max(1, Math.ceil(text.length / per)) * 15 + 6;
+export const lineHt = (text: string, per = 48) => Math.max(1, Math.ceil(text.length / per)) * 15 + 6;
 
 export function diagSheetXml(template: string, st: BudgetState, d: BudgetDiagnosis, today: Date, kit: PlanKit = KITS.budget): string {
   S = kit.styles;

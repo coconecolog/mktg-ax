@@ -144,7 +144,7 @@ export const KIT_GROUPS: KitGroup[] = [
       {
         icon: "file-chart-column",
         situation: "施策の効果測定をしたい",
-        description: "打った施策が効いたか、続いている課題は何かを示します。",
+        description: "打った施策が効いたか、続いている課題は何かを示し、KPI管理表に仕上げます。",
         name: "施策効果診断Kit",
         button: "診断する",
         href: "/tools/kpi-analysis",

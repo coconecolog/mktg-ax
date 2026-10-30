@@ -1,0 +1,263 @@
+---
+// src/components/kpi-analysis/EffectGrid.astro
+// 施策効果診断Kitの入力（左）と判定（右）、その下に全幅の診断結果（2026-10-30）。/tools/kpi-analysis/input と /sample で共通
+// 予算案診断Kit・KPI妥当性診断Kitの BudgetGrid と同じ見た目（クラスは bk-*）。入力の項目はKPI管理表（M-B-04）の3シートと同じ
+// - タブ：1 計画（年間）→ 2 計画（月別）→ 3 毎月の実績 → 4 施策ログ
+// - 右：ダウンロード（KPI管理表）→ 判定（直す・確認・問題なしの数／計画を下回っている課題／打ち手の効果／直すところ一覧）
+// - 下：診断結果（まとめ・A 月別進捗状況・B 推移と打ち手・C 打ち手の効果・D 打ち手の一覧。src/scripts/kpi-analysis/report.ts）
+// 動きは src/scripts/kpi-analysis/app.ts。sample＝サンプル画面（ダウンロードの代わりにKitへのリンク、記入例・すべて消すはなし）
+import { CHANNELS } from "@/lib/kpi-sheet-maker";
+
+interface Props {
+  sample?: boolean;
+}
+const { sample = false } = Astro.props;
+
+const PRE = [
+  { key: "goal", label: "売上目標" },
+  { key: "price", label: "平均受注単価" },
+  { key: "gmPct", label: "粗利率（%）" },
+  { key: "paybackYears", label: "回収期間（年）" },
+  { key: "leadTime", label: "リードタイム（月）" },
+  { key: "common", label: "共通費" },
+] as const;
+const FIELDS = ["leads", "valid", "deals", "wins", "ext", "labor"] as const;
+const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals: "商談数", wins: "受注数", ext: "外部費用", labor: "人件費" } as const;
+const TABS = [
+  { id: "y", label: "計画（年間）" },
+  { id: "m", label: "計画（月別）" },
+  { id: "a", label: "毎月の実績" },
+  { id: "l", label: "施策ログ" },
+] as const;
+const MONTHS = Array.from({ length: 12 }, (_, k) => k);
+---
+
+<div class="bk-grid" id="bk-diagview">
+  <form class="bk-left" id="bk-form" novalidate autocomplete="off">
+    <div class="bk-tabs">
+      <div class="bk-tabset ef-tabset" role="tablist" aria-label="入力の順番">
+        {
+          TABS.map((t, k) => (
+            <>
+              {k > 0 && <span class="bk-tarr" aria-hidden="true">→</span>}
+              <button type="button" role="tab" class="bk-tab" id={`bk-tab-${t.id}`} data-tab={t.id} aria-selected={k === 0 ? "true" : "false"} aria-controls={`bk-pane-${t.id}`}>
+                <span class="bk-tno">{k + 1}</span>
+                {t.label}
+                <i class="bk-dot" id={`ef-dot-${t.id}`} hidden />
+                <span class="bk-tck" aria-hidden="true">✓</span>
+              </button>
+            </>
+          ))
+        }
+      </div>
+      {
+        !sample && (
+          <div class="bk-acts">
+            <button type="button" class="bk-btn-o" id="bk-example">記入例を入れる</button>
+            <button type="button" class="bk-btn-o" id="bk-clear">すべて消す</button>
+          </div>
+        )
+      }
+    </div>
+    <p class="bk-tab-n" id="bk-tab-n">いま表示中：計画（年間）</p>
+
+    <!-- 1 計画（年間）：KPI管理表「はじめに入力」の1・2と同じ -->
+    <div id="bk-pane-y" role="tabpanel">
+      <h3 class="bk-st">1. 前提</h3>
+      <div class="bk-tw">
+        <table class="bk-t">
+          <thead><tr><th>期首</th>{PRE.map((p) => <th>{p.label}</th>)}</tr></thead>
+          <tbody>
+            <tr>
+              <td class="in">
+                <div class="bk-start">
+                  <input name="startYear" type="number" inputmode="numeric" min="2000" max="2100" aria-label="期首の年" />
+                  <select name="startMonth" aria-label="期首の月">{MONTHS.map((i) => <option value={String(i + 1)}>{i + 1}月</option>)}</select>
+                </div>
+              </td>
+              {PRE.map((p) => <td class="in"><input name={p.key} type="number" inputmode="decimal" min="0" step="any" aria-label={p.label} /></td>)}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="bk-tw bk-tw-s">
+        <table class="bk-t bk-t-s">
+          <thead><tr><th class="c">1社あたりの月の粗利</th><th class="c">CACの上限</th><th class="c">許容CPL</th></tr></thead>
+          <tbody><tr><td class="calc" data-out="monthlyProfit">—</td><td class="calc" data-out="cacLimit">—</td><td class="calc" data-out="allowableCpl">—</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 class="bk-st">2. チャネル別の計画（年間）</h3>
+      <div class="bk-tw">
+        <table class="bk-t">
+          <thead>
+            <tr><th class="bk-ch">チャネル</th><th>リード数</th><th>有効リード数</th><th>商談数</th><th>受注数</th><th>外部費用</th><th>人件費</th><th class="c">CPL</th><th class="c">CAC</th></tr>
+          </thead>
+          <tbody>
+            {
+              CHANNELS.map((name, i) => (
+                <tr>
+                  <td class="lb">{name}</td>
+                  {FIELDS.map((k) => <td class="in"><input name={`ch${i}.${k}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${FIELD_LABEL[k]}`} /></td>)}
+                  <td class="calc" data-out={`cpl${i}`}>—</td>
+                  <td class="calc" data-out={`cac${i}`}>—</td>
+                </tr>
+              ))
+            }
+            <tr class="sum">
+              <td class="lb">合計</td>
+              {FIELDS.map((k) => <td class="calc" data-out={`total.${k}`}>—</td>)}
+              <td class="calc" data-out="total.cpl">—</td>
+              <td class="calc" data-out="total.cac">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bk-hint">水色＝入力　灰色＝自動計算　単位 万円　率は入れません（件数から出します）。使わないチャネルは空欄でかまいません</p>
+    </div>
+
+    <!-- 2 計画（月別） -->
+    <div id="bk-pane-m" role="tabpanel" hidden>
+      <p class="bk-hint" style="margin-bottom:8px">年間÷12が入っています。展示会のように特定の月に集中するチャネルだけ直します。月ごとの計画と実績を比べて判定します。</p>
+      {
+        CHANNELS.map((name, i) => (
+          <div class="bk-mblock" id={`bk-m${i}`}>
+            <div class="bk-mhead">
+              <h3 class="bk-st">{name}</h3>
+              <button type="button" class="bk-link" data-reset={i}>年間÷12に戻す</button>
+            </div>
+            <div class="bk-tw">
+              <table class="bk-t bk-t-m">
+                <thead>
+                  <tr>
+                    <th class="bk-ch" />
+                    {MONTHS.map((k) => <th data-mlabel={k}>{((3 + k) % 12) + 1}月</th>)}
+                    <th class="c">年間</th>
+                    <th class="c">計画との差</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(["leads", "valid"] as const).map((k) => (
+                    <tr>
+                      <td class="lb">{FIELD_LABEL[k]}</td>
+                      {MONTHS.map((m) => (
+                        <td class="in"><input name={`m${i}.${k}.${m}`} type="number" inputmode="numeric" min="0" step="1" aria-label={`${name}の${FIELD_LABEL[k]}（${m + 1}か月目）`} /></td>
+                      ))}
+                      <td class="calc" data-out={`m${i}.${k}.sum`}>—</td>
+                      <td class="calc" data-out={`m${i}.${k}.diff`}>—</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      }
+      <p class="bk-hint">外部費用・人件費の計画の月額は、年額÷12です（実績のタブで、違う月だけ入れます）</p>
+    </div>
+
+    <!-- 3 毎月の実績：KPI管理表「毎月の実績入力」と同じ -->
+    <div id="bk-pane-a" role="tabpanel" hidden>
+      <p class="bk-hint" style="margin-bottom:8px">毎月、終わった月の実績を入れます。商談数・受注数は、わからない月は空欄、ゼロの月は0を入れます（空欄の月は率を計算しません）。外部費用・人件費は、計画の月額と違う月だけ入れます。</p>
+      {
+        CHANNELS.map((name, i) => (
+          <div class="bk-mblock ef-ablock" id={`ef-a${i}`}>
+            <div class="bk-mhead">
+              <h3 class="bk-st">{name}</h3>
+            </div>
+            <div class="bk-tw">
+              <table class="bk-t bk-t-m">
+                <thead>
+                  <tr>
+                    <th class="bk-ch" />
+                    {MONTHS.map((k) => <th data-mlabel={k}>{((3 + k) % 12) + 1}月</th>)}
+                    <th class="c">年間</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(["leads", "valid"] as const).map((k) => (
+                    <tr>
+                      <td class="lb">{FIELD_LABEL[k]}</td>
+                      {MONTHS.map((m) => (
+                        <td class="in"><input name={`a${i}.${k}.${m}`} type="number" inputmode="numeric" min="0" step="1" aria-label={`${name}の${FIELD_LABEL[k]}の実績（${m + 1}か月目）`} /></td>
+                      ))}
+                      <td class="calc" data-out={`a${i}.${k}.sum`}>—</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td class="lb">有効リード率</td>
+                    {MONTHS.map((m) => <td class="calc" data-out={`a${i}.rate.${m}`} />)}
+                    <td class="calc" data-out={`a${i}.rate.sum`}>—</td>
+                  </tr>
+                  {(["deals", "wins", "ext", "labor"] as const).map((k) => (
+                    <tr>
+                      <td class="lb">{FIELD_LABEL[k]}</td>
+                      {MONTHS.map((m) => (
+                        <td class="in"><input name={`a${i}.${k}.${m}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${FIELD_LABEL[k]}の実績（${m + 1}か月目）`} /></td>
+                      ))}
+                      <td class="calc" data-out={`a${i}.${k}.sum`}>—</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      }
+      <p class="bk-hint">単位 万円　外部費用・人件費の空欄の月は、計画の月額（薄い数字）で計算します</p>
+    </div>
+
+    <!-- 4 施策ログ：KPI管理表「施策ログ」と同じ -->
+    <div id="bk-pane-l" role="tabpanel" hidden>
+      <p class="bk-hint" style="margin-bottom:8px">課題に打った手を1行ずつ入れます。実施月と狙う指標を入れると、打ち手の前後の数字から「良くなった確率」を出します。</p>
+      <div class="bk-tw">
+        <table class="bk-t ef-log">
+          <thead>
+            <tr>
+              <th class="ef-no">#</th><th class="ef-s">登録月</th><th class="ef-m">狙う指標</th><th class="ef-m">チャネル</th><th class="ef-w">課題</th><th class="ef-w2">打ち手</th><th class="ef-s">実施月</th><th class="ef-w">根拠</th><th class="ef-s">状態</th><th class="ef-s">見込み時間</th><th class="ef-m">振り返り</th>
+            </tr>
+          </thead>
+          <tbody id="ef-log"></tbody>
+        </table>
+      </div>
+      {!sample && <button type="button" class="bk-btn-o ef-addrow" id="ef-addrow">行を足す</button>}
+      <p class="bk-hint">KPI管理表の施策ログと同じ項目です（50行まで）。見込み時間の単位は時間</p>
+    </div>
+  </form>
+
+  <div class="bk-side">
+    <div class="bk-out">
+      <p class="bk-remain" id="bk-remain" hidden></p>
+      {
+        sample ? (
+          <a class="bk-btn bk-dl" href="/tools/kpi-analysis">自分のKPI管理表で診断する<span aria-hidden="true">→</span></a>
+        ) : (
+          <button type="button" class="bk-btn bk-dl" id="bk-dl">KPI管理表をダウンロード（Excel）</button>
+        )
+      }
+      <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+    </div>
+    <aside class="bk-panel" id="bk-panel" aria-label="判定">
+      <div class="bk-counts">
+        <div class="fix"><b id="bk-c-fix">0</b>直す</div>
+        <div class="check"><b id="bk-c-check">0</b>確認</div>
+        <div class="ok"><b id="bk-c-ok">0</b>問題なし</div>
+      </div>
+      <p class="bk-wait" id="bk-wait" hidden></p>
+      <div id="bk-res">
+        <p class="bk-ph">計画を下回っている課題</p>
+        <div id="ef-issues"></div>
+        <p class="bk-ph">打ち手の効果</p>
+        <div id="ef-effects"></div>
+        <div id="bk-list"></div>
+        <a class="bk-link ef-toreport" href="#ef-report-h">下の診断結果（グラフ）を見る ↓</a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<section class="ef-report" id="ef-report-wrap" aria-labelledby="ef-report-h">
+  <h2 class="bk-h2 ef-report-h" id="ef-report-h">診断結果</h2>
+  <p class="bk-wait" id="ef-report-wait" hidden></p>
+  <div class="ka" id="ef-report"></div>
+</section>

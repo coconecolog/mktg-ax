@@ -4,7 +4,7 @@
 # 出力：public/images/tools/{kit}-screen.png（診断・入力画面）、{kit}-sheet.png（完成イメージ）
 from playwright.sync_api import sync_playwright
 
-KITS = ["budget-checker", "kpi-check", "budget-simulator", "kpi-sheet-maker"]
+KITS = ["budget-checker", "kpi-check", "budget-simulator", "kpi-sheet-maker", "kpi-analysis"]
 BASE = "http://localhost:4321/tools"
 
 with sync_playwright() as p:

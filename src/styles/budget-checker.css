@@ -332,3 +332,34 @@ a.bk-th:hover { border-color: var(--ink); }
   .bk-can-g, .bk-flow { grid-template-columns: minmax(0, 1fr); }
   .bk-shot { aspect-ratio: 16 / 10; }
 }
+
+/* ===== 施策効果診断Kit（/tools/kpi-analysis）2026-10-30：タブ4つ・毎月の実績・施策ログ・下の診断結果 ===== */
+.ef-tabset { flex-wrap: wrap; row-gap: 6px; }
+.bk-t td.in input::placeholder { color: var(--faint); opacity: 1; }
+.ef-ablock.is-fix .bk-st::after, .ef-ablock.is-check .bk-st::after { content: "計画を下回っています"; }
+.bk-t.ef-log { min-width: 1480px; }
+.ef-log th.ef-no { width: 34px; }
+.ef-log th.ef-s { width: 70px; }
+.ef-log th.ef-m { width: 112px; }
+.ef-log th.ef-w { width: 200px; }
+.ef-log th.ef-w2 { width: 280px; }
+.bk-t.ef-log td.in input, .bk-t.ef-log td.in select { text-align: left; font-size: 0.78rem; }
+.bk-t.ef-log td.in input[type="number"] { text-align: right; }
+.bk-t.ef-log td.ef-n { text-align: center; background: #fff; font-size: 0.72rem; color: var(--mute); }
+.bk-t.ef-log tr.is-check td.ef-n { background: var(--org-bg); color: var(--org); font-weight: 800; }
+.bk-t.ef-log tr.is-fix td.ef-n { background: var(--red-bg); color: var(--red); font-weight: 800; }
+.bk-t.ef-log tr.is-flash td { animation: bk-flash 1.2s ease-out; }
+.ef-addrow { margin-top: 8px; }
+.bk-row.is-fix span:last-child { color: var(--red); font-weight: 800; }
+.bk-row.ef-r { border-top: 1px solid var(--line); padding: 4px 0; align-items: baseline; }
+.bk-row.ef-r span:first-child { line-height: 1.45; }
+.ef-empty { font-size: 0.78rem; color: var(--sub); }
+.ef-toreport { display: inline-block; margin-top: 12px; }
+.ef-report { margin-top: 2.4rem; }
+.ef-report-h { border-bottom: 1.5px solid var(--ink); padding-bottom: 6px; margin-bottom: 12px; }
+.ef-sheet-log td { white-space: normal !important; min-width: 80px; }
+.bk-row.ef-e { flex-direction: column; gap: 0; }
+.bk-row.ef-e span:last-child { align-self: flex-end; font-size: 0.74rem; color: var(--sub); }
+.bk-row.ef-e.is-check span:last-child { color: var(--org); }
+.bk-t.bk-pv.ef-pv-a { table-layout: fixed; }
+.ef-pv-a th:first-child { width: 110px; }
