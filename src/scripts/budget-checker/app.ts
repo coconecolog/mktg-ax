@@ -1,13 +1,15 @@
 // src/scripts/budget-checker/app.ts
 //
-// 予算案診断キット（/tools/budget-checker）の画面。判定と状態は src/lib/budgetCheck.ts、Excelは src/lib/budget-sheet.ts。
-// - 入口3つ（AIの案／年間予算表の.xlsx／画面で入力）→ 同じ入力の画面（左＝入力、右＝判定）。入力のたびに判定し直す
-// - 入力の途中は localStorage に保存する（消えても動く）。入れた数字やファイルはサーバーに送らない
+// 予算案診断キットの画面。判定と状態は src/lib/budgetCheck.ts、Excelは src/lib/budget-sheet.ts。
+// #bk の data-mode で動きを分ける
+// - intro（/tools/budget-checker）：入口3つ（AIの案／年間予算表の.xlsx／画面で入力）。読み込んだ数字を localStorage に入れて input に移る
+// - input（/tools/budget-checker/input）：入力の画面（左＝入力、右＝判定）。localStorage から始め、入力のたびに判定し直して保存する
+// - sample（/tools/budget-checker/sample）：記入例だけを表示する（保存・ダウンロードはしない）
+// 入れた数字やファイルはサーバーに送らない
 import {
   CHANNELS,
   ReadError,
   SHEET_BUDGET,
-  SOURCE_LABEL,
   diagnoseBudget,
   emptyState,
   fmt,
@@ -33,13 +35,14 @@ const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
 const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", "labor"];
 const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
 
+const INPUT_URL = "/tools/budget-checker/input";
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-// 見本のページ（/tools/budget-checker/sample）は、入口がなく、記入例だけを表示する（保存・ダウンロードはしない）
-const SAMPLE = document.getElementById("bk")?.dataset.mode === "sample";
-const intro = $("bk-intro") as HTMLElement | null;
-const work = $("bk-work");
-const form = $<HTMLFormElement>("bk-form");
-const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+const MODE = (document.getElementById("bk")?.dataset.mode ?? "intro") as "intro" | "input" | "sample";
+const SAMPLE = MODE === "sample";
+const form = $<HTMLFormElement>("bk-form") as HTMLFormElement | null;
+const field = (name: string) => form!.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 
@@ -132,13 +135,13 @@ function onInput(e: Event) {
 let lastDiag: BudgetDiagnosis | null = null;
 
 function setOut(key: string, text: string) {
-  const el = form.querySelector<HTMLElement>(`[data-out="${key}"]`);
+  const el = form!.querySelector<HTMLElement>(`[data-out="${key}"]`);
   if (el) el.textContent = text;
 }
 
 function updateMonthLabels() {
   const labels = monthLabels(st.input.startMonth || 4);
-  form.querySelectorAll<HTMLElement>("[data-mlabel]").forEach((th) => (th.textContent = labels[Number(th.dataset.mlabel)]));
+  form!.querySelectorAll<HTMLElement>("[data-mlabel]").forEach((th) => (th.textContent = labels[Number(th.dataset.mlabel)]));
 }
 
 function update() {
@@ -168,7 +171,7 @@ function update() {
   );
 
   // 欄の色
-  form.querySelectorAll("td.is-fix, td.is-check").forEach((td) => td.classList.remove("is-fix", "is-check"));
+  form!.querySelectorAll("td.is-fix, td.is-check").forEach((td) => td.classList.remove("is-fix", "is-check"));
   document.querySelectorAll(".bk-mblock").forEach((b) => b.classList.remove("is-fix", "is-check"));
   let mdot: "fix" | "check" | null = null;
   for (const [key, s] of Object.entries(d.marks)) {
@@ -177,7 +180,7 @@ function update() {
       if (mdot !== "fix") mdot = s;
       continue;
     }
-    const td = (field(key)?.closest("td") as HTMLElement | null) ?? form.querySelector<HTMLElement>(`[data-out="${key}"]`);
+    const td = (field(key)?.closest("td") as HTMLElement | null) ?? form!.querySelector<HTMLElement>(`[data-out="${key}"]`);
     td?.classList.add(`is-${s}`);
   }
   const dot = $("bk-mdot");
@@ -309,6 +312,8 @@ function tab(which: "y" | "m") {
   $("bk-tab-m").setAttribute("aria-selected", String(which === "m"));
   $("bk-pane-y").hidden = which !== "y";
   $("bk-pane-m").hidden = which !== "m";
+  $("bk-tab-n").textContent =
+    which === "y" ? "いま表示中：年間。入力が終わったら「2 月別で調整」を押してください" : "いま表示中：月別。年間÷12が入っています。直したい月だけ変えてください";
 }
 
 function jump(key: string) {
@@ -342,15 +347,23 @@ function renderNotes() {
   }
   box.hidden = false;
   box.innerHTML = `<button type="button" class="bk-link" id="bk-notes-x">閉じる</button><b>読み込みのときのお知らせ</b><ul>${st.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
-  $("bk-notes-x").addEventListener("click", () => (box.hidden = true));
+  $("bk-notes-x").addEventListener("click", () => {
+    box.hidden = true;
+    st.notes = [];
+    save();
+  });
 }
 
+// 入口：読み込んだ数字を保存して、入力の画面に移る
+function goInput(next: BudgetState) {
+  st = next;
+  save();
+  location.href = INPUT_URL;
+}
+
+// 入力の画面・見本：数字を画面に入れて判定する
 function openWork(next: BudgetState, v: "diag" | "sheet" = "diag") {
   st = next;
-  if (intro) intro.hidden = true;
-  work.hidden = false;
-  const src = document.getElementById("bk-src");
-  if (src) src.textContent = `読み込み元：${SOURCE_LABEL[st.source]}${st.fileName ? `（${st.fileName}）` : ""}`;
   writeForm();
   updateMonthLabels();
   renderNotes();
@@ -358,7 +371,6 @@ function openWork(next: BudgetState, v: "diag" | "sheet" = "diag") {
   sheetTab = "main";
   setView(v);
   update();
-  if (!SAMPLE) window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
 }
 
 function showIntroError(msg: string) {
@@ -372,7 +384,7 @@ async function handleFile(file: File) {
   $("bk-busy").hidden = false;
   try {
     const book = await readBook(file, [SHEET_BUDGET]);
-    openWork(stateFromBook(book, file.name));
+    goInput(stateFromBook(book, file.name));
   } catch (e) {
     showIntroError(e instanceof ReadError ? e.message : "ファイルを読めませんでした。年間予算表（.xlsx）を選んでください。");
     console.error(e);
@@ -413,9 +425,21 @@ async function download() {
     return;
   }
   const btn = $<HTMLButtonElement>("bk-dl");
+  // Chrome・Edge：保存先を選ぶ画面を先に開く（押した直後でないと開けないため）。ほかのブラウザは通常のダウンロード
+  let handle: any = null;
+  const picker = (window as any).showSaveFilePicker;
+  if (typeof picker === "function") {
+    try {
+      handle = await picker({ suggestedName: budgetFileName(st), types: [{ description: "Excel", accept: { [XLSX_MIME]: [".xlsx"] } }] });
+    } catch (e) {
+      if ((e as DOMException)?.name === "AbortError") return; // 保存をやめた
+      handle = null; // 開けない環境（埋め込みなど）は通常のダウンロード
+    }
+  }
   btn.disabled = true;
   const label = btn.textContent;
   btn.textContent = "作っています…";
+  let saved = false;
   try {
     const [JSZip, buf] = await Promise.all([
       loadZip(),
@@ -429,79 +453,91 @@ async function download() {
     for (const n of Object.keys(zip.files)) if (/\.(xml|rels)$/.test(n)) files[n] = await zip.file(n).async("string");
     const changed = fillBudgetWorkbook(files, st, d);
     for (const [n, xml] of Object.entries(changed)) zip.file(n, xml);
-    const blob: Blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", compression: "DEFLATE" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = budgetFileName(st);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    const blob: Blob = await zip.generateAsync({ type: "blob", mimeType: XLSX_MIME, compression: "DEFLATE" });
+    if (handle) {
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = budgetFileName(st);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+    saved = true;
   } catch (e) {
     console.error(e);
     err.textContent = "ファイルを作れませんでした。通信を確かめて、もう一度お試しください。";
     err.hidden = false;
   } finally {
     btn.disabled = false;
-    btn.textContent = label;
+    btn.textContent = saved && handle ? "保存しました" : label;
+    if (saved && handle) window.setTimeout(() => (btn.textContent = label), 2500);
   }
 }
 const PRE_HINT_KEY: Record<string, string> = { goal: "売上目標", price: "平均受注単価", gmPct: "粗利率", paybackYears: "回収期間", leadTime: "リードタイム", common: "共通費" };
 
-// ---------- つなぐ ----------
-form.addEventListener("input", onInput);
-form.addEventListener("change", (e) => {
-  if ((e.target as HTMLElement).tagName === "SELECT") onInput(e);
-});
-form.addEventListener("submit", (e) => e.preventDefault());
-form.addEventListener("click", (e) => {
-  const b = (e.target as HTMLElement).closest<HTMLElement>("[data-reset]");
-  if (!b) return;
-  resetMonthly(st, Number(b.dataset.reset));
-  writeMonthly();
-  update();
-});
-$("bk-tab-y")?.addEventListener("click", () => tab("y"));
-$("bk-tab-m")?.addEventListener("click", () => tab("m"));
-$("bk-panel")?.addEventListener("click", (e) => {
-  const b = (e.target as HTMLElement).closest<HTMLElement>("[data-jump]");
-  if (b?.dataset.jump) jump(b.dataset.jump);
-});
-$("bk-mopen")?.addEventListener("click", () => $("bk-panel").scrollIntoView({ behavior: "smooth", block: "start" }));
-$("bk-dl")?.addEventListener("click", download);
-$("bk-dl2")?.addEventListener("click", download);
-$("bk-v-diag")?.addEventListener("click", () => setView("diag"));
-$("bk-v-sheet")?.addEventListener("click", () => setView("sheet"));
-$("bk-back-diag")?.addEventListener("click", () => {
-  setView("diag");
-  window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
-});
-$("bk-s-main")?.addEventListener("click", () => {
-  sheetTab = "main";
-  renderSheet();
-});
-$("bk-s-diag")?.addEventListener("click", () => {
-  sheetTab = "diag";
-  renderSheet();
-});
+// ---------- つなぐ（入力の画面・見本） ----------
+const hasData = () => {
+  const inp = st.input;
+  return (
+    [inp.goal, inp.price, inp.gmPct, inp.paybackYears, inp.leadTime].some((v) => Number.isFinite(v)) ||
+    inp.common > 0 ||
+    inp.channels.some((c) => KEYS.some((k) => c[k] > 0))
+  );
+};
 
-$("bk-example")?.addEventListener("click", () => openWork(sampleState()));
-$("bk-clear")?.addEventListener("click", () => {
-  if (!window.confirm("入力をすべて消します。よろしいですか？")) return;
-  openWork(emptyState());
-});
-$("bk-home")?.addEventListener("click", () => {
-  work.hidden = true;
-  if (intro) intro.hidden = false;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
+if (form) {
+  form.addEventListener("input", onInput);
+  form.addEventListener("change", (e) => {
+    if ((e.target as HTMLElement).tagName === "SELECT") onInput(e);
+  });
+  form.addEventListener("submit", (e) => e.preventDefault());
+  form.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-reset]");
+    if (!b) return;
+    resetMonthly(st, Number(b.dataset.reset));
+    writeMonthly();
+    update();
+  });
+  $("bk-tab-y")?.addEventListener("click", () => tab("y"));
+  $("bk-tab-m")?.addEventListener("click", () => tab("m"));
+  $("bk-panel")?.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-jump]");
+    if (b?.dataset.jump) jump(b.dataset.jump);
+  });
+  $("bk-mopen")?.addEventListener("click", () => $("bk-panel").scrollIntoView({ behavior: "smooth", block: "start" }));
+  $("bk-dl")?.addEventListener("click", download);
+  $("bk-v-diag")?.addEventListener("click", () => setView("diag"));
+  $("bk-v-sheet")?.addEventListener("click", () => setView("sheet"));
+  $("bk-s-main")?.addEventListener("click", () => {
+    sheetTab = "main";
+    renderSheet();
+  });
+  $("bk-s-diag")?.addEventListener("click", () => {
+    sheetTab = "diag";
+    renderSheet();
+  });
+  $("bk-example")?.addEventListener("click", () => {
+    if (hasData() && !window.confirm("いまの入力を、記入例（基本モデルの安定期）に置きかえます。よろしいですか？")) return;
+    openWork(sampleState());
+  });
+  $("bk-clear")?.addEventListener("click", () => {
+    if (!window.confirm("入力をすべて消します。よろしいですか？")) return;
+    openWork(emptyState());
+  });
+}
 
+if (MODE === "intro") {
+// 画面で入力する：前回の入力があれば、そこから続ける
 $("bk-start")?.addEventListener("click", () => {
   const saved = restore();
-  openWork(saved ? { ...saved, notes: [] } : emptyState());
+  goInput(saved ? { ...saved, notes: [] } : emptyState());
 });
 
-if (intro) {
 // AIの案
 const aiOpen = $<HTMLButtonElement>("bk-ai-open");
 aiOpen.addEventListener("click", () => {
@@ -534,7 +570,7 @@ $("bk-import")?.addEventListener("click", () => {
     return;
   }
   try {
-    openWork(stateFromAi(text));
+    goInput(stateFromAi(text));
   } catch (e) {
     showIntroError(e instanceof ReadError ? e.message : "読み込めませんでした。");
   }
@@ -561,9 +597,10 @@ drop.addEventListener("drop", (e) => {
 });
 }
 
-// 記入例のURL
+// はじめの表示
 {
   const q = new URLSearchParams(location.search);
   if (SAMPLE) openWork(sampleState(), q.get("tab") === "sheet" ? "sheet" : "diag");
-  else if (q.get("sample") === "1") openWork(sampleState());
+  else if (MODE === "input") openWork(q.get("sample") === "1" ? sampleState() : (restore() ?? emptyState()));
+  else if (q.get("sample") === "1") location.replace(`${INPUT_URL}?sample=1`);
 }

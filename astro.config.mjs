@@ -23,7 +23,7 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      filter: (page) => !page.includes("/internal-links") && !page.includes("/lab/whitepapers/thanks") && !page.includes("/contact/thanks") &&
+      filter: (page) => !page.includes("/internal-links") && !page.includes("/lab/whitepapers/thanks") && !page.includes("/contact/thanks") && !page.includes("/tools/budget-checker/input") &&
         // タグページの「ブログ記事」「無料資料」タブは本体ページへcanonicalを向けているため、サイトマップには載せない
         !/\/lab\/tag\/[^/]+\/(blog|whitepapers)(\/|$)/.test(page),
     }),
