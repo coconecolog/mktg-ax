@@ -304,3 +304,31 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-th-need b { background: var(--calc); padding: 0 8px; }
 .bk-th-need em { position: absolute; right: 10px; top: 6px; font-style: normal; font-size: 0.68rem; color: var(--sub); }
 .bk-start-btn { width: 100%; max-width: 420px; justify-content: center; padding: 18px 12px; font-size: 1.05rem; margin: 4px 0 10px; }
+
+/* ===== Kitの入口（2026-10-30 レイアウト変更：わかること → 3ステップ（手順＋画面の画像2枚）→ はじめる → 必要な数字） ===== */
+.bk-band { background: var(--bg); border: 1px solid var(--line); padding: 18px 20px 20px; margin: 0 0 20px; }
+.bk-can-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.bk-can-i { background: #fff; border: 1px solid var(--line); padding: 12px 14px; }
+.bk-can-i b { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; }
+.bk-can-i b i { font-style: normal; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--ink); color: #fff; font-size: 0.78rem; font-weight: 800; flex: 0 0 auto; }
+.bk-can-i p { font-size: 0.78rem; color: var(--sub); line-height: 1.6; margin-top: 6px !important; }
+.bk-flow { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 14px; align-items: stretch; }
+.bk-fsteps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.bk-fstep { flex: 1; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line); padding: 12px 14px; }
+.bk-fstep .bk-no { flex: 0 0 auto; }
+.bk-fstep div { flex: 1; min-width: 0; }
+.bk-fstep b { display: block; font-size: 0.92rem; }
+.bk-fstep p { font-size: 0.76rem; color: var(--sub); line-height: 1.55; margin-top: 3px !important; }
+.bk-fstep-xl { position: static; flex: 0 0 auto; }
+.bk-shot { position: relative; display: block; border: 6px solid #c9c9cd; background: #fff; overflow: hidden; text-decoration: none; color: var(--ink); }
+.bk-shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+.bk-shot span { position: absolute; right: 8px; bottom: 8px; background: #fff; border: 1px solid var(--ink); padding: 5px 10px; font-size: 0.8rem; font-weight: 800; }
+.bk-shot:hover { border-color: var(--ink); }
+.bk-h2c { text-align: center; font-size: 1.3rem; margin-top: 28px; }
+.bk-subc { text-align: center; }
+.bk-start-wrap { text-align: center; }
+.bk-start-wrap .bk-btn { margin-left: auto; margin-right: auto; }
+@media (max-width: 860px) {
+  .bk-can-g, .bk-flow { grid-template-columns: minmax(0, 1fr); }
+  .bk-shot { aspect-ratio: 16 / 10; }
+}
