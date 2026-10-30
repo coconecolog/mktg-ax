@@ -20,7 +20,8 @@
 .bk-btn:disabled { opacity: 0.5; cursor: default; }
 .bk-btn2 { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--ink); background: var(--ink); color: #fff; font-weight: 700; font-size: 0.82rem; padding: 7px 14px; cursor: pointer; font-family: inherit; text-decoration: none; white-space: nowrap; }
 .bk-btn2:hover { opacity: 0.85; }
-.bk-btn-s { font-size: 0.8rem; padding: 6px 14px; }
+.bk-btn-o { display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); font: inherit; font-size: 0.8rem; font-weight: 800; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+.bk-btn-o:hover { background: var(--bg); }
 .bk-link { background: none; border: 0; padding: 0; font: inherit; font-size: 0.8rem; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .bk-err { margin-top: 10px !important; border: 1.5px solid var(--red); background: #fff; color: var(--red); font-weight: 700; padding: 9px 12px; font-size: 0.85rem; line-height: 1.6; }
 .bk-busy { margin-top: 10px !important; font-size: 0.88rem; font-weight: 700; }
@@ -44,18 +45,25 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-th-grid i.b { background: #c5ddec; }
 .bk-th-grid i.r { background: #f0a1a1; }
 .bk-th-g5 { grid-template-columns: repeat(5, 1fr); }
-.bk-th-g9 { grid-template-columns: repeat(9, 1fr); }
-.bk-th-3 .bk-th-grid i { height: 7px; }
 .bk-th-alert { border: 1px solid var(--ink); background: #fff; padding: 6px; display: flex; flex-direction: column; gap: 5px; font-size: 0.66rem; }
 .bk-th-alert span { background: var(--red-bg); color: var(--red); text-align: center; font-weight: 800; }
 .bk-th-alert span.o { background: var(--org-bg); color: var(--org); }
 .bk-th-alert i { display: block; height: 3px; background: var(--ink); }
 .bk-th-alert i.s { width: 60%; }
 .bk-th-alert em { font-style: normal; color: var(--red); margin-top: auto; }
-.bk-th-title { display: block; height: 5px; width: 45%; background: var(--ink); margin-bottom: 2px; flex: none; }
-.bk-th-tabs { display: flex; gap: 2px; margin-top: auto; }
-.bk-th-tabs b { font-size: 0.62rem; font-weight: 700; border: 1px solid var(--line); background: #fff; padding: 0 6px; }
-.bk-th-tabs b:first-child { background: var(--ink); color: #fff; border-color: var(--ink); }
+/* 3 年間予算表 完成：Excelファイルのイラスト（ダウンロードできるイメージ） */
+.bk-th-3 { align-items: center; justify-content: center; gap: 0; }
+.bk-xl { position: relative; display: block; width: 92px; height: 92px; }
+.bk-xl-file { position: absolute; inset: 0; background: #fff; border: 1.5px solid var(--ink); clip-path: polygon(0 0, 80% 0, 100% 20%, 100% 100%, 0 100%); }
+.bk-xl-fold { position: absolute; right: 0; top: 0; width: 18px; height: 18px; background: var(--line); border-left: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); }
+.bk-xl-grid { position: absolute; left: 8px; right: 8px; top: 26px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.bk-xl-grid i { display: block; height: 5px; background: var(--line); }
+.bk-xl-grid i.k { background: var(--ink); }
+.bk-xl-grid i.b { background: #c5ddec; }
+.bk-xl-tag { position: absolute; left: -10px; bottom: 10px; background: var(--ink); color: #fff; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.04em; padding: 2px 6px; }
+.bk-xl-dl { position: absolute; right: -12px; bottom: -12px; width: 30px; height: 30px; background: var(--ink); display: flex; align-items: center; justify-content: center; }
+.bk-xl-dl svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; }
+.bk-xl-name { font-size: 0.7rem; color: var(--sub); margin-top: 16px; }
 .bk-sample { align-self: flex-end; margin-top: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none; }
 .bk-sample:hover { text-decoration: underline; }
 @media (max-width: 760px) {

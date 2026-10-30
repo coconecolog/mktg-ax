@@ -2,7 +2,7 @@
 // src/components/budget-checker/BudgetGrid.astro
 // 予算案診断キットの入力（左）と判定（右）。/tools/budget-checker/input と見本のページ（/tools/budget-checker/sample）で共通
 // 動きは src/scripts/budget-checker/app.ts。sample＝見本のページ（ダウンロードの代わりにキットへのリンク、記入例・すべて消すはなし）
-// 2026-10-30：タブは「1 年間を入力 → 2 月別で調整」（どちらも黒、開いている方に黄色の線と✓）。ダウンロードは判定の枠の外に独立
+// 2026-10-30：タブは「1 年間を入力 → 2 月別で調整」（どちらも黒、開いている方に黄色の線と✓）。ダウンロードは判定の枠の外に独立し、判定の上に置く
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 
 interface Props {
@@ -33,8 +33,8 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
             {
               !sample && (
                 <div class="bk-acts">
-                  <button type="button" class="bk-btn bk-btn-s" id="bk-example">記入例を入れる</button>
-                  <button type="button" class="bk-btn bk-btn-s" id="bk-clear">すべて消す</button>
+                  <button type="button" class="bk-btn-o" id="bk-example">記入例を入れる</button>
+                  <button type="button" class="bk-btn-o" id="bk-clear">すべて消す</button>
                 </div>
               )
             }
@@ -138,6 +138,17 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
         </form>
 
         <div class="bk-side">
+          <div class="bk-out">
+            <p class="bk-remain" id="bk-remain" hidden></p>
+            {
+              sample ? (
+                <a class="bk-btn bk-dl" href="/tools/budget-checker">自分の予算案で診断する<span aria-hidden="true">→</span></a>
+              ) : (
+                <button type="button" class="bk-btn bk-dl" id="bk-dl">年間予算表をダウンロード（Excel）</button>
+              )
+            }
+            <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+          </div>
           <aside class="bk-panel" id="bk-panel" aria-label="判定">
             <div class="bk-counts">
               <div class="fix"><b id="bk-c-fix">0</b>直す</div>
@@ -153,16 +164,5 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
               <div id="bk-list"></div>
             </div>
           </aside>
-          <div class="bk-out">
-            <p class="bk-remain" id="bk-remain" hidden></p>
-            {
-              sample ? (
-                <a class="bk-btn bk-dl" href="/tools/budget-checker">自分の予算案で診断する<span aria-hidden="true">→</span></a>
-              ) : (
-                <button type="button" class="bk-btn bk-dl" id="bk-dl">年間予算表をダウンロード（Excel）</button>
-              )
-            }
-            <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
-          </div>
         </div>
       </div>
