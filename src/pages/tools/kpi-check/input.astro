@@ -1,7 +1,7 @@
 ---
 // src/pages/tools/kpi-check/input.astro
 //
-// KPI妥当性診断キットの入力の画面（/tools/kpi-check/input）2026-10-30。予算案診断キットの入力の画面（/tools/budget-checker/input）と同じ作り
+// KPI妥当性診断Kitの入力の画面（/tools/kpi-check/input）2026-10-30。予算案診断Kitの入力の画面（/tools/budget-checker/input）と同じ作り
 // 入口（/tools/kpi-check）の3つの入口は、どれもこのページに移る（localStorage で受け渡す）。?sample=1 で記入例を入れて開く
 // 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-kit="kpi" data-mode="input"）
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -10,7 +10,7 @@ import ToolFooter from "@/components/ToolFooter.astro";
 import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "KPI妥当性診断キット";
+const TOOL_TITLE = "KPI妥当性診断Kit";
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
@@ -21,7 +21,7 @@ const breadcrumbItems = [
 
 <BaseLayout
   title={`${TOOL_TITLE} 入力｜MeerKitLab`}
-  description="KPI妥当性診断キットの入力の画面です。KPIの数字を入れると、売上目標とつながっているか・率やコストに無理がないかをその場で判定し、KPI管理表（Excel）をダウンロードできます。"
+  description="KPI妥当性診断Kitの入力の画面です。KPIの数字を入れると、売上目標とつながっているか・率やコストに無理がないかをその場で判定し、KPI管理表（Excel）をダウンロードできます。"
   ogImage="/open-graph/default.png"
   noindex
 >
@@ -34,7 +34,7 @@ const breadcrumbItems = [
   </div>
 
   <main class="bk" id="bk" data-kit="kpi" data-mode="input">
-    <p class="bk-back"><a href="/tools/kpi-check">← KPI妥当性診断キットに戻る</a></p>
+    <p class="bk-back"><a href="/tools/kpi-check">← KPI妥当性診断Kitに戻る</a></p>
 
     <section class="bk-howto" aria-labelledby="bk-howto-h">
       <h2 class="bk-howto-h" id="bk-howto-h">使い方</h2>
