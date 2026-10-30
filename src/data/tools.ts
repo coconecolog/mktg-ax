@@ -111,13 +111,11 @@ export const KIT_GROUPS: KitGroup[] = [
       {
         icon: "file-search",
         situation: "自分で作った予算案の妥当性を確認したい",
-        // フェーズ2：「AIの案を貼りつけるか、年間予算表を読み込むか、画面で入力して判定します。」
-        description: "AIで作った予算案を貼りつけて、CPL・CAC・回収期間で判定します。",
+        description: "AIや自社で作った予算案を取りこみ、NGを直して年間予算表（Excel）に仕上げます。",
         name: "予算案診断Kit",
         button: "診断する",
         href: "/tools/budget-checker",
-        // フェーズ2：{ before: "", label: "年間予算表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" }
-        resource: null,
+        resource: { before: "", label: "年間予算表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
       },
     ],
   },

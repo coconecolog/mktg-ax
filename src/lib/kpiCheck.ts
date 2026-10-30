@@ -70,9 +70,24 @@ function findHeader(c: Cells, names: string[]): { row: number; col: Record<strin
 const PRE_NAMES = ["マーケ経由の売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム"];
 const CH_NAMES = ["チャネル", "リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
 
-export function readPlanSheet(book: Book, fileName: string): CheckInput {
+/** Excelの日付のシリアル値 → 年・月（1900年方式）。読めなければ null */
+function serialToYm(v: unknown): { y: number; m: number } | null {
+  if (typeof v === "number" && v > 20000 && v < 80000) {
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+    return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 };
+  }
+  const m = /^(\d{4})[\/\-年.](\d{1,2})/.exec(String(v ?? "").trim());
+  return m ? { y: Number(m[1]), m: Number(m[2]) } : null;
+}
+
+/**
+ * 「はじめに入力」（M-B-04）と「年間予算表（施策別）」（M-B-03）は同じ表なので、どちらもこれで読む。
+ * sheet：読むシート名。fileLabel：見つからないときのメッセージに出す資料名
+ */
+export function readPlanSheet(book: Book, fileName: string, sheet: string = SHEET_PLAN, fileLabel = "KPI管理表（M-B-04）"): CheckInput {
+  const SHEET_PLAN = sheet;
   const P = book[SHEET_PLAN];
-  if (!P) throw new ReadError(`「${SHEET_PLAN}」シートが見つかりません。KPI管理表（M-B-04）のファイルか確かめてください（シート名は変えずに使います）。`);
+  if (!P) throw new ReadError(`「${SHEET_PLAN}」シートが見つかりません。${fileLabel}のファイルか確かめてください（シート名は変えずに使います）。`);
   const warnings: string[] = [];
 
   // 1. 前提：見出しのすぐ下の行が値
@@ -81,9 +96,11 @@ export function readPlanSheet(book: Book, fileName: string): CheckInput {
   const v = (name: string) => num(P, `${pre.col[name]}${pre.row + 1}`);
   const gmRaw = v("粗利率");
   const commonCol = COLS.find((k) => str(P, `${k}${pre.row}`) === "共通費");
+  const startCol = COLS.find((k) => str(P, `${k}${pre.row}`) === "期首");
+  const start = startCol ? serialToYm(P[`${startCol}${pre.row + 1}`]) : null;
   const input: SheetInput = {
-    startYear: NaN,
-    startMonth: 4,
+    startYear: start ? start.y : NaN,
+    startMonth: start ? start.m : 4,
     goal: v("マーケ経由の売上目標") ?? NaN,
     price: v("平均受注単価") ?? NaN,
     gmPct: gmRaw === null ? NaN : gmRaw <= 1 ? gmRaw * 100 : gmRaw, // パーセント表示のセルは 0.4 で入っている
