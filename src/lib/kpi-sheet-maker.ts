@@ -1,7 +1,7 @@
 // src/lib/kpi-sheet-maker.ts
 //
 // KPI管理表メーカー（/tools/kpi-sheet-maker）の計算と、Excelのひな形への書き込み。
-// ひな形: public/files/tools/kpi-sheet-template.xlsx（Drive「M-B-04_KPI管理表」を書き出し、実績を空にしたもの）
+// ひな形: KPI管理表作成Kit（2026-10-30〜）は public/files/tools/kpi-check-template.xlsx を使う（src/lib/planKits.ts）。ここに残るのは共通の計算と、xlsxのXMLを書き換える部品
 // 式の正本: Googleドライブ「★数字の定義（KPI・予算）」。計算はひな形の「はじめに入力」シートの式と同じにする
 // - 金額は万円。入力は件数（リード数・有効リード数・商談数・受注数）で、率は入れない（件数から出す）
 // - 計算は丸めない値で行い、表示だけ丸める。例外は「必要な数（逆算）」の切り上げ（シートの ROUNDUP と同じ）

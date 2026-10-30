@@ -4,7 +4,7 @@
 // - 「年間予算表（施策別）」「はじめに入力」（同じ表）：ひな形の式と同じ計算で、同じ並びの表を出す
 // - 「診断結果」：src/lib/budget-sheet.ts の診断結果シートと同じ中身
 import { CHANNELS, fmt, groupLabel, monthLabels, pct, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
-import { KITS, type PlanKit } from "@/lib/planKits";
+import { KITS, SHEET_KPI, type PlanKit } from "@/lib/planKits";
 import { calc } from "@/lib/kpi-sheet-maker";
 
 const esc = (s: unknown) =>
@@ -28,7 +28,7 @@ export function sheetHtml(st: BudgetState, kit: PlanKit = KITS.budget): string {
   const ratio = (a: number | null) => (a === null ? "0%" : pct(a));
   const f1 = (v: number | null) => fmt(z(v), 1);
   const f0 = (v: number | null) => fmt(z(v), 0);
-  let h = `<p class="bk-pv-title">${kit.id === "kpi" ? "はじめに入力" : "年間予算表"}</p><p class="bk-pv-n">水色＝入力　灰色＝自動計算　単位：万円</p>`;
+  let h = `<p class="bk-pv-title">${kit.sheet === SHEET_KPI ? "はじめに入力" : "年間予算表"}</p><p class="bk-pv-n">水色＝入力　灰色＝自動計算　単位：万円</p>`;
 
   h += `<p class="bk-pv-h1">【1】年間予算計画を立てる</p><p class="bk-pv-h">1. 前提の入力</p>`;
   h += table([
