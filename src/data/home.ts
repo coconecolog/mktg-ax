@@ -62,7 +62,7 @@ export const HOME_FOCUS = {
       label: "Kit",
       name: "施策効果診断Kit",
       description:
-        "KPI管理表（Excel）を読み込むと、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。ファイルは送信せず、ブラウザの中だけで読みます。",
+        "毎月の実績と施策ログから、続いている課題と、打ち手が効いたかどうかを確率つきのグラフで示します。画面で直すと、そのまま翌月も使えるKPI管理表（Excel）になります。",
       note: "",
       // 関連資料（資料DBのSlug）。資料を出さないときは null
       resourceSlug: "kpi-management-template",
@@ -149,7 +149,7 @@ export const HOME_PDCA = {
       phase: "改善・報告",
       purpose: "打ち手を見直して伝える",
       name: "施策効果診断Kit",
-      description: "KPI管理表を読み込むと、続いている課題と、打ち手が効いたかを確率つきで示します。",
+      description: "毎月の実績と施策ログから、続いている課題と、打ち手が効いたかを確率つきで示します。",
       href: "/tools/kpi-analysis",
       resource: {
         label: "あわせて使う資料",

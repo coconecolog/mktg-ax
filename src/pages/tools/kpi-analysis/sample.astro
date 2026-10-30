@@ -1,0 +1,70 @@
+---
+// src/pages/tools/kpi-analysis/sample.astro
+//
+// 施策効果診断Kitのサンプル画面（/tools/kpi-analysis/sample）2026-10-30。予算案診断Kit・KPI妥当性診断Kitのサンプル画面と同じ作り
+// 記入例（架空の会社のKPI管理表、10月まで入力）で、「診断画面」と「KPI管理表（完成イメージ：毎月の実績入力・施策ログ・診断結果）」をタブで切り替えて見せる
+// - KPI管理表のタブは ?tab=sheet で開く。数字は変えられるが保存しない。ダウンロードはなし（Kitへのリンク）
+// 画面の動きは src/scripts/kpi-analysis/app.ts（#bk の data-mode="sample"）
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import EffectGrid from "@/components/kpi-analysis/EffectGrid.astro";
+import "@/styles/budget-checker.css";
+import "@/styles/kpi-analysis.css";
+
+const TOOL_TITLE = "施策効果診断Kit";
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/kpi-analysis" },
+  { name: "サンプル画面", href: "/tools/kpi-analysis/sample" },
+];
+---
+
+<BaseLayout
+  title={`${TOOL_TITLE} サンプル画面｜診断画面とKPI管理表の完成イメージ｜MeerKitLab`}
+  description="施策効果診断Kitのサンプル画面です。架空の会社のKPI管理表（10月まで入力）で、診断画面と、ダウンロードできるKPI管理表（Excel）の完成イメージを確かめられます。"
+  ogImage="/open-graph/default.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}<span class="bk-h1-sub">サンプル画面</span></h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">毎月の振り返りを、勘ではなく数字で。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">毎月の実績と施策ログから、計画を下回っている課題と、打ち手が効いたかを確率で判定します。画面で直すと、そのまま翌月も使えるKPI管理表（Excel）になります。</p>
+  </div>
+
+  <main class="bk" id="bk" data-kit="effect" data-mode="sample">
+    <p class="bk-back"><a href="/tools/kpi-analysis">← 施策効果診断Kitに戻る</a></p>
+
+    <section id="bk-work">
+      <div class="bk-views" role="tablist" aria-label="表示">
+        <button type="button" role="tab" class="bk-view" id="bk-v-diag" aria-selected="true">診断画面</button>
+        <button type="button" role="tab" class="bk-view" id="bk-v-sheet" aria-selected="false">KPI管理表（完成イメージ）</button>
+        <span class="bk-tab-n" id="bk-v-note">水色の欄を直すと、右の判定と下の診断結果がすぐ変わります</span>
+      </div>
+      <p class="bk-hint bk-sample-n">記入例：架空の会社（基本モデルの安定期）のKPI管理表に、10月までの実績と施策ログを入れたものです。数字を変えると判定とKPI管理表が変わります（保存はされません）</p>
+
+      <div class="bk-sheetview" id="bk-sheetview" hidden>
+        <div class="bk-sheettabs">
+          <button type="button" class="bk-stab" id="ef-s-act" aria-selected="true">毎月の実績入力</button>
+          <button type="button" class="bk-stab" id="ef-s-log" aria-selected="false">施策ログ</button>
+          <button type="button" class="bk-stab" id="ef-s-diag" aria-selected="false">診断結果</button>
+          <a class="bk-btn bk-sheet-dl" href="/tools/kpi-analysis">自分のKPI管理表で診断する<span aria-hidden="true">→</span></a>
+        </div>
+        <div class="bk-sheet" id="bk-sheet"></div>
+      </div>
+
+      <EffectGrid sample />
+
+      <div class="bk-mbar" id="bk-mbar">
+        <span class="fix"><b id="bk-m-fix">0</b>直す</span>
+        <span class="check"><b id="bk-m-check">0</b>確認</span>
+        <button type="button" class="bk-btn" id="bk-mopen">判定を見る</button>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import "@/scripts/kpi-analysis/app";
+</script>

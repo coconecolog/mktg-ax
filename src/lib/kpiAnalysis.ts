@@ -716,12 +716,15 @@ export function summarize(model: Model, rows: Row[], effects: Effect[]): Summary
 }
 
 export function analyze(book: Book) {
-  const model = buildModel(book);
+  return analyzeModel(buildModel(book));
+}
+/** 画面の入力から作った Model を分析する（施策効果診断Kitの入力の画面。src/lib/effectCheck.ts） */
+export function analyzeModel(model: Model) {
   const rows = buildRows(model);
   const effects = buildEffects(model);
   return { model, rows, effects, summary: summarize(model, rows, effects) };
 }
-export type Analysis = ReturnType<typeof analyze>;
+export type Analysis = ReturnType<typeof analyzeModel>;
 
 // ---------- 表示用 ----------
 export function fmtValue(v: number | null, unit: Row["unit"]) {

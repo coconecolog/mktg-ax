@@ -183,13 +183,18 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
     ],
   },
 
-  // 施策効果診断キット（旧KPI分析ツール、2026-10-27）。FAQは仮の文。関連資料のKPI管理表（M-B-04）は資料ページができたらhrefを差し替える
+  // 施策効果診断Kit（旧KPI分析ツール、2026-10-27。2026-10-30 入口3つ・入力の画面・KPI管理表の出力に作り直し）
   "/tools/kpi-analysis": {
     faq: [
       {
-        question: "どのファイルを読み込めますか？",
+        question: "どうやって数字を入れますか？",
         answer:
-          "MeerKitLabのKPI管理表（M-B-04）を、Excel（.xlsx）で保存したファイルです。Googleスプレッドシートで使っている場合は「ファイル → ダウンロード → Microsoft Excel（.xlsx）」で保存してください。読むのは「はじめに入力」「毎月の実績入力」「施策ログ」の3シートだけです。シート名は変えずに使ってください（説明の行を足したり消したりしても読めます）。",
+          "入口は3つです。KPI管理表（M-B-04）を使っている方は、Excel（.xlsx）で保存したファイルを置くだけです（Googleスプレッドシートは「ファイル → ダウンロード → Microsoft Excel（.xlsx）」）。別の表で記録している方は、プロンプトをAIに渡して整えた結果を貼りつけます。手元に数字がある方は、画面の表に計画・毎月の実績・施策ログを入れます。どれを選んでも、同じ入力の画面で診断します。",
+      },
+      {
+        question: "何をダウンロードできますか？",
+        answer:
+          "入れた計画・毎月の実績・施策ログが入ったKPI管理表（Excel）に、「診断結果」シートを足したものです。翌月はこのファイルに実績を足して、また読み込めば診断し直せます。「直す」が残っていてもダウンロードできます。",
       },
       {
         question: "「確率」はどうやって出していますか？",
@@ -207,12 +212,12 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
           "施策ログの振り返りが「効果あり」なのに数字では良くなった確率が20%以下、または「効果なし」なのに80%以上の打ち手です。思い込みで続けたり、やめたりしていないかを確かめるきっかけにしてください。",
       },
       {
-        question: "読み込んだファイルはどこかに送られますか？",
-        answer: "送られません。ファイルの読み込みも計算も、すべてブラウザの中で行います。PDFもその場で作ってダウンロードします。",
+        question: "入れた数字やファイルはどこかに送られますか？",
+        answer: "送られません。ファイルの読み込みも計算も、すべてブラウザの中で行います。KPI管理表（Excel）もその場で作ってダウンロードします。",
       },
     ],
     related: [
-      { type: "resource", title: "KPI管理表（M-B-04）", href: "/lab/whitepapers" },
+      { type: "resource", title: "KPI管理表（M-B-04）", href: "/lab/whitepapers/kpi-management-template" },
       { type: "resource", title: "KPIをツリーに分解する5ステップ", href: "/lab/whitepapers/kpi-tree-template" },
     ],
   },
