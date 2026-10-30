@@ -73,7 +73,7 @@ export const KITS: Record<KitId, PlanKit> = {
   },
   kpi: {
     id: "kpi",
-    name: "KPI妥当性診断キット",
+    name: "KPI妥当性診断Kit",
     path: "/tools/kpi-check",
     rediag: "KPI妥当性診断キット",
     doc: "KPI管理表",

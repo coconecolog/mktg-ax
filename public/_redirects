@@ -87,8 +87,11 @@
 /authors/:author/blog/*        /authors/:author 301
 /authors/:author/:page         /authors/:author 301
 
-# 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL（ステップのページ）
-/tools/kpi-check/*   /tools/kpi-check 301
+# 2026-10-28 KPI妥当性診断Kitの作り直しで廃止したURL（ステップのページ）。/tools/kpi-check/input・/sample は今のページなので転送しない
+/tools/kpi-check/setup     /tools/kpi-check 301
+/tools/kpi-check/setup/*   /tools/kpi-check 301
+/tools/kpi-check/monthly   /tools/kpi-check 301
+/tools/kpi-check/monthly/* /tools/kpi-check 301
 
 # 末尾スラッシュ付きURLを、スラッシュなしの正規URLへ301で統一する（必ず最後に書く）
 /*/ /:splat 301
