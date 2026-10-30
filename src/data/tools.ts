@@ -102,7 +102,7 @@ export const KIT_GROUPS: KitGroup[] = [
       {
         icon: "chart-no-axes-combined",
         situation: "予算をまだ作っていない",
-        description: "画面で入力しながらCPL・CACを判定し、計画書（PDF）にします。",
+        description: "売上目標から必要なリード数と予算を逆算し、人件費込みの回収期間まで入った計画書を作ります。",
         name: "予算作成Kit",
         button: "予算を作る",
         href: "/tools/budget-simulator",
