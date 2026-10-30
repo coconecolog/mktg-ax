@@ -4,7 +4,7 @@
 // 予算案診断キット（旧予算案チェッカー、/tools/budget-checker）2026-10-30 作り直し
 // AIや自社で作った予算案を取りこみ、診断して直し、年間予算表（M-B-03、Excel）に仕上げる。
 // - 3ステップ：入力する → 診断する（左＝入力、右＝判定。直すと判定がすぐ変わる）→ 年間予算表 完成（Excelをダウンロード）
-// - 入口は3つ：AIで整えて貼りつける／年間予算表（.xlsx）を読み込む／画面で入力する。どれも同じ入力の画面に入る
+// - 入口は3つ：AIで整えて貼りつける／年間予算表（.xlsx）を読み込む／画面で入力する。どれも同じ入力の画面（/tools/budget-checker/input、別ページ）に移る
 // - 入力の項目は年間予算表（施策別）と同じ。ダウンロードするExcelは「年間予算表（施策別）」＋「診断結果」の2シート（PDFはなし）
 // - NGが残っていてもダウンロードできる（その旨を出す）
 // 判定と状態：src/lib/budgetCheck.ts　Excelの書き込み：src/lib/budget-sheet.ts　画面：src/scripts/budget-checker/app.ts
@@ -13,7 +13,6 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
-import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import { AI_PROMPT } from "@/lib/budgetCheck";
 import "@/styles/budget-checker.css";
@@ -49,7 +48,7 @@ const ICON = {
     <p class="mt-3 text-sm leading-relaxed text-neutral-500">AIや自社で作った予算案を取りこみ、目標に届くか・コストが上限以内かを判定します。画面でNGを直すと、そのまま稟議に使える年間予算表（Excel）になります。</p>
   </div>
 
-  <main class="bk" id="bk">
+  <main class="bk" id="bk" data-mode="intro">
     <!-- ===== 入口 ===== -->
     <section id="bk-intro">
       <h2 class="bk-h2">3ステップで、予算を診断し、年間予算表が完成します。</h2>
@@ -154,27 +153,6 @@ const ICON = {
       <div class="bk-next">
         <span>予算をまだ作っていないなら</span>
         <a href="/tools/budget-simulator">予算作成キットへ →</a>
-      </div>
-    </section>
-
-    <!-- ===== 入力と判定 ===== -->
-    <section id="bk-work" hidden>
-      <div class="bk-bar">
-        <p><b>{TOOL_TITLE}</b><span id="bk-src"></span></p>
-        <div class="bk-acts">
-          <button type="button" class="bk-link" id="bk-example">記入例</button>
-          <button type="button" class="bk-link" id="bk-clear">すべて消す</button>
-          <button type="button" class="bk-link" id="bk-home">入口に戻る</button>
-        </div>
-      </div>
-      <div class="bk-notes" id="bk-notes" hidden></div>
-
-      <BudgetGrid />
-
-      <div class="bk-mbar" id="bk-mbar">
-        <span class="fix"><b id="bk-m-fix">0</b>直す</span>
-        <span class="check"><b id="bk-m-check">0</b>確認</span>
-        <button type="button" class="bk-btn2" id="bk-mopen">判定を見る</button>
       </div>
     </section>
   </main>
