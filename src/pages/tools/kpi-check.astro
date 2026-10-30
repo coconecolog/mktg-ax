@@ -52,75 +52,33 @@ const ICON = {
   <main class="bk" id="bk" data-kit="kpi" data-mode="intro">
     <!-- ===== 入口 ===== -->
     <section id="bk-intro">
-      <h2 class="bk-h2">3ステップで、KPIを診断し、KPI管理表が完成します。</h2>
-      <ol class="bk-steps">
-        <li class="bk-step">
-          <p class="bk-step-h"><span class="bk-no">1</span>入力する</p>
-          <p class="bk-step-p">3つのどれかで取りこむ</p>
-          <div class="bk-th bk-th-1" aria-hidden="true">
-            <span class="bk-th-e"><svg viewBox="0 0 24 24"><path d={ICON.ai[0]} /><path d={ICON.ai[1]} /></svg>AIの案を貼りつける</span>
-            <span class="bk-th-e"><svg viewBox="0 0 24 24"><path d={ICON.file[0]} /><path d={ICON.file[1]} /></svg>KPI管理表を読み込む</span>
-            <span class="bk-th-e"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" /><path d={ICON.key} /></svg>画面で入力する</span>
-          </div>
-        </li>
-        <li class="bk-arrow" aria-hidden="true">→</li>
-        <li class="bk-step">
-          <p class="bk-step-h"><span class="bk-no">2</span>診断する</p>
-          <p class="bk-step-p">数字を直すと判定がすぐ変わる。NGがなくなるまで直す</p>
-          <a class="bk-th bk-th-2" href="/tools/kpi-check/sample" aria-label="診断画面の見本を見る">
-            <div class="bk-th-grid bk-th-g5">
-              {Array.from({ length: 5 }).map(() => <i class="k" />)}
-              {Array.from({ length: 35 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 33 ? "r" : "b"} />)}
-            </div>
-            <div class="bk-th-alert"><span>1 直す</span><span class="o">0 確認</span><i /><i class="s" /><i /><i class="s" /><em>メールのCPL</em></div>
-          </a>
-          <a class="bk-sample" href="/tools/kpi-check/sample">診断画面の見本を見る →</a>
-        </li>
-        <li class="bk-arrow" aria-hidden="true">→</li>
-        <li class="bk-step">
-          <p class="bk-step-h"><span class="bk-no">3</span>KPI管理表 完成</p>
-          <p class="bk-step-p">直した数字と診断結果が入ったKPI管理表（Excel）をダウンロード</p>
-          <a class="bk-th bk-th-3" href="/tools/kpi-check/sample?tab=sheet" aria-label="KPI管理表の見本を見る">
-            <span class="bk-xl">
-              <span class="bk-xl-file">
-                <span class="bk-xl-fold" />
-                <span class="bk-xl-grid">
-                  {Array.from({ length: 5 }).map(() => <i class="k" />)}
-                  {Array.from({ length: 20 }).map((_, i) => <i class={i % 5 === 1 || i % 5 === 2 ? "b" : ""} />)}
-                </span>
-              </span>
-              <span class="bk-xl-tag">XLSX</span>
-              <span class="bk-xl-dl"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg></span>
-            </span>
-            <span class="bk-xl-name">KPI管理表.xlsx</span>
-          </a>
-          <a class="bk-sample" href="/tools/kpi-check/sample?tab=sheet">KPI管理表の見本を見る →</a>
-        </li>
-      </ol>
+    <p class="bk-for">作ったKPIがある方向けのKitです。KPIがまだない方は <a href="/tools/kpi-sheet-maker">KPI管理表作成Kit →</a></p>
 
-      <div class="bk-need">
-        <div>
-          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄でかまいません</span></p>
-          <dl>
-            <dt>前提</dt>
-            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-            <dt>チャネル別（年間）</dt>
-            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-          </dl>
-        </div>
-        <div class="bk-need-dl">
-          <div class="bk-doc" aria-hidden="true"><i></i><b>KPI管理表</b><em></em><em></em></div>
-          <div class="bk-need-dl-t">
-            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
-            <b>KPI管理表（無料）</b>
-            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、下の枠に置くと同じ診断ができます。</p>
-          </div>
-          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
-        </div>
+    <div class="bk-band bk-can">
+      <h2 class="bk-h2">このKitでわかること</h2>
+      <div class="bk-can-g">
+        <div class="bk-can-i"><b><i>A</i>目標に届くか</b><p>計画の数で、売上目標に届くかを判定</p></div>
+        <div class="bk-can-i"><b><i>B</i>率は目安の範囲か</b><p>有効リード率・商談化率・受注率が目安から外れていないかを判定</p></div>
+        <div class="bk-can-i"><b><i>C</i>直すところ</b><p>「直す」「確認」の欄を一覧で示し、その欄へ移る</p></div>
       </div>
+    </div>
 
-      <h2 class="bk-h2">診断をはじめる</h2>
-      <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
+      <div class="bk-band">
+      <h2 class="bk-h2">3ステップで、KPIを診断し、KPI管理表が完成します。</h2>
+      <div class="bk-flow">
+        <ol class="bk-fsteps">
+          <li class="bk-fstep"><span class="bk-no">1</span><div><b>入力する</b><p>AIの案・KPI管理表・画面入力から1つ選ぶ</p></div></li>
+          <li class="bk-fstep"><span class="bk-no">2</span><div><b>診断する</b><p>数字を直すと、判定がすぐ変わる</p></div></li>
+          <li class="bk-fstep"><span class="bk-no">3</span><div><b>KPI管理表 完成</b><p>直した数字と診断結果をExcelでダウンロード</p></div><span class="bk-xl-tag bk-fstep-xl">XLSX</span></li>
+        </ol>
+        <a class="bk-shot" href="/tools/kpi-check/sample"><img src="/images/tools/kpi-check-screen.png" alt="" width="640" height="420" loading="lazy" /><span>診断画面の見本を見る →</span></a>
+        <a class="bk-shot" href="/tools/kpi-check/sample?tab=sheet"><img src="/images/tools/kpi-check-sheet.png" alt="" width="640" height="420" loading="lazy" /><span>KPI管理表の見本を見る →</span></a>
+      </div>
+    </div>
+
+
+      <h2 class="bk-h2 bk-h2c">診断をはじめる</h2>
+      <p class="bk-sub bk-subc">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
       <div class="bk-ents">
         <div class="bk-ent">
           <small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" /></svg>AIや手元の資料で作った</small>
@@ -162,6 +120,26 @@ const ICON = {
       <div class="bk-next">
         <span>KPIをまだ作っていないなら</span>
         <a href="/tools/kpi-sheet-maker">KPI管理表作成Kitへ →</a>
+      </div>
+      <div class="bk-need">
+        <div>
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄でかまいません</span></p>
+          <dl>
+            <dt>前提</dt>
+            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>チャネル別（年間）</dt>
+            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+          </dl>
+        </div>
+        <div class="bk-need-dl">
+          <div class="bk-doc" aria-hidden="true"><i></i><b>KPI管理表</b><em></em><em></em></div>
+          <div class="bk-need-dl-t">
+            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
+            <b>KPI管理表（無料）</b>
+            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、上の枠に置くと同じ診断ができます。</p>
+          </div>
+          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
+        </div>
       </div>
     </section>
   </main>

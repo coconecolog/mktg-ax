@@ -59,76 +59,22 @@ const ICON = {
     <p class="bk-for">KPIがまだない方向けのKitです。作ったKPIがある方は <a href="/tools/kpi-check">KPI妥当性診断Kit →</a></p>
 
     <section id="bk-intro">
+      <div class="bk-band">
       <h2 class="bk-h2">3ステップで、売上目標からKPI管理表が完成します。</h2>
-      <ol class="bk-steps">
-        <li class="bk-step">
-          <p class="bk-step-h"><span class="bk-no">1</span>目標と実績を入れる</p>
-          <p class="bk-step-p">売上目標と今期の実績から、必要なリード数が出る</p>
-          <div class="bk-th bk-th-need" aria-hidden="true">
-            <em>必要な数</em>
-            {NEED.map(([l, v]) => <div><span>{l}</span><b>{v}</b></div>)}
-          </div>
-        </li>
-        <li class="bk-arrow" aria-hidden="true">→</li>
-        <li class="bk-step">
-          <p class="bk-step-h"><span class="bk-no">2</span>チャネルに分割する</p>
-          <p class="bk-step-p">リード数と費用をチャネルに分割すると、足りるか・上限以内かがすぐ出る</p>
-          <a class="bk-th bk-th-2" href="/tools/kpi-sheet-maker/sample" aria-label="入力画面の見本を見る">
-            <div class="bk-th-grid bk-th-g5">
-              {Array.from({ length: 5 }).map(() => <i class="k" />)}
-              {Array.from({ length: 35 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 33 ? "r" : "b"} />)}
-            </div>
-            <div class="bk-th-alert"><span>1 直す</span><span class="o">0 確認</span><i /><i class="s" /><i /><i class="s" /><em>必要まであと12件</em></div>
-          </a>
-          <a class="bk-sample" href="/tools/kpi-sheet-maker/sample">入力画面の見本を見る →</a>
-        </li>
-        <li class="bk-arrow" aria-hidden="true">→</li>
-        <li class="bk-step">
-          <p class="bk-step-h"><span class="bk-no">3</span>KPI管理表 完成</p>
-          <p class="bk-step-p">作った数字と判定が入ったKPI管理表（Excel）をダウンロード</p>
-          <a class="bk-th bk-th-3" href="/tools/kpi-sheet-maker/sample?tab=sheet" aria-label="KPI管理表の見本を見る">
-            <span class="bk-xl">
-              <span class="bk-xl-file">
-                <span class="bk-xl-fold" />
-                <span class="bk-xl-grid">
-                  {Array.from({ length: 5 }).map(() => <i class="k" />)}
-                  {Array.from({ length: 20 }).map((_, i) => <i class={i % 5 === 1 || i % 5 === 2 ? "b" : ""} />)}
-                </span>
-              </span>
-              <span class="bk-xl-tag">XLSX</span>
-              <span class="bk-xl-dl"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg></span>
-            </span>
-            <span class="bk-xl-name">KPI管理表.xlsx</span>
-          </a>
-          <a class="bk-sample" href="/tools/kpi-sheet-maker/sample?tab=sheet">KPI管理表の見本を見る →</a>
-        </li>
-      </ol>
-
-      <div class="bk-need">
-        <div>
-          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します</span></p>
-          <dl>
-            <dt>前提</dt>
-            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-            <dt>今期の実績</dt>
-            <dd>{ACT_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-            <dt>チャネル別（年間）</dt>
-            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-          </dl>
-        </div>
-        <div class="bk-need-dl">
-          <div class="bk-doc" aria-hidden="true"><i></i><b>年間予算表</b><em></em><em></em></div>
-          <div class="bk-need-dl-t">
-            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
-            <b>年間予算表（無料）</b>
-            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、下の枠に置くとKPI管理表を作れます。</p>
-          </div>
-          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
-        </div>
+      <div class="bk-flow">
+        <ol class="bk-fsteps">
+          <li class="bk-fstep"><span class="bk-no">1</span><div><b>目標と実績を入れる</b><p>売上目標と今期の実績から、必要な数が出る</p></div></li>
+          <li class="bk-fstep"><span class="bk-no">2</span><div><b>チャネルに分割する</b><p>リード数と費用を入れると、足りるか・上限以内かがすぐ出る</p></div></li>
+          <li class="bk-fstep"><span class="bk-no">3</span><div><b>KPI管理表 完成</b><p>作った数字と判定をExcelでダウンロード</p></div><span class="bk-xl-tag bk-fstep-xl">XLSX</span></li>
+        </ol>
+        <a class="bk-shot" href="/tools/kpi-sheet-maker/sample"><img src="/images/tools/kpi-sheet-maker-screen.png" alt="" width="640" height="420" loading="lazy" /><span>入力画面の見本を見る →</span></a>
+        <a class="bk-shot" href="/tools/kpi-sheet-maker/sample?tab=sheet"><img src="/images/tools/kpi-sheet-maker-sheet.png" alt="" width="640" height="420" loading="lazy" /><span>KPI管理表の見本を見る →</span></a>
       </div>
+    </div>
 
-      <h2 class="bk-h2">作成をはじめる</h2>
-      <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、同じ入力の画面に移ります。</p>
+
+      <h2 class="bk-h2 bk-h2c">作成をはじめる</h2>
+      <p class="bk-sub bk-subc">手元の状態に合うものを1つ選んでください。どれを選んでも、同じ入力の画面に移ります。</p>
       <div class="bk-ents">
         <div class="bk-ent">
           <small><svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICON.ai[0]} /><path d={ICON.ai[1]} /></svg>AIや手元の資料で作った</small>
@@ -166,6 +112,28 @@ const ICON = {
       <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
       <p class="bk-err" id="bk-err" role="alert" hidden></p>
       <p class="bk-hint">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）・<a href="/tools/kpi-sheet-maker/sample">サンプル画面を見る（基本モデルの安定期）→</a></p>
+      <div class="bk-need">
+        <div>
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します</span></p>
+          <dl>
+            <dt>前提</dt>
+            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>今期の実績</dt>
+            <dd>{ACT_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>チャネル別（年間）</dt>
+            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+          </dl>
+        </div>
+        <div class="bk-need-dl">
+          <div class="bk-doc" aria-hidden="true"><i></i><b>年間予算表</b><em></em><em></em></div>
+          <div class="bk-need-dl-t">
+            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
+            <b>年間予算表（無料）</b>
+            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、上の枠に置くとKPI管理表を作れます。</p>
+          </div>
+          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
+        </div>
+      </div>
     </section>
   </main>
 
