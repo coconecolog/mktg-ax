@@ -25,6 +25,7 @@ import {
 import { calc } from "@/lib/kpi-sheet-maker";
 import { budgetFileName, fillBudgetWorkbook } from "@/lib/budget-sheet";
 import { readBook } from "@/scripts/kpi-analysis/xlsx";
+import { diagHtml, sheetHtml } from "@/scripts/budget-checker/preview";
 
 const STORE = "mktgax-budget-checker-v2";
 const TEMPLATE = "/files/tools/budget-sheet-template.xlsx";
@@ -181,7 +182,30 @@ function update() {
   dot.classList.toggle("check", mdot === "check");
 
   renderPanel(d);
+  if (view === "sheet") renderSheet();
   save();
+}
+
+// ---------- 表示の切り替え（診断画面／年間予算表の完成イメージ） ----------
+let view: "diag" | "sheet" = "diag";
+let sheetTab: "main" | "diag" = "main";
+
+function renderSheet() {
+  const d = lastDiag ?? diagnoseBudget(st);
+  $("bk-sheet").innerHTML = sheetTab === "main" ? sheetHtml(st) : diagHtml(st, d);
+  $("bk-s-main").setAttribute("aria-selected", String(sheetTab === "main"));
+  $("bk-s-diag").setAttribute("aria-selected", String(sheetTab === "diag"));
+}
+
+function setView(v: "diag" | "sheet") {
+  view = v;
+  $("bk-v-diag").setAttribute("aria-selected", String(v === "diag"));
+  $("bk-v-sheet").setAttribute("aria-selected", String(v === "sheet"));
+  $("bk-diagview").hidden = v !== "diag";
+  $("bk-mbar").hidden = v !== "diag";
+  $("bk-sheetview").hidden = v !== "sheet";
+  $("bk-v-note").textContent = v === "diag" ? "水色の欄を直すと、右の判定がすぐ変わります" : "ダウンロードするExcelと同じ中身です";
+  if (v === "sheet") renderSheet();
 }
 
 function safeCalc() {
@@ -284,6 +308,7 @@ function tab(which: "y" | "m") {
 }
 
 function jump(key: string) {
+  if (view !== "diag") setView("diag");
   let target: HTMLElement | null;
   if (key.startsWith("m:")) {
     tab("m");
@@ -315,7 +340,7 @@ function renderNotes() {
   $("bk-notes-x").addEventListener("click", () => (box.hidden = true));
 }
 
-function openWork(next: BudgetState) {
+function openWork(next: BudgetState, v: "diag" | "sheet" = "diag") {
   st = next;
   intro.hidden = true;
   work.hidden = false;
@@ -324,6 +349,8 @@ function openWork(next: BudgetState) {
   updateMonthLabels();
   renderNotes();
   tab("y");
+  sheetTab = "main";
+  setView(v);
   update();
   window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
 }
@@ -436,6 +463,21 @@ $("bk-panel").addEventListener("click", (e) => {
 });
 $("bk-mopen").addEventListener("click", () => $("bk-panel").scrollIntoView({ behavior: "smooth", block: "start" }));
 $("bk-dl").addEventListener("click", download);
+$("bk-dl2").addEventListener("click", download);
+$("bk-v-diag").addEventListener("click", () => setView("diag"));
+$("bk-v-sheet").addEventListener("click", () => setView("sheet"));
+$("bk-back-diag").addEventListener("click", () => {
+  setView("diag");
+  window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
+});
+$("bk-s-main").addEventListener("click", () => {
+  sheetTab = "main";
+  renderSheet();
+});
+$("bk-s-diag").addEventListener("click", () => {
+  sheetTab = "diag";
+  renderSheet();
+});
 
 $("bk-example").addEventListener("click", () => openWork(sampleState()));
 $("bk-clear").addEventListener("click", () => {
@@ -512,4 +554,7 @@ drop.addEventListener("drop", (e) => {
 });
 
 // 記入例のURL
-if (new URLSearchParams(location.search).get("sample") === "1") openWork(sampleState());
+{
+  const q = new URLSearchParams(location.search);
+  if (q.get("sample") === "1") openWork(sampleState(), q.get("view") === "sheet" ? "sheet" : "diag");
+}

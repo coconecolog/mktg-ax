@@ -30,6 +30,12 @@ const breadcrumbItems = [
 
 const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
 const CH_TAGS = ["リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
+// アイコン（入口のカードと同じ）
+const ICON = {
+  ai: ["M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"],
+  file: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6M8 13h8M8 17h8M12 11v8"],
+  key: "M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10",
+};
 const PRE = [
   { key: "goal", label: "売上目標" },
   { key: "price", label: "平均受注単価" },
@@ -60,54 +66,58 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
         <li class="bk-step">
           <p class="bk-step-h"><span class="bk-no">1</span>入力する</p>
           <p class="bk-step-p">3つのどれかで取りこむ</p>
-          <div class="bk-th" aria-hidden="true">
-            <span class="bk-th-e">AIの案を貼りつける</span>
-            <span class="bk-th-e">年間予算表を読み込む</span>
-            <span class="bk-th-e">画面で入力する</span>
+          <div class="bk-th bk-th-1" aria-hidden="true">
+            <span class="bk-th-e"><svg viewBox="0 0 24 24"><path d={ICON.ai[0]} /><path d={ICON.ai[1]} /></svg>AIの案を貼りつける</span>
+            <span class="bk-th-e"><svg viewBox="0 0 24 24"><path d={ICON.file[0]} /><path d={ICON.file[1]} /></svg>年間予算表を読み込む</span>
+            <span class="bk-th-e"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" /><path d={ICON.key} /></svg>画面で入力する</span>
           </div>
         </li>
         <li class="bk-arrow" aria-hidden="true">→</li>
         <li class="bk-step">
           <p class="bk-step-h"><span class="bk-no">2</span>診断する</p>
           <p class="bk-step-p">数字を直すと判定がすぐ変わる。NGがなくなるまで直す</p>
-          <div class="bk-th bk-th-2" aria-hidden="true">
+          <a class="bk-th bk-th-2" href="/tools/budget-checker?sample=1" aria-label="診断画面の見本を見る">
             <div class="bk-th-grid bk-th-g5">
               {Array.from({ length: 5 }).map(() => <i class="k" />)}
-              {Array.from({ length: 20 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 18 ? "r" : "b"} />)}
+              {Array.from({ length: 35 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 33 ? "r" : "b"} />)}
             </div>
-            <div class="bk-th-alert"><span>1 直す</span><i /><i class="s" /><em>メールのCPL</em></div>
-          </div>
+            <div class="bk-th-alert"><span>1 直す</span><span class="o">0 確認</span><i /><i class="s" /><i /><i class="s" /><em>メールのCPL</em></div>
+          </a>
+          <a class="bk-sample" href="/tools/budget-checker?sample=1">診断画面の見本を見る →</a>
         </li>
         <li class="bk-arrow" aria-hidden="true">→</li>
         <li class="bk-step">
           <p class="bk-step-h"><span class="bk-no">3</span>年間予算表 完成</p>
           <p class="bk-step-p">直した数字と診断結果が入った年間予算表（Excel）をダウンロード</p>
-          <div class="bk-th" aria-hidden="true">
+          <a class="bk-th bk-th-3" href="/tools/budget-checker?sample=1&view=sheet" aria-label="年間予算表の見本を見る">
             <i class="bk-th-title" />
             <div class="bk-th-grid bk-th-g9">
               {Array.from({ length: 9 }).map(() => <i class="k" />)}
               {Array.from({ length: 9 }).map(() => <i class="b" />)}
             </div>
-            <div class="bk-th-grid bk-th-g9" style="margin-top:4px">
+            <div class="bk-th-grid bk-th-g9">
               {Array.from({ length: 9 }).map(() => <i class="k" />)}
-              {Array.from({ length: 18 }).map((_, i) => <i class={i % 2 ? "b" : ""} />)}
+              {Array.from({ length: 45 }).map((_, i) => <i class={i % 9 === 0 ? "" : i % 9 > 4 ? "" : "b"} />)}
             </div>
-            <span class="bk-th-ft">Excel</span>
-          </div>
+            <span class="bk-th-tabs"><b>年間予算表</b><b>診断結果</b></span>
+          </a>
+          <a class="bk-sample" href="/tools/budget-checker?sample=1&view=sheet">年間予算表の見本を見る →</a>
         </li>
       </ol>
 
-      <div class="bk-need">
-        <div class="bk-need-l">
-          <p><b>必要な数字</b><span class="bk-need-k">前提</span>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</p>
-          <p><span class="bk-need-k">チャネル別（年間）</span>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</p>
-          <p class="bk-need-n">率は入れません。使わないチャネルは空欄でかまいません</p>
+      <div class="bk-row2">
+        <div class="bk-need">
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄でかまいません</span></p>
+          <dl>
+            <dt>前提</dt>
+            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>チャネル別（年間）</dt>
+            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+          </dl>
         </div>
         <a class="bk-need-dl" href={SHEET_URL}>
-          <span>
-            <small>スプレッドシートで入力したい方向け</small>
-            <b><span class="bk-ft">スプレッドシート</span>年間予算表</b>
-          </span>
+          <small>スプレッドシートで入力したい方向け</small>
+          <b><span class="bk-ft">スプレッドシート</span>年間予算表</b>
           <span class="bk-btn2">無料でDL</span>
         </a>
       </div>
@@ -159,7 +169,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
     <!-- ===== 入力と判定 ===== -->
     <section id="bk-work" hidden>
       <div class="bk-bar">
-        <p><b>{TOOL_TITLE}</b><span id="bk-src"></span>水色の欄を直すと、右の判定がすぐ変わります</p>
+        <p><b>{TOOL_TITLE}</b><span id="bk-src"></span></p>
         <div class="bk-acts">
           <button type="button" class="bk-link" id="bk-example">記入例</button>
           <button type="button" class="bk-link" id="bk-clear">すべて消す</button>
@@ -168,7 +178,23 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
       </div>
       <div class="bk-notes" id="bk-notes" hidden></div>
 
-      <div class="bk-grid">
+      <div class="bk-views" role="tablist" aria-label="表示">
+        <button type="button" role="tab" class="bk-view" id="bk-v-diag" aria-selected="true">診断画面</button>
+        <button type="button" role="tab" class="bk-view" id="bk-v-sheet" aria-selected="false">年間予算表（完成イメージ）</button>
+        <span class="bk-tab-n" id="bk-v-note">ダウンロードするExcelと同じ中身です</span>
+      </div>
+
+      <div class="bk-sheetview" id="bk-sheetview" hidden>
+        <div class="bk-sheettabs">
+          <button type="button" class="bk-stab" id="bk-s-main" aria-selected="true">年間予算表（施策別）</button>
+          <button type="button" class="bk-stab" id="bk-s-diag" aria-selected="false">診断結果</button>
+          <button type="button" class="bk-btn bk-sheet-dl" id="bk-dl2">年間予算表をDL（Excel）</button>
+        </div>
+        <div class="bk-sheet" id="bk-sheet"></div>
+        <p class="bk-sheet-back"><button type="button" class="bk-link" id="bk-back-diag">← 診断画面に戻って数字を直す</button></p>
+      </div>
+
+      <div class="bk-grid" id="bk-diagview">
         <form class="bk-left" id="bk-form" novalidate autocomplete="off">
           <div class="bk-tabs" role="tablist">
             <button type="button" role="tab" class="bk-tab" id="bk-tab-y" aria-selected="true" aria-controls="bk-pane-y">年間</button>
