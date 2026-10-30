@@ -34,7 +34,9 @@ const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", 
 const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-const intro = $("bk-intro");
+// 見本のページ（/tools/budget-checker/sample）は、入口がなく、記入例だけを表示する（保存・ダウンロードはしない）
+const SAMPLE = document.getElementById("bk")?.dataset.mode === "sample";
+const intro = $("bk-intro") as HTMLElement | null;
 const work = $("bk-work");
 const form = $<HTMLFormElement>("bk-form");
 const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
@@ -45,6 +47,7 @@ let st: BudgetState = emptyState();
 
 // ---------- 保存 ----------
 function save() {
+  if (SAMPLE) return;
   try {
     localStorage.setItem(STORE, JSON.stringify(st));
   } catch {
@@ -198,6 +201,7 @@ function renderSheet() {
 }
 
 function setView(v: "diag" | "sheet") {
+  if (!document.getElementById("bk-v-diag")) return;
   view = v;
   $("bk-v-diag").setAttribute("aria-selected", String(v === "diag"));
   $("bk-v-sheet").setAttribute("aria-selected", String(v === "sheet"));
@@ -329,7 +333,8 @@ function jump(key: string) {
 
 // ---------- 入口 → 入力の画面 ----------
 function renderNotes() {
-  const box = $("bk-notes");
+  const box = document.getElementById("bk-notes");
+  if (!box) return;
   if (!st.notes.length) {
     box.hidden = true;
     box.innerHTML = "";
@@ -342,9 +347,10 @@ function renderNotes() {
 
 function openWork(next: BudgetState, v: "diag" | "sheet" = "diag") {
   st = next;
-  intro.hidden = true;
+  if (intro) intro.hidden = true;
   work.hidden = false;
-  $("bk-src").textContent = `読み込み元：${SOURCE_LABEL[st.source]}${st.fileName ? `（${st.fileName}）` : ""}`;
+  const src = document.getElementById("bk-src");
+  if (src) src.textContent = `読み込み元：${SOURCE_LABEL[st.source]}${st.fileName ? `（${st.fileName}）` : ""}`;
   writeForm();
   updateMonthLabels();
   renderNotes();
@@ -352,7 +358,7 @@ function openWork(next: BudgetState, v: "diag" | "sheet" = "diag") {
   sheetTab = "main";
   setView(v);
   update();
-  window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
+  if (!SAMPLE) window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
 }
 
 function showIntroError(msg: string) {
@@ -455,46 +461,47 @@ form.addEventListener("click", (e) => {
   writeMonthly();
   update();
 });
-$("bk-tab-y").addEventListener("click", () => tab("y"));
-$("bk-tab-m").addEventListener("click", () => tab("m"));
-$("bk-panel").addEventListener("click", (e) => {
+$("bk-tab-y")?.addEventListener("click", () => tab("y"));
+$("bk-tab-m")?.addEventListener("click", () => tab("m"));
+$("bk-panel")?.addEventListener("click", (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>("[data-jump]");
   if (b?.dataset.jump) jump(b.dataset.jump);
 });
-$("bk-mopen").addEventListener("click", () => $("bk-panel").scrollIntoView({ behavior: "smooth", block: "start" }));
-$("bk-dl").addEventListener("click", download);
-$("bk-dl2").addEventListener("click", download);
-$("bk-v-diag").addEventListener("click", () => setView("diag"));
-$("bk-v-sheet").addEventListener("click", () => setView("sheet"));
-$("bk-back-diag").addEventListener("click", () => {
+$("bk-mopen")?.addEventListener("click", () => $("bk-panel").scrollIntoView({ behavior: "smooth", block: "start" }));
+$("bk-dl")?.addEventListener("click", download);
+$("bk-dl2")?.addEventListener("click", download);
+$("bk-v-diag")?.addEventListener("click", () => setView("diag"));
+$("bk-v-sheet")?.addEventListener("click", () => setView("sheet"));
+$("bk-back-diag")?.addEventListener("click", () => {
   setView("diag");
   window.scrollTo({ top: Math.max(0, work.getBoundingClientRect().top + window.scrollY - 84), behavior: "smooth" });
 });
-$("bk-s-main").addEventListener("click", () => {
+$("bk-s-main")?.addEventListener("click", () => {
   sheetTab = "main";
   renderSheet();
 });
-$("bk-s-diag").addEventListener("click", () => {
+$("bk-s-diag")?.addEventListener("click", () => {
   sheetTab = "diag";
   renderSheet();
 });
 
-$("bk-example").addEventListener("click", () => openWork(sampleState()));
-$("bk-clear").addEventListener("click", () => {
+$("bk-example")?.addEventListener("click", () => openWork(sampleState()));
+$("bk-clear")?.addEventListener("click", () => {
   if (!window.confirm("入力をすべて消します。よろしいですか？")) return;
   openWork(emptyState());
 });
-$("bk-home").addEventListener("click", () => {
+$("bk-home")?.addEventListener("click", () => {
   work.hidden = true;
-  intro.hidden = false;
+  if (intro) intro.hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-$("bk-start").addEventListener("click", () => {
+$("bk-start")?.addEventListener("click", () => {
   const saved = restore();
   openWork(saved ? { ...saved, notes: [] } : emptyState());
 });
 
+if (intro) {
 // AIの案
 const aiOpen = $<HTMLButtonElement>("bk-ai-open");
 aiOpen.addEventListener("click", () => {
@@ -503,7 +510,7 @@ aiOpen.addEventListener("click", () => {
   aiOpen.setAttribute("aria-expanded", String(!p.hidden));
   if (!p.hidden) p.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
-$("bk-copy").addEventListener("click", async () => {
+$("bk-copy")?.addEventListener("click", async () => {
   const btn = $("bk-copy");
   const text = $("bk-prompt").textContent ?? "";
   try {
@@ -519,7 +526,7 @@ $("bk-copy").addEventListener("click", async () => {
   btn.textContent = "コピーしました";
   window.setTimeout(() => (btn.textContent = "プロンプトをコピー"), 2500);
 });
-$("bk-import").addEventListener("click", () => {
+$("bk-import")?.addEventListener("click", () => {
   showIntroError("");
   const text = $<HTMLTextAreaElement>("bk-paste").value;
   if (!text.trim()) {
@@ -552,9 +559,11 @@ drop.addEventListener("drop", (e) => {
   const f = e.dataTransfer?.files?.[0];
   if (f) handleFile(f);
 });
+}
 
 // 記入例のURL
 {
   const q = new URLSearchParams(location.search);
-  if (q.get("sample") === "1") openWork(sampleState(), q.get("view") === "sheet" ? "sheet" : "diag");
+  if (SAMPLE) openWork(sampleState(), q.get("tab") === "sheet" ? "sheet" : "diag");
+  else if (q.get("sample") === "1") openWork(sampleState());
 }

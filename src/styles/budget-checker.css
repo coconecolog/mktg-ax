@@ -235,3 +235,10 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-pv-cnt .check { background: var(--org-bg); color: var(--org); border-color: var(--org-bg); }
 .bk-pv-list { margin: 0; padding: 0; list-style: none; font-size: 0.8rem; line-height: 1.7; }
 .bk-pv-list li { border-top: 1px solid var(--line); padding: 6px 0; }
+
+/* サンプル画面（/tools/budget-checker/sample） */
+.bk-h1-sub { margin-left: 0.5em; }
+.bk-back { margin-bottom: 14px !important; font-size: 0.9rem; font-weight: 800; }
+.bk-back a { text-decoration: none; }
+.bk-back a:hover { text-decoration: underline; }
+.bk-sample-n { margin: -4px 0 12px !important; }
