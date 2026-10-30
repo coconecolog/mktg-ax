@@ -5,11 +5,14 @@
 // src/scripts/budget-checker/app.ts）で、キットごとに違うのはここだけ。
 // - 予算案診断キット（/tools/budget-checker）：出力は年間予算表（M-B-03）の「年間予算表（施策別）」＋「診断結果」
 // - KPI妥当性診断キット（/tools/kpi-check）：出力はKPI管理表（M-B-04）の全シート（はじめに入力を埋めたもの）＋「診断結果」
+// - 予算作成Kit（/tools/budget-simulator、2026-10-30）：予算がまだない人向け。売上目標と今期の実績から必要な数を逆算し、
+//   チャネルにリード数と費用を配る（有効リード数・商談数・受注数は率で自動配分、上書き可。src/lib/budgetMake.ts）。
+//   入力は画面だけ（AI・ファイルの読み込みはなし）。出力は予算案診断キットと同じ年間予算表（M-B-03）＋「診断結果」
 // 「年間予算表（施策別）」とKPI管理表の「はじめに入力」は同じ表（セルの位置も同じ）なので、どちらのキットもどちらのファイルも読める。
 import { DIAG_SHEET_PATH as BUDGET_DIAG, S as BUDGET_S } from "@/lib/budgetSheetStyles";
 import { DIAG_SHEET_PATH as KPI_DIAG, S as KPI_S } from "@/lib/kpiCheckSheetStyles";
 
-export type KitId = "budget" | "kpi";
+export type KitId = "budget" | "kpi" | "make";
 export type SheetStyles = Record<keyof typeof BUDGET_S, number>;
 
 export const SHEET_BUDGET = "年間予算表（施策別）";
@@ -21,6 +24,8 @@ export interface PlanKit {
   name: string;
   /** 入口のURL */
   path: string;
+  /** 数字を直したあとに読み込んで診断し直すキット（診断結果シートの文に出す） */
+  rediag: string;
   /** 出力する資料の名前（年間予算表／KPI管理表） */
   doc: string;
   /** 入力を書き込むシート */
@@ -51,6 +56,7 @@ export const KITS: Record<KitId, PlanKit> = {
     id: "budget",
     name: "予算案診断キット",
     path: "/tools/budget-checker",
+    rediag: "予算案診断キット",
     doc: "年間予算表",
     sheet: SHEET_BUDGET,
     template: "/files/tools/budget-sheet-template.xlsx",
@@ -69,6 +75,7 @@ export const KITS: Record<KitId, PlanKit> = {
     id: "kpi",
     name: "KPI妥当性診断キット",
     path: "/tools/kpi-check",
+    rediag: "KPI妥当性診断キット",
     doc: "KPI管理表",
     sheet: SHEET_KPI,
     template: "/files/tools/kpi-check-template.xlsx",
@@ -86,6 +93,25 @@ export const KITS: Record<KitId, PlanKit> = {
       ["月次レポート", "J1", `${m}月`],
     ],
     fileName: (y) => `KPI管理表_${y}年度.xlsx`,
+  },
+  make: {
+    id: "make",
+    name: "予算作成Kit",
+    path: "/tools/budget-simulator",
+    rediag: "予算案診断Kit",
+    doc: "年間予算表",
+    sheet: SHEET_BUDGET,
+    template: "/files/tools/budget-sheet-template.xlsx",
+    store: "mktgax-budget-maker-v1",
+    diagPath: BUDGET_DIAG,
+    styles: BUDGET_S,
+    diagTitle: "来期マーケティング予算の判定",
+    subject: "予算",
+    groupD: "予算で抜けやすいところ",
+    aiWhat: "マーケティング予算",
+    aiSource: "来期のマーケティング予算",
+    extraCells: () => [],
+    fileName: (y) => `年間予算表_${y}年度.xlsx`,
   },
 };
 

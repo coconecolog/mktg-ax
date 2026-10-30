@@ -5,6 +5,7 @@
 // - intro（/tools/budget-checker・/tools/kpi-check）：入口3つ（AIの案／.xlsx／画面で入力）。読み込んだ数字を localStorage に入れて input に移る
 // - input（…/input）：入力の画面（左＝入力、右＝判定）。localStorage から始め、入力のたびに判定し直して保存する
 // - sample（…/sample）：記入例だけを表示する（保存・ダウンロードはしない）
+// 予算作成Kit（data-kit="make"、2026-10-30）：入口は「画面で作成をはじめる」だけ。今期の実績と、自動配分の欄（上書き可）がある（src/lib/budgetMake.ts）
 // 入れた数字やファイルはサーバーに送らない
 import {
   BASE_RATES,
@@ -29,8 +30,10 @@ import { fillPlanWorkbook, planFileName } from "@/lib/budget-sheet";
 import { KITS, readSheets, type KitId } from "@/lib/planKits";
 import { readBook } from "@/scripts/kpi-analysis/xlsx";
 import { diagHtml, sheetHtml } from "@/scripts/budget-checker/preview";
+import { AUTO_KEYS, applyMake, diagnoseMake, makeEmpty, makeSample, needCounts, rates, resetOvr, type AutoKey, type MakeState } from "@/lib/budgetMake";
 
 const KIT = KITS[((document.getElementById("bk")?.dataset.kit ?? "budget") as KitId)] ?? KITS.budget;
+const MAKE = KIT.id === "make";
 const STORE = KIT.store;
 const TEMPLATE = KIT.template;
 const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
@@ -48,7 +51,13 @@ const field = (name: string) => form!.elements.namedItem(name) as HTMLInputEleme
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 
-let st: BudgetState = emptyState();
+let st: BudgetState = MAKE ? makeEmpty() : emptyState();
+/** 予算作成Kitの状態（MAKE のときだけ使う） */
+const ms = () => st as MakeState;
+const blank = (): BudgetState => (MAKE ? makeEmpty() : emptyState());
+const sample = (): BudgetState => (MAKE ? makeSample() : sampleState());
+const diag = (): BudgetDiagnosis => (MAKE ? diagnoseMake(ms()) : diagnoseBudget(st, KIT));
+const ACT_KEYS = ["leads", "valid", "deals", "wins"] as const;
 
 // ---------- 保存 ----------
 function save() {
@@ -68,6 +77,13 @@ function restore(): BudgetState | null {
     for (const k of ["startYear", "startMonth", ...PRE] as const) if (s.input[k] === null) (s.input as any)[k] = NaN;
     if (!Array.isArray(s.manual)) s.manual = CHANNELS.map(() => false);
     if (!Array.isArray(s.notes)) s.notes = [];
+    if (MAKE) {
+      const m = s as MakeState;
+      const a = (m.actual ?? {}) as Partial<MakeState["actual"]>;
+      m.actual = { leads: a.leads ?? NaN, valid: a.valid ?? NaN, deals: a.deals ?? NaN, wins: a.wins ?? NaN };
+      if (!Array.isArray(m.ovr) || m.ovr.length !== CHANNELS.length) m.ovr = CHANNELS.map(() => ({ valid: false, deals: false, wins: false }));
+      applyMake(m);
+    }
     return s;
   } catch {
     return null;
@@ -84,7 +100,24 @@ function writeForm() {
   (field("startMonth") as HTMLSelectElement).value = String(inp.startMonth || 4);
   for (const k of PRE) (field(k) as HTMLInputElement).value = k === "common" ? showCh(inp.common) : show(inp[k]);
   inp.channels.forEach((c, i) => KEYS.forEach((k) => ((field(`ch${i}.${k}`) as HTMLInputElement).value = showCh(c[k]))));
+  if (MAKE) {
+    for (const k of ACT_KEYS) (field(`act.${k}`) as HTMLInputElement).value = show(ms().actual[k]);
+    writeAuto();
+  }
   writeMonthly();
+}
+/** 予算作成Kit：自動配分の欄の数字と、上書きの印 */
+function writeAuto(skip?: string) {
+  if (!MAKE) return;
+  st.input.channels.forEach((c, i) =>
+    AUTO_KEYS.forEach((k) => {
+      const name = `ch${i}.${k}`;
+      const f = field(name) as HTMLInputElement | null;
+      if (!f) return;
+      if (name !== skip) f.value = showCh(c[k]);
+      f.closest("td")?.classList.toggle("is-ovr", ms().ovr[i][k]);
+    }),
+  );
 }
 function writeMonthly(skip?: string) {
   st.monthly.forEach((m, i) =>
@@ -112,10 +145,22 @@ function onInput(e: Event) {
     const v = num(t.value);
     st.monthly[i][m[2] as "leads" | "valid"][Number(m[3])] = Number.isFinite(v) && v > 0 ? v : 0;
     st.manual[i] = true;
+  } else if ((m = /^act\.(leads|valid|deals|wins)$/.exec(name)) && MAKE) {
+    ms().actual[m[1] as (typeof ACT_KEYS)[number]] = num(t.value);
+    applyMake(ms());
+    writeAuto();
+    writeMonthly();
   } else if ((m = /^ch(\d)\.(\w+)$/.exec(name))) {
     const v = num(t.value);
-    inp.channels[Number(m[1])][m[2] as keyof ChannelInput] = Number.isFinite(v) ? v : 0;
-    if (m[2] === "leads" || m[2] === "valid") {
+    const i = Number(m[1]);
+    inp.channels[i][m[2] as keyof ChannelInput] = Number.isFinite(v) ? v : 0;
+    if (MAKE) {
+      // 自動配分の欄を手で入れたら上書き。空にしたら自動に戻す
+      if ((AUTO_KEYS as string[]).includes(m[2])) ms().ovr[i][m[2] as AutoKey] = t.value.trim() !== "";
+      applyMake(ms());
+      writeAuto(name);
+      writeMonthly();
+    } else if (m[2] === "leads" || m[2] === "valid") {
       syncMonthly(st);
       writeMonthly();
     }
@@ -147,8 +192,9 @@ function updateMonthLabels() {
 }
 
 function update() {
-  const d = diagnoseBudget(st, KIT);
+  const d = diag();
   lastDiag = d;
+  if (MAKE) updateMake();
 
   // 自動計算の欄（前提がそろわなくても、出せるものは出す）
   const r = d.r ?? safeCalc();
@@ -194,12 +240,41 @@ function update() {
   save();
 }
 
+// 予算作成Kit：今期の率・来期に必要な数・必要との差
+function updateMake() {
+  const m = ms();
+  const r = rates(m.actual);
+  const p = (v: number, ok: boolean) => (ok ? pct(v) : "—");
+  setOut("act.validRate", p(r.valid, r.fromActual.valid));
+  setOut("act.dealRate", p(r.deal, r.fromActual.deal));
+  setOut("act.winRate", p(r.win, r.fromActual.win));
+  const need = needCounts(m);
+  const tot = (k: (typeof ACT_KEYS)[number]) => st.input.channels.reduce((s, c) => s + (c[k] || 0), 0);
+  for (const k of ACT_KEYS) {
+    setOut(`need.${k}`, need ? fmt(need[k]) : "—");
+    const el = form!.querySelector<HTMLElement>(`[data-out="diff.${k}"]`);
+    if (!el) continue;
+    const diff = need ? tot(k) - need[k] : null;
+    el.textContent = diff === null ? "—" : `${diff >= 0 ? "+" : ""}${fmt(diff)}`;
+    el.classList.toggle("is-short", diff !== null && diff < 0);
+  }
+  const all = r.fromActual.valid && r.fromActual.deal && r.fromActual.win;
+  const none = !r.fromActual.valid && !r.fromActual.deal && !r.fromActual.win;
+  $("bk-rate-n").textContent =
+    "受注数＝売上目標÷平均受注単価。そこから今期の率でさかのぼります。" +
+    (all
+      ? ""
+      : none
+        ? `今期の実績が空欄なので、基本モデルの率（${pct(BASE_RATES.valid)}・${pct(BASE_RATES.deal)}・${pct(BASE_RATES.win)}）を使っています`
+        : "今期の実績が足りない率は、基本モデルの率を使っています");
+}
+
 // ---------- 表示の切り替え（診断画面／年間予算表の完成イメージ） ----------
 let view: "diag" | "sheet" = "diag";
 let sheetTab: "main" | "diag" = "main";
 
 function renderSheet() {
-  const d = lastDiag ?? diagnoseBudget(st, KIT);
+  const d = lastDiag ?? diag();
   $("bk-sheet").innerHTML = sheetTab === "main" ? sheetHtml(st, KIT) : diagHtml(st, d, new Date(), KIT);
   $("bk-s-main").setAttribute("aria-selected", String(sheetTab === "main"));
   $("bk-s-diag").setAttribute("aria-selected", String(sheetTab === "diag"));
@@ -269,6 +344,7 @@ function renderPanel(d: BudgetDiagnosis) {
 
   $("bk-goal").innerHTML = (
     [
+      ...(MAKE ? ([["リード数", "leads"]] as const) : []),
       ["有効リード数", "valid"],
       ["商談数", "deals"],
       ["受注数", "wins"],
@@ -431,7 +507,7 @@ function loadZip(): Promise<any> {
 async function download() {
   const err = $("bk-dlerr");
   err.hidden = true;
-  const d = lastDiag ?? diagnoseBudget(st, KIT);
+  const d = lastDiag ?? diag();
   const inp = st.input;
   const bad: string[] = [];
   if (!(Number.isInteger(inp.startYear) && inp.startYear >= 2000 && inp.startYear <= 2100)) bad.push("期首");
@@ -504,7 +580,8 @@ const hasData = () => {
   return (
     [inp.goal, inp.price, inp.gmPct, inp.paybackYears, inp.leadTime].some((v) => Number.isFinite(v)) ||
     inp.common > 0 ||
-    inp.channels.some((c) => KEYS.some((k) => c[k] > 0))
+    inp.channels.some((c) => KEYS.some((k) => c[k] > 0)) ||
+    (MAKE && ACT_KEYS.some((k) => Number.isFinite(ms().actual[k])))
   );
 };
 
@@ -515,6 +592,15 @@ if (form) {
   });
   form.addEventListener("submit", (e) => e.preventDefault());
   form.addEventListener("click", (e) => {
+    const o = (e.target as HTMLElement).closest<HTMLElement>("[data-ovr]");
+    if (o && MAKE) {
+      const [i, k] = (o.dataset.ovr ?? "").split(".");
+      resetOvr(ms(), Number(i), k as AutoKey);
+      writeAuto();
+      writeMonthly();
+      update();
+      return;
+    }
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-reset]");
     if (!b) return;
     resetMonthly(st, Number(b.dataset.reset));
@@ -541,11 +627,11 @@ if (form) {
   });
   $("bk-example")?.addEventListener("click", () => {
     if (hasData() && !window.confirm("いまの入力を、記入例（基本モデルの安定期）に置きかえます。よろしいですか？")) return;
-    openWork(sampleState());
+    openWork(sample());
   });
   $("bk-clear")?.addEventListener("click", () => {
     if (!window.confirm("入力をすべて消します。よろしいですか？")) return;
-    openWork(emptyState());
+    openWork(blank());
   });
 }
 
@@ -553,12 +639,12 @@ if (MODE === "intro") {
 // 画面で入力する：前回の入力があれば、そこから続ける
 $("bk-start")?.addEventListener("click", () => {
   const saved = restore();
-  goInput(saved ? { ...saved, notes: [] } : emptyState());
+  goInput(saved ? { ...saved, notes: [] } : blank());
 });
 
 // AIの案
 const aiOpen = $<HTMLButtonElement>("bk-ai-open");
-aiOpen.addEventListener("click", () => {
+aiOpen?.addEventListener("click", () => {
   const p = $("bk-ai");
   p.hidden = !p.hidden;
   aiOpen.setAttribute("aria-expanded", String(!p.hidden));
@@ -596,18 +682,18 @@ $("bk-import")?.addEventListener("click", () => {
 
 // 年間予算表（.xlsx）
 const fileInput = $<HTMLInputElement>("bk-file");
-fileInput.addEventListener("change", () => {
+fileInput?.addEventListener("change", () => {
   const f = fileInput.files?.[0];
   if (f) handleFile(f);
   fileInput.value = "";
 });
 const drop = $("bk-drop");
-drop.addEventListener("dragover", (e) => {
+drop?.addEventListener("dragover", (e) => {
   e.preventDefault();
   drop.classList.add("is-over");
 });
-drop.addEventListener("dragleave", () => drop.classList.remove("is-over"));
-drop.addEventListener("drop", (e) => {
+drop?.addEventListener("dragleave", () => drop.classList.remove("is-over"));
+drop?.addEventListener("drop", (e) => {
   e.preventDefault();
   drop.classList.remove("is-over");
   const f = e.dataTransfer?.files?.[0];
@@ -618,7 +704,7 @@ drop.addEventListener("drop", (e) => {
 // はじめの表示
 {
   const q = new URLSearchParams(location.search);
-  if (SAMPLE) openWork(sampleState(), q.get("tab") === "sheet" ? "sheet" : "diag");
-  else if (MODE === "input") openWork(q.get("sample") === "1" ? sampleState() : (restore() ?? emptyState()));
+  if (SAMPLE) openWork(sample(), q.get("tab") === "sheet" ? "sheet" : "diag");
+  else if (MODE === "input") openWork(q.get("sample") === "1" ? sample() : (restore() ?? blank()));
   else if (q.get("sample") === "1") location.replace(`${INPUT_URL}?sample=1`);
 }

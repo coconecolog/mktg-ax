@@ -139,7 +139,7 @@ export function diagHtml(st: BudgetState, d: BudgetDiagnosis, today = new Date()
   const inp = st.input;
   const ymd = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
   let h = `<p class="bk-pv-title">${esc(kit.diagTitle)}</p><p class="bk-pv-n">期首 ${inp.startYear}/${inp.startMonth}/1　単位 万円　診断日 ${ymd}</p>
-<p class="bk-pv-n">この日に診断した結果です。${esc(kit.sheet)}のシートで数字を直したあとは、${esc(kit.name)}で読み込んで診断し直してください。</p>`;
+<p class="bk-pv-n">この日に診断した結果です。${esc(kit.sheet)}のシートで数字を直したあとは、${esc(kit.rediag)}で読み込んで診断し直してください。</p>`;
   if (!d.ready || !d.r) return h + `<p class="bk-pv-p">前提（${esc(d.missing.join("・"))}）が入っていないため、診断していません。</p>`;
   const r = d.r;
   h += `<div class="bk-pv-cnt"><span class="${d.counts.fix ? "fix" : ""}">直す ${d.counts.fix}</span><span class="${d.counts.check ? "check" : ""}">確認 ${d.counts.check}</span><span>問題なし ${d.counts.ok}</span></div>`;

@@ -21,8 +21,8 @@ export const TOOLS_NAV_ITEMS = [
   {
     href: "/tools/budget-simulator",
     icon: "/images/tool-icons/icon-budget-simulator.svg",
-    label: "マーケティング予算策定・投資計画書",
-    description: "来期の予算計画書を自動作成",
+    label: "予算作成Kit",
+    description: "売上目標から年間予算表を作成",
   },
   {
     href: "/tools/roas-cac-simulator",

@@ -1,888 +1,127 @@
 ---
 // src/pages/tools/budget-simulator.astro
 //
-// マーケティング予算シミュレーター（/tools/budget-simulator）
-// 仕様: Googleドライブ「MKTG.AX／共有（正本）／04_ツール仕様／予算シミュレーターの仕様」6. 修正（2026-10-17／10-18）
-// 数字の定義: 同「数字の定義（KPI・予算）」。計算は src/lib/budget-calc.ts（予算案チェッカーと共通）
-// - 計算はすべてブラウザ内。入力した数字はサーバーに送らない
-// - 金額は万円（時間単価だけ円）。費用＝外部費用＋人件費。人件費は総額を施策の時間の比で配る
-// - 結論のカードは逆算の受注件数で出す。シナリオは ROUND(計画リード×率×率) の受注件数で出す
-// - 記入例は架空の会社（基本モデル）の成長期
+// 予算作成Kit（旧マーケティング予算シミュレーター、/tools/budget-simulator）2026-10-30 作り直し
+// 予算がまだない人向け。売上目標と今期の実績から必要なリード数を逆算し、チャネルにリード数と費用を配って、年間予算表（M-B-03、Excel）を作る。
+// - 入口は「画面で作成をはじめる」だけ（AI・ファイルの読み込みはなし）。画面で作らない人は、同じ表のスプレッドシート（年間予算表）をDLする
+// - 3ステップ：目標と実績を入れる → チャネルに配る（左＝入力、右＝判定）→ 年間予算表 完成（Excelをダウンロード）
+// - 予算案がもうある人は予算案診断Kit（/tools/budget-checker）へ
+// 入力の画面：/tools/budget-simulator/input　サンプル画面：/tools/budget-simulator/sample
+// 計算：src/lib/budgetMake.ts（判定は予算案診断キットと同じ src/lib/budgetCheck.ts）　画面：src/scripts/budget-checker/app.ts（data-kit="make"）
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
-import { metricUrl } from "@/lib/budget-calc";
-import type { MetricKey } from "@/lib/budget-calc";
+import "@/styles/budget-checker.css";
 
-const def = (key: MetricKey) => metricUrl(key);
+const TOOL_TITLE = "予算作成Kit";
+const TOOL_DESCRIPTION =
+  "売上目標と今期の実績から、必要なリード数を逆算する無料のツール（Kit）です。チャネルごとにリード数と費用を配るだけで、CPL・CACまで判定し、そのまま稟議に使える年間予算表（Excel）になります。";
+const SHEET_URL = "/lab/whitepapers/kgi-kpi-backcast-sheet";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/budget-simulator" },
+];
+
+const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
+const ACT_TAGS = ["リード数", "有効リード数", "商談数", "受注数"];
+const CH_TAGS = ["リード数", "外部費用", "人件費"];
+const NEED = [
+  ["受注数", "23"],
+  ["商談数", "78"],
+  ["有効リード数", "195"],
+  ["リード数", "514"],
+];
 ---
 
-<BaseLayout
-  title="マーケティング予算シミュレーター｜MeerKitLab"
-  description="来期の売上目標から必要な受注・商談・リード数を逆算し、人件費込みの費用で回収期間・CAC・ROI（1年）と施策ごとのCPL判定まで出す無料ツールです。"
-  ogImage="/open-graph/default.png"
->
-  <main class="bs">
-    <header class="bs-head no-print">
-      <p class="bs-eyebrow"><a href="/tools">便利ツール</a></p>
-      <h1>マーケティング予算シミュレーター</h1>
-      <p class="bs-lead">来期の売上目標から必要な受注・商談・リード数を逆算し、人件費込みの費用で回収期間・CAC・ROI（1年）と施策ごとのCPLの判定まで出した計画書を作ります（金額は万円）。</p>
-    </header>
+<BaseLayout title={`${TOOL_TITLE}｜売上目標から逆算して、年間予算表を作る｜MeerKitLab`} description={TOOL_DESCRIPTION} ogImage="/open-graph/default.png">
+  <Breadcrumb items={breadcrumbItems} />
 
-    <div class="bs-grid">
-      <!-- ===== 入力 ===== -->
-      <div class="bs-in no-print">
-        <div class="bs-tools">
-          <button type="button" class="bs-link" id="bs-example">記入例を入れる</button>
-          <button type="button" class="bs-link" id="bs-clear">入力をすべて消す</button>
+  <!-- H1まわりは /lab・/tools と同じ形。.bk の外に置く -->
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">売上目標から逆算して、年間予算表を作る。</p>
+    <p class="mt-3 text-sm leading-relaxed text-neutral-500">売上目標と今期の実績から、必要なリード数を逆算します。チャネルごとにリード数と費用を配るだけで、CPL・CACまで判定し、そのまま稟議に使える年間予算表（Excel）になります。</p>
+  </div>
+
+  <main class="bk" id="bk" data-kit="make" data-mode="intro">
+    <p class="bk-for">予算がまだない方向けのKitです。作った予算案がある方は <a href="/tools/budget-checker">予算案診断Kit →</a></p>
+
+    <section id="bk-intro">
+      <h2 class="bk-h2">3ステップで、売上目標から年間予算表が完成します。</h2>
+      <ol class="bk-steps">
+        <li class="bk-step">
+          <p class="bk-step-h"><span class="bk-no">1</span>目標と実績を入れる</p>
+          <p class="bk-step-p">売上目標と今期の実績から、必要なリード数が出る</p>
+          <div class="bk-th bk-th-need" aria-hidden="true">
+            <em>必要な数</em>
+            {NEED.map(([l, v]) => <div><span>{l}</span><b>{v}</b></div>)}
+          </div>
+        </li>
+        <li class="bk-arrow" aria-hidden="true">→</li>
+        <li class="bk-step">
+          <p class="bk-step-h"><span class="bk-no">2</span>チャネルに配る</p>
+          <p class="bk-step-p">リード数と費用を配ると、足りるか・上限以内かがすぐ出る</p>
+          <a class="bk-th bk-th-2" href="/tools/budget-simulator/sample" aria-label="入力画面の見本を見る">
+            <div class="bk-th-grid bk-th-g5">
+              {Array.from({ length: 5 }).map(() => <i class="k" />)}
+              {Array.from({ length: 35 }).map((_, i) => <i class={i % 5 === 0 ? "" : i === 33 ? "r" : "b"} />)}
+            </div>
+            <div class="bk-th-alert"><span>1 直す</span><span class="o">0 確認</span><i /><i class="s" /><i /><i class="s" /><em>必要まであと12件</em></div>
+          </a>
+          <a class="bk-sample" href="/tools/budget-simulator/sample">入力画面の見本を見る →</a>
+        </li>
+        <li class="bk-arrow" aria-hidden="true">→</li>
+        <li class="bk-step">
+          <p class="bk-step-h"><span class="bk-no">3</span>年間予算表 完成</p>
+          <p class="bk-step-p">作った数字と判定が入った年間予算表（Excel）をダウンロード</p>
+          <a class="bk-th bk-th-3" href="/tools/budget-simulator/sample?tab=sheet" aria-label="年間予算表の見本を見る">
+            <span class="bk-xl">
+              <span class="bk-xl-file">
+                <span class="bk-xl-fold" />
+                <span class="bk-xl-grid">
+                  {Array.from({ length: 5 }).map(() => <i class="k" />)}
+                  {Array.from({ length: 20 }).map((_, i) => <i class={i % 5 === 1 || i % 5 === 2 ? "b" : ""} />)}
+                </span>
+              </span>
+              <span class="bk-xl-tag">XLSX</span>
+              <span class="bk-xl-dl"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg></span>
+            </span>
+            <span class="bk-xl-name">年間予算表.xlsx</span>
+          </a>
+          <a class="bk-sample" href="/tools/budget-simulator/sample?tab=sheet">年間予算表の見本を見る →</a>
+        </li>
+      </ol>
+
+      <div class="bk-need">
+        <div>
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します</span></p>
+          <dl>
+            <dt>前提</dt>
+            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>今期の実績</dt>
+            <dd>{ACT_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>チャネル別（年間）</dt>
+            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+          </dl>
         </div>
-        <p class="bs-note bs-note-r">記入例は架空の会社（基本モデル）の成長期の数字です</p>
-
-        <section class="bs-sec">
-          <h2 class="bs-st">1. 前提</h2>
-          <div class="bs-f">
-            <label class="bs-field"><span class="bs-lb">平均単価（1社あたりの年間の取引額）</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="price" /><span>万円</span></span></label>
-            <label class="bs-field"><span class="bs-lb">粗利率</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" max="100" step="0.1" data-k="margin" /><span>%</span></span></label>
-            <label class="bs-field"><span class="bs-lb">取り返す年数</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="0.1" data-k="years" /><span>年</span></span></label>
-            <div class="bs-field">
-              <span class="bs-lb">事業の段階</span>
-              <div class="bs-chips" role="radiogroup" aria-label="事業の段階" id="bs-stage">
-                <button type="button" class="bs-chip" role="radio" data-stage="intro">導入期</button>
-                <button type="button" class="bs-chip" role="radio" data-stage="growth">成長期</button>
-                <button type="button" class="bs-chip" role="radio" data-stage="stable">安定期</button>
-              </div>
-            </div>
-          </div>
-          <p class="bs-note">取り返す年数は、獲得の費用を何年で取り返すかを自社で決める値です（小数可）。事業の段階は、防衛：攻撃の目安（導入期5：5、成長期7：3、安定期6：4）に使います</p>
-        </section>
-
-        <section class="bs-sec">
-          <h2 class="bs-st">2. 目標（来期）</h2>
-          <div class="bs-f">
-            <label class="bs-field"><span class="bs-lb">全社の売上目標</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="target" /><span>万円</span></span></label>
-            <label class="bs-field"><span class="bs-lb">マーケ経由の割合</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" max="100" step="0.1" data-k="mktRatio" /><span>%</span></span></label>
-          </div>
-        </section>
-
-        <section class="bs-sec">
-          <h2 class="bs-st">3. 今期の実績</h2>
-          <div class="bs-f">
-            <label class="bs-field"><span class="bs-lb">売上<small>任意</small></span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="nowSales" /><span>万円</span></span></label>
-            <label class="bs-field"><span class="bs-lb">マーケ経由の売上<small>任意</small></span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="nowMktSales" /><span>万円</span></span></label>
-            <label class="bs-field"><span class="bs-lb">リード数</span><span class="bs-ip"><input type="number" inputmode="numeric" min="0" step="1" data-k="nowLeads" /><span>件</span></span></label>
-            <label class="bs-field"><span class="bs-lb">商談数</span><span class="bs-ip"><input type="number" inputmode="numeric" min="0" step="1" data-k="nowDeals" /><span>件</span></span></label>
-            <label class="bs-field"><span class="bs-lb">受注数</span><span class="bs-ip"><input type="number" inputmode="numeric" min="0" step="1" data-k="nowWins" /><span>件</span></span></label>
-            <label class="bs-field"><span class="bs-lb">失注数</span><span class="bs-ip"><input type="number" inputmode="numeric" min="0" step="1" data-k="nowLosses" /><span>件</span></span></label>
-          </div>
-          <p class="bs-rates" id="bs-rates"></p>
-          <p class="bs-note">商談化率＝商談数÷リード数、受注率＝受注数÷（受注数＋失注数）。受注率は決着した商談だけで出します</p>
-        </section>
-
-        <section class="bs-sec">
-          <h2 class="bs-st">4. 施策<small>万円・時間／年・件</small></h2>
-          <div id="bs-rows"></div>
-          <button type="button" class="bs-add" id="bs-add">＋ 施策を追加</button>
-          <p class="bs-note">時間は、マーケがこの施策にかける時間（年間）。集計・報告、営業との連携、予算づくりなど共通の作業は入れません。リードを生まない費用（ツール・サイト保守など）はリード数0で、判定は「―」になります。今期の欄は、わからなければ空欄で構いません</p>
-        </section>
-
-        <section class="bs-sec">
-          <h2 class="bs-st">5. 人件費（来期）<small>1行＝1人またはグループ</small></h2>
-          <div id="bs-labor"></div>
-          <button type="button" class="bs-add" id="bs-labor-add">＋ 行を追加</button>
-          <label class="bs-check"><input type="checkbox" id="bs-sales" />営業が施策に協力する時間（展示会の立ち会い、事例の取材、登壇など）を含めた</label>
-          <p class="bs-note">人件費（万円）＝時間×時間単価÷10,000。時間がわからないときは人件費を直接入れます。時間には、施策の時間と共通の作業の時間をすべて含めます。施策ごとの人件費は、この総額を施策の時間の比で配ります</p>
-          <label class="bs-field bs-mt8"><span class="bs-lb">今期の人件費（合計）<small>任意</small></span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="laborNow" /><span>万円</span></span></label>
-        </section>
-
-        <section class="bs-sec">
-          <h2 class="bs-st">6. 予算の上限<small>任意</small></h2>
-          <label class="bs-field"><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-k="cap" aria-label="予算の上限" /><span>万円</span></span></label>
-        </section>
-
-        <p class="bs-err" id="bs-err" role="alert" hidden>未入力の項目があります。赤枠の欄を入力してください。</p>
-        <button type="button" class="bs-btn" id="bs-run">計画書を作る</button>
-      </div>
-
-      <!-- ===== 計画書 ===== -->
-      <div class="bs-out">
-        <div class="bs-bar no-print">
-          <div class="bs-sw">
-            <span>シナリオ：</span>
-            <div class="bs-chips" role="radiogroup" aria-label="シナリオ" id="bs-scenario">
-              <button type="button" class="bs-chip" role="radio" data-sc="pess">悲観（−2割）</button>
-              <button type="button" class="bs-chip" role="radio" data-sc="base">標準</button>
-              <button type="button" class="bs-chip" role="radio" data-sc="opt">楽観（＋2割）</button>
-            </div>
-          </div>
-          <button type="button" class="bs-obtn" id="bs-print">印刷／PDF</button>
-        </div>
-
-        <div class="bs-rp" id="bs-report">
-          <div class="bs-rh">
-            <div>
-              <h2 class="bs-rt">来期 マーケティング予算計画書（案）</h2>
-              <p class="bs-rs" id="r-sub">今期の実績の率から逆算・金額は万円・費用は外部費用＋人件費</p>
-            </div>
-            <p class="bs-rs" id="r-date"></p>
-          </div>
-
-          <p class="bs-empty" id="r-empty" hidden></p>
-
-          <div id="r-body">
-            <div class="bs-top">
-              <div class="bs-dark">
-                <div class="bs-k">
-                  <div><p class="bs-kl">回収期間<a class="bs-def no-print" href={def("payback")}>定義</a></p><p class="bs-kv bs-big"><span id="r-payback"></span><small>か月</small></p><p class="bs-ks" id="r-payback-s"></p></div>
-                  <div><p class="bs-kl">CAC<a class="bs-def no-print" href={def("cac")}>定義</a></p><p class="bs-kv bs-big"><span id="r-cac"></span><small>万円</small></p><p class="bs-ks" id="r-cac-s"></p></div>
-                  <div><p class="bs-kl">ROI（1年）<a class="bs-def no-print" href={def("roi")}>定義</a></p><p class="bs-kv bs-big"><span id="r-roi"></span></p><p class="bs-ks">（受注金額×粗利率−費用）÷費用</p></div>
-                </div>
-                <p class="bs-base" id="r-base"></p>
-                <hr />
-                <div class="bs-k">
-                  <div><p class="bs-kl">来期の費用（合計）</p><p class="bs-kv"><span id="r-total"></span><small>万円</small></p><p class="bs-ks" id="r-total-s"></p></div>
-                  <div><p class="bs-kl">予算の上限との差</p><p class="bs-kv" id="r-cap"></p><p class="bs-ks" id="r-cap-s"></p></div>
-                  <div><p class="bs-kl">許容CPL<a class="bs-def no-print" href={def("allowableCpl")}>定義</a></p><p class="bs-kv"><span id="r-acpl"></span><small>万円</small></p><p class="bs-ks" id="r-acpl-s"></p></div>
-                </div>
-              </div>
-
-              <div class="bs-box">
-                <p class="bs-h"><span>逆算<a class="bs-def no-print" href={def("backcast")}>定義</a></span><small id="r-flow-sc"></small></p>
-                <div class="bs-flow"><div class="bs-fc"><p class="l">マーケ経由の売上目標</p><p class="v" id="r-mktsales"></p><p class="s" id="r-mktsales-s"></p></div></div>
-                <p class="bs-growth" id="r-growth"></p>
-                <div class="bs-flow bs-flow3">
-                  <div class="bs-fc"><p class="l">受注件数</p><p class="v" id="r-won"></p><p class="s" id="r-won-s"></p></div>
-                  <span class="bs-arr">→</span>
-                  <div class="bs-fc"><p class="l">商談数</p><p class="v" id="r-opp"></p><p class="s" id="r-opp-s"></p></div>
-                  <span class="bs-arr">→</span>
-                  <div class="bs-fc"><p class="l">リード数</p><p class="v" id="r-lead"></p><p class="s" id="r-lead-s"></p></div>
-                </div>
-                <div class="bs-cap"><span id="r-leadcheck"></span><span id="r-leadtag"></span></div>
-              </div>
-            </div>
-
-            <div class="bs-row2">
-              <div class="bs-box">
-                <p class="bs-h"><span>費用<a class="bs-def no-print" href={def("laborCost")}>定義</a></span><small>万円</small></p>
-                <table class="bs-t">
-                  <thead><tr><th></th><th>今期</th><th>来期</th><th>差</th></tr></thead>
-                  <tbody id="r-cost"></tbody>
-                </table>
-              </div>
-              <div class="bs-box">
-                <p class="bs-h"><span>防衛：攻撃</span><small>費用（外部費用＋人件費）の比率</small></p>
-                <div class="bs-ratio" id="r-ratio"></div>
-                <div class="bs-ratio bs-ratio-t" id="r-ratio-t"></div>
-                <p class="bs-lg" id="r-ratio-s"></p>
-              </div>
-            </div>
-
-            <div class="bs-box bs-mt">
-              <p class="bs-h"><span>施策ごとのCPL<a class="bs-def no-print" href={def("cpl")}>定義</a><a class="bs-def no-print" href={def("judgment")}>判定</a></span><small id="r-cpl-s"></small></p>
-              <div class="bs-tw">
-                <table class="bs-t">
-                  <thead><tr><th>施策</th><th class="c">区分</th><th>外部費用</th><th>人件費</th><th>費用合計</th><th>リード数</th><th>CPL</th><th class="c">判定</th></tr></thead>
-                  <tbody id="r-ins"></tbody>
-                </table>
-              </div>
-              <p class="bs-fx">人件費は、人件費の総額を施策の時間の比で配った値（万円の整数）<a class="bs-def no-print" href={def("laborAllocation")}>定義</a>。CPL＝費用合計÷リード数。CPLが許容CPL以下なら「上限内」、超えたら「上限超え」</p>
-            </div>
-
-            <div class="bs-box bs-mt">
-              <p class="bs-h"><span>シナリオ<a class="bs-def no-print" href={def("scenario")}>定義</a></span><small>商談化率と受注率を −2割／そのまま／＋2割。受注件数＝計画リード数×商談化率×受注率（四捨五入）</small></p>
-              <div class="bs-sc" id="r-sc"></div>
-            </div>
-
-            <div class="bs-box bs-mt bs-warn" id="r-warn-box" hidden>
-              <p class="bs-h"><span>要確認</span></p>
-              <ul id="r-warn"></ul>
-            </div>
-
-            <div class="bs-box bs-mt">
-              <p class="bs-h"><span>経営層のための指標の読み方<a class="bs-def no-print" href={def("explain")}>定義</a></span></p>
-              <div class="bs-gg">
-                <div class="bs-gb"><b>回収期間（説明の主役）</b>1社を獲得する費用（CAC）を、受注した会社の粗利で何か月で取り返すか。<code>回収期間＝CAC÷（平均単価×粗利率÷12）<br />CAC＝費用合計÷受注件数</code></div>
-                <div class="bs-gb"><b>CACの上限と許容CPL</b>決めた年数のうちに取り返せる獲得の費用の上限と、それをリード1件あたりに直した値。施策のCPLが許容CPL以下なら上限内です。<code>CACの上限＝平均単価×粗利率×取り返す年数<br />許容CPL＝CACの上限×商談化率×受注率</code></div>
-                <div class="bs-gb"><b>ROI（1年）</b>1年の粗利から費用を引いた利益の、費用に対する割合。初年度はマイナスになることもあるため、回収期間と並べて示します。<code>ROI＝（受注金額×粗利率−費用合計）÷費用合計<br />受注金額＝受注件数×平均単価</code></div>
-              </div>
-              <p class="bs-fx">受注件数は、マーケ経由の売上目標から逆算した件数。費用＝外部費用＋人件費。人件費は、共通の作業の時間も含めた総額を施策の時間の比で配ります。予備費は持たず、期中に足りなくなったら追加予算の稟議で扱います。</p>
-            </div>
-
-            <div class="bs-ft">
-              <div><b>重点施策の方針</b><span id="r-policy"></span></div>
-              <div><b>リスク</b><span id="r-risk"></span></div>
-              <div><b>お願い</b><span id="r-ask"></span></div>
-            </div>
-            <p class="bs-src">指標の定義は「数字の定義（KPI・予算）」による：meerkitlab.com/standards/metrics　金額は万円</p>
-          </div>
-        </div>
-
-        <a class="bs-checker no-print" href="/tools/budget-checker">
-          <span><b>AIで作った予算案を確かめる</b>生成AIで作った予算案を、人件費込みのCPL・CAC・回収期間で判定します</span>
-          <span aria-hidden="true">予算案チェッカー →</span>
+        <a class="bk-need-dl" href={SHEET_URL}>
+          <small>画面で作らない方は、同じ表をスプレッドシートで</small>
+          <b><span class="bk-ft">スプレッドシート</span>年間予算表</b>
+          <span class="bk-btn2">無料でDL</span>
         </a>
       </div>
-    </div>
+
+      <h2 class="bk-h2">作成をはじめる</h2>
+      <button type="button" class="bk-btn bk-start-btn" id="bk-start">画面で作成をはじめる<span aria-hidden="true">→</span></button>
+      <p class="bk-hint">無料・登録なし・入れた数字はサーバーに送りません（すべてブラウザの中）・<a href="/tools/budget-simulator/sample">サンプル画面を見る（基本モデルの安定期）→</a></p>
+    </section>
   </main>
 
   <ToolFooter path="/tools/budget-simulator" />
 </BaseLayout>
 
-<style is:global>
-  .bs { max-width: 1240px; margin: 0 auto; padding: 1.5rem 1rem 3rem; color: #0b0b12; font-variant-numeric: tabular-nums; }
-  .bs p { margin: 0; }
-  .bs-eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; color: #737373; }
-  .bs-eyebrow a { color: inherit; text-decoration: none; }
-  .bs-eyebrow a:hover { text-decoration: underline; }
-  .bs-head h1 { margin: 0.25rem 0 0.4rem; font-size: 1.7rem; font-weight: 800; line-height: 1.35; }
-  .bs-lead { color: #525252; line-height: 1.7; margin-bottom: 1.25rem !important; }
-
-  .bs-grid { display: grid; grid-template-columns: 370px minmax(0, 1fr); gap: 24px; align-items: start; }
-
-  /* ===== 入力 ===== */
-  .bs-in { border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px 16px 16px; background: #fff; min-width: 0; }
-  .bs-tools { display: flex; justify-content: flex-end; gap: 12px; }
-  .bs-link { background: none; border: 0; padding: 0; font-size: 0.75rem; color: #525252; text-decoration: underline; cursor: pointer; }
-  .bs-link[data-armed="1"] { color: #b91c1c; font-weight: 700; }
-  .bs-note-r { text-align: right; margin-top: 2px !important; }
-  .bs-sec { border-bottom: 1px solid #ececec; padding: 12px 0 14px; }
-  .bs-st { font-size: 0.8rem; font-weight: 800; margin: 0 0 8px; }
-  .bs-st small { font-weight: 400; color: #8a8a8a; margin-left: 6px; font-size: 0.7rem; }
-  .bs-f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .bs-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .bs-lb { font-size: 0.72rem; font-weight: 600; color: #404040; line-height: 1.4; }
-  .bs-lb small { font-weight: 400; color: #8a8a8a; margin-left: 4px; }
-  .bs-ip { display: flex; align-items: center; gap: 6px; min-width: 0; border: 1px solid #d4d4d4; border-radius: 8px; background: #fff; padding: 0 8px; }
-  .bs-ip:focus-within { border-color: #0b0b12; outline: 1px solid #0b0b12; }
-  .bs-ip input { flex: 1 1 0; width: 0; min-width: 0; border: 0; outline: 0; background: transparent; padding: 6px 0; font-size: 0.9rem; color: #0b0b12; }
-  .bs-ip input[readonly] { color: #525252; }
-  .bs-ip > span { font-size: 0.72rem; color: #737373; flex-shrink: 0; }
-  .bs-note { font-size: 0.68rem; color: #8a8a8a; line-height: 1.55; margin-top: 6px !important; }
-  .bs-rates { font-size: 0.75rem; color: #0b0b12; background: #f6f6f6; border-radius: 6px; padding: 5px 8px; margin-top: 8px !important; line-height: 1.6; }
-  .bs-rates:empty { display: none; }
-  .bs-chips { display: flex; gap: 4px; flex-wrap: wrap; }
-  .bs-chip { white-space: nowrap; border: 1px solid #d4d4d4; border-radius: 999px; background: #fff; padding: 4px 10px; font-size: 0.72rem; color: #404040; cursor: pointer; }
-  .bs-chip[aria-checked="true"] { background: #0b0b12; border-color: #0b0b12; color: #fff; }
-  .bs-ini { border: 1px solid #e5e5e5; border-radius: 8px; padding: 8px; margin-bottom: 6px; }
-  .bs-ini-h { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; }
-  .bs-ini-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 2px 4px; font-size: 0.78rem; font-weight: 800; color: #0b0b12; background: transparent; }
-  .bs-ini-name:hover { border-color: #e5e5e5; }
-  .bs-ini-name:focus { border-color: #0b0b12; outline: 0; }
-  .bs-seg { display: inline-flex; border: 1px solid #d4d4d4; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
-  .bs-seg button { border: 0; background: #fff; padding: 2px 8px; font-size: 0.66rem; color: #404040; cursor: pointer; }
-  .bs-seg button[aria-checked="true"] { background: #0b0b12; color: #fff; }
-  .bs-del { border: 0; background: none; color: #8a8a8a; font-size: 0.95rem; line-height: 1; cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
-  .bs-del:hover { color: #b91c1c; }
-  .bs-it { width: 100%; border-collapse: collapse; font-size: 0.7rem; table-layout: fixed; }
-  .bs-it th { font-weight: 600; color: #737373; text-align: right; padding: 1px 4px; }
-  .bs-it th:first-child, .bs-it td:first-child { text-align: left; white-space: nowrap; color: #404040; width: 40%; }
-  .bs-it td { padding: 1px 4px; text-align: right; }
-  .bs-it td.na { color: #bdbdbd; padding-right: 10px; }
-  .bs-it input { width: 100%; box-sizing: border-box; border: 1px solid #d4d4d4; border-radius: 5px; padding: 2px 6px; text-align: right; font-size: 0.75rem; color: #0b0b12; background: #fff; }
-  .bs-it input:focus { outline: 1px solid #0b0b12; border-color: #0b0b12; }
-  .bs-it input::placeholder { color: #bdbdbd; }
-  .bs-lab { border: 1px solid #e5e5e5; border-radius: 8px; padding: 8px; margin-bottom: 6px; }
-  .bs-lab-h { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; }
-  .bs-lab-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .bs-lab .bs-lb { font-size: 0.66rem; font-weight: 400; color: #737373; }
-  .bs-lab .bs-ip input { padding: 4px 0; font-size: 0.8rem; }
-  .bs-check { display: flex; gap: 6px; align-items: flex-start; font-size: 0.72rem; color: #404040; line-height: 1.5; margin-top: 8px; cursor: pointer; }
-  .bs-check input { margin-top: 3px; flex-shrink: 0; }
-  .bs-mt8 { margin-top: 10px; }
-  .bs-add { width: 100%; border: 1px dashed #bfbfbf; border-radius: 8px; background: #fff; text-align: center; padding: 6px; color: #525252; font-size: 0.72rem; cursor: pointer; }
-  .bs-add:hover { border-color: #0b0b12; color: #0b0b12; }
-  .bs-ip.bs-invalid { border-color: #b91c1c; background: #fef2f2; outline: 1px solid #b91c1c; }
-  .bs-it input.bs-invalid { border-color: #b91c1c; background: #fef2f2; outline: 1px solid #b91c1c; }
-  .bs-err { margin-top: 14px !important; font-size: 0.78rem; font-weight: 700; color: #b91c1c; }
-  .bs-err + .bs-btn { margin-top: 6px; }
-  .bs-btn { display: block; width: 100%; margin-top: 14px; border: 0; border-radius: 12px; background: #0b0b12; color: #fff; padding: 0.8rem; font-size: 0.92rem; font-weight: 700; cursor: pointer; }
-  .bs-btn:hover { opacity: 0.9; }
-
-  /* ===== 計画書 ===== */
-  .bs-out { min-width: 0; }
-  .bs-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-  .bs-sw { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #525252; flex-wrap: wrap; }
-  .bs-obtn { border: 1px solid #0b0b12; border-radius: 10px; background: #fff; padding: 6px 14px; font-weight: 700; font-size: 0.78rem; color: #0b0b12; cursor: pointer; }
-  .bs-obtn:hover { background: #0b0b12; color: #fff; }
-  .bs-rp { border: 1px solid #e5e5e5; border-radius: 12px; padding: 22px 24px; background: #fff; font-size: 13px; line-height: 1.5; }
-  .bs-rh { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 3px solid #0b0b12; padding-bottom: 7px; }
-  .bs-rt { font-size: 20px; font-weight: 800; margin: 0; line-height: 1.35; }
-  .bs-rs { font-size: 11px; color: #525252; }
-  .bs-empty { padding: 48px 0; text-align: center; color: #8a8a8a; font-size: 14px; line-height: 1.8; }
-  .bs-def { font-size: 9.5px; font-weight: 400; color: #737373; margin-left: 5px; text-decoration: underline; }
-  .bs-def:hover { color: #0b0b12; }
-  .bs-dark .bs-def { color: #bdbdbd; }
-  .bs-dark .bs-def:hover { color: #fff; }
-  .bs-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
-  .bs-dark { background: #0b0b12; color: #fff; border-radius: 8px; padding: 12px 16px; }
-  .bs-dark hr { border: 0; border-top: 1px solid #333; margin: 10px 0; }
-  .bs-k { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .bs-kl { font-size: 10.5px; color: #bdbdbd; font-weight: 700; }
-  .bs-kv { font-size: 22px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
-  .bs-kv small { font-size: 12px; margin-left: 2px; }
-  .bs-big { font-size: 30px; }
-  .bs-ks { font-size: 10px; color: #d4d4d4; }
-  .bs-base { font-size: 10.5px; color: #d4d4d4; background: #1f1f27; border-radius: 5px; padding: 4px 8px; margin-top: 8px !important; }
-  .bs-tag { white-space: nowrap; display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 10.5px; font-weight: 800; color: #fff; margin-left: 6px; vertical-align: 2px; line-height: 1.5; }
-  .bs-tag.ok { background: #15803d; }
-  .bs-tag.ng { background: #b91c1c; }
-  .bs-tag.mid { background: #6b7280; }
-  .bs-box { border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px 12px; min-width: 0; }
-  .bs-mt { margin-top: 12px; }
-  .bs-h { font-size: 12px; font-weight: 800; margin-bottom: 6px !important; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-  .bs-h small { font-weight: 400; color: #737373; font-size: 10px; }
-  .bs-flow { display: flex; align-items: center; gap: 6px; }
-  .bs-flow3 { margin-top: 6px; }
-  .bs-fc { flex: 1; min-width: 0; background: #f6f6f6; border-radius: 6px; padding: 6px 8px; text-align: center; }
-  .bs-fc .l { font-size: 10px; color: #525252; font-weight: 700; }
-  .bs-fc .v { font-size: 18px; font-weight: 800; }
-  .bs-fc .s { font-size: 9.5px; color: #737373; }
-  .bs-growth { font-size: 10px; color: #525252; margin-top: 4px !important; line-height: 1.6; }
-  .bs-growth:empty { display: none; }
-  .bs-arr { font-weight: 800; color: #8a8a8a; }
-  .bs-cap { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #f6f6f6; border-radius: 6px; padding: 7px 10px; margin-top: 6px; }
-  .bs-fx { font-size: 10px; color: #737373; margin-top: 6px !important; }
-  .bs-tw { overflow-x: auto; }
-  .bs-t { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 2px; }
-  .bs-t th { font-size: 10px; color: #404040; font-weight: 700; text-align: right; padding: 3px 8px; border-bottom: 1px solid #0b0b12; white-space: nowrap; }
-  .bs-t td { text-align: right; padding: 3px 8px; border-bottom: 1px solid #ececec; white-space: nowrap; }
-  .bs-t th:first-child, .bs-t td:first-child { text-align: left; }
-  .bs-t td.n { font-weight: 800; white-space: normal; min-width: 9em; }
-  .bs-t .c { text-align: center; }
-  .bs-t tr.tot td { font-weight: 800; border-top: 1px solid #0b0b12; }
-  .bs-t tr.weak td { background: #fef2f2; }
-  .bs-t tr.weak td:first-child { box-shadow: inset 3px 0 0 #b91c1c; color: #b91c1c; }
-  .bs-t .na { color: #8a8a8a; }
-  .bs-t .bs-tag { margin-left: 0; }
-  .bs-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
-  .bs-ratio { display: flex; height: 20px; gap: 2px; margin: 6px 0 4px; }
-  .bs-ratio div { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10.5px; font-weight: 800; border-radius: 2px; overflow: hidden; white-space: nowrap; }
-  .bs-ratio-t { height: 6px; margin-top: 0; }
-  .bs-lg { font-size: 10px; color: #525252; }
-  .bs-sc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .bs-scc { background: #f6f6f6; border-radius: 6px; padding: 6px 9px; border: 1.5px solid transparent; }
-  .bs-scc.on { background: #fff; border-color: #0b0b12; }
-  .bs-scc .l { font-size: 10.5px; font-weight: 800; }
-  .bs-scc .v { font-size: 11px; color: #404040; line-height: 1.6; }
-  .bs-scc .v b { color: #0b0b12; }
-  .bs-warn { border-color: #b91c1c; background: #fef2f2; }
-  .bs-warn ul { margin: 0; padding-left: 1.2em; font-size: 11px; line-height: 1.7; color: #7f1d1d; }
-  .bs-gg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .bs-gb { background: #f6f6f6; border-radius: 6px; padding: 8px 10px; font-size: 11px; line-height: 1.6; }
-  .bs-gb b { display: block; font-size: 11.5px; margin-bottom: 2px; }
-  .bs-gb code { display: block; font-family: inherit; font-size: 10.5px; color: #404040; border-top: 1px solid #e0e0e0; margin-top: 4px; padding-top: 4px; background: none; }
-  .bs-ft { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; border-top: 1px solid #e5e5e5; padding-top: 10px; font-size: 11px; line-height: 1.6; }
-  .bs-ft b { display: block; font-size: 11.5px; }
-  .bs-src { font-size: 10px; color: #737373; margin-top: 8px !important; }
-  .bs-checker { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; border: 1px solid #0b0b12; border-radius: 12px; padding: 12px 16px; color: #0b0b12; text-decoration: none; font-size: 0.78rem; line-height: 1.6; }
-  .bs-checker b { display: block; font-size: 0.9rem; }
-  .bs-checker > span:last-child { white-space: nowrap; font-weight: 700; }
-  .bs-checker:hover { background: #0b0b12; color: #fff; }
-
-  @media (max-width: 1000px) {
-    .bs-grid { grid-template-columns: minmax(0, 1fr); }
-  }
-  @media (max-width: 760px) {
-    .bs-rp { padding: 16px 14px; }
-    .bs-top, .bs-row2, .bs-sc, .bs-gg, .bs-ft { grid-template-columns: minmax(0, 1fr); }
-    .bs-big { font-size: 24px; }
-    .bs-kv { font-size: 18px; }
-    .bs-k { gap: 8px; }
-    .bs-rh { flex-direction: column; align-items: flex-start; }
-    .bs-checker { flex-direction: column; align-items: flex-start; }
-  }
-
-  @media print {
-    @page { size: A4 portrait; margin: 8mm; }
-    header, footer, nav, .no-print { display: none !important; }
-    .bs { max-width: none; padding: 0; }
-    .bs-grid { display: block; }
-    .bs-rp { border: 0; padding: 0; zoom: 0.64; }
-    .bs-top, .bs-row2 { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-    .bs-sc, .bs-gg, .bs-ft { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .bs-box, .bs-dark { break-inside: avoid; }
-    .bs-dark, .bs-tag, .bs-ratio div, .bs-t tr.weak td, .bs-fc, .bs-cap, .bs-gb, .bs-scc, .bs-base, .bs-warn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-
 <script>
-  import {
-    SCENARIOS, STAGES, NA,
-    dealRate, winRateSettled, scenarioRate, laborFromHours, allocateLabor, backcast,
-    monthlyGross, cpl, cac, paybackMonths, roi, cacLimit, allowableCpl, judge, JUDGMENT_LABEL,
-    fmtMan, fmt1, fmtPct, fmtSigned, clean,
-  } from "@/lib/budget-calc";
-
-  // ===== 記入例（架空の会社（基本モデル）の成長期。基本モデル_10-budget「8 人件費込みの判定」①） =====
-  const EXAMPLE = {
-    price: 250, margin: 40, years: 1.5, stage: "growth",
-    target: 150000, mktRatio: 2,
-    nowSales: null, nowMktSales: null, nowLeads: 285, nowDeals: 42, nowWins: 12, nowLosses: 30,
-    laborNow: null, cap: 1280, salesSupport: true,
-    labor: [{ role: "マーケ2名＋営業の協力", hours: null, yen: null, amount: 370 }],
-    rows: [
-      { name: "業界展示会", kind: "def", extNow: null, ext: 280, hours: 120, leadNow: null, lead: 120 },
-      { name: "リスティング広告", kind: "def", extNow: null, ext: 240, hours: 48, leadNow: null, lead: 50 },
-      { name: "自社サイトの保守・サーバー（更新を含む）", kind: "def", extNow: null, ext: 36, hours: 72, leadNow: null, lead: 0 },
-      { name: "MAツール（運用・メルマガを含む）", kind: "def", extNow: null, ext: 84, hours: 240, leadNow: null, lead: 0 },
-      { name: "記事・事例・ホワイトペーパー制作（外注）", kind: "att", extNow: null, ext: 120, hours: 112, leadNow: null, lead: 60 },
-      { name: "ウェビナー（年4回）", kind: "att", extNow: null, ext: 60, hours: 120, leadNow: null, lead: 40 },
-      { name: "新しい業種向けのLP＋リスティング広告（試行）", kind: "att", extNow: null, ext: 90, hours: 30, leadNow: null, lead: 15 },
-    ],
-  };
-  const KIND_LABEL = { def: "防衛", att: "攻撃" };
-  const emptyRow = (n) => ({ name: `施策${n}`, kind: "att", extNow: null, ext: null, hours: null, leadNow: null, lead: null });
-  const emptyLabor = () => ({ role: "", hours: null, yen: null, amount: null });
-
-  const $ = (id) => document.getElementById(id);
-  const scalarInputs = Array.from(document.querySelectorAll(".bs-in input[data-k]"));
-  const rowsEl = $("bs-rows");
-  const laborEl = $("bs-labor");
-  const salesEl = $("bs-sales");
-
-  let state = { stage: "growth", scenario: "base", rows: [], labor: [], isExample: false };
-
-  // ===== 書式 =====
-  const num = (v) => (v === "" || v === null || v === undefined || !isFinite(Number(v)) ? null : Number(v));
-  const fmtRate1 = (r) => `${(Math.round(clean(r * 1000)) / 10).toFixed(1)}%`;
-  const growth = (now, next) => {
-    const r = next / now - 1;
-    return `${r > 0 ? "+" : ""}${fmtPct(r)}`;
-  };
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const tag = (cls, text) => `<span class="bs-tag ${cls}">${text}</span>`;
-  const judgeTag = (j) => (j === null ? `<span class="na">${NA}</span>` : tag(j === "ok" ? "ok" : "ng", JUDGMENT_LABEL[j]));
-  const v = (x) => (x === null || x === undefined ? "" : x);
-
-  // ===== 施策の行 =====
-  function rowHtml(r, i) {
-    const cell = (f, ph = "") => `<input type="number" inputmode="decimal" min="0" step="1" data-i="${i}" data-f="${f}" value="${v(r[f])}" placeholder="${ph}" aria-label="${esc(r.name)} ${f}" />`;
-    return `<div class="bs-ini">
-      <div class="bs-ini-h">
-        <input class="bs-ini-name" type="text" data-i="${i}" data-f="name" value="${esc(r.name)}" aria-label="施策名" />
-        <span class="bs-seg" role="radiogroup" aria-label="区分">
-          <button type="button" role="radio" data-i="${i}" data-kind="def" aria-checked="${r.kind === "def"}">防衛</button><button type="button" role="radio" data-i="${i}" data-kind="att" aria-checked="${r.kind === "att"}">攻撃</button>
-        </span>
-        <button type="button" class="bs-del" data-del="${i}" aria-label="この施策を削除">×</button>
-      </div>
-      <table class="bs-it">
-        <thead><tr><th></th><th>今期</th><th>来期</th></tr></thead>
-        <tbody>
-          <tr><td>外部費用（万円）</td><td>${cell("extNow", "空欄可")}</td><td>${cell("ext")}</td></tr>
-          <tr><td>時間（時間／年）</td><td class="na">―</td><td>${cell("hours")}</td></tr>
-          <tr><td>リード数（件）</td><td>${cell("leadNow", "空欄可")}</td><td>${cell("lead")}</td></tr>
-        </tbody>
-      </table>
-    </div>`;
-  }
-  function renderRows() {
-    rowsEl.innerHTML = state.rows.map(rowHtml).join("");
-  }
-
-  rowsEl.addEventListener("input", (e) => {
-    const t = e.target;
-    if (!(t instanceof HTMLInputElement) || t.dataset.i === undefined) return;
-    const r = state.rows[Number(t.dataset.i)];
-    if (!r) return;
-    r[t.dataset.f] = t.dataset.f === "name" ? t.value : num(t.value);
-    edited();
-  });
-  rowsEl.addEventListener("click", (e) => {
-    const t = e.target instanceof Element ? e.target.closest("button") : null;
-    if (!t) return;
-    if (t.dataset.kind) {
-      state.rows[Number(t.dataset.i)].kind = t.dataset.kind;
-      renderRows();
-      edited();
-    } else if (t.dataset.del !== undefined) {
-      state.rows.splice(Number(t.dataset.del), 1);
-      renderRows();
-      edited();
-    }
-  });
-  $("bs-add").addEventListener("click", () => {
-    state.rows.push(emptyRow(state.rows.length + 1));
-    renderRows();
-    edited();
-    const names = rowsEl.querySelectorAll(".bs-ini-name");
-    const last = names[names.length - 1];
-    if (last instanceof HTMLInputElement) { last.focus(); last.select(); }
-  });
-
-  // ===== 人件費の行 =====
-  const laborComputed = (l) => (l.hours !== null && l.yen !== null ? laborFromHours(l.hours, l.yen) : null);
-  const laborValue = (l) => {
-    const c = laborComputed(l);
-    return c !== null ? c : l.amount || 0;
-  };
-  function laborHtml(l, i) {
-    const c = laborComputed(l);
-    const f = (k, unit, label, step = "1") => `<label class="bs-field"><span class="bs-lb">${label}</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="${step}" data-li="${i}" data-lf="${k}" value="${v(l[k])}" /><span>${unit}</span></span></label>`;
-    return `<div class="bs-lab">
-      <div class="bs-lab-h">
-        <input class="bs-ini-name" type="text" data-li="${i}" data-lf="role" value="${esc(l.role)}" placeholder="役割（例：マーケ担当）" aria-label="役割" />
-        <button type="button" class="bs-del" data-ldel="${i}" aria-label="この行を削除">×</button>
-      </div>
-      <div class="bs-lab-g">
-        ${f("hours", "時間", "年間の時間")}
-        ${f("yen", "円", "時間単価")}
-        <label class="bs-field"><span class="bs-lb">人件費</span><span class="bs-ip"><input type="number" inputmode="decimal" min="0" step="1" data-li="${i}" data-lf="amount" value="${c !== null ? c : v(l.amount)}" ${c !== null ? "readonly" : ""} /><span>万円</span></span></label>
-      </div>
-    </div>`;
-  }
-  function renderLabor() {
-    laborEl.innerHTML = state.labor.map(laborHtml).join("");
-  }
-  laborEl.addEventListener("input", (e) => {
-    const t = e.target;
-    if (!(t instanceof HTMLInputElement) || t.dataset.li === undefined) return;
-    const i = Number(t.dataset.li);
-    const l = state.labor[i];
-    if (!l) return;
-    const k = t.dataset.lf;
-    if (k === "role") l.role = t.value;
-    else l[k] = num(t.value);
-    if (k === "hours" || k === "yen") {
-      const amountEl = laborEl.querySelector(`input[data-li="${i}"][data-lf="amount"]`);
-      const c = laborComputed(l);
-      if (amountEl instanceof HTMLInputElement) {
-        amountEl.readOnly = c !== null;
-        amountEl.value = c !== null ? String(c) : String(v(l.amount));
-      }
-    }
-    edited();
-  });
-  laborEl.addEventListener("click", (e) => {
-    const t = e.target instanceof Element ? e.target.closest("button[data-ldel]") : null;
-    if (!t) return;
-    state.labor.splice(Number(t.dataset.ldel), 1);
-    renderLabor();
-    edited();
-  });
-  $("bs-labor-add").addEventListener("click", () => {
-    state.labor.push(emptyLabor());
-    renderLabor();
-    edited();
-    const roles = laborEl.querySelectorAll(".bs-ini-name");
-    const last = roles[roles.length - 1];
-    if (last instanceof HTMLInputElement) last.focus();
-  });
-  salesEl.addEventListener("change", edited);
-
-  // ===== 1つだけの欄・チップ =====
-  scalarInputs.forEach((el) => el.addEventListener("input", edited));
-  function setChips(groupId, attr, value) {
-    $(groupId).querySelectorAll(".bs-chip").forEach((b) => b.setAttribute("aria-checked", String(b.getAttribute(attr) === value)));
-  }
-  $("bs-stage").addEventListener("click", (e) => {
-    const b = e.target instanceof Element ? e.target.closest("[data-stage]") : null;
-    if (!b) return;
-    state.stage = b.getAttribute("data-stage");
-    setChips("bs-stage", "data-stage", state.stage);
-    edited();
-  });
-  $("bs-scenario").addEventListener("click", (e) => {
-    const b = e.target instanceof Element ? e.target.closest("[data-sc]") : null;
-    if (!b) return;
-    state.scenario = b.getAttribute("data-sc");
-    setChips("bs-scenario", "data-sc", state.scenario);
-    update();
-  });
-
-  function readScalars() {
-    const o = {};
-    scalarInputs.forEach((el) => { o[el.dataset.k] = num(el.value); });
-    return o;
-  }
-  function load(data, isExample) {
-    scalarInputs.forEach((el) => { const x = data[el.dataset.k]; el.value = x === null || x === undefined ? "" : String(x); });
-    state.stage = data.stage || "growth";
-    state.rows = (data.rows || []).map((r) => ({ ...r }));
-    state.labor = (data.labor || []).map((l) => ({ ...l }));
-    state.isExample = isExample;
-    salesEl.checked = !!data.salesSupport;
-    setChips("bs-stage", "data-stage", state.stage);
-    renderRows();
-    renderLabor();
-    checked = false;
-    document.querySelectorAll(".bs-invalid").forEach((el) => el.classList.remove("bs-invalid"));
-    $("bs-err").hidden = true;
-    update();
-  }
-  function edited() {
-    state.isExample = false;
-    update();
-  }
-
-  $("bs-example").addEventListener("click", () => load(EXAMPLE, true));
-  const clearBtn = $("bs-clear");
-  let clearTimer = 0;
-  clearBtn.addEventListener("click", () => {
-    if (clearBtn.dataset.armed !== "1") {
-      clearBtn.dataset.armed = "1";
-      clearBtn.textContent = "もう一度押すと消えます";
-      clearTimeout(clearTimer);
-      clearTimer = window.setTimeout(() => { clearBtn.dataset.armed = ""; clearBtn.textContent = "入力をすべて消す"; }, 4000);
-      return;
-    }
-    clearTimeout(clearTimer);
-    clearBtn.dataset.armed = "";
-    clearBtn.textContent = "入力をすべて消す";
-    load({ stage: "growth", rows: [emptyRow(1)], labor: [emptyLabor()], salesSupport: false }, false);
-  });
-
-  // ===== 必須チェック（ボタンを押したあと、入力のたびに赤枠を付け直す） =====
-  const REQUIRED = [
-    ["price", "平均単価", "pos"], ["margin", "粗利率", "pos"], ["years", "取り返す年数", "pos"],
-    ["target", "全社の売上目標", "pos"], ["mktRatio", "マーケ経由の割合", "pos"],
-    ["nowLeads", "今期のリード数", "pos"], ["nowDeals", "今期の商談数", "pos"],
-    ["nowWins", "今期の受注数", "pos"], ["nowLosses", "今期の失注数", "zero"],
-  ];
-  const okValue = (x, kind) => x !== null && (kind === "pos" ? x > 0 : x >= 0);
-  let checked = false;
-  const blank = (el) => el.value.trim() === "" || !isFinite(Number(el.value)) || Number(el.value) < 0;
-  function markInvalid() {
-    const bad = [];
-    const s = readScalars();
-    const conflict = new Set(countErrors(s).fields);
-    scalarInputs.forEach((el) => {
-      const req = REQUIRED.find(([k]) => k === el.dataset.k);
-      const ng = (req && !okValue(num(el.value), req[2])) || conflict.has(el.dataset.k) || (el.value !== "" && Number(el.value) < 0);
-      el.closest(".bs-ip").classList.toggle("bs-invalid", !!ng);
-      if (ng) bad.push(el);
-    });
-    rowsEl.querySelectorAll('input[data-f="ext"], input[data-f="hours"], input[data-f="lead"]').forEach((el) => {
-      const ng = blank(el);
-      el.classList.toggle("bs-invalid", ng);
-      if (ng) bad.push(el);
-    });
-    $("bs-err").hidden = bad.length === 0;
-    return bad;
-  }
-  // 今期の件数の矛盾：商談数＞リード数、受注数＋失注数＞商談数
-  function countErrors(s) {
-    const msgs = [];
-    const fields = [];
-    if (s.nowDeals !== null && s.nowLeads !== null && s.nowDeals > s.nowLeads) {
-      msgs.push("今期の商談数がリード数を超えています");
-      fields.push("nowDeals");
-    }
-    if (s.nowWins !== null && s.nowDeals !== null && (s.nowWins + (s.nowLosses || 0)) > s.nowDeals) {
-      msgs.push("今期の受注数＋失注数が商談数を超えています");
-      fields.push("nowWins", "nowLosses");
-    }
-    return { msgs, fields };
-  }
-  $("bs-run").addEventListener("click", () => {
-    checked = true;
-    update();
-    const bad = markInvalid();
-    if (bad.length) {
-      bad[0].focus({ preventScroll: true });
-      bad[0].scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-    $("bs-report").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  $("bs-print").addEventListener("click", () => window.print());
-
-  // ===== 計算 =====
-  // 結論のカード（逆算の受注件数）とシナリオ（ROUND(計画リード×率×率)）の両方を出す
-  function computeAll(s, rows, laborTotal) {
-    const margin = s.margin / 100;
-    const dr = dealRate(s.nowDeals, s.nowLeads);
-    const wr = winRateSettled(s.nowWins, s.nowLosses || 0);
-    const alloc = allocateLabor(laborTotal, rows.map((r) => r.hours || 0));
-    const lines = rows.map((r, i) => {
-      const lab = alloc ? alloc[i] : 0;
-      const cost = (r.ext || 0) + lab;
-      return { r, ext: r.ext || 0, lab, cost, lead: r.lead || 0, cpl: cpl(cost, r.lead || 0) };
-    });
-    const ext = lines.reduce((a, x) => a + x.ext, 0);
-    const lab = lines.reduce((a, x) => a + x.lab, 0);
-    const total = ext + lab;
-    const planLeads = lines.reduce((a, x) => a + x.lead, 0);
-    const mGross = monthlyGross(s.price, margin);
-    const limit = cacLimit(s.price, margin, s.years);
-    // 結論（逆算の受注件数）
-    const bc = backcast(s.target, s.mktRatio / 100, s.price, dr, wr);
-    const revenue = bc.wins * s.price;
-    const cacV = cac(total, bc.wins);
-    const main = { wins: bc.wins, revenue, cac: cacV, payback: paybackMonths(cacV, mGross), roi: roi(revenue, margin, total) };
-    // シナリオ
-    const sc = {};
-    for (const [key, def] of Object.entries(SCENARIOS)) {
-      const o = scenarioRate(dr, def.factor);
-      const w = scenarioRate(wr, def.factor);
-      const need = backcast(s.target, s.mktRatio / 100, s.price, o, w);
-      const wins = Math.round(clean(planLeads * o * w));
-      const c = cac(total, wins);
-      const acpl = allowableCpl(limit, o, w);
-      sc[key] = {
-        key, label: def.label, o, w, need, wins, acpl,
-        cac: c, payback: paybackMonths(c, mGross), roi: wins > 0 ? roi(wins * s.price, margin, total) : null,
-        judgments: lines.map((x) => judge(x.cpl, acpl)),
-      };
-    }
-    return { margin, dr, wr, alloc, lines, ext, lab, total, planLeads, mGross, limit, bc, main, sc };
-  }
-
-  function sumNow(rows, f) {
-    const vals = rows.map((r) => r[f]).filter((x) => x !== null && x !== undefined);
-    return vals.length ? vals.reduce((a, x) => a + x, 0) : null;
-  }
-
-  function update() {
-    if (checked) markInvalid();
-    const s = readScalars();
-    const rows = state.rows;
-    const laborTotal = state.labor.reduce((a, l) => a + laborValue(l), 0);
-    $("r-date").textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
-    $("r-sub").textContent = (state.isExample ? "記入例：架空の会社（基本モデル）の成長期・" : "") + "今期の実績の率から逆算・金額は万円・費用は外部費用＋人件費";
-
-    // 今期の率（入力欄の下）
-    const dr0 = s.nowLeads > 0 && s.nowDeals !== null ? dealRate(s.nowDeals, s.nowLeads) : null;
-    const wr0 = s.nowWins !== null && s.nowLosses !== null ? winRateSettled(s.nowWins, s.nowLosses) : null;
-    $("bs-rates").textContent = dr0 === null && wr0 === null ? "" :
-      `商談化率 ${dr0 === null ? NA : fmtRate1(dr0)}　受注率 ${wr0 === null ? NA : fmtRate1(wr0)}`;
-
-    // 未入力・エラー
-    const missing = REQUIRED.filter(([k, , kind]) => !okValue(s[k], kind)).map(([, l]) => l);
-    if (!rows.some((r) => (r.ext || 0) > 0 || (r.hours || 0) > 0)) missing.push("施策の来期の外部費用・時間");
-    if (!rows.some((r) => (r.lead || 0) > 0)) missing.push("施策の来期のリード数");
-    const errors = countErrors(s).msgs;
-    const hoursSum = rows.reduce((a, r) => a + (r.hours || 0), 0);
-    if (laborTotal > 0 && !(hoursSum > 0)) errors.push("人件費を施策に配れません。施策の時間を入れてください");
-    const empty = $("r-empty");
-    const body = $("r-body");
-    if (missing.length || errors.length) {
-      empty.hidden = false;
-      empty.innerHTML = (missing.length ? `次の項目を入れると、計画書ができあがります<br>${missing.map(esc).join("・")}` : "") +
-        (errors.length ? `${missing.length ? "<br><br>" : ""}${errors.map(esc).join("<br>")}` : "");
-      body.hidden = true;
-      return;
-    }
-    empty.hidden = true;
-    body.hidden = false;
-
-    const c = computeAll(s, rows, laborTotal);
-    const cur = c.sc[state.scenario];
-    const yearsMonths = s.years * 12;
-
-    // --- 黒い枠（結論：逆算の受注件数） ---
-    $("r-payback").textContent = fmt1(c.main.payback);
-    const inYears = c.main.payback !== null && clean(c.main.payback) <= clean(yearsMonths);
-    $("r-payback-s").innerHTML = `取り返す年数 ${fmt1(s.years).replace(/\.0$/, "")}年＝${fmt1(yearsMonths).replace(/\.0$/, "")}か月` + (c.main.payback === null ? "" : inYears ? tag("ok", "以内") : tag("ng", "超える"));
-    $("r-cac").textContent = fmtMan(c.main.cac);
-    $("r-cac-s").innerHTML = `CACの上限 ${fmtMan(c.limit)}万円` + (c.main.cac === null ? "" : judge(c.main.cac, c.limit) === "ok" ? tag("ok", "上限内") : tag("ng", "上限超え"));
-    $("r-roi").textContent = fmtPct(c.main.roi);
-    $("r-base").textContent = `受注 ${fmtMan(c.main.wins)}件・受注金額 ${fmtMan(c.main.revenue)}万円（逆算の受注件数×平均単価${fmtMan(s.price)}）・1社あたりの月の粗利 ${fmt1(c.mGross)}万円`;
-    $("r-total").textContent = fmtMan(c.total);
-    $("r-total-s").textContent = `外部 ${fmtMan(c.ext)} ／ 人件費 ${fmtMan(c.lab)}`;
-    if (s.cap !== null && s.cap > 0) {
-      const diff = s.cap - c.total;
-      const within = clean(diff) >= 0;
-      $("r-cap").innerHTML = `${fmtMan(Math.abs(diff))}<small>万円</small>` + (within ? tag("ok", "上限内") : tag("ng", "上限超え"));
-      $("r-cap-s").textContent = `上限 ${fmtMan(s.cap)}万円` + (within ? "" : `（${fmtMan(-diff)}万円 超えている）`);
-    } else {
-      $("r-cap").textContent = NA;
-      $("r-cap-s").textContent = "上限は未入力";
-    }
-    $("r-acpl").textContent = fmt1(cur.acpl);
-    $("r-acpl-s").textContent = `CACの上限×商談化率${fmtPct(cur.o)}×受注率${fmtPct(cur.w)}`;
-
-    // --- 逆算 ---
-    $("r-flow-sc").textContent = `${cur.label}シナリオの率`;
-    $("r-mktsales").textContent = fmtMan(c.bc.mktSales);
-    $("r-mktsales-s").textContent = `万円（${fmtMan(s.target)}×${parseFloat(s.mktRatio.toFixed(2))}%）`;
-    const gl = [];
-    if (s.nowSales > 0) gl.push(`全社の売上 今期 ${fmtMan(s.nowSales)} → 来期 ${fmtMan(s.target)}（${growth(s.nowSales, s.target)}）`);
-    if (s.nowMktSales > 0) gl.push(`マーケ経由の売上 今期 ${fmtMan(s.nowMktSales)} → 来期 ${fmtMan(c.bc.mktSales)}（${growth(s.nowMktSales, c.bc.mktSales)}）`);
-    $("r-growth").innerHTML = gl.map(esc).join("<br>");
-    $("r-won").textContent = fmtMan(cur.need.wins);
-    $("r-won-s").textContent = `÷平均単価${fmtMan(s.price)}`;
-    $("r-opp").textContent = fmtMan(cur.need.deals);
-    $("r-opp-s").textContent = `÷受注率${fmtPct(cur.w)}`;
-    $("r-lead").textContent = fmtMan(cur.need.leads);
-    $("r-lead-s").textContent = `÷商談化率${fmtPct(cur.o)}`;
-    const leadGap = c.planLeads - cur.need.leads;
-    $("r-leadcheck").innerHTML = `来期の計画リード数の合計 <b>${fmtMan(c.planLeads)}件</b>（必要数 ${fmtMan(cur.need.leads)}件）`;
-    $("r-leadtag").innerHTML = leadGap >= 0 ? tag("ok", "足りる") : tag("ng", `${fmtMan(-leadGap)}件不足`);
-
-    // --- 費用 ---
-    const extNow = sumNow(rows, "extNow");
-    const labNow = s.laborNow;
-    const totNow = extNow === null && labNow === null ? null : (extNow || 0) + (labNow || 0);
-    const costRow = (label, now, next, cls) =>
-      `<tr${cls ? ` class="${cls}"` : ""}><td${cls ? "" : ' class="n"'}>${label}</td><td${now === null ? ' class="na"' : ""}>${fmtMan(now)}</td><td>${fmtMan(next)}</td><td${now === null ? ' class="na"' : ""}>${now === null ? NA : fmtSigned(next - now)}</td></tr>`;
-    $("r-cost").innerHTML = costRow("外部費用", extNow, c.ext) + costRow("人件費", labNow, c.lab) + costRow("合計", totNow, c.total, "tot");
-
-    // --- 防衛：攻撃（費用合計） ---
-    const defCost = c.lines.filter((x) => x.r.kind === "def").reduce((a, x) => a + x.cost, 0);
-    const attCost = c.total - defCost;
-    const defPct = c.total > 0 ? Math.round(clean((defCost / c.total) * 100)) : 0;
-    const attPct = 100 - defPct;
-    const st = STAGES[state.stage];
-    $("r-ratio").innerHTML =
-      (defPct > 0 ? `<div style="flex:${defPct};background:#0b0b12">防衛 ${defPct}%（${fmtMan(defCost)}）</div>` : "") +
-      (attPct > 0 ? `<div style="flex:${attPct};background:#737373">攻撃 ${attPct}%（${fmtMan(attCost)}）</div>` : "");
-    $("r-ratio-t").innerHTML = `<div style="flex:${st.def};background:#bfbfbf"></div><div style="flex:${st.att};background:#d9d9d9"></div>`;
-    const pt = defPct - st.def * 10;
-    const ratioMsg = Math.abs(pt) <= 5 ? "ほぼ目安どおり" : `防衛が目安より${Math.abs(pt)}ポイント${pt > 0 ? "多い" : "少ない"}`;
-    $("r-ratio-s").textContent = `上：来期の計画　下：目安（${st.label} ${st.def}：${st.att}）　→ ${ratioMsg}`;
-
-    // --- 施策ごとのCPL ---
-    $("r-cpl-s").textContent = `判定は許容CPL ${fmt1(cur.acpl)}万円（${cur.label}）と比べる`;
-    const over = [];
-    let html = "";
-    c.lines.forEach((x, i) => {
-      const j = cur.judgments[i];
-      if (j === "over") over.push(x.r.name);
-      html += `<tr${j === "over" ? ' class="weak"' : ""}><td class="n">${esc(x.r.name || "（名前なし）")}</td><td class="c">${KIND_LABEL[x.r.kind]}</td><td>${fmtMan(x.ext)}</td><td>${fmtMan(x.lab)}</td><td>${fmtMan(x.cost)}</td><td${x.lead > 0 ? "" : ' class="na"'}>${x.lead > 0 ? fmtMan(x.lead) : NA}</td><td${x.cpl === null ? ' class="na"' : ""}>${fmt1(x.cpl)}</td><td class="c">${judgeTag(j)}</td></tr>`;
-    });
-    html += `<tr class="tot"><td>全体</td><td></td><td>${fmtMan(c.ext)}</td><td>${fmtMan(c.lab)}</td><td>${fmtMan(c.total)}</td><td>${fmtMan(c.planLeads)}</td><td>${fmt1(cpl(c.total, c.planLeads))}</td><td></td></tr>`;
-    $("r-ins").innerHTML = html;
-
-    // --- シナリオ ---
-    const all = Object.keys(SCENARIOS).map((k) => c.sc[k]);
-    $("r-sc").innerHTML = all.map((x) => {
-      const gap = c.planLeads - x.need.leads;
-      const overN = x.judgments.filter((j) => j === "over").length;
-      return `<div class="bs-scc${x.key === state.scenario ? " on" : ""}">
-        <p class="l">${x.label}（商談化率${fmtPct(x.o)}・受注率${fmtPct(x.w)}）</p>
-        <p class="v">受注 <b>${fmtMan(x.wins)}件</b>・CAC <b>${x.cac === null ? NA : fmtMan(x.cac) + "万円"}</b><br>
-        回収期間 <b>${x.payback === null ? NA : fmt1(x.payback) + "か月"}</b>・ROI <b>${fmtPct(x.roi)}</b><br>
-        必要リード ${fmtMan(x.need.leads)}件${gap >= 0 ? tag("ok", "足りる") : tag("ng", `${fmtMan(-gap)}件不足`)}<br>
-        許容CPL ${fmt1(x.acpl)}万円・上限超え ${overN}施策</p>
-      </div>`;
-    }).join("");
-
-    // --- 要確認 ---
-    const warns = [];
-    if (!(laborTotal > 0)) warns.push("人件費が入っていません。人件費を入れないと、CAC・ROIが実際より良く見えます");
-    if (!salesEl.checked) warns.push("営業が施策に協力する時間（展示会の立ち会い、事例の取材、登壇など）が人件費に入っているか確かめてください");
-    c.lines.forEach((x) => {
-      if (x.ext > 0 && !((x.r.hours || 0) > 0) && laborTotal > 0) warns.push(`${x.r.name}の人件費が0になります。この施策にかける時間を入れてください`);
-    });
-    $("r-warn-box").hidden = warns.length === 0;
-    $("r-warn").innerHTML = warns.map((w) => `<li>${esc(w)}</li>`).join("");
-
-    // --- 結び ---
-    const byCost = (k) => c.lines.filter((x) => x.r.kind === k && x.lead > 0).sort((a, b) => b.cost - a.cost).map((x) => x.r.name);
-    const defNames = byCost("def").slice(0, 2);
-    const attNames = byCost("att");
-    $("r-policy").textContent =
-      (defNames.length ? `防衛（${defNames.join("・")}）でリードの土台を守る。` : "") +
-      (attNames.length ? `攻撃（${attNames.length}施策・${fmtMan(attCost)}万円）は止める基準を決めて試す。` : "");
-    const pess = c.sc.pess;
-    const risks = [];
-    if (over.length) risks.push(`${over.join("・")}は許容CPLを超えている（${cur.label}）。費用を下げるかリードを増やす`);
-    const pessGap = c.planLeads - pess.need.leads;
-    risks.push(pessGap < 0 ? `悲観ではリードが${fmtMan(-pessGap)}件不足` : "悲観でもリードは足りる");
-    if (pess.payback !== null) risks.push(`悲観の回収期間は${fmt1(pess.payback)}か月（取り返す年数の${fmt1(yearsMonths).replace(/\.0$/, "")}か月${clean(pess.payback) <= clean(yearsMonths) ? "以内" : "を超える"}）`);
-    risks.push("期中に足りなければ追加予算の稟議で扱う");
-    $("r-risk").textContent = risks.join("。") + "。";
-    $("r-ask").textContent = `人件費を含めた来期の費用 ${fmtMan(c.total)}万円（外部 ${fmtMan(c.ext)}／人件費 ${fmtMan(c.lab)}）の承認。1社を獲得する費用（CAC）は${fmtMan(c.main.cac)}万円で、受注した会社の粗利で${fmt1(c.main.payback)}か月で取り返せる見込み。1年のROIは${fmtPct(c.main.roi)}。`;
-  }
-
-  setChips("bs-scenario", "data-sc", state.scenario);
-  load(EXAMPLE, true);
+  import "@/scripts/budget-checker/app";
 </script>

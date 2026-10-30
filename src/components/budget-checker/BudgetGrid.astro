@@ -3,6 +3,7 @@
 // 予算案診断キット・KPI妥当性診断キットの入力（左）と判定（右）。各キットの /input と見本のページ（/sample）で共通
 // kit＝キット（src/lib/planKits.ts）。KPI妥当性診断キットだけ、判定に「率は目安の範囲か」を出す
 // 動きは src/scripts/budget-checker/app.ts。sample＝見本のページ（ダウンロードの代わりにキットへのリンク、記入例・すべて消すはなし）
+// 2026-10-30：予算作成Kit（kit="make"）は「2. 今期の実績と、来期に必要な数」を足し、チャネルの有効リード数・商談数・受注数を自動配分（灰色、上書きすると水色・↺で戻す）にする
 // 2026-10-30：タブは「1 年間を入力 → 2 月別で調整」（どちらも黒、開いている方に黄色の線と✓）。ダウンロードは判定の枠の外に独立し、判定の上に置く
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import { KITS, type KitId } from "@/lib/planKits";
@@ -13,6 +14,17 @@ interface Props {
 }
 const { sample = false, kit: kitId = "budget" } = Astro.props;
 const kit = KITS[kitId];
+const MAKE = kitId === "make";
+const AUTO = new Set(["valid", "deals", "wins"]);
+const ACT = [
+  { key: "leads", label: "リード数" },
+  { key: "validRate", label: "有効リード率", rate: true },
+  { key: "valid", label: "有効リード数" },
+  { key: "dealRate", label: "商談化率", rate: true },
+  { key: "deals", label: "商談数" },
+  { key: "winRate", label: "受注率", rate: true },
+  { key: "wins", label: "受注数" },
+] as const;
 
 const PRE = [
   { key: "goal", label: "売上目標" },
@@ -70,7 +82,39 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
               </table>
             </div>
 
-            <h3 class="bk-st">2. チャネル別の計画（年間）</h3>
+            {
+              MAKE && (
+                <>
+                  <h3 class="bk-st">2. 今期の実績と、来期に必要な数</h3>
+                  <div class="bk-tw">
+                    <table class="bk-t">
+                      <thead>
+                        <tr><th class="bk-ch" />{ACT.map((a) => <th class={"rate" in a ? "c" : undefined}>{a.label}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="lb">今期の実績</td>
+                          {ACT.map((a) =>
+                            "rate" in a ? (
+                              <td class="calc" data-out={`act.${a.key}`}>—</td>
+                            ) : (
+                              <td class="in"><input name={`act.${a.key}`} type="number" inputmode="numeric" min="0" step="any" aria-label={`今期の${a.label}`} /></td>
+                            ),
+                          )}
+                        </tr>
+                        <tr class="sum">
+                          <td class="lb">来期に必要な数</td>
+                          {ACT.map((a) => ("rate" in a ? <td class="calc" /> : <td class="calc" data-out={`need.${a.key}`}>—</td>))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="bk-hint" id="bk-rate-n">受注数＝売上目標÷平均受注単価。そこから今期の率でさかのぼります。今期の実績が空欄なら、基本モデルの率（38%・40%・29%）を使います</p>
+                </>
+              )
+            }
+
+            <h3 class="bk-st">{MAKE ? "3" : "2"}. チャネル別の計画（年間）</h3>
             <div class="bk-tw">
               <table class="bk-t">
                 <thead>
@@ -81,9 +125,16 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
                     CHANNELS.map((name, i) => (
                       <tr>
                         <td class="lb">{name}</td>
-                        {FIELDS.map((k) => (
-                          <td class="in"><input name={`ch${i}.${k}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${FIELD_LABEL[k]}`} /></td>
-                        ))}
+                        {FIELDS.map((k) =>
+                          MAKE && AUTO.has(k) ? (
+                            <td class="in auto">
+                              <input name={`ch${i}.${k}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${FIELD_LABEL[k]}（自動。上書きできます）`} />
+                              <button type="button" class="bk-ovr-x" data-ovr={`${i}.${k}`} title="自動に戻す" aria-label={`${name}の${FIELD_LABEL[k]}を自動に戻す`}>↺</button>
+                            </td>
+                          ) : (
+                            <td class="in"><input name={`ch${i}.${k}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${FIELD_LABEL[k]}`} /></td>
+                          ),
+                        )}
                         <td class="calc" data-out={`cpl${i}`}>—</td>
                         <td class="calc" data-out={`cac${i}`}>—</td>
                       </tr>
@@ -95,10 +146,25 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
                     <td class="calc" data-out="total.cpl">—</td>
                     <td class="calc" data-out="total.cac">—</td>
                   </tr>
+                  {
+                    MAKE && (
+                      <tr class="sum">
+                        <td class="lb">必要との差</td>
+                        {(["leads", "valid", "deals", "wins"] as const).map((k) => <td class="calc" data-out={`diff.${k}`}>—</td>)}
+                        <td class="calc" colspan="4" />
+                      </tr>
+                    )
+                  }
                 </tbody>
               </table>
             </div>
-            <p class="bk-hint">水色＝入力　灰色＝自動計算　単位 万円　率は入れません（件数から出します）</p>
+            {
+              MAKE ? (
+                <p class="bk-hint">水色＝入力　灰色＝自動計算　単位 万円　有効リード数・商談数・受注数はリード数から今期の率で自動で配ります。上書きした欄は水色になり、↺で自動に戻せます</p>
+              ) : (
+                <p class="bk-hint">水色＝入力　灰色＝自動計算　単位 万円　率は入れません（件数から出します）</p>
+              )
+            }
           </div>
 
           <div id="bk-pane-m" role="tabpanel" hidden>
@@ -146,7 +212,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
             <p class="bk-remain" id="bk-remain" hidden></p>
             {
               sample ? (
-                <a class="bk-btn bk-dl" href={kit.path}>自分の{kit.subject}で診断する<span aria-hidden="true">→</span></a>
+                <a class="bk-btn bk-dl" href={kit.path}>{MAKE ? "自分の予算を作る" : `自分の${kit.subject}で診断する`}<span aria-hidden="true">→</span></a>
               ) : (
                 <button type="button" class="bk-btn bk-dl" id="bk-dl">{kit.doc}をダウンロード（Excel）</button>
               )
