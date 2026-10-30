@@ -20,7 +20,8 @@
 .bk-btn:disabled { opacity: 0.5; cursor: default; }
 .bk-btn2 { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--ink); background: var(--ink); color: #fff; font-weight: 700; font-size: 0.82rem; padding: 7px 14px; cursor: pointer; font-family: inherit; text-decoration: none; white-space: nowrap; }
 .bk-btn2:hover { opacity: 0.85; }
-.bk-btn-s { font-size: 0.8rem; padding: 6px 14px; }
+.bk-btn-o { display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); font: inherit; font-size: 0.8rem; font-weight: 800; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+.bk-btn-o:hover { background: var(--bg); }
 .bk-link { background: none; border: 0; padding: 0; font: inherit; font-size: 0.8rem; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .bk-err { margin-top: 10px !important; border: 1.5px solid var(--red); background: #fff; color: var(--red); font-weight: 700; padding: 9px 12px; font-size: 0.85rem; line-height: 1.6; }
 .bk-busy { margin-top: 10px !important; font-size: 0.88rem; font-weight: 700; }
