@@ -82,7 +82,7 @@ export const HOME_FOCUS = {
   resourceTypeLabel: "無料資料",
   resourceCtaLabel: "無料で資料をもらう",
   postTag: "記事",
-  resourceTag: "資料",
+  resourceTag: "無料資料",
   latestLabel: "このテーマの新着",
   latestCount: 3,
   categoryLinkLabel: "このテーマの記事・資料をすべて見る",
@@ -165,13 +165,13 @@ export const HOME_PDCA = {
 
 // ------------------------------------------------------------
 // 03 新着記事・資料（記事と資料をまぜて、自動で新しい順に count 件。ここは見出しまわりの文言だけ）
-// 資料の行は「資料」タグ・左列に形式（XLSX・PDFなど）・右端に↓・薄いグレーの背景で、記事と見分けられるようにしています。
+// 資料の行は「無料資料」タグ・左列に形式（XLSX・PDFなど）・右端に↓・薄いグレーの背景で、記事と見分けられるようにしています。
 // ------------------------------------------------------------
 export const HOME_LATEST = {
   eyebrow: "新着記事・資料",
   heading: "いまの実務に、必要な知識を。",
   count: 4,
-  resourceTag: "資料",
+  resourceTag: "無料資料",
   resourceMeta: "無料",
   allLink: { label: "Lab（記事・資料）をすべて見る", href: "/lab" },
 };

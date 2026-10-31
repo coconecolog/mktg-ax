@@ -80,7 +80,11 @@ const hasRight = section.resources.length > 0 || related.length > 0;
               {listItems.map((item, i) => (
                 <li data-item data-kind={item.kind} data-search={searchText(item)} data-extra={i >= visibleRows ? "" : undefined} hidden={i >= visibleRows} class="border-b border-neutral-300">
                   <a href={item.href} class="group flex items-center gap-4 py-4">
-                    <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">{item.kind === "resource" ? "無料資料" : "記事"}</span>
+                    {item.kind === "resource" ? (
+                      <span class="inline-flex shrink-0 items-center border border-ink-950 bg-ink-950 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">無料資料</span>
+                    ) : (
+                      <span class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
+                    )}
                     <span class="min-w-0 flex-1 text-sm font-medium leading-relaxed text-ink-950 group-hover:underline sm:text-[15px]">{item.title}</span>
                     <span aria-hidden="true" class="shrink-0 text-ink-950 transition-transform group-hover:translate-x-1">→</span>
                   </a>
@@ -121,7 +125,7 @@ const hasRight = section.resources.length > 0 || related.length > 0;
                 <span class="block aspect-video overflow-hidden bg-white">
                   <img src={featuredResource.thumbnail || DEFAULT_OG_IMAGE} alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                 </span>
-                <span class="mt-4 inline-flex w-fit items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">無料資料</span>
+                <span class="mt-4 inline-flex w-fit items-center border border-ink-950 bg-ink-950 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">無料資料</span>
                 <span class="mt-3 block text-lg font-bold leading-snug text-ink-950">{featuredResource.title}</span>
                 {featuredResource.description && <span class="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-600">{featuredResource.description}</span>}
                 <span aria-hidden="true" class="block min-h-5 flex-1"></span>
