@@ -39,10 +39,8 @@ for (const post of posts) {
   pages[`blog/${post.slug}`] = {
     title: post.title,
     description: post.description,
-    // public/配下のファイルはVite/Astroのアセット処理を通らないため、
-    // "/images/notion/xxx.jpg" のようなURLパスを "./public/images/notion/xxx.jpg"
-    // というファイルシステムパスに変換して渡す必要がある。
-    thumbnailFsPath: post.thumbnail ? `./public${post.thumbnail}` : undefined,
+    // 2026-11-01：記事のOGP画像は、サムネイルと同じ絵柄のPNG（fetch-notion で作成）を使う。
+    // ここで作る画像は、PNGが無いときの予備。サムネイルはSVGで背景に敷けないため、背景画像は使わない。
   };
 }
 

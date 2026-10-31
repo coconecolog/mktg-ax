@@ -26,6 +26,11 @@ export const HOME_HERO_TITLE_LINES = ["マーケティング責任者のため�
 export const SITE_DESCRIPTION =
   "直感と経験頼みから、本質を突く意思決定へ";
 
+// トップページの meta description（検索結果・SNSのシェアに出る説明文）。2026-11-01 追加。
+// SITE_DESCRIPTION（キャッチコピー）は20文字と短く、検索結果の説明として何のサイトかが伝わらないため、トップだけこちらを使う。
+export const HOME_META_DESCRIPTION =
+  `${SITE_NAME_WITH_KANA}は、中小企業のBtoBマーケティング責任者のための分析ツール＆情報メディアです。売上目標から年間予算表・KPI管理表を作るKit、予算案・KPI・施策の効果を診断するKit、実務の記事と資料を無料で提供しています。`;
+
 export const DEFAULT_OG_IMAGE = "/open-graph/default.png";
 
 // ヘッダーの「便利Kit」プルダウンに表示するKit一覧。

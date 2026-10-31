@@ -59,6 +59,8 @@ export interface Post {
   publishedAt: string;
   updatedAt: string;
   thumbnail: string | null;
+  /** サムネイルのPNG版（OGP・構造化データ用）。古いキャッシュや作成失敗時は無い。 */
+  ogImage?: string | null;
   blocks: BlockNode[];
 }
 

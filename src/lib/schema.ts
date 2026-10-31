@@ -31,37 +31,51 @@ function toIsoDateTime(value: string | null | undefined): string | undefined {
   return `${value}T00:00:00+09:00`;
 }
 
-export function buildArticleSchema(post: Post) {
-  const url = new URL(`/lab/blog/${post.slug}`, SITE_URL).toString();
-  const imageUrl = post.thumbnail ? new URL(post.thumbnail, SITE_URL).toString() : undefined;
+// 運営者（Organization）への参照。ロゴは ImageObject で渡す（Googleの記事のリッチリザルトの publisher.logo 向け）。
+function organizationRef() {
+  return {
+    "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
+    name: SITE_NAME,
+    alternateName: SITE_NAME_KANA,
+    url: `${SITE_URL}/`,
+    logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png`, width: 512, height: 512 },
+  };
+}
 
-return {
-  "@context": "https://schema.org",
-  "@type": "Article",
-  headline: post.title,
-  description: post.description,
-  ...(imageUrl ? { image: [imageUrl] } : {}),
-  datePublished: toIsoDateTime(post.publishedAt),
-  dateModified: toIsoDateTime(post.updatedAt),
-  author: {
-    "@type": "Organization",
-    "@id": `${SITE_URL}/#organization`,
-    name: SITE_NAME,
-    alternateName: SITE_NAME_KANA,
-    url: SITE_URL,
-  },
-  publisher: {
-    "@type": "Organization",
-    "@id": `${SITE_URL}/#organization`,
-    name: SITE_NAME,
-    alternateName: SITE_NAME_KANA,
-    url: SITE_URL,
-  },
-  mainEntityOfPage: {
-    "@type": "WebPage",
-    "@id": url,
-  },
-};
+// 執筆者（Person）。執筆者ページ（/authors/{名前}）の ProfilePage の Person と同じ @id にそろえ、
+// 「誰が書いたか」を検索エンジン・生成AIに結びつける（E-E-A-T）。執筆者が無い記事は運営者を著者にする。
+export function personRef(authorName: string | null | undefined) {
+  if (!authorName) return organizationRef();
+  const url = new URL(`/authors/${encodeURIComponent(authorName.replaceAll("/", "／"))}`, SITE_URL).toString();
+  return { "@type": "Person", "@id": `${url}#person`, name: authorName, url };
+}
+
+export function buildArticleSchema(post: Post, imagePath?: string) {
+  const url = new URL(`/lab/blog/${post.slug}`, SITE_URL).toString();
+  // 構造化データの image はSVG非対応のため、PNG（OGP画像）を使う
+  const imageUrl = imagePath ? new URL(imagePath, SITE_URL).toString() : undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: post.title,
+    description: post.description,
+    ...(imageUrl ? { image: [imageUrl] } : {}),
+    datePublished: toIsoDateTime(post.publishedAt),
+    dateModified: toIsoDateTime(post.updatedAt),
+    inLanguage: "ja",
+    ...(post.category ? { articleSection: post.category } : {}),
+    ...(post.tags && post.tags.length > 0 ? { keywords: post.tags.join(",") } : {}),
+    author: personRef(post.author),
+    publisher: organizationRef(),
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": url,
+    },
+  };
 }
 
 // サイト全体の運営者情報(トップページに設置)。AIやGoogleに「このサイトが何者か」を伝える目的。
@@ -79,7 +93,7 @@ export function buildOrganizationSchema() {
       name: SITE_NAME,
       alternateName: SITE_NAME_KANA,
       url: homeUrl,
-      logo: `${SITE_URL}/icon-512.png`,
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png`, width: 512, height: 512 },
       description,
     },
     {
@@ -343,10 +357,9 @@ export function buildResourceSchema(params: {
     ...(tags.length > 0 ? { keywords: tags.join(",") } : {}),
     datePublished: toIsoDateTime(publishedAt),
     dateModified: toIsoDateTime(updatedAt),
-    author: authorName
-      ? { "@type": "Person", name: authorName }
-      : { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, alternateName: SITE_NAME_KANA, url: SITE_URL },
+    author: personRef(authorName),
     publisher: { "@id": `${SITE_URL}/#organization` },
+    isPartOf: { "@id": `${SITE_URL}/#website` },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
 }

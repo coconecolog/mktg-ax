@@ -24,7 +24,10 @@ interface Props {
 
 const { post } = Astro.props;
 const toc = buildToc(post.blocks);
-const articleSchema = buildArticleSchema(post);
+// OGP画像：サムネイルと同じ絵柄のPNG（fetch-notion で作成）。無ければ自動生成のOGP画像
+const ogImage = post.ogImage || `/open-graph/blog/${post.slug}.png`;
+const ogImageSize = post.ogImage ? { width: 1200, height: 675 } : { width: 1200, height: 630 };
+const articleSchema = buildArticleSchema(post, ogImage);
 const faqSchema = buildFaqSchema(post.blocks);
 // 本文中のタグ名（サイト内の全タグ）を、タグごとに最初の1箇所だけタグページへのリンクにする（src/lib/tagKeywordLinks.ts）。
 const bodyBlocks = autoLinkTagKeywords(post.blocks);
@@ -49,7 +52,9 @@ const relatedItems = post.category
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/lab" },
+  { name: "Lab（記事・資料）", href: "/lab" },
+  // カテゴリがある記事はカテゴリを挟む（サイトの階層を検索エンジンに伝える）
+  ...(post.category ? [{ name: post.category, href: getCategoryPath(post.category) }] : []),
   { name: post.title, href: `/lab/blog/${post.slug}` },
 ];
 
@@ -61,7 +66,9 @@ const dateLabel = (iso: string) =>
 <BaseLayout
   title={post.title}
   description={post.description}
-  ogImage={`/open-graph/blog/${post.slug}.png`}
+  ogImage={ogImage}
+  ogImageWidth={ogImageSize.width}
+  ogImageHeight={ogImageSize.height}
   jsonLd={faqSchema ? [articleSchema, faqSchema] : articleSchema}
   ogType="article"
   publishedTime={post.publishedAt}
@@ -187,7 +194,7 @@ const dateLabel = (iso: string) =>
               </div>
               <p class="mt-6 text-center">
                 <a href="/lab" class="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline">
-                  ライブラリ（記事・資料）一覧へ
+                  Lab（記事・資料）一覧へ
                 </a>
               </p>
             </div>

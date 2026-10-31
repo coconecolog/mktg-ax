@@ -11,6 +11,8 @@ interface Props {
   title: string;
   description: string;
   ogImage?: string;
+  ogImageWidth?: number;
+  ogImageHeight?: number;
   noindex?: boolean;
    jsonLd?: object | object[];
   // 正規URLを別ページに寄せたいときのサイト内パス（SEO.astroのcanonicalPathへそのまま渡す）
@@ -25,7 +27,7 @@ interface Props {
   modifiedTime?: string;
 }
 
-const { title, description, ogImage, noindex, jsonLd, pagefindIgnore, canonicalPath, ogType, publishedTime, modifiedTime } =
+const { title, description, ogImage, ogImageWidth, ogImageHeight, noindex, jsonLd, pagefindIgnore, canonicalPath, ogType, publishedTime, modifiedTime } =
   Astro.props;
 
 // /tools/xxx（ツール本体ページ。一覧の /tools は除く）には、各ページを個別に編集しなくても
@@ -48,6 +50,8 @@ const mergedJsonLd = toolSchema ? [...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd 
       title={title}
       description={description}
       ogImage={ogImage}
+      ogImageWidth={ogImageWidth}
+      ogImageHeight={ogImageHeight}
       noindex={noindex}
       jsonLd={mergedJsonLd}
       canonicalPath={canonicalPath}

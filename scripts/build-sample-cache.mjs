@@ -8,7 +8,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { makeAnchorFactory, transformBlocks, extractExcerpt } from "./lib/transform.mjs";
+import { makeAnchorFactory, transformBlocks, extractExcerpt, generateFallbackThumbnail, thumbnailPngPath } from "./lib/transform.mjs";
 
 function rt(text, annotations = {}) {
   return {
@@ -132,6 +132,10 @@ async function main() {
   const blocks = await transformBlocks(rawBlocks, makeAnchor, "sample-page");
   const description = extractExcerpt(blocks);
 
+  // 2件目は自動生成サムネイル（SVG＋OGP用PNG）の確認用
+  const sampleThumb = await generateFallbackThumbnail("sample-page-2", { dataUri: null, colorKey: "default" }, "2件目のサンプル記事", "一覧・タグ確認用");
+  const sampleOgImage = await thumbnailPngPath(sampleThumb);
+
   const posts = [
     {
       id: "sample-page-1",
@@ -152,7 +156,8 @@ async function main() {
       tags: ["サンプル"],
       publishedAt: "2026-07-15T00:00:00.000Z",
       updatedAt: "2026-07-15T00:00:00.000Z",
-      thumbnail: null,
+      thumbnail: sampleThumb,
+      ogImage: sampleOgImage,
       blocks: [block("paragraph", { rich_text: [rt("本文サンプルです。")] })].map((b) => ({
         id: b.id,
         type: b.type,
