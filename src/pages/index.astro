@@ -14,7 +14,7 @@ import {
   getSubcategoryPath,
 } from "@/lib/posts";
 import { getResourceById, getResourceBySlug } from "@/lib/resources";
-import { SITE_NAME, SITE_DESCRIPTION } from "@/consts";
+import { HOME_TITLE, SITE_DESCRIPTION } from "@/consts";
 import { buildOrganizationSchema } from "@/lib/schema";
 import { HOME_HERO, HOME_STANDARDS, HOME_FOCUS, HOME_ISSUES, HOME_PDCA, HOME_LATEST, HOME_REQUEST } from "@/data/home";
 
@@ -99,7 +99,7 @@ const latestPosts = getLibraryItems("all")
   .map((item) => ({ ...item, readTime: readTimeOf(item.metaLabel) }));
 ---
 
-<BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore jsonLd={organizationSchema}>
+<BaseLayout title={HOME_TITLE} description={SITE_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore jsonLd={organizationSchema}>
   <div class="bg-white text-ink-950">
     {/* ===== ヒーロー ===== */}
     <section>

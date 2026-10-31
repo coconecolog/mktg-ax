@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "@/consts";
+import { SITE_NAME, SITE_NAME_KANA, SITE_NAME_WITH_KANA, SITE_TAGLINE, SITE_URL, SITE_DESCRIPTION } from "@/consts";
 import type { BlockNode, Post } from "./types";
 
 export interface BreadcrumbEntry {
@@ -45,12 +45,16 @@ return {
   dateModified: toIsoDateTime(post.updatedAt),
   author: {
     "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
+    alternateName: SITE_NAME_KANA,
     url: SITE_URL,
   },
   publisher: {
     "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
+    alternateName: SITE_NAME_KANA,
     url: SITE_URL,
   },
   mainEntityOfPage: {
@@ -61,26 +65,35 @@ return {
 }
 
 // サイト全体の運営者情報(トップページに設置)。AIやGoogleに「このサイトが何者か」を伝える目的。
+// alternateName に読み方（ミーアキットラボ）を入れる。GoogleはトップページのWebSiteの name / alternateName を
+// サイト名の判断に使うため、「ミールキットラボ」と読まれるのを防ぐ（2026-10-31）。
+// url はトップページの正規URL（末尾スラッシュあり）にそろえる。
 export function buildOrganizationSchema() {
+  const homeUrl = `${SITE_URL}/`;
+  const description = `${SITE_NAME_WITH_KANA}は、${SITE_TAGLINE.replace(/\s+/g, "")}です。${SITE_DESCRIPTION}。`;
   return [
     {
       "@context": "https://schema.org",
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: SITE_NAME,
-      url: SITE_URL,
-      description: SITE_DESCRIPTION,
+      alternateName: SITE_NAME_KANA,
+      url: homeUrl,
+      logo: `${SITE_URL}/icon-512.png`,
+      description,
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       name: SITE_NAME,
-      url: SITE_URL,
-      description: SITE_DESCRIPTION,
+      alternateName: [SITE_NAME_KANA, "Meer Kit Lab"],
+      url: homeUrl,
+      inLanguage: "ja",
+      description,
       publisher: { "@id": `${SITE_URL}/#organization` },
     },
-    ];
+  ];
 }
 
 // ---- FAQPageスキーマ自動生成 ----
@@ -332,7 +345,7 @@ export function buildResourceSchema(params: {
     dateModified: toIsoDateTime(updatedAt),
     author: authorName
       ? { "@type": "Person", name: authorName }
-      : { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+      : { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, alternateName: SITE_NAME_KANA, url: SITE_URL },
     publisher: { "@id": `${SITE_URL}/#organization` },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
