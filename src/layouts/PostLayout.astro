@@ -63,6 +63,9 @@ const dateLabel = (iso: string) =>
   description={post.description}
   ogImage={`/open-graph/blog/${post.slug}.png`}
   jsonLd={faqSchema ? [articleSchema, faqSchema] : articleSchema}
+  ogType="article"
+  publishedTime={post.publishedAt}
+  modifiedTime={post.updatedAt}
 >
   <Breadcrumb items={breadcrumbItems} />
 
