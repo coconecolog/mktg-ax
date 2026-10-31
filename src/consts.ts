@@ -4,6 +4,19 @@
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || "https://meerkitlab.com";
 
 export const SITE_NAME = "MeerKitLab";
+// サイト名の読み方（2026-10-31）。検索エンジン・生成AI・読者に「ミーアキットラボ」と読んでもらうため、
+// 構造化データ（alternateName）・トップのtitle・ロゴ下・フッター・llms.txt・OGP画像で同じ表記を使う。
+// 「ミールキットラボ」と読まれないよう、表記を変えるときはここだけを直す。
+export const SITE_NAME_KANA = "ミーアキットラボ";
+export const SITE_NAME_WITH_KANA = `${SITE_NAME}（${SITE_NAME_KANA}）`;
+// 名前の由来（サービスについて・llms.txtで使う）。Meer＝ミーアキャット、Kit＝ツール（Kit）、Lab＝記事・資料（Lab）
+export const SITE_NAME_PARTS = [
+  { en: "Meer", kana: "ミーア", meaning: "ミーアキャット" },
+  { en: "Kit", kana: "キット", meaning: "ツール" },
+  { en: "Lab", kana: "ラボ", meaning: "記事・資料" },
+] as const;
+// トップページのtitle（Googleのサイト名・検索結果に出る）。他のページは「〇〇 | MeerKitLab」のまま。
+export const HOME_TITLE = `${SITE_NAME_WITH_KANA}｜BtoBマーケティングの分析ツール＆情報メディア`;
 // 修正後（SITE_TAGLINEはFooter・OGP画像でも使うので変更しない。
 // トップページ見出し専用に、改行位置を配列で明示できる定数を追加）
 export const SITE_TAGLINE = "マーケティング責任者のための 分析ツール&情報メディア";

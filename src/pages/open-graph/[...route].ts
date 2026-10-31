@@ -4,7 +4,7 @@
 // （Google Fonts「Noto Sans JP」。OFLライセンス）。
 import { OGImageRoute } from "astro-og-canvas";
 import { getAllPosts } from "@/lib/posts";
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/consts";
+import { SITE_NAME, SITE_NAME_KANA, SITE_TAGLINE, SITE_DESCRIPTION } from "@/consts";
 
 const posts = getAllPosts();
 
@@ -22,7 +22,7 @@ type PageEntry = {
 };
 
 const pages: Record<string, PageEntry> = {
-  default: { title: SITE_NAME, description: SITE_TAGLINE },
+  default: { title: SITE_NAME, description: `${SITE_NAME_KANA}\n\n${SITE_TAGLINE}` },
   tools: { title: "便利ツール", description: SITE_DESCRIPTION },
   "tools/roas-cac-simulator": { title: "広告費用対効果（ROAS/CAC）シミュレーター", description: SITE_DESCRIPTION },
   "tools/seo-aeo-aio-check": { title: "簡易SEO・AEO・AIO診断チェックリスト", description: SITE_DESCRIPTION },

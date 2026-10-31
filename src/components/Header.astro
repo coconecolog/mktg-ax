@@ -1,5 +1,5 @@
 ---
-import { NAV_LINKS, SITE_NAME } from "@/consts";
+import { NAV_LINKS, SITE_NAME, SITE_NAME_KANA, SITE_NAME_WITH_KANA } from "@/consts";
 
 // 「キット一覧」のプルダウンは廃止（2026-09-20）。子メニューを持たない通常のリンクとして表示する
 // （キット一覧は /tools ページ、DB連動）。プルダウンを復活させたい場合は children に getToolNavItems()（@/lib/tools）を渡す。
@@ -13,9 +13,11 @@ function isActive(href: string) {
 ---
 
 <header class="sticky top-0 z-40 border-b border-neutral-100 bg-white/90 backdrop-blur">
-  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-    <a href="/" class="flex items-center">
-      <img src="/images/logo/meerkitlab.svg" alt="MeerKitLab" width="143" height="32" class="h-8 w-auto" />
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+    {/* ロゴの下に読み方（ミーアキットラボ）を小さく出す（2026-10-31）。ロゴ画像はそのまま。 */}
+    <a href="/" class="flex flex-col items-start" aria-label={`${SITE_NAME_WITH_KANA} トップへ`}>
+      <img src="/images/logo/meerkitlab.svg" alt={SITE_NAME} width="143" height="32" class="h-8 w-auto" />
+      <span class="mt-0.5 pl-px text-[10px] leading-none tracking-[0.18em] text-neutral-500" aria-hidden="true">{SITE_NAME_KANA}</span>
     </a>
 
     <nav class="hidden items-center gap-1 md:flex">

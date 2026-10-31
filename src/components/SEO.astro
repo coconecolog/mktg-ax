@@ -14,7 +14,9 @@ interface Props {
 
 const { title, description, ogImage, noindex = false, jsonLd, canonicalPath: canonicalPathProp } = Astro.props;
 
-const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;
+// 末尾にサイト名を付ける。title がすでにサイト名を含む場合（トップページの「MeerKitLab（ミーアキットラボ）｜…」や、
+// Kitページの「…｜MeerKitLab」）は付けない（「…｜MeerKitLab | MeerKitLab」と二重になるのを防ぐ）。
+const pageTitle = title.startsWith(SITE_NAME) || /[|｜]\s*MeerKitLab\s*$/.test(title) ? title : `${title} | ${SITE_NAME}`;
 // canonical は常に「スラッシュなし・.htmlなし」に正規化する（トップ "/" のみ例外）
 const canonicalPath =
   canonicalPathProp ||
