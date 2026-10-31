@@ -37,7 +37,7 @@ const jsonLd = faqSchema ? [resourceSchema, faqSchema] : resourceSchema;
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "ライブラリ（記事・資料）", href: "/lab" },
+  { name: "Lab（記事・資料）", href: "/lab" },
   { name: resource.title, href: `/lab/whitepapers/${resource.slug}` },
 ];
 
@@ -56,7 +56,12 @@ const thanksCategorySegment = resource.category ? encodeURIComponent(getCategory
 const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
 ---
 
-<BaseLayout title={resource.title} description={resource.metaDescription || resource.description} jsonLd={jsonLd}>
+<BaseLayout
+  title={resource.title}
+  description={resource.metaDescription || resource.description}
+  ogImage={resource.thumbnail || resource.coverImage || DEFAULT_OG_IMAGE}
+  jsonLd={jsonLd}
+>
   <Breadcrumb items={breadcrumbItems} />
 
   <article class="mx-auto max-w-6xl px-5 py-10">

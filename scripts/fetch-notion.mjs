@@ -38,6 +38,7 @@ import {
   transformBlocks,
   downloadImage,
   generateFallbackThumbnail,
+  thumbnailPngPath,
   resolveCategoryBackgroundDataUri,
   extractExcerpt,
   buildNotionLinkMap,
@@ -502,6 +503,8 @@ async function main() {
     const background =
       subcategoryIds.map((id) => subcategoryBackgroundMap.get(id)).find(Boolean) || { dataUri: null, colorKey: "default" };
     const thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
+    // OGP・構造化データ用のPNG版（サムネイルと同じ絵柄）。作れなかったら null
+    const ogImage = await thumbnailPngPath(thumbnail);
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
@@ -528,6 +531,7 @@ async function main() {
       publishedAt,
       updatedAt,
       thumbnail,
+      ogImage,
       blocks,
     });
   }

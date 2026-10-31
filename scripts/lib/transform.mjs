@@ -784,6 +784,47 @@ function pickReadableTextColor(dataUri) {
 }
 
 
+// ---- サムネイルのPNG版（OGP・構造化データ用、2026-11-01） ----
+// サイト上のサムネイルはSVGのままにし、SNSのシェア画像（og:image）とArticleのimageにはPNGを使う。
+// SVGの font-family（ヒラギノ・游ゴシック）はビルド環境（GitHub Actions）に無いため、
+// 同梱の Noto Sans JP（src/fonts の 500・700 の静的フォント）で描く。
+// 失敗してもビルドは止めない（その記事は og:image が既定の画像になる）。
+const THUMBNAIL_FONT_FILES = ["src/fonts/NotoSansJP-500.ttf", "src/fonts/NotoSansJP-700.ttf"].map((f) =>
+  path.resolve(process.cwd(), f),
+);
+let resvgModulePromise = null;
+async function renderThumbnailPng(svg, filename) {
+  try {
+    resvgModulePromise ||= import("@resvg/resvg-js");
+    const { Resvg } = await resvgModulePromise;
+    const resvg = new Resvg(svg, {
+      font: {
+        fontFiles: THUMBNAIL_FONT_FILES,
+        loadSystemFonts: false,
+        defaultFontFamily: "Noto Sans JP",
+        sansSerifFamily: "Noto Sans JP",
+      },
+    });
+    await fs.writeFile(path.join(GENERATED_THUMBNAIL_OUT_DIR, filename), resvg.render().asPng());
+    return `/images/generated/${filename}`;
+  } catch (err) {
+    console.warn(`  [notion] サムネイルのPNG版の作成に失敗しました (${filename}): ${err.message}`);
+    return null;
+  }
+}
+
+/** SVGサムネイルのパスから、PNG版のパスを返す（PNGが無ければ null）。 */
+export async function thumbnailPngPath(svgPath) {
+  if (!svgPath || !svgPath.endsWith(".svg")) return null;
+  const pngPath = svgPath.replace(/\.svg$/, ".png");
+  try {
+    await fs.access(path.join(process.cwd(), "public", pngPath.replace(/^\//, "")));
+    return pngPath;
+  } catch {
+    return null;
+  }
+}
+
 export async function generateFallbackThumbnail(idHint, background, title, subtitle) {
   try {
 const { dataUri, colorKey } = background || {};
@@ -847,6 +888,8 @@ const decoFill = isLight ? "#000000" : "#ffffff";
     await fs.mkdir(GENERATED_THUMBNAIL_OUT_DIR, { recursive: true });
     const filename = `thumb-${idHint}.svg`;
     await fs.writeFile(path.join(GENERATED_THUMBNAIL_OUT_DIR, filename), svg, "utf-8");
+    // OGP（SNSのシェア画像）とGoogleの構造化データはSVGに対応していないため、同じ絵柄のPNGも作る（2026-11-01）。
+    await renderThumbnailPng(svg, `thumb-${idHint}.png`);
     return `/images/generated/${filename}`;
   } catch (err) {
     console.warn(`  [notion] 自動生成サムネイルの作成に失敗しました (${idHint}): ${err.message}`);
