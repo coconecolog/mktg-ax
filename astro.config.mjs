@@ -37,6 +37,8 @@ const SITEMAP_EXCLUDE_EXACT = [
   "/tools/kpi-sheet-maker/final",
   "/tools/kpi-sheet-maker/done",
   "/tools/kpi-analysis/input",
+  "/tools/kpi-analysis/final",
+  "/tools/kpi-analysis/done",
 ];
 
 // サイトマップの lastmod 用：記事・資料の更新日（.notion-cache から読む。無ければ付けない）

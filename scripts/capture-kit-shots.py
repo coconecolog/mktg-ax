@@ -15,12 +15,14 @@ with sync_playwright() as p:
             pg.goto(f"{BASE}/{kit}/sample{q}")
             pg.wait_for_timeout(1200)
             # タブの下（入力と判定の画面／完成イメージ）だけを撮る
-            # 診断（入力）画面は「1 年間を入力」のタブから、完成イメージはサンプルのタブの下から撮る
+            # 診断画面は ② 診断・修正の数のまとめから（施策効果診断Kitは「1 年間を入力」のタブから）、完成イメージはサンプルのタブの下から撮る（2026-11-01）
             top = pg.evaluate(
                 "(() => { const y = window.scrollY;"
                 " if (location.search.includes('tab=sheet')) {"
                 "   const t = document.querySelector('.bk-stab').parentElement.getBoundingClientRect();"
                 "   return Math.round(t.bottom + y + 12); }"
+                " const c = document.querySelector('.bk-ck-sum');"
+                " if (c) return Math.round(c.getBoundingClientRect().top + y - 10);"
                 " const n = document.querySelector('.bk-tab-n').closest('button, a, div').getBoundingClientRect();"
                 " return Math.round(n.top + y + 70); })()"
             )

@@ -60,7 +60,7 @@ const TAB_NOTE: Record<Tab, string> = {
 };
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-const MODE = (document.getElementById("bk")?.dataset.mode ?? "intro") as "intro" | "input" | "sample";
+const MODE = (document.getElementById("bk")?.dataset.mode ?? "intro") as "intro" | "input" | "sample" | "final" | "done";
 const SAMPLE = MODE === "sample";
 const form = document.getElementById("bk-form") as HTMLFormElement | null;
 const field = (name: string) => form!.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
@@ -581,7 +581,8 @@ function loadZip(): Promise<any> {
   return zipLib;
 }
 
-async function download() {
+/** btnId＝押したボタン。onSaved＝保存が終わったあと（最終チェックの画面では完了へ移る） */
+async function download(btnId = "bk-dl", onSaved?: () => void) {
   const err = $("bk-dlerr");
   err.hidden = true;
   window.clearTimeout(timer);
@@ -594,10 +595,10 @@ async function download() {
   if (bad.length) {
     err.textContent = `${bad.join("・")}を入れてから、ダウンロードしてください。`;
     err.hidden = false;
-    jump(bad[0] === "期首" ? "startYear" : "goal");
+    if (form) jump(bad[0] === "期首" ? "startYear" : "goal");
     return;
   }
-  const btn = $<HTMLButtonElement>("bk-dl");
+  const btn = $<HTMLButtonElement>(btnId);
   let handle: any = null;
   const picker = (window as any).showSaveFilePicker;
   if (typeof picker === "function") {
@@ -649,6 +650,61 @@ async function download() {
     btn.textContent = saved && handle ? "保存しました" : label;
     if (saved && handle) window.setTimeout(() => (btn.textContent = label), 2500);
   }
+  if (saved && onSaved) window.setTimeout(onSaved, 600);
+}
+
+// ---------- ③ 最終チェック・ダウンロード（/final）と 完了（/done）。2026-11-01、ほかのKitと同じ形 ----------
+const FINAL_URL = `${PATH}/final`;
+const DONE_URL = `${PATH}/done`;
+function initFinal() {
+  const d = diagnoseEffect(st);
+  lastDiag = d;
+  const fix = d.items.filter((i) => i.status === "fix");
+  const check = d.items.filter((i) => i.status === "check");
+  $("bk-f-fix").textContent = String(fix.length);
+  $("bk-f-check").textContent = String(check.length);
+  $("bk-f-ok").textContent = String(d.items.filter((i) => i.status === "ok").length);
+  $("bk-f-fix").parentElement!.classList.toggle("on", fix.length > 0);
+  $("bk-f-check").parentElement!.classList.toggle("on", check.length > 0);
+  $("bk-fin-name").textContent = effectFileName(st);
+  const open = [...fix, ...check];
+  $("bk-fin-lead").textContent = open.length
+    ? `未対応が${open.length}件あります。直す場合は、行を押すと入力と診断の画面に戻ります。問題なければチェックを入れてダウンロードします。`
+    : "未対応の項目はありません。チェックを入れて、KPI管理表（Excel）をダウンロードします。";
+  $("bk-fin-l").innerHTML =
+    open
+      .map(
+        (i) =>
+          `<li class="bk-fin-r"><a href="${INPUT_URL}"><span>${esc(i.title)}</span><span class="bk-fin-v"><span class="bk-tg ${i.status}">${i.status === "fix" ? "直す" : "確認"}・未対応</span><span class="bk-go">入力に戻る →</span></span></a></li>`,
+      )
+      .join("") || `<li class="bk-fin-r"><div><span>直すところ・確認するところ</span><span class="bk-fin-v is-ok">ありません</span></div></li>`;
+  const agree = $<HTMLInputElement>("bk-agree");
+  const btn = $<HTMLButtonElement>("bk-dl");
+  if (!d.ready) {
+    agree.disabled = true;
+    const err = $("bk-dlerr");
+    err.hidden = false;
+    err.innerHTML = `判定に必要な数字が足りないため、まだダウンロードできません。<a href="${INPUT_URL}">入力の画面に戻る →</a>`;
+  }
+  agree.addEventListener("change", () => (btn.disabled = !agree.checked));
+  btn.addEventListener("click", () => {
+    if (agree.checked) download("bk-dl", () => (location.href = DONE_URL));
+  });
+}
+function initDone() {
+  const d = diagnoseEffect(st);
+  lastDiag = d;
+  $("bk-done-file").textContent = effectFileName(st);
+  const n = d.counts.fix + d.counts.check;
+  const left = $("bk-done-left");
+  left.hidden = !n;
+  left.textContent = n ? `。未対応の${n}件も「診断結果」シートに載っています` : "";
+  $("bk-again").addEventListener("click", () => download("bk-again"));
+}
+function noData() {
+  const box = document.getElementById("bk-flow");
+  if (box)
+    box.innerHTML = `<div class="bk-empty"><b>KPI管理表の数字がまだありません</b><p>入口でAIの案を貼りつけるか、KPI管理表（.xlsx）を読み込むか、画面で入力してください。</p><a class="bk-btn" href="${PATH}">入口へ<span aria-hidden="true">→</span></a></div>`;
 }
 
 // ---------- つなぐ（入力の画面・サンプル画面） ----------
@@ -775,5 +831,14 @@ if (MODE === "intro") {
   const q = new URLSearchParams(location.search);
   if (SAMPLE) openWork(await loadSample(), q.get("tab") === "sheet" ? "sheet" : "diag", "a");
   else if (MODE === "input") openWork(q.get("sample") === "1" ? await loadSample() : (restore() ?? emptyEffect()));
+  else if (MODE === "final" || MODE === "done") {
+    const saved = restore();
+    if (!saved) noData();
+    else {
+      st = saved;
+      if (MODE === "final") initFinal();
+      else initDone();
+    }
+  }
   else if (q.get("sample") === "1") location.replace(`${INPUT_URL}?sample=1`);
 })();

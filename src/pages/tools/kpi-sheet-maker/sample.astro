@@ -1,69 +1,30 @@
 ---
 // src/pages/tools/kpi-sheet-maker/sample.astro
-//
-// KPI管理表作成Kitのサンプル画面（/tools/kpi-sheet-maker/sample）2026-10-30。形はKPI管理表作成Kitのサンプル画面と同じ
-// 記入例（基本モデルの安定期）で、「入力画面」と「KPI管理表（完成イメージ）」をタブで切り替えて見せる。1ページで完結し、ほかの画面には移らない。
-// - KPI管理表のタブは ?tab=sheet で開く（キットの入口の「3 KPI管理表 完成」から）
-// - 数字は変えられるが保存しない。ダウンロードはなし（キットへのリンク）
-// 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-mode="sample"）
+// サンプル画面（検索に出す）。診断・修正の画面と完成イメージをタブで切り替える。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "KPI管理表作成Kit";
+const KIT_ID = "kpimake";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
-  { name: TOOL_TITLE, href: "/tools/kpi-sheet-maker" },
-  { name: "サンプル画面", href: "/tools/kpi-sheet-maker/sample" },
+  { name: p.title, href: base },
+  { name: "サンプル画面", href: `${base}/sample` },
 ];
 ---
 
-<BaseLayout
-  title={`${TOOL_TITLE} サンプル画面｜入力画面とKPI管理表の完成イメージ｜MeerKitLab`}
-  description="KPI管理表作成Kitのサンプル画面です。架空の会社（基本モデル）の安定期の数字で、入力画面と、ダウンロードできるKPI管理表（Excel）の完成イメージを確かめられます。"
-  ogImage="/open-graph/default.png"
->
+<BaseLayout title={`${p.title} サンプル画面｜診断・修正の画面と${KITS[KIT_ID].doc}の完成イメージ｜MeerKitLab`} description={`${p.title}のサンプル画面です。架空の会社（基本モデルの安定期）の数字で、診断・修正の画面と完成イメージを見られます。`} ogImage="/open-graph/default.png">
   <Breadcrumb items={breadcrumbItems} />
+  <KitFlow kitId={KIT_ID} mode="sample" />
 
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}<span class="bk-h1-sub">サンプル画面</span></h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">売上目標から逆算して、KPI管理表を作る。</p>
-    <p class="mt-3 text-sm leading-relaxed text-neutral-500">売上目標と今期の実績から、必要なリード数を逆算します。リード数と費用をチャネルに分割するだけで、CPL・CACまで判定し、そのまま期初から使えるKPI管理表（Excel）になります。</p>
-  </div>
-
-  <main class="bk" id="bk" data-kit="kpimake" data-mode="sample">
-    <p class="bk-back"><a href="/tools/kpi-sheet-maker">← KPI管理表作成Kitに戻る</a></p>
-
-    <section id="bk-work">
-      <div class="bk-views" role="tablist" aria-label="表示">
-        <button type="button" role="tab" class="bk-view" id="bk-v-diag" aria-selected="true">入力画面</button>
-        <button type="button" role="tab" class="bk-view" id="bk-v-sheet" aria-selected="false">KPI管理表（完成イメージ）</button>
-        <span class="bk-tab-n" id="bk-v-note">水色の欄を直すと、右の判定がすぐ変わります</span>
-      </div>
-      <p class="bk-hint bk-sample-n">記入例：架空の会社（基本モデル）の安定期の前提・リード数・費用と、架空の今期の実績です。数字を変えると判定とKPI管理表が変わります（保存はされません）</p>
-
-      <div class="bk-sheetview" id="bk-sheetview" hidden>
-        <div class="bk-sheettabs">
-          <button type="button" class="bk-stab" id="bk-s-main" aria-selected="true">はじめに入力</button>
-          <button type="button" class="bk-stab" id="bk-s-diag" aria-selected="false">診断結果</button>
-          <a class="bk-btn bk-sheet-dl" href="/tools/kpi-sheet-maker">自分のKPI管理表を作る<span aria-hidden="true">→</span></a>
-        </div>
-        <div class="bk-sheet" id="bk-sheet"></div>
-      </div>
-
-      <BudgetGrid sample kit="kpimake" />
-
-      <div class="bk-mbar" id="bk-mbar">
-        <span class="fix"><b id="bk-m-fix">0</b>直す</span>
-        <span class="check"><b id="bk-m-check">0</b>確認</span>
-        <button type="button" class="bk-btn" id="bk-mopen">判定を見る</button>
-      </div>
-    </section>
-  </main>
 </BaseLayout>
 
 <script>
-  import "@/scripts/budget-checker/app";
+  import "@/scripts/budget-checker/flow";
 </script>

@@ -7,20 +7,24 @@ import { aiPrompt, diagnoseBudget, sampleState } from "@/lib/budgetCheck";
 import { buildIssues } from "@/lib/budgetFlow";
 import { KITS, type KitId } from "@/lib/planKits";
 import { kitPage } from "@/data/kitPages";
+import { effectPrompt } from "@/lib/effectCheck";
 
 interface Props {
-  kitId: KitId;
+  kitId: KitId | "effect";
 }
 const { kitId } = Astro.props;
-const kit = KITS[kitId];
 const p = kitPage(kitId);
+// planKits にあるKitはそこから、施策効果診断Kit（effect）は kitPages の doc・path から
+const pk = kitId === "effect" ? null : KITS[kitId];
+const kit = { doc: pk?.doc ?? p.doc ?? "", path: pk?.path ?? p.path ?? "", maker: pk?.maker ?? false };
+const prompt = pk ? aiPrompt(pk) : effectPrompt();
 
 // 右の「診断結果の見本」：基本モデルの安定期の記入例から、展示会の商談数・受注数を減らした案を実際に判定した結果
 const demo = sampleState();
 demo.input.channels[0].deals = 15;
 demo.input.channels[0].wins = 4;
-const demoDiag = diagnoseBudget(demo, kit);
-const demoIssues = buildIssues(demo, kit, demoDiag).slice(0, 2);
+const demoDiag = diagnoseBudget(demo, pk ?? KITS.budget);
+const demoIssues = buildIssues(demo, pk ?? KITS.budget, demoDiag).slice(0, 2);
 const ST_LABEL = { fix: "直す", check: "確認" } as const;
 const T = p.stepTitles ?? ["入力する", "診断して直す", "ダウンロード"];
 const ENTRIES = p.entries ?? "all";
@@ -69,6 +73,9 @@ const ICON = {
               </ol>
             </section>
     </div>
+    {p.demoImg ? (
+      <a class="bk-demo bk-demo-img" href={`${kit.path}/sample`} aria-label="診断画面の見本を見る"><img src={p.demoImg} alt="" width="640" height="420" /><span>診断画面の見本を見る →</span></a>
+    ) : (
     <figure class="bk-demo" aria-label="診断結果の見本">
       <figcaption><b>診断結果</b><span>見本</span></figcaption>
       <div class="bk-demo-sum">
@@ -91,6 +98,7 @@ const ICON = {
         }
       </ul>
     </figure>
+    )}
   </div>
 
   <main class="bk" id="bk" data-kit={kitId} data-mode="intro">
@@ -130,7 +138,7 @@ const ICON = {
 
       <div class="bk-ai" id="bk-ai" hidden>
         <p class="bk-ai-st">{p.aiStep}</p>
-        <pre class="bk-prompt" id="bk-prompt" set:text={aiPrompt(kit)}></pre>
+        <pre class="bk-prompt" id="bk-prompt" set:text={prompt}></pre>
         <button type="button" class="bk-btn2" id="bk-copy">プロンプトをコピー</button>
         <p class="bk-ai-st">② AIが返した結果を、ここに貼る</p>
         <textarea class="bk-paste" id="bk-paste" rows="6" placeholder="AIが返したJSON（```json から ``` まで）をそのまま貼りつけます" aria-label="AIが返した結果"></textarea>
@@ -158,13 +166,17 @@ const ICON = {
 
         <div class="bk-need">
         <div>
-          <p class="bk-need-top"><b>必要な数字</b><span>{kit.maker ? "率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します" : "率は入れません（件数から出します）。使わないチャネルは空欄か0でかまいません"}</span></p>
+          <p class="bk-need-top"><b>必要な数字</b><span>{p.needNote ?? (kit.maker ? "率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します" : "率は入れません（件数から出します）。使わないチャネルは空欄か0でかまいません")}</span></p>
           <dl>
+            {p.needRows ? p.needRows.map(([h, tags]) => <><dt>{h}</dt><dd>{tags.map((t) => <span class="bk-tag">{t}</span>)}</dd></>) : (
+              <>
             <dt>前提</dt>
             <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
             {kit.maker && <><dt>今期の実績</dt><dd>{ACT_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd></>}
             <dt>チャネル別（年間）</dt>
             <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+              </>
+            )}
           </dl>
         </div>
         <div class="bk-need-dl">
