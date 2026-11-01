@@ -18,6 +18,9 @@ import { getAllLibraryTagNames } from "./library";
 import { toRouteSlug } from "./routeSlug";
 
 interface Term {
+  /** リンクするタグ名（1タグにつき1箇所だけリンクする判定に使う） */
+  key: string;
+  /** 本文で探す文字列（タグ名そのもの、または「・」で区切ったときの言い換え） */
   name: string;
   path: string;
   /** 旧方式（fetch-notion時点の自動リンク）で付いていたhref。スナップショット記事の互換用。 */
@@ -33,18 +36,40 @@ function isAsciiAlnum(ch: string | undefined): boolean {
   return !!ch && ASCII_ALNUM.test(ch);
 }
 
+// 「KSF・CSF」「SWOT・クロスSWOT分析」のように「・」で言い換えを並べたタグ名は、本文にそのままの形で出てこないため、
+// 「・」で区切った各語（2文字以上）も同じタグへのリンク候補にする（2026-11-01）。
+// 区切った語が「〜分析」で終わる場合は「分析」を除いた形も候補にする（例:「クロスSWOT分析」→「クロスSWOT」）。
+// 他のタグ名とまったく同じ語は、そのタグ自身に任せる。
+function aliasesOf(name: string, allNames: Set<string>): string[] {
+  if (!name.includes("・")) return [];
+  const result = new Set<string>();
+  for (const part of name.split("・").map((p) => p.trim())) {
+    if (part.length < 2) continue;
+    result.add(part);
+    if (part.endsWith("分析") && part.length - 2 >= 2) result.add(part.slice(0, -2));
+  }
+  return [...result].filter((alias) => alias !== name && !allNames.has(alias));
+}
+
 function buildTerms(): Term[] {
-  return getAllLibraryTagNames()
+  const names = getAllLibraryTagNames()
     .map((name) => name.trim())
-    .filter((name) => name.length > 0)
-    .sort((a, b) => b.length - a.length)
-    .map((name) => ({
-      name,
-      path: getTagPath(name),
-      legacyPath: `/lab/tag/${encodeURIComponent(toRouteSlug(name))}`,
-      asciiStart: isAsciiAlnum(name[0]),
-      asciiEnd: isAsciiAlnum(name[name.length - 1]),
-    }));
+    .filter((name) => name.length > 0);
+  const nameSet = new Set(names);
+  return names
+    .flatMap((key) => {
+      const path = getTagPath(key);
+      const legacyPath = `/lab/tag/${encodeURIComponent(toRouteSlug(key))}`;
+      return [key, ...aliasesOf(key, nameSet)].map((name) => ({
+        key,
+        name,
+        path,
+        legacyPath,
+        asciiStart: isAsciiAlnum(name[0]),
+        asciiEnd: isAsciiAlnum(name[name.length - 1]),
+      }));
+    })
+    .sort((a, b) => b.name.length - a.name.length);
 }
 
 // text の from 以降で term が「単語として」出現する最初の位置を返す（無ければ -1）。
@@ -74,8 +99,8 @@ function linkifyRichText(items: RichTextItem[] | undefined, terms: Term[], linke
     if (item.href) {
       // 旧方式の自動リンク（日本語URL）が残っている場合は、そのタグの「最初の1箇所」として扱い、URLだけ新方式に直す。
       const legacy = terms.find((t) => item.href === t.legacyPath && item.text.trim() === t.name);
-      if (legacy && !linked.has(legacy.name)) {
-        linked.add(legacy.name);
+      if (legacy && !linked.has(legacy.key)) {
+        linked.add(legacy.key);
         result.push({ ...item, href: legacy.path });
       } else {
         result.push(item);
@@ -90,7 +115,7 @@ function linkifyRichText(items: RichTextItem[] | undefined, terms: Term[], linke
       let bestIndex = -1;
       let bestTerm: Term | null = null;
       for (const term of terms) {
-        if (linked.has(term.name)) continue;
+        if (linked.has(term.key)) continue;
         const index = findTerm(text, term, cursor);
         if (index === -1) continue;
         // terms は長い順に並んでいるので、同じ位置なら先に見つかった（長い）方を採用する
@@ -103,7 +128,7 @@ function linkifyRichText(items: RichTextItem[] | undefined, terms: Term[], linke
 
       if (bestIndex > cursor) result.push({ ...item, text: text.slice(cursor, bestIndex) });
       result.push({ ...item, text: bestTerm.name, href: bestTerm.path });
-      linked.add(bestTerm.name);
+      linked.add(bestTerm.key);
       cursor = bestIndex + bestTerm.name.length;
       changed = true;
     }
