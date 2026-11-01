@@ -367,7 +367,7 @@ a.bk-th:hover { border-color: var(--ink); }
 /* ===== 予算案診断Kit：5ステップの流れ（2026-11-01） =====
    ① 入力・取り込み（入口・/input）→ ② 診断・修正（/check）→ ③ 最終チェック（/final）→ ④ ダウンロード ⑤ 次へ（/done）
    色は判定（直す＝赤、確認＝オレンジ）と入力欄（水色）だけ。いまの段階は黒、済みは✓、先は灰色 */
-.bk-fs { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1.5px solid var(--ink); }
+.bk-fs { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1.5px solid var(--ink); }
 .bk-fs-i { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-right: 1px solid var(--line); background: #fff; color: var(--faint); min-width: 0; }
 .bk-fs-i:last-child { border-right: 0; }
 .bk-fs-n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1.5px solid currentColor; font-size: 0.76rem; font-weight: 800; }
@@ -671,3 +671,22 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-done2-a .bk-link { font-weight: 700; }
 .bk-nextk { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .bk-nextk .bk-nextk-sub { margin-top: 0; }
+
+/* ===== 予算案診断Kit 入口（2026-11-01 見直し）：3ステップの説明 → 診断をはじめる（上下に余白）→ わかること＋必要な数字（1つの枠） ===== */
+.bk-3s { border-top: 1.5px solid var(--ink); padding-top: 22px; }
+.bk-3s-h { font-size: 1.15rem; font-weight: 800; margin: 0 0 14px; }
+.bk-3s-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr); align-items: stretch; }
+.bk-3s-l > li:not(.bk-3s-a) { background: #fff; border: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.bk-3s-n { align-self: flex-start; font-size: 0.72rem; font-weight: 800; background: var(--ink); color: #fff; padding: 2px 8px; letter-spacing: 0.04em; }
+.bk-3s-l svg { width: 28px; height: 28px; fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; margin-top: 4px; }
+.bk-3s-l b { font-size: 1.05rem; }
+.bk-3s-l p { font-size: 0.8rem; color: var(--sub); line-height: 1.6; }
+.bk-3s-a { display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: var(--mute); }
+@media (max-width: 760px) { .bk-3s-l { grid-template-columns: minmax(0, 1fr); gap: 4px; } .bk-3s-a { transform: rotate(90deg); height: 24px; } }
+.bk-entry { padding: 64px 0 56px; }
+.bk-entry .bk-start-h { margin-bottom: 14px; }
+.bk-entry .bk-start-h .bk-h2 { font-size: 1.6rem; margin-bottom: 6px; }
+.bk-entry .bk-trust { margin-bottom: 0 !important; }
+@media (max-width: 760px) { .bk-entry { padding: 40px 0 36px; } }
+.bk-info { padding: 22px 22px 24px; }
+.bk-info .bk-need { background: transparent; border: 0; border-top: 1px solid var(--line); padding: 20px 0 0; margin: 22px 0 0; }

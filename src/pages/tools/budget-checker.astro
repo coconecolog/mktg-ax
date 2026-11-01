@@ -18,7 +18,6 @@ import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import { aiPrompt, diagnoseBudget, sampleState } from "@/lib/budgetCheck";
 import { buildIssues } from "@/lib/budgetFlow";
 import { KITS } from "@/lib/planKits";
-import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
 import "@/styles/budget-checker.css";
 
 const TOOL_TITLE = "予算案診断Kit";
@@ -92,9 +91,35 @@ const ICON = {
 
   <main class="bk" id="bk" data-kit="budget" data-mode="intro">
     <section id="bk-intro">
-      <FlowSteps current={1} />
+      <!-- 3ステップ（入力 → 診断して直す → ダウンロード）。中の画面の帯（FlowSteps）とは別に、流れを説明する -->
+      <section class="bk-3s" aria-labelledby="bk-3s-h">
+        <h2 class="bk-3s-h" id="bk-3s-h">3ステップで、予算案が年間予算表になります</h2>
+        <ol class="bk-3s-l">
+          <li>
+            <span class="bk-3s-n">STEP 1</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" /><path d="M3 10h18M9 10v10M13 15h4" /></svg>
+            <b>入力する</b>
+            <p>AIの案・年間予算表（Excel）・画面入力のどれかで、予算案の数字を入れます</p>
+          </li>
+          <li aria-hidden="true" class="bk-3s-a">→</li>
+          <li>
+            <span class="bk-3s-n">STEP 2</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></svg>
+            <b>診断して直す</b>
+            <p>目標に届くか・コストは上限以内かを判定。NGは「OKになる条件」を見ながら、その場で直せます</p>
+          </li>
+          <li aria-hidden="true" class="bk-3s-a">→</li>
+          <li>
+            <span class="bk-3s-n">STEP 3</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
+            <b>ダウンロード</b>
+            <p>直した数字と診断結果を、稟議に使える年間予算表（Excel）で持ち帰ります</p>
+          </li>
+        </ol>
+      </section>
 
-      <!-- ===== ファーストビュー：入口3つ ===== -->
+      <!-- ===== 入口3つ（上下に余白をとって目立たせる） ===== -->
+      <div class="bk-entry">
       <div class="bk-start-h" id="start">
         <h2 class="bk-h2">診断をはじめる</h2>
         <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
@@ -134,9 +159,11 @@ const ICON = {
       <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
       <p class="bk-err" id="bk-err" role="alert" hidden></p>
       <p class="bk-hint bk-trust">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）<span class="bk-for-i">予算がまだない方は <a href="/tools/budget-simulator">予算作成Kit →</a></span></p>
+      </div>
 
       <!-- ===== ここから下は説明 ===== -->
-      <div class="bk-band bk-know">
+      <div class="bk-band bk-info">
+        <div class="bk-know">
         <h2 class="bk-h2">診断でわかること</h2>
         <div class="bk-know-g">
           <ul class="bk-know-l">
@@ -146,11 +173,11 @@ const ICON = {
           </ul>
           <a class="bk-shot" href="/tools/budget-checker/sample?tab=sheet"><img src="/images/tools/budget-checker-sheet.png" alt="" width="640" height="420" loading="lazy" /><span>年間予算表（完成イメージ）を見る →</span></a>
         </div>
-      </div>
+        </div>
 
-      <div class="bk-need">
+        <div class="bk-need">
         <div>
-          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄でかまいません</span></p>
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄か0でかまいません</span></p>
           <dl>
             <dt>前提</dt>
             <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
@@ -167,6 +194,7 @@ const ICON = {
           </div>
           <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
         </div>
+      </div>
       </div>
     </section>
   </main>
