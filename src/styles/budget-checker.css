@@ -738,3 +738,12 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-ty .bk-nextk > h2 { text-align: center; }
 .bk-ty-next-l { text-align: center; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; color: var(--sub); }
 @media (max-width: 760px) { .bk-ty-t { font-size: 1.3rem; } .bk-ty-h { padding: 28px 8px 32px; } }
+
+/* ===== 作る系Kitの入力（FlowInput maker、2026-11-01）：自動配分の欄は灰色、上書きすると水色・↺で戻す ===== */
+.bk-fi-t td.in.auto { background: var(--calc); position: relative; }
+.bk-fi-t td.in.auto input { color: var(--sub); }
+.bk-fi-t td.in.auto.is-ovr { background: var(--in); }
+.bk-fi-t td.in.auto.is-ovr input { color: var(--ink); font-weight: 800; padding-left: 22px; }
+.bk-fi-t td.in.auto.is-ovr .bk-ovr-x { display: block; left: 6px; }
+.bk-fi-t td.is-short { color: var(--red); }
+.bk-fi-t td.calc { text-align: right; }

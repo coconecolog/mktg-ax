@@ -29,7 +29,13 @@ const SITEMAP_EXCLUDE_EXACT = [
   "/tools/kpi-check/final",
   "/tools/kpi-check/done",
   "/tools/budget-simulator/input",
+  "/tools/budget-simulator/check",
+  "/tools/budget-simulator/final",
+  "/tools/budget-simulator/done",
   "/tools/kpi-sheet-maker/input",
+  "/tools/kpi-sheet-maker/check",
+  "/tools/kpi-sheet-maker/final",
+  "/tools/kpi-sheet-maker/done",
   "/tools/kpi-analysis/input",
 ];
 

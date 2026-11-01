@@ -1,143 +1,33 @@
 ---
 // src/pages/tools/kpi-sheet-maker.astro
 //
-// KPI管理表作成Kit（旧KPI管理表メーカー、/tools/kpi-sheet-maker）2026-10-30 作り直し（予算作成Kitと同じ型）
-// KPIがまだない人向け。売上目標と今期の実績から必要な数を逆算し、リード数と費用をチャネルに分割して、KPI管理表（M-B-04、Excel）を作る。
-// - 3ステップ：目標と実績を入れる → チャネルに分割する（左＝入力、右＝判定）→ KPI管理表 完成（Excelをダウンロード）
-// - 入口は3つ：AIで整えて貼りつける／年間予算表（.xlsx）を読み込む（KPI管理表も読める）／画面で入力する。どれも /tools/kpi-sheet-maker/input に移る
-// - 入力の画面と計算は予算作成Kitと同じ（src/lib/budgetMake.ts）。読み込んだ有効リード数・商談数・受注数は上書きとして残す（toMake）
-// - 出力はKPI妥当性診断Kitと同じ、KPI管理表の全シート＋「診断結果」（ひな形 public/files/tools/kpi-check-template.xlsx）
-// - 作ったKPIがもうある人はKPI妥当性診断Kit（/tools/kpi-check）へ
-// 画面：src/scripts/budget-checker/app.ts（data-kit="kpimake"）　Kitの違い：src/lib/planKits.ts
-// サンプル画面：/tools/kpi-sheet-maker/sample（基本モデルの安定期。入力画面とKPI管理表の完成イメージをタブで切り替え）
+// KPI管理表作成Kit（/tools/kpi-sheet-maker）。売上目標と今期の実績から逆算して、KPI管理表（M-B-04、Excel）を作る。
+// 2026-11-01：予算案診断Kitと同じ画面の流れにした（入力に「今期の実績」と自動配分の欄が加わる）
+// 画面の流れ：入口（このページ）→ 入力（/input）→ ② 診断・修正（/check）→ ③ 最終チェック・ダウンロード（/final）→ 完了（/done）
+// 2026-11-01：入口の中身を共通の部品（src/components/kit-flow/KitIntro.astro）にした。文言は src/data/kitPages.ts
+// 判定と状態：src/lib/budgetCheck.ts　Excel：src/lib/budget-sheet.ts　画面：src/scripts/budget-checker/app.ts・flow.ts
+// ひな形：public/files/tools/kpi-check-template.xlsx（scripts/build-kpi-check-template.py で作る）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
-import { aiPrompt } from "@/lib/budgetCheck";
+import KitIntro from "@/components/kit-flow/KitIntro.astro";
+import { kitPage } from "@/data/kitPages";
 import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "KPI管理表作成Kit";
-const TOOL_DESCRIPTION =
-  "売上目標と今期の実績から、必要なリード数を逆算する無料のツール（Kit）です。リード数と費用をチャネルに分割するだけで、CPL・CACまで判定し、そのまま期初から使えるKPI管理表（Excel）になります。";
-const SHEET_URL = "/lab/whitepapers/kgi-kpi-backcast-sheet";
-
+const KIT_ID = "kpimake";
+const p = kitPage(KIT_ID);
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
-  { name: TOOL_TITLE, href: "/tools/kpi-sheet-maker" },
+  { name: p.title, href: KITS[KIT_ID].path },
 ];
-
-const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
-const ACT_TAGS = ["リード数", "有効リード数", "商談数", "受注数"];
-const CH_TAGS = ["リード数", "外部費用", "人件費"];
-const NEED = [
-  ["受注数", "23"],
-  ["商談数", "78"],
-  ["有効リード数", "195"],
-  ["リード数", "514"],
-];
-// アイコン（入口のカードと同じ）
-const ICON = {
-  ai: ["M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"],
-  file: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6M8 13h8M8 17h8M12 11v8"],
-  key: "M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10",
-};
 ---
 
-<BaseLayout title={`${TOOL_TITLE}｜売上目標から逆算して、KPI管理表を作る｜MeerKitLab`} description={TOOL_DESCRIPTION} ogImage="/open-graph/default.png">
+<BaseLayout title={p.metaTitle} description={p.description} ogImage={p.ogImage}>
   <Breadcrumb items={breadcrumbItems} />
-
-  <!-- H1まわりは /lab・/tools と同じ形。.bk の外に置く -->
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">売上目標から逆算して、KPI管理表を作る。</p>
-    <p class="mt-3 text-sm leading-relaxed text-neutral-500">売上目標と今期の実績から、必要なリード数を逆算します。リード数と費用をチャネルに分割するだけで、CPL・CACまで判定し、そのまま期初から使えるKPI管理表（Excel）になります。</p>
-  </div>
-
-  <main class="bk" id="bk" data-kit="kpimake" data-mode="intro">
-    <p class="bk-for">KPIがまだない方向けのKitです。作ったKPIがある方は <a href="/tools/kpi-check">KPI妥当性診断Kit →</a></p>
-
-    <section id="bk-intro">
-      <div class="bk-band">
-      <h2 class="bk-h2">3ステップで、売上目標からKPI管理表が完成します。</h2>
-      <div class="bk-flow">
-        <ol class="bk-fsteps">
-          <li class="bk-fstep"><span class="bk-no">1</span><div><b>目標と実績を入れる</b><p>売上目標と今期の実績から、必要な数が出る</p></div></li>
-          <li class="bk-fstep"><span class="bk-no">2</span><div><b>チャネルに分割する</b><p>リード数と費用を入れると、足りるか・上限以内かがすぐ出る</p></div></li>
-          <li class="bk-fstep"><span class="bk-no">3</span><div><b>KPI管理表 完成</b><p>作った数字と判定をExcelでダウンロード</p></div><span class="bk-xl-tag bk-fstep-xl">XLSX</span></li>
-        </ol>
-        <a class="bk-shot" href="/tools/kpi-sheet-maker/sample"><img src="/images/tools/kpi-sheet-maker-screen.png" alt="" width="640" height="420" loading="lazy" /><span>入力画面の見本を見る →</span></a>
-        <a class="bk-shot" href="/tools/kpi-sheet-maker/sample?tab=sheet"><img src="/images/tools/kpi-sheet-maker-sheet.png" alt="" width="640" height="420" loading="lazy" /><span>KPI管理表の見本を見る →</span></a>
-      </div>
-    </div>
-
-
-      <h2 class="bk-h2 bk-h2c">作成をはじめる</h2>
-      <p class="bk-sub bk-subc">手元の状態に合うものを1つ選んでください。どれを選んでも、同じ入力の画面に移ります。</p>
-      <div class="bk-ents">
-        <div class="bk-ent">
-          <small><svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICON.ai[0]} /><path d={ICON.ai[1]} /></svg>AIや手元の資料で作った</small>
-          <b>AIで整えて貼りつける</b>
-          <p>プロンプトをAIに渡し、返ってきた結果を貼る</p>
-          <button type="button" class="bk-btn" id="bk-ai-open" aria-expanded="false" aria-controls="bk-ai">はじめる<span aria-hidden="true">→</span></button>
-        </div>
-        <label class="bk-ent bk-drop" id="bk-drop" for="bk-file">
-          <svg class="bk-drop-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h8M12 11v8" /></svg>
-          <b>年間予算表（.xlsx）をここに置く</b>
-          <span class="bk-drop-hint">KPI管理表も読めます</span>
-          <span class="bk-drop-hint">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
-          <span class="bk-btn">ファイルを選ぶ</span>
-          <span class="bk-drop-hint">ファイルは送信されず、ブラウザの中だけで読みます</span>
-        </label>
-        <input type="file" id="bk-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
-        <div class="bk-ent">
-          <small><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" /><path d={ICON.key} /></svg>数字が頭の中にある</small>
-          <b>画面で入力する</b>
-          <p>必要な数字を画面の表に入れる</p>
-          <button type="button" class="bk-btn" id="bk-start">入力する<span aria-hidden="true">→</span></button>
-        </div>
-      </div>
-
-      <div class="bk-ai" id="bk-ai" hidden>
-        <p class="bk-ai-st">① このプロンプトをコピーして、KPIの案を作ったAIのチャットに貼る（手元の資料があれば一緒に貼る）</p>
-        <pre class="bk-prompt" id="bk-prompt" set:text={aiPrompt(KITS.kpimake)}></pre>
-        <button type="button" class="bk-btn2" id="bk-copy">プロンプトをコピー</button>
-        <p class="bk-ai-st">② AIが返した結果を、ここに貼る</p>
-        <textarea class="bk-paste" id="bk-paste" rows="6" placeholder="AIが返したJSON（```json から ``` まで）をそのまま貼りつけます" aria-label="AIが返した結果"></textarea>
-        <p class="bk-ai-st">③ 読み込む</p>
-        <button type="button" class="bk-btn" id="bk-import">読み込む<span aria-hidden="true">→</span></button>
-      </div>
-
-      <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
-      <p class="bk-err" id="bk-err" role="alert" hidden></p>
-      <p class="bk-hint"><a href="/tools/kpi-sheet-maker/sample">サンプル画面を見る（基本モデルの安定期）→</a></p>
-      <div class="bk-need">
-        <div>
-          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します</span></p>
-          <dl>
-            <dt>前提</dt>
-            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-            <dt>今期の実績</dt>
-            <dd>{ACT_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-            <dt>チャネル別（年間）</dt>
-            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
-          </dl>
-        </div>
-        <div class="bk-need-dl">
-          <div class="bk-doc" aria-hidden="true"><i></i><b>年間予算表</b><em></em><em></em></div>
-          <div class="bk-need-dl-t">
-            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
-            <b>年間予算表（無料）</b>
-            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、上の枠に置くとKPI管理表を作れます。</p>
-          </div>
-          <a class="bk-btn2" href={SHEET_URL}>無料でダウンロード<span aria-hidden="true">→</span></a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <ToolFooter path="/tools/kpi-sheet-maker" />
+  <KitIntro kitId={KIT_ID} />
+  <ToolFooter path={KITS[KIT_ID].path} />
 </BaseLayout>
 
 <script>

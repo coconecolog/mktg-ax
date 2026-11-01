@@ -1,0 +1,30 @@
+---
+// src/pages/tools/kpi-sheet-maker/final.astro
+// 最終チェック・ダウンロードの画面（noindex）。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
+import "@/styles/budget-checker.css";
+
+const KIT_ID = "kpimake";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: p.title, href: base },
+  { name: "最終チェック・ダウンロード", href: `${base}/final` },
+];
+---
+
+<BaseLayout title={`${p.title} 最終チェック・ダウンロード｜MeerKitLab`} description={`${p.title}の最終チェックの画面です。未対応の項目を確かめて、Excelをダウンロードします。`} ogImage="/open-graph/default.png" noindex>
+  <Breadcrumb items={breadcrumbItems} />
+  <KitFlow kitId={KIT_ID} mode="final" />
+
+</BaseLayout>
+
+<script>
+  import "@/scripts/budget-checker/flow";
+</script>

@@ -25,7 +25,7 @@ import {
   type IssueState,
 } from "@/lib/budgetFlow";
 import { planFileName } from "@/lib/budget-sheet";
-import { toMake } from "@/lib/budgetMake";
+import { AUTO_KEYS, applyMake, diagnoseMake, toMake, type AutoKey, type MakeState } from "@/lib/budgetMake";
 import { KITS, type KitId } from "@/lib/planKits";
 import { pickSaveTarget, writePlanFile } from "@/scripts/budget-checker/download";
 
@@ -51,6 +51,14 @@ function restore(): BudgetState | null {
       if ((s.input as any)[k] === null) (s.input as any)[k] = NaN;
     if (!Array.isArray(s.manual)) s.manual = CHANNELS.map(() => false);
     if (!Array.isArray(s.notes)) s.notes = [];
+    // 作る系のKit（予算作成Kit・KPI管理表作成Kit）：今期の実績と上書きの印を戻し、自動配分し直す
+    if (KIT.maker) {
+      const m = s as MakeState;
+      const a = (m.actual ?? {}) as Partial<MakeState["actual"]>;
+      m.actual = { leads: a.leads ?? NaN, valid: a.valid ?? NaN, deals: a.deals ?? NaN, wins: a.wins ?? NaN };
+      if (!Array.isArray(m.ovr) || m.ovr.length !== CHANNELS.length) m.ovr = CHANNELS.map(() => ({ valid: false, deals: false, wins: false }));
+      applyMake(m);
+    }
     return s;
   } catch {
     return null;
@@ -71,7 +79,7 @@ let d: BudgetDiagnosis;
 let issues: Issue[] = [];
 
 function recompute() {
-  d = diagnoseBudget(st, KIT);
+  d = KIT.maker ? diagnoseMake(st as MakeState, KIT) : diagnoseBudget(st, KIT);
   issues = buildIssues(st, KIT, d);
   // これまでに出たカードを覚える（直したあとも「修正済み」で出すため）
   let changed = false;
@@ -355,6 +363,12 @@ function initCheck() {
     const t = e.target as HTMLInputElement;
     if (!t.name) return;
     setField(st, t.name, t.value);
+    if (KIT.maker) {
+      // 自動配分の欄（有効リード数・商談数・受注数）を直したら上書き。空にしたら自動に戻す。ほかの欄でも配り直す
+      const m = /^ch(\d)\.(\w+)$/.exec(t.name);
+      if (m && (AUTO_KEYS as string[]).includes(m[2])) (st as MakeState).ovr[Number(m[1])][m[2] as AutoKey] = t.value.trim() !== "";
+      applyMake(st as MakeState);
+    }
     afterEdit(t.name);
   });
   root.addEventListener("click", (e) => {
