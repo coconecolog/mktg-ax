@@ -15,7 +15,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
-import { aiPrompt } from "@/lib/budgetCheck";
+import { aiPrompt, diagnoseBudget, sampleState } from "@/lib/budgetCheck";
+import { buildIssues } from "@/lib/budgetFlow";
 import { KITS } from "@/lib/planKits";
 import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
 import "@/styles/budget-checker.css";
@@ -32,6 +33,14 @@ const breadcrumbItems = [
   { name: TOOL_TITLE, href: "/tools/budget-checker" },
 ];
 
+// ファーストビュー右の「診断結果の見本」：基本モデルの安定期の記入例から、展示会の商談数・受注数を減らした案を実際に判定した結果（2026-11-01）
+const demo = sampleState();
+demo.input.channels[0].deals = 15;
+demo.input.channels[0].wins = 4;
+const demoDiag = diagnoseBudget(demo);
+const demoIssues = buildIssues(demo, undefined, demoDiag);
+const ST_LABEL = { fix: "直す", check: "確認" } as const;
+
 const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
 const CH_TAGS = ["リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
 // アイコン（入口のカードと同じ）
@@ -45,10 +54,40 @@ const ICON = {
 <BaseLayout title={`${TOOL_TITLE}｜予算案を診断して直し、年間予算表に仕上げる｜MeerKitLab`} description={TOOL_DESCRIPTION} ogImage="/open-graph/default.png">
   <Breadcrumb items={breadcrumbItems} />
 
-  <!-- H1まわりは /lab・/tools と同じ形。.bk の外に置く。説明はキャッチの1行だけ（詳しくは入口の下） -->
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
+  <!-- H1はKit名。その下に問いかけ（何をするKitか）と説明、右に診断結果の見本（2026-11-01） -->
+  <div class="bk bk-top">
+    <div class="bk-top-l">
+      <h1 class="bk-top-h1">{TOOL_TITLE}</h1>
+      <p class="bk-top-q">その予算案、<br />目標に届く？<br />コストは上限以内？</p>
+      <p class="bk-top-d">予算案の数字を入れると、すぐに判定して<b>直すところ</b>を示します。直した数字は、そのまま稟議に使える年間予算表（Excel）で持ち帰れます。</p>
+      <p class="bk-top-tags"><span>無料</span><span>登録なし</span><span>数字はサーバーに送りません</span></p>
+      <div class="bk-top-cta">
+        <a class="bk-btn bk-go" href="#start">診断をはじめる<span aria-hidden="true">↓</span></a>
+        <a class="bk-top-link" href="/tools/budget-checker/sample">見本の診断結果を見る →</a>
+      </div>
+    </div>
+    <figure class="bk-demo" aria-label="診断結果の見本">
+      <figcaption><b>診断結果</b><span>見本</span></figcaption>
+      <div class="bk-demo-sum">
+        <div class="is-fix"><span>直す</span><b>{demoDiag.counts.fix}</b></div>
+        <div class="is-check"><span>確認</span><b>{demoDiag.counts.check}</b></div>
+        <div><span>問題なし</span><b>{demoDiag.counts.ok}</b></div>
+      </div>
+      <ul class="bk-demo-l">
+        {
+          demoIssues.map((x) => (
+            <li>
+              <div>
+                <b>{x.title}</b>
+                <p>いま：{x.now}</p>
+                <p class="ok">OKになる条件：{x.target}</p>
+              </div>
+              <span class={`bk-demo-st is-${x.status}`}>{ST_LABEL[x.status]}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </figure>
   </div>
 
   <main class="bk" id="bk" data-kit="budget" data-mode="intro">
@@ -56,7 +95,7 @@ const ICON = {
       <FlowSteps current={1} />
 
       <!-- ===== ファーストビュー：入口3つ ===== -->
-      <div class="bk-start-h">
+      <div class="bk-start-h" id="start">
         <h2 class="bk-h2">診断をはじめる</h2>
         <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
       </div>
