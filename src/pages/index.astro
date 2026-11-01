@@ -2,8 +2,8 @@
 // トップページ。文言・リンクは src/data/home.ts にまとめています（文言の修正はそちらだけでOK）。
 // 構成: ヒーロー → 共通基準（黒い帯） → 01 注力テーマ → 02 課題から探す → 計画から改善、報告まで → 03 新着記事 → 04 ご要望・ご質問
 // ・01: HOME_FOCUS.category のサブカテゴリ（STEP）と代表記事、ツール、記事・資料の新着を表示。
-// ・02: Notionのカテゴリ（並び順）と、カテゴリごとのサブカテゴリを自動で表示。
-// ・03: 記事と資料をまぜて新しい順に自動表示（件数は HOME_LATEST.count）。資料の行は見た目で区別する。
+// ・02: Notionのカテゴリ（並び順）を自動で表示。カード全体がカテゴリトップへのリンク（説明文は HOME_ISSUES.descriptions）。
+// ・03: 左に新着記事、右に新着資料を新しい順に自動表示（件数は HOME_LATEST.count）。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
 import {
@@ -74,9 +74,7 @@ const issueCategories = [...getAllCategories()]
   .map((c) => ({
     name: c.name,
     href: getCategoryPath(c.name),
-    subs: getSubcategoriesByCategory(c.name)
-      .slice(0, HOME_ISSUES.subcategoryCount)
-      .map((s) => ({ name: s.name, href: getSubcategoryPath(s) })),
+    description: HOME_ISSUES.descriptions[c.name] ?? c.description ?? "",
   }));
 
 // カテゴリのアイコン（並び順の1番目から順に使う。足りないときは最初に戻る）
@@ -93,10 +91,11 @@ const ISSUE_ICONS = [
   '<circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 20c0-3 2-5 5-5s5 2 5 5M12 20c0-3 2-5 5-5s5 2 5 5"/>',
 ];
 
-// ===== 03 新着記事・資料 =====
-const latestPosts = getLibraryItems("all")
+// ===== 03 新着記事・資料（左に記事、右に資料） =====
+const latestPosts = getLibraryItems("post")
   .slice(0, HOME_LATEST.count)
   .map((item) => ({ ...item, readTime: readTimeOf(item.metaLabel) }));
+const latestResources = getLibraryItems("resource").slice(0, HOME_LATEST.count);
 ---
 
 <BaseLayout title={HOME_TITLE} description={HOME_META_DESCRIPTION} ogImage="/open-graph/default.png" pagefindIgnore jsonLd={organizationSchema}>
@@ -296,29 +295,17 @@ const latestPosts = getLibraryItems("all")
       issueCategories.length > 0 && (
         <section id="issues" class="scroll-mt-20 bg-neutral-100">
           <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
-            <p class="text-xs font-bold text-neutral-500">{HOME_ISSUES.eyebrow}</p>
-            <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_ISSUES.heading}</h2>
+            <h2 class="text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_ISSUES.heading}</h2>
             <div class="mt-10 grid gap-px bg-neutral-200 sm:grid-cols-2 lg:grid-cols-5">
               {issueCategories.map((cat, i) => (
-                <div class="flex flex-col bg-white p-6">
+                <a href={cat.href} class="group flex flex-col bg-white p-6 transition-colors hover:bg-neutral-50">
                   <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true" set:html={ISSUE_ICONS[i % ISSUE_ICONS.length]} />
-                  <h3 class="mt-5 font-extrabold leading-snug">
-                    <a href={cat.href} class="hover:underline">{cat.name}</a>
+                  <h3 class="mt-5 flex items-start justify-between gap-3 font-extrabold leading-snug">
+                    <span class="group-hover:underline">{cat.name}</span>
+                    <span class="shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
                   </h3>
-                  <ul class="mt-4 space-y-1.5 text-sm text-neutral-600">
-                    {cat.subs.map((sub) => (
-                      <li>
-                        {sub.href ? <a href={sub.href} class="hover:text-ink-950 hover:underline">{sub.name}</a> : sub.name}
-                      </li>
-                    ))}
-                  </ul>
-                  <div class="mt-auto pt-6">
-                    <a href={cat.href} class="inline-flex items-center gap-2 text-sm font-bold hover:underline">
-                      {HOME_ISSUES.linkLabel}
-                      <span aria-hidden="true">→</span>
-                    </a>
-                  </div>
-                </div>
+                  {cat.description && <p class="mt-3 text-sm leading-relaxed text-neutral-600">{cat.description}</p>}
+                </a>
               ))}
             </div>
           </div>
@@ -333,6 +320,7 @@ const latestPosts = getLibraryItems("all")
           <h2 class="text-2xl font-extrabold tracking-tight md:text-[1.75rem]">{HOME_PDCA.heading}</h2>
           <p class="text-sm text-neutral-600">{HOME_PDCA.sub}</p>
         </div>
+        {HOME_PDCA.lead && <p class="mt-4 max-w-3xl text-sm leading-[1.9] text-neutral-700">{HOME_PDCA.lead}</p>}
         <div class="mt-8 grid gap-4 lg:grid-cols-3">
           {HOME_PDCA.steps.map((step) => (
             <div class="flex flex-col border border-neutral-300 bg-white p-6">
@@ -416,45 +404,49 @@ const latestPosts = getLibraryItems("all")
       </div>
     </section>
 
-    {/* ===== 03 新着記事・資料（記事と資料をまぜて表示。資料の行は「資料」タグ・形式・↓・薄いグレーの背景） ===== */}
+    {/* ===== 03 新着記事・資料（左に記事、右に資料） ===== */}
     {
-      latestPosts.length > 0 && (
+      (latestPosts.length > 0 || latestResources.length > 0) && (
         <section class="border-t border-neutral-200">
           <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
             <p class="text-xs font-bold text-neutral-500">{HOME_LATEST.eyebrow}</p>
             <h2 class="mt-4 text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_LATEST.heading}</h2>
-            <ul class="mt-10 border-t border-neutral-200">
-              {latestPosts.map((post) => {
-                const isResource = post.kind === "resource";
-                return (
-                  <li class={`border-b border-neutral-200 ${isResource ? "-mx-4 bg-neutral-50 px-4 md:-mx-5 md:px-5" : ""}`}>
-                    <a href={post.href} class="group grid gap-3 py-6 md:grid-cols-[110px_minmax(0,1fr)_24px] md:gap-6">
-                      <div class="flex gap-4 text-xs text-neutral-500 md:block md:space-y-2">
-                        <p>{formatDate(post.publishedAt)}</p>
-                        {isResource ? (
-                          <p class="font-bold text-ink-950">{post.fileExt ? `${post.fileExt}・` : ""}{HOME_LATEST.resourceMeta}</p>
-                        ) : (
-                          post.readTime && <p>{post.readTime}</p>
-                        )}
-                      </div>
-                      <div class="min-w-0">
-                        <p class="flex flex-wrap items-center gap-2 text-xs font-bold">
-                          {isResource && <span class="bg-ink-950 px-2 py-0.5 text-[0.7rem] leading-normal text-white">{HOME_LATEST.resourceTag}</span>}
+            <div class="mt-10 grid gap-12 md:grid-cols-2 md:gap-10">
+              <div>
+                <h3 class="border-b border-neutral-300 pb-4 text-lg font-extrabold">{HOME_LATEST.postsHeading}</h3>
+                <ul>
+                  {latestPosts.map((post) => (
+                    <li class="border-b border-neutral-200">
+                      <a href={post.href} class="group block py-5">
+                        <p class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                          <span>{formatDate(post.publishedAt)}</span>
                           {post.category && <span>{post.category}</span>}
+                          {post.readTime && <span>{post.readTime}</span>}
                         </p>
-                        <h3 class="mt-2 font-extrabold leading-snug group-hover:underline md:text-lg">{post.title}</h3>
-                        {post.description && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-600">{post.description}</p>}
-                      </div>
-                      {isResource ? (
-                        <span class="hidden text-lg font-bold text-ink-950 md:block" aria-label="資料をダウンロード">↓</span>
-                      ) : (
-                        <span class="hidden text-lg text-neutral-400 group-hover:text-ink-950 md:block" aria-hidden="true">↗</span>
-                      )}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
+                        <p class="mt-2 font-extrabold leading-snug group-hover:underline md:text-lg">{post.title}</p>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 class="border-b border-neutral-300 pb-4 text-lg font-extrabold">{HOME_LATEST.resourcesHeading}</h3>
+                <ul>
+                  {latestResources.map((res) => (
+                    <li class="border-b border-neutral-200">
+                      <a href={res.href} class="group block py-5">
+                        <p class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                          <span>{formatDate(res.publishedAt)}</span>
+                          {res.category && <span>{res.category}</span>}
+                          {res.fileFormat && <span class="font-bold text-ink-950">{res.fileFormat}</span>}
+                        </p>
+                        <p class="mt-2 font-extrabold leading-snug group-hover:underline md:text-lg">{res.title}</p>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
             <div class="mt-8 flex justify-end">
               <a href={HOME_LATEST.allLink.href} class="inline-flex items-center justify-between gap-10 border border-neutral-300 px-6 py-3.5 text-sm font-bold transition-colors hover:border-ink-950">
                 {HOME_LATEST.allLink.label}

@@ -208,6 +208,8 @@ export interface Resource {
   excerptImages: string[];
   /** 「トップ掲載」（数値）。1 = トップ02エリアの大きい枠、2・3 = 小さい枠。未設定ならnull（古いキャッシュではundefinedの場合あり） */
   homeOrder?: number | null;
+  /** 「ファイル形式」（例: PDF・スプレッドシート/Excel）。トップの新着資料に表示。未設定なら空文字（古いキャッシュではundefined） */
+  fileFormat?: string;
   /** 「トップ用キャッチ」。トップの大きい枠のタイトル上に出す一文。未設定なら空文字 */
   homeCatch?: string;
   /** 「内容物」（例: 管理シート＋16ページの使い方ガイド）。トップの大きい枠に表示。未設定なら空文字 */
