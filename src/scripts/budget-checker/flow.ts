@@ -378,61 +378,60 @@ function initCheck() {
 // =====================================================================
 // ③ 最終チェック
 // =====================================================================
+const STATE_LABEL: Record<IssueState, string> = { open: "未対応", ack: "確認済み", done: "修正済み" };
 
 function initFinal() {
   recompute();
-  const open = openIssues();
-  const fixes = open.filter((i) => i.status === "fix");
-  const checks = open.filter((i) => i.status === "check");
-  const fixN = fixes.length;
-  const checkN = checks.length;
+  const h = headline();
+  const rows: string[] = [];
+  rows.push(`<li class="bk-fin-r"><div><span>目標に届くか</span><span class="bk-fin-v is-${h.goal[1]}">${esc(h.goal[0])}</span></div></li>`);
+  rows.push(`<li class="bk-fin-r"><div><span>コストは上限以内か</span><span class="bk-fin-v is-${h.cost[1]}">${esc(h.cost[0])}</span></div></li>`);
+  const keys = [...memo.seen].sort((a, b) => {
+    const rank = (k: IssueKey) => (stateOf(k) === "open" ? 0 : 1);
+    return rank(a) - rank(b);
+  });
+  for (const k of keys) {
+    const s = stateOf(k);
+    const is = issues.find((i) => i.key === k);
+    const tone = s === "open" ? (is!.status === "fix" ? "fix" : "check") : "ok";
+    const kind = s === "open" ? (is!.status === "fix" ? "直す・" : "確認・") : "";
+    rows.push(
+      `<li class="bk-fin-r"><a href="${URL_CHECK}?back=1#issue-${k}"><span>${esc(is?.title ?? ISSUE_TITLE[k])}</span><span class="bk-fin-v"><span class="bk-tg ${tone}">${kind}${STATE_LABEL[s]}</span><span class="bk-go">②で見る →</span></span></a></li>`,
+    );
+  }
+  if (!memo.seen.length && d.ready) rows.push(`<li class="bk-fin-r"><div><span>直すところ・確認するところ</span><span class="bk-fin-v is-ok">ありません</span></div></li>`);
+  $("bk-fin-l").innerHTML = rows.join("");
+  const fixN = openIssues().filter((i) => i.status === "fix").length;
+  const checkN = openIssues().filter((i) => i.status === "check").length;
   $("bk-f-fix").textContent = String(fixN);
   $("bk-f-check").textContent = String(checkN);
   $("bk-f-ok").textContent = String(d.items.filter((i) => i.status === "ok").length);
-  $("bk-f-fix").classList.toggle("is-fix", fixN > 0);
-  $("bk-f-check").classList.toggle("is-check", checkN > 0);
+  $("bk-f-fix").parentElement!.classList.toggle("on", fixN > 0);
+  $("bk-f-check").parentElement!.classList.toggle("on", checkN > 0);
   $("bk-fin-name").textContent = planFileName(st, KIT);
 
-  // 最終チェックの2行。残っている項目は ② のそのカードへのリンクを下に出す
-  const sub = (list: Issue[]) =>
-    list.length
-      ? `<ul class="bk-f2-sub">${list.map((i) => `<li><a href="${URL_CHECK}?back=1#issue-${i.key}">${esc(i.title)}<span class="bk-go">②で見る →</span></a></li>`).join("")}</ul>`
-      : "";
-  $("bk-f2-fix").innerHTML = fixN
-    ? `<span class="bk-f2-ic is-fix" aria-hidden="true">✕</span><span>修正が必要な項目：${fixN}件（このままでもダウンロードできます）</span>${sub(fixes)}`
-    : `<span class="bk-f2-ic is-ok" aria-hidden="true">✓</span><span>修正が必要な項目：0件</span>`;
-  const needAgree = fixN + checkN > 0;
-  $("bk-f2-check").innerHTML = checkN
-    ? `<label class="bk-f2-agree"><input type="checkbox" id="bk-agree" /><span class="bk-f2-ic is-check" aria-hidden="true">●</span><span>確認事項：${checkN}件（内容を確認して承認）</span></label>${sub(checks)}`
-    : needAgree
-      ? `<label class="bk-f2-agree"><input type="checkbox" id="bk-agree" /><span>修正が必要な項目が残ったまま進めることを承認する</span></label>`
-      : `<span class="bk-f2-ic is-ok" aria-hidden="true">✓</span><span>確認事項：0件</span>`;
-  $("bk-fin-lead").textContent = needAgree ? "確認事項をチェックして、年間予算表を完成させましょう。" : "直すところも確認事項もありません。年間予算表を完成させましょう。";
-
-  const agree = document.getElementById("bk-agree") as HTMLInputElement | null;
+  const open = openIssues();
+  const agree = $<HTMLInputElement>("bk-agree");
   const btn = $<HTMLButtonElement>("bk-dl");
   const err = $("bk-dlerr");
-  const box = $("bk-f2-dl");
-  const setReady = (ok: boolean) => {
-    btn.disabled = !ok;
-    box.classList.toggle("is-ready", ok);
-    $("bk-f2-tag").textContent = ok ? "完成" : "あと1つ";
-    $("bk-f2-dt").textContent = ok ? "年間予算表をダウンロードできます" : "上の確認事項にチェックすると、ダウンロードできます";
-  };
-  setReady(!needAgree);
+  $("bk-agree-t").textContent = "診断結果を確認しました";
+  $("bk-fin-lead").textContent = open.length
+    ? `未対応が${open.length}件あります。直す場合は、行を押すと ② のそのカードに戻ります。問題なければチェックを入れてダウンロードします。`
+    : "未対応の項目はありません。チェックを入れて、年間予算表（Excel）をダウンロードします。";
 
   const yearOk = Number.isInteger(st.input.startYear) && st.input.startYear >= 2000 && st.input.startYear <= 2100;
   if (!d.ready || !yearOk) {
-    if (agree) agree.disabled = true;
-    setReady(false);
+    agree.disabled = true;
     err.hidden = false;
     err.innerHTML = !d.ready
       ? `判定に必要な数字が足りないため、まだダウンロードできません。<a href="${URL_CHECK}?back=1">② 診断・修正に戻る →</a>`
       : `期首（年）が入っていないため、まだダウンロードできません。<a href="${URL_INPUT}">入力の画面で期首を入れる →</a>`;
   }
-  agree?.addEventListener("change", () => setReady(agree.checked));
+  agree.addEventListener("change", () => {
+    btn.disabled = !agree.checked;
+  });
   btn.addEventListener("click", async () => {
-    if (btn.disabled) return;
+    if (!agree.checked) return;
     err.hidden = true;
     const handle = await pickSaveTarget(st, KIT);
     if (handle === "abort") return;
