@@ -673,14 +673,15 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-nextk .bk-nextk-sub { margin-top: 0; }
 
 /* ===== 予算案診断Kit 入口（2026-11-01 見直し）：3ステップの説明 → 診断をはじめる（上下に余白）→ わかること＋必要な数字（1つの枠） ===== */
-.bk-3s { border-top: 1.5px solid var(--ink); padding-top: 22px; }
-.bk-3s-h { font-size: 1.15rem; font-weight: 800; margin: 0 0 14px; }
+.bk-3s { border-top: 1.5px solid var(--ink); padding-top: 16px; }
+.bk-3s-h { font-size: 1.05rem; font-weight: 800; margin: 0 0 10px; }
 .bk-3s-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr); align-items: stretch; }
-.bk-3s-l > li:not(.bk-3s-a) { background: #fff; border: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.bk-3s-l > li:not(.bk-3s-a) { background: #fff; border: 1px solid var(--line); padding: 10px 14px; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 2px 8px; }
+.bk-3s-l > li:not(.bk-3s-a) p { grid-column: 1 / -1; }
 .bk-3s-n { align-self: flex-start; font-size: 0.72rem; font-weight: 800; background: var(--ink); color: #fff; padding: 2px 8px; letter-spacing: 0.04em; }
-.bk-3s-l svg { width: 28px; height: 28px; fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; margin-top: 4px; }
-.bk-3s-l b { font-size: 1.05rem; }
-.bk-3s-l p { font-size: 0.8rem; color: var(--sub); line-height: 1.6; }
+.bk-3s-l svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bk-3s-l b { font-size: 0.98rem; }
+.bk-3s-l p { font-size: 0.76rem; color: var(--sub); line-height: 1.5; }
 .bk-3s-a { display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: var(--mute); }
 @media (max-width: 760px) { .bk-3s-l { grid-template-columns: minmax(0, 1fr); gap: 4px; } .bk-3s-a { transform: rotate(90deg); height: 24px; } }
 .bk-entry { padding: 64px 0 56px; }
