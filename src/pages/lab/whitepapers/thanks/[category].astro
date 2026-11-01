@@ -4,7 +4,7 @@
 //   /lab/whitepapers/thanks/general     … カテゴリ未設定の資料をDLした人向け
 // 遷移元は src/pages/resources/[slug].astro の資料DLフォーム（成功時に自動遷移）。
 //
-// 構成（上から）: お礼 → TOOLS（無料ツール。そのカテゴリのツール、無ければ全ツールの先頭）
+// 構成（上から）: お礼 → KITS（メインのKitだけ。そのカテゴリのKit、無ければKitの先頭）
 //                → OTHER DOWNLOADS（そのカテゴリの記事・資料を混合で3件。今ダウンロードした資料は除外）→ お問い合わせCTA
 // GA4: ページ自体が /lab/whitepapers/thanks/... という固有URLなので、GTM/GA4の page_view で計測できる。
 //      DLの「イベント」（resource_download）はフォーム側で送信済みのため、このページでは二重に送らない。
@@ -18,7 +18,8 @@ import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getCategorySlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
-import { getAllTools, getToolsByCategory } from "@/lib/tools";
+import { getAllTools } from "@/lib/tools";
+import { KIT_GROUPS } from "@/data/tools";
 
 export const getStaticPaths = (async () => {
   // マスターカテゴリDBの全カテゴリ＋資料に実際に設定されているカテゴリ（マスターDB未設定の環境でも壊れないように）
@@ -37,9 +38,12 @@ export const getStaticPaths = (async () => {
 
 const { categoryName } = Astro.props as { categoryName: string | null };
 
-// TOOLS: そのカテゴリのツール（最大3件）。該当が無いカテゴリ・カテゴリ未設定のときは、並び順の先頭3件。
-const categoryTools = categoryName ? getToolsByCategory(categoryName) : [];
-const tools = (categoryTools.length > 0 ? categoryTools : getAllTools()).slice(0, 3);
+// KITS: メインのKit（/tools の KIT_GROUPS に載っているもの）だけを出す（最大3件）。
+// そのカテゴリのKitを優先し、該当が無いカテゴリ・カテゴリ未設定のときはKitの並び順の先頭3件。
+const kitHrefs = new Set(KIT_GROUPS.flatMap((g) => g.kits.map((k) => k.href)));
+const kits = getAllTools().filter((t) => kitHrefs.has(t.href));
+const categoryKits = categoryName ? kits.filter((t) => t.categories.includes(categoryName)) : [];
+const tools = (categoryKits.length > 0 ? categoryKits : kits).slice(0, 3);
 
 // OTHER DOWNLOADS: そのカテゴリの記事・資料の混合リスト。「今ダウンロードした資料」を後から除外できるよう
 // 1件多め（4件）を出力しておき、ブラウザ側で3件に整える。
@@ -57,7 +61,7 @@ const breadcrumbItems = [
 
 <BaseLayout
   title="ダウンロードありがとうございました"
-  description="資料のダウンロードリンクをメールでお送りしました。あわせて無料ツールや関連する記事・資料もご覧ください。"
+  description="資料のダウンロードリンクをメールでお送りしました。あわせてKitや関連する記事・資料もご覧ください。"
   noindex
   pagefindIgnore
 >
@@ -79,22 +83,22 @@ const breadcrumbItems = [
       </p>
     </section>
 
-    <!-- TOOLS -->
+    <!-- KITS -->
     {
       tools.length > 0 && (
         <section class="mt-14 border-t border-neutral-200 pt-12">
           <div class="flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-widest text-neutral-400">TOOLS</p>
-              <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">業務効率化に役立つ無料ツール</h2>
+              <p class="text-xs font-bold tracking-widest text-neutral-400">KITS</p>
+              <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-ink-950">予算・KPIづくりに使えるKit</h2>
             </div>
             <a href="/tools" class="shrink-0 text-sm font-medium text-brand-700 hover:underline">
-              ツール一覧へ →
+              Kit一覧へ →
             </a>
           </div>
           <div class="mt-6 space-y-4">
             {tools.map((tool) => (
-              <a href={tool.href} class="group flex flex-col gap-3 rounded-2xl border border-neutral-300 bg-white p-6 no-underline transition-shadow hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+              <a href={tool.href} class="group flex flex-col gap-3 border border-neutral-300 bg-white p-6 no-underline transition-shadow hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
                 <div class="min-w-0">
                   {(tool.tag || tool.category) && <p class="text-xs text-neutral-400">{tool.tag || tool.category}</p>}
                   <h3 class="mt-1 text-xl font-extrabold leading-snug tracking-tight text-ink-950 group-hover:text-brand-700">{tool.title}</h3>
