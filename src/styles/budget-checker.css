@@ -747,3 +747,16 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-fi-t td.in.auto.is-ovr .bk-ovr-x { display: block; left: 6px; }
 .bk-fi-t td.is-short { color: var(--red); }
 .bk-fi-t td.calc { text-align: right; }
+
+/* 入口の右：診断結果の見本の代わりに画面の見本の画像（施策効果診断Kit、2026-11-01） */
+.bk-demo-img { display: flex; flex-direction: column; text-decoration: none; color: var(--ink); }
+.bk-demo-img img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--line); }
+.bk-demo-img span { padding: 10px 14px; font-size: 0.85rem; font-weight: 700; text-align: right; }
+
+/* サンプル画面（2026-11-01）：見本の説明 → 診断・修正の画面｜完成イメージのタブ */
+.bk-smp { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+.bk-smp-n { font-size: 0.85rem; color: var(--sub); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.bk-smp-n b { font-size: 0.75rem; border: 1.5px solid var(--ink); color: var(--ink); padding: 1px 8px; }
+.bk-smp .bk-fi-mtabs { align-items: center; flex-wrap: wrap; }
+.bk-smp-go { margin-left: auto; color: #fff; }
+.bk a.bk-smp-go { color: #fff; }

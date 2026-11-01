@@ -8,6 +8,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import EffectGrid from "@/components/kpi-analysis/EffectGrid.astro";
+import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
 import "@/styles/budget-checker.css";
 import "@/styles/kpi-analysis.css";
 
@@ -35,28 +36,8 @@ const breadcrumbItems = [
   </div>
 
   <main class="bk" id="bk" data-kit="effect" data-mode="input">
-    <p class="bk-back"><a href="/tools/kpi-analysis">← 施策効果診断Kitに戻る</a></p>
-
-    <section class="bk-howto" aria-labelledby="bk-howto-h">
-      <h2 class="bk-howto-h" id="bk-howto-h">使い方</h2>
-      <div class="bk-howto-b">
-        <ol class="bk-howto-l">
-          <li>
-            <span class="bk-tno">1</span>
-            <div><b>まず「計画」を入力</b><p>前提とチャネル別の年間の計画を入れ、月別は季節で増減する月だけ直します。</p></div>
-          </li>
-          <li>
-            <span class="bk-tno">2</span>
-            <div><b>毎月「実績」と「施策ログ」を入力</b><p>終わった月の実績と、課題に打った手を入れます。</p></div>
-          </li>
-        </ol>
-        <ul class="bk-howto-n">
-          <li>水色のセルに入力してください。</li>
-          <li>灰色のセルは自動計算されるセルです。</li>
-          <li>右の判定で「直す」「確認」が出たら、その欄を直してください（残っていてもKPI管理表をダウンロードできます）。</li>
-        </ul>
-      </div>
-    </section>
+    <FlowSteps current={1} doc="KPI管理表" />
+    <p class="bk-back"><a href="/tools/kpi-analysis">← 施策効果診断Kitの入口に戻る</a></p>
 
     <section id="bk-work">
       <div class="bk-notes" id="bk-notes" hidden></div>

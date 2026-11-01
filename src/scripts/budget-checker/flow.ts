@@ -10,7 +10,8 @@
 //   NGが残っていてもダウンロードできる（残りはExcelの「診断結果」シートに載る）。保存が終わったら ④⑤ 完了に移る
 // - ④⑤ 完了：もう一度ダウンロード／数字を直す（② へ）／次のKit（KPI管理表作成Kitに数字を引き継ぐ）
 // 入れた数字はサーバーに送らない
-import { CHANNELS, diagnoseBudget, fmt, resetMonthly, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
+import { CHANNELS, diagnoseBudget, fmt, resetMonthly, sampleState, type BudgetDiagnosis, type BudgetState } from "@/lib/budgetCheck";
+import { diagHtml, sheetHtml } from "@/scripts/budget-checker/preview";
 import {
   ISSUE_TITLE,
   buildIssues,
@@ -25,7 +26,7 @@ import {
   type IssueState,
 } from "@/lib/budgetFlow";
 import { planFileName } from "@/lib/budget-sheet";
-import { AUTO_KEYS, applyMake, diagnoseMake, toMake, type AutoKey, type MakeState } from "@/lib/budgetMake";
+import { AUTO_KEYS, applyMake, diagnoseMake, makeSample, toMake, type AutoKey, type MakeState } from "@/lib/budgetMake";
 import { KITS, type KitId } from "@/lib/planKits";
 import { pickSaveTarget, writePlanFile } from "@/scripts/budget-checker/download";
 
@@ -35,7 +36,9 @@ const URL_CHECK = `${BASE}/check`;
 const URL_FINAL = `${BASE}/final`;
 const URL_DONE = `${BASE}/done`;
 const URL_INPUT = `${BASE}/input`;
-const MODE = (document.getElementById("bk")?.dataset.mode ?? "check") as "check" | "final" | "done";
+const MODE = (document.getElementById("bk")?.dataset.mode ?? "check") as "check" | "final" | "done" | "sample";
+/** サンプル画面（/sample、2026-11-01）：記入例で ② 診断・修正の画面を見せる。保存しない */
+const SAMPLE = MODE === "sample";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: unknown) =>
@@ -65,6 +68,7 @@ function restore(): BudgetState | null {
   }
 }
 function save() {
+  if (SAMPLE) return;
   try {
     localStorage.setItem(KIT.store, JSON.stringify(st));
   } catch {
@@ -72,9 +76,22 @@ function save() {
   }
 }
 
-const loaded = restore();
+const loaded = SAMPLE ? sampleFor() : restore();
+/** サンプル画面の数字：基本モデルの安定期の記入例から、展示会の商談数・受注数を減らした案（入口の見本と同じ） */
+function sampleFor(): BudgetState {
+  const s = KIT.maker ? makeSample() : sampleState();
+  s.input.channels[0].deals = 15;
+  s.input.channels[0].wins = 4;
+  if (KIT.maker) {
+    const m = s as MakeState;
+    m.ovr[0].deals = true;
+    m.ovr[0].wins = true;
+    applyMake(m);
+  }
+  return s;
+}
 let st = loaded as BudgetState;
-let memo: FlowMemo = readMemo(KIT);
+let memo: FlowMemo = SAMPLE ? { seen: [], ack: [] } as unknown as FlowMemo : readMemo(KIT);
 let d: BudgetDiagnosis;
 let issues: Issue[] = [];
 
@@ -88,7 +105,7 @@ function recompute() {
       memo.seen.push(i.key);
       changed = true;
     }
-  if (changed) writeMemo(memo, KIT);
+  if (changed && !SAMPLE) writeMemo(memo, KIT);
 }
 
 const stateOf = (key: IssueKey): IssueState => issueState(key, issues, memo);
@@ -383,7 +400,7 @@ function initCheck() {
     if (a) {
       const key = a.closest<HTMLElement>(".bk-is")!.dataset.key as IssueKey;
       memo.ack = memo.ack.includes(key) ? memo.ack.filter((k) => k !== key) : [...memo.ack, key];
-      writeMemo(memo, KIT);
+      if (!SAMPLE) writeMemo(memo, KIT);
       afterEdit();
     }
   });
@@ -518,8 +535,36 @@ function initDone() {
   });
 }
 
+// ---------- サンプル画面 ----------
+function initSample() {
+  initCheck();
+  let sheetTab: "main" | "diag" = "main";
+  const renderSheet = () => {
+    $("bk-sheet").innerHTML = sheetTab === "main" ? sheetHtml(st, KIT) : diagHtml(st, d, new Date(), KIT);
+    $("bk-s-main").setAttribute("aria-selected", String(sheetTab === "main"));
+    $("bk-s-diag").setAttribute("aria-selected", String(sheetTab === "diag"));
+  };
+  const show = (v: string) => {
+    document.querySelectorAll<HTMLElement>("[data-smp]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.smp === v)));
+    $("bk-smp-sheet").hidden = v !== "sheet";
+    $("bk-flow").hidden = v !== "check";
+    if (v === "sheet") renderSheet();
+  };
+  document.querySelectorAll<HTMLElement>("[data-smp]").forEach((b) => b.addEventListener("click", () => show(b.dataset.smp!)));
+  $("bk-s-main").addEventListener("click", () => {
+    sheetTab = "main";
+    renderSheet();
+  });
+  $("bk-s-diag").addEventListener("click", () => {
+    sheetTab = "diag";
+    renderSheet();
+  });
+  if (new URLSearchParams(location.search).get("tab") === "sheet") show("sheet");
+}
+
 // ---------- はじめ ----------
 if (!loaded) noData();
 else if (MODE === "check") initCheck();
+else if (MODE === "sample") initSample();
 else if (MODE === "final") initFinal();
 else initDone();

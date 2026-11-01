@@ -232,7 +232,7 @@ const MONTHS = Array.from({ length: 12 }, (_, k) => k);
         sample ? (
           <a class="bk-btn bk-dl" href="/tools/kpi-analysis">自分のKPI管理表で診断する<span aria-hidden="true">→</span></a>
         ) : (
-          <button type="button" class="bk-btn bk-dl" id="bk-dl">KPI管理表をダウンロード（Excel）</button>
+          <a class="bk-btn bk-dl" href="/tools/kpi-analysis/final">最終チェック・ダウンロードへ<span aria-hidden="true">→</span></a>
         )
       }
       <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
