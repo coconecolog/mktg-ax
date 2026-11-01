@@ -29,7 +29,7 @@ import {
   type BudgetState,
   type ChannelInput,
 } from "@/lib/budgetCheck";
-import { calc } from "@/lib/kpi-sheet-maker";
+import { calc, splitMonthly } from "@/lib/kpi-sheet-maker";
 import { clearMemo } from "@/lib/budgetFlow";
 import { pickSaveTarget, writePlanFile } from "@/scripts/budget-checker/download";
 import { KITS, readSheets, type KitId } from "@/lib/planKits";
@@ -48,7 +48,9 @@ const INPUT_URL = `${KIT.path}/input`;
 /** 予算案診断Kitだけ、入力のあとは ② 診断・修正（/check）に移る */
 const FLOW = KIT.id === "budget";
 const CHECK_URL = `${KIT.path}/check`;
-const NO_MARKS = !!document.querySelector(".bk-grid.is-flow");
+/** 予算案診断Kitの入力の画面（FlowInput、2026-11-01）：判定は出さず、1画面で前提・年間・月別 */
+const FI = !!document.getElementById("bk-fi-pre-n");
+const NO_MARKS = FI || !!document.querySelector(".bk-grid.is-flow");
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const MODE = (document.getElementById("bk")?.dataset.mode ?? "intro") as "intro" | "input" | "sample";
@@ -240,13 +242,58 @@ function update() {
     const td = (field(key)?.closest("td") as HTMLElement | null) ?? form!.querySelector<HTMLElement>(`[data-out="${key}"]`);
     td?.classList.add(`is-${s}`);
   }
-  const dot = $("bk-mdot");
-  dot.hidden = !mdot;
-  dot.classList.toggle("check", mdot === "check");
+  const dot = document.getElementById("bk-mdot");
+  if (dot) {
+    dot.hidden = !mdot;
+    dot.classList.toggle("check", mdot === "check");
+  }
 
-  renderPanel(d);
+  if (FI) updateFlowInput();
+  else renderPanel(d);
   if (view === "sheet") renderSheet();
   save();
+}
+
+// 予算案診断Kitの入力の画面（FlowInput）：入力済みの数、月別の合計・年間・状態、手で直した月の色
+function updateFlowInput() {
+  const inp = st.input;
+  const preN = (["goal", "price", "gmPct", "paybackYears", "leadTime"] as const).filter((k) => Number.isFinite(inp[k]) && inp[k] > 0).length;
+  const chN = inp.channels.filter((c) => KEYS.some((k) => c[k] > 0)).length;
+  const manN = st.manual.filter(Boolean).length;
+  $("bk-fi-pre-n").textContent = `必須 ${preN} / 5 入力済み`;
+  $("bk-fi-ch-n").textContent = `${chN}チャネル 入力済み`;
+  $("bk-fi-m-n").textContent = `手で直した ${manN}チャネル`;
+  $("bk-fi-bar-n").textContent = `前提（必須）${preN} / 5・チャネル ${chN} 入力済み${manN ? `・月別 手で直した ${manN}チャネル` : ""}`;
+  for (const k of ["leads", "valid"] as const) {
+    const colSum = Array.from({ length: 12 }, () => 0);
+    let allSum = 0;
+    let allYear = 0;
+    st.monthly.forEach((m, i) => {
+      const year = inp.channels[i][k] || 0;
+      const auto = splitMonthly(year);
+      const sum = m[k].reduce((a, b) => a + b, 0);
+      m[k].forEach((v, j) => {
+        colSum[j] += v;
+        field(`m${i}.${k}.${j}`)?.closest("td")?.classList.toggle("is-man", st.manual[i] && v !== auto[j]);
+      });
+      allSum += sum;
+      allYear += year;
+      setOut(`m${i}.${k}.year`, fmt(year));
+      const diff = sum - year;
+      const cell = form!.querySelector<HTMLElement>(`[data-mstate="${i}.${k}"]`);
+      if (cell) {
+        cell.classList.toggle("is-ng", Math.abs(diff) > 0.5);
+        cell.querySelector<HTMLElement>("[data-mst-t]")!.textContent =
+          Math.abs(diff) <= 0.5 ? "✓ 合っている" : `年間より${fmt(Math.abs(diff))}件${diff > 0 ? "多い" : "少ない"}`;
+        cell.querySelector<HTMLElement>("[data-reset]")!.hidden = !st.manual[i];
+      }
+      form!.querySelector<HTMLElement>(`[data-out="m${i}.${k}.sum"]`)?.classList.toggle("is-ng", Math.abs(diff) > 0.5);
+    });
+    colSum.forEach((v, j) => setOut(`mt.${k}.${j}`, fmt(v)));
+    setOut(`mt.${k}.sum`, fmt(allSum));
+    setOut(`mt.${k}.year`, fmt(allYear));
+  }
+  st.manual.forEach((man, i) => form!.querySelectorAll<HTMLElement>(`[data-mmode="${i}"]`).forEach((e) => (e.textContent = man ? "手で直した" : "年間÷12")));
 }
 
 // 予算作成Kit：今期の率・来期に必要な数・必要との差
@@ -414,6 +461,11 @@ function renderPanel(d: BudgetDiagnosis) {
 
 // ---------- タブと移動 ----------
 function tab(which: "y" | "m") {
+  if (!document.getElementById("bk-tab-y")) {
+    // 予算案診断Kitの入力の画面：タブはない。月別は 3. の表へ移る
+    if (which === "m") document.getElementById("bk-fi-3")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
   $("bk-tab-y").setAttribute("aria-selected", String(which === "y"));
   $("bk-tab-m").setAttribute("aria-selected", String(which === "m"));
   $("bk-pane-y").hidden = which !== "y";
@@ -573,6 +625,16 @@ if (form) {
   });
   $("bk-tab-y")?.addEventListener("click", () => tab("y"));
   $("bk-tab-m")?.addEventListener("click", () => tab("m"));
+  // 予算案診断Kitの入力の画面：月別の表の リード数｜有効リード数
+  form.querySelectorAll<HTMLElement>("[data-mtab]").forEach((b) =>
+    b.addEventListener("click", () => {
+      form.querySelectorAll<HTMLElement>("[data-mtab]").forEach((x) => {
+        const on = x === b;
+        x.setAttribute("aria-selected", String(on));
+        $(`bk-fi-m-${x.dataset.mtab}`).hidden = !on;
+      });
+    }),
+  );
   $("bk-panel")?.addEventListener("click", (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-jump]");
     if (b?.dataset.jump) jump(b.dataset.jump);

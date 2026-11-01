@@ -1,7 +1,8 @@
 ---
 // src/pages/tools/budget-checker/final.astro
 //
-// 予算案診断Kitの「③ 最終チェック」（/tools/budget-checker/final）2026-11-01
+// 予算案診断Kitの「③ 最終チェック・ダウンロード」（/tools/budget-checker/final）2026-11-01
+// 2026-11-01 見直し：左＝判定の数と状態の一覧、右＝ファイル名・チェック・ダウンロード。保存が終わると自動で ④ 次へ（/done）に移る
 // カードの状態の一覧（押すと ② のそのカードへ）→「診断結果を確認しました」にチェックするとダウンロードのボタンが押せる
 // NGが残っていてもダウンロードできる（以前からの決定）。保存が終わったら完了（/done）に移る
 // 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="final"）。数字は入力の画面と同じ localStorage を読む
@@ -15,7 +16,7 @@ const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
   { name: TOOL_TITLE, href: "/tools/budget-checker" },
-  { name: "最終チェック", href: "/tools/budget-checker/final" },
+  { name: "最終チェック・ダウンロード", href: "/tools/budget-checker/final" },
 ];
 ---
 
@@ -30,18 +31,31 @@ const breadcrumbItems = [
   <main class="bk" id="bk" data-kit="budget" data-mode="final">
     <FlowSteps current={3} />
     <div id="bk-flow">
-      <div class="bk-head-r">
-        <h2 class="bk-h2">③ 最終チェック</h2>
-        <p class="bk-sub" id="bk-fin-lead"></p>
+      <div>
+        <h2 class="bk-fi-h">最後に確かめて、年間予算表をダウンロードする</h2>
+        <p class="bk-fi-lead" id="bk-fin-lead"></p>
       </div>
-      <ul class="bk-fin" id="bk-fin-l"></ul>
-      <div class="bk-fin-dl">
-        <label class="bk-agree"><input type="checkbox" id="bk-agree" /><span id="bk-agree-t">診断結果を確認しました</span></label>
-        <button type="button" class="bk-btn bk-fin-btn" id="bk-dl" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>年間予算表をダウンロード（Excel）</button>
-        <p class="bk-hint">「年間予算表（施策別）」と「診断結果」の2シートです。チェックを入れると押せるようになります</p>
-        <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+      <div class="bk-fin-g">
+        <div class="bk-fin-l">
+          <div class="bk-ck-sum bk-fin-sum" aria-label="判定のまとめ">
+            <div class="fix"><span>直す</span><b id="bk-f-fix">0</b></div>
+            <div class="check"><span>確認（未対応）</span><b id="bk-f-check">0</b></div>
+            <div class="ok"><span>問題なし</span><b id="bk-f-ok">0</b></div>
+          </div>
+          <ul class="bk-fin" id="bk-fin-l"></ul>
+          <p class="bk-back"><a href="/tools/budget-checker/check?back=1">← ② 診断・修正に戻る</a></p>
+        </div>
+        <div class="bk-fin-dl">
+          <div class="bk-fin-file">
+            <svg viewBox="0 0 44 54" aria-hidden="true"><path d="M2 2h28l12 12v38H2z" /><path d="M30 2v12h12" /><rect x="0" y="34" width="30" height="12" /><text x="15" y="43" text-anchor="middle">XLSX</text></svg>
+            <div><b id="bk-fin-name">年間予算表.xlsx</b><span>年間予算表（施策別）＋診断結果</span></div>
+          </div>
+          <label class="bk-agree"><input type="checkbox" id="bk-agree" /><span><b id="bk-agree-t">診断結果を確認しました</b><small>直す・確認が残っていてもダウンロードできます。残りはExcelの「診断結果」シートに載ります</small></span></label>
+          <button type="button" class="bk-btn bk-fin-btn" id="bk-dl" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>ダウンロード</button>
+          <p class="bk-hint">保存が終わると、自動で次の画面（④ 次へ）に移ります</p>
+          <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+        </div>
       </div>
-      <p class="bk-back"><a href="/tools/budget-checker/check?back=1">← 診断・修正に戻る</a></p>
     </div>
   </main>
 </BaseLayout>

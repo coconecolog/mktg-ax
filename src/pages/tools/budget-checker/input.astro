@@ -6,19 +6,18 @@
 //   入口で「画面で入力する」を選んだ人が来る。② の「表全体で見る・直す」（?from=check）からも来る（そのときは上の戻り先が ② になる）
 // 入口（/tools/budget-checker）の3つの入口（AIの案／年間予算表の.xlsx／画面で入力）は、どれもこのページに移る。
 // - 入口で読み込んだ数字は localStorage（app.ts の STORE）で受け渡す。直接開いたときは、前回の入力（なければ空）から始める
-// - 上に「← 予算案診断キットに戻る」と使い方。入力の上のバー（読み込み元・入口に戻る）はなし
-// - 記入例・すべて消すは、入力のタブの右に置く（BudgetGrid）
-// - ダウンロードは判定の枠の外に独立。Chrome・Edgeは保存先を選ぶ画面が開く（それ以外は通常のダウンロード）
+// - 2026-11-01：使い方の枠と年間｜月別のタブをやめ、1画面で 1. 前提 → 2. チャネル別（年間）→ 3. 月別（開いたまま）にした（FlowInput）。
+//   「診断する」は画面の下に固定した帯。ダウンロードは ③ の画面
 // - ?sample=1 で記入例（基本モデルの安定期）を入れて開く
 // 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-mode="input"）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
-import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
+import FlowInput from "@/components/budget-checker/FlowInput.astro";
 import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "予算案診断キット";
+const TOOL_TITLE = "予算案診断Kit";
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
@@ -29,7 +28,7 @@ const breadcrumbItems = [
 
 <BaseLayout
   title={`${TOOL_TITLE} 入力｜MeerKitLab`}
-  description="予算案診断キットの入力の画面です。予算案の数字を入れて「診断する」を押すと、目標に届くか・コストが上限以内かを判定します。"
+  description="予算案診断Kitの入力の画面です。予算案の数字を入れて「診断する」を押すと、目標に届くか・コストが上限以内かを判定します。"
   ogImage="/open-graph/default.png"
   noindex
 >
@@ -42,39 +41,10 @@ const breadcrumbItems = [
 
   <main class="bk" id="bk" data-kit="budget" data-mode="input">
     <FlowSteps current={1} />
-    <p class="bk-back" id="bk-back"><a href="/tools/budget-checker">← 予算案診断キットの入口に戻る</a></p>
+    <p class="bk-back" id="bk-back"><a href="/tools/budget-checker">← 予算案診断Kitの入口に戻る</a></p>
 
-    <section class="bk-howto" aria-labelledby="bk-howto-h">
-      <h2 class="bk-howto-h" id="bk-howto-h">使い方</h2>
-      <div class="bk-howto-b">
-        <ol class="bk-howto-l">
-          <li>
-            <span class="bk-tno">1</span>
-            <div><b>まず「年間」を入力</b><p>前提と、チャネル別の年間の計画を入れます。</p></div>
-          </li>
-          <li>
-            <span class="bk-tno">2</span>
-            <div><b>月別は必要なときだけ</b><p>年間÷12が入っています。季節で増減する月だけ直します。</p></div>
-          </li>
-        </ol>
-        <ul class="bk-howto-n">
-          <li>水色のセルに入力してください。</li>
-          <li>灰色のセルは自動計算されるセルです。</li>
-          <li>入力が終わったら「診断する」を押します。直すところとOKになる条件は、次の画面で出します。</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="bk-work">
-      <div class="bk-notes" id="bk-notes" hidden></div>
-
-      <BudgetGrid flow />
-
-      <div class="bk-gobar">
-        <p class="bk-hint">入力の途中の値は、このブラウザの中にだけ保存されます</p>
-        <button type="button" class="bk-btn bk-go" data-go-check>診断する<span aria-hidden="true">→</span></button>
-      </div>
-    </section>
+    <div class="bk-notes" id="bk-notes" hidden></div>
+    <FlowInput />
   </main>
 
   <ToolFooter path="/tools/budget-checker" />

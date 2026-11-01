@@ -1,7 +1,8 @@
 ---
 // src/pages/tools/budget-checker/done.astro
 //
-// 予算案診断Kitの「④ ダウンロード ⑤ 次へ」（/tools/budget-checker/done）2026-11-01
+// 予算案診断Kitの「④ 次へ」（/tools/budget-checker/done）2026-11-01
+// ③ でダウンロードが終わると自動でここに移る。上にダウンロードしたことを1行で出し、次のKit（KPI管理表作成Kit）へ誘導する
 // 年間予算表ができたことと、次にやること（KPI管理表作成Kitに数字を引き継ぐ・資料）を出す
 // 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="done"）。数字は入力の画面と同じ localStorage を読む
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -27,23 +28,23 @@ const breadcrumbItems = [
   </div>
 
   <main class="bk" id="bk" data-kit="budget" data-mode="done">
-    <FlowSteps current={5} />
+    <FlowSteps current={4} />
     <div id="bk-flow">
-      <section class="bk-done" aria-labelledby="bk-done-h">
-        <div class="bk-done-file" aria-hidden="true"><span class="bk-xl"><span class="bk-xl-file"></span><span class="bk-xl-fold"></span><span class="bk-xl-grid"><i class="k"></i><i class="k"></i><i class="k"></i><i class="k"></i><i class="k"></i><i></i><i class="b"></i><i class="b"></i><i></i><i></i><i></i><i class="b"></i><i class="b"></i><i></i><i></i></span><span class="bk-xl-tag">XLSX</span></span></div>
-        <p class="bk-done-tag">④ ダウンロード 完了</p>
-        <h2 class="bk-done-h" id="bk-done-h">年間予算表ができました</h2>
-        <p class="bk-done-n"><span id="bk-done-file"></span>（年間予算表（施策別）＋診断結果）</p>
-        <p class="bk-done-n" id="bk-done-left" hidden></p>
-        <div class="bk-done-a">
-          <button type="button" class="bk-btn-o" id="bk-again">もう一度ダウンロード</button>
-          <a class="bk-btn-o" href="/tools/budget-checker/check?back=1">数字を直す（② に戻る）</a>
+      <div class="bk-done2" role="status">
+        <span class="bk-done2-ck" aria-hidden="true">✓</span>
+        <div>
+          <b>年間予算表をダウンロードしました</b>
+          <span><span id="bk-done-file"></span>（年間予算表（施策別）＋診断結果）<span id="bk-done-left" hidden></span></span>
         </div>
-        <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
-      </section>
+        <span class="bk-done2-a">
+          <button type="button" class="bk-link" id="bk-again">もう一度ダウンロード</button>
+          <a class="bk-link" href="/tools/budget-checker/check?back=1">数字を直す（② に戻る）</a>
+        </span>
+      </div>
+      <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
 
       <section class="bk-nextk" aria-labelledby="bk-next-h">
-        <h2 class="bk-h2" id="bk-next-h">⑤ 次は、この予算をKPIにして毎月追いかける</h2>
+        <h2 class="bk-fi-h" id="bk-next-h">次は、この予算をKPIにして毎月追いかける</h2>
         <div class="bk-nextk-main">
           <div>
             <span class="bk-tag-o">おすすめ</span>

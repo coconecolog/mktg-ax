@@ -328,7 +328,11 @@ export function diagnoseBudget(st: BudgetState, kit: PlanKit = KITS.budget): Bud
       const off = monthlyOff.map((o, i) => (o ? i : -1)).filter((i) => i >= 0);
       off.forEach((i) => (marks[`m:${i}`] = s));
       if (off.length) it.jump = `m:${off[0]}`;
-      it.todo = "「月別」のタブで、そのチャネルの月別の合計を年間に合わせます（「年間÷12に戻す」でもそろいます）";
+      // 予算案診断Kitの入力の画面はタブがなく、月別は「3. 月別の計画」（2026-11-01）
+      it.todo =
+        kit.id === "budget"
+          ? "入力の画面の「3. 月別の計画」で、そのチャネルの月別の合計を年間に合わせます（「÷12に戻す」でもそろいます）"
+          : "「月別」のタブで、そのチャネルの月別の合計を年間に合わせます（「年間÷12に戻す」でもそろいます）";
     } else if (it.title.startsWith("チャネルのCPL")) {
       const over = r.channels.map((c, i) => (c.cplOver ? i : -1)).filter((i) => i >= 0);
       over.forEach((i) => (marks[`cpl${i}`] = s));
