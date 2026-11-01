@@ -59,9 +59,6 @@ const ICON = {
       <h1 class="bk-top-h1">{TOOL_TITLE}</h1>
       <p class="bk-top-q">その予算案、目標に届く？コストは上限以内？</p>
       <p class="bk-top-d">予算案の数字を入れると、すぐに判定して<b>直すところ</b>を示します。直した数字は、そのまま稟議に使える年間予算表（Excel）で持ち帰れます。</p>
-      <div class="bk-top-cta">
-        <a class="bk-top-link" href="/tools/budget-checker/sample">見本の診断結果を見る →</a>
-      </div>
       <!-- 3ステップ（入力 → 診断して直す → ダウンロード）。ファーストビューの左、説明のすぐ下に置く（2026-11-01） -->
             <section class="bk-3s" aria-labelledby="bk-3s-h">
               <h2 class="bk-3s-h" id="bk-3s-h">3ステップで、予算案が年間予算表になります</h2>
@@ -153,7 +150,12 @@ const ICON = {
 
       <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
       <p class="bk-err" id="bk-err" role="alert" hidden></p>
-      <p class="bk-hint bk-trust">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）<span class="bk-for-i">予算がまだない方は <a href="/tools/budget-simulator">予算作成Kit →</a></span></p>
+      <p class="bk-hint bk-trust">無料・登録なし・入れた数字やファイルはサーバーに送りません（すべてブラウザの中）</p>
+      <a class="bk-other" href="/tools/budget-simulator">
+        <span class="bk-other-q">予算がまだない方は</span>
+        <span class="bk-other-t"><b>予算作成Kit</b><small>売上目標から逆算して、年間予算表をゼロから作ります</small></span>
+        <span class="bk-other-go">予算作成Kitを使う<span aria-hidden="true">→</span></span>
+      </a>
       </div>
 
       <!-- ===== ここから下は説明 ===== -->
