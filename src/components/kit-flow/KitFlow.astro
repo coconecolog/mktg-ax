@@ -21,8 +21,9 @@ const p = kitPage(kitId);
 const base = kit.path;
 const doc = kit.doc;
 // 出力するExcelのシート（予算：年間予算表（施策別）＋診断結果／KPI：KPI管理表の全シート＋診断結果）
-const sheets = kitId === "budget" ? "「年間予算表（施策別）」と「診断結果」の2シートです" : `${doc}の全シート（はじめに入力を埋めたもの）と「診断結果」です`;
-const sheetsShort = kitId === "budget" ? "年間予算表（施策別）＋診断結果" : `${doc}の全シート＋診断結果`;
+const BUDGET_DOC = kit.doc === "年間予算表";
+const sheets = BUDGET_DOC ? "「年間予算表（施策別）」と「診断結果」の2シートです" : `${doc}の全シート（はじめに入力を埋めたもの）と「診断結果」です`;
+const sheetsShort = BUDGET_DOC ? "年間予算表（施策別）＋診断結果" : `${doc}の全シート＋診断結果`;
 ---
 
 <div class="mx-auto max-w-6xl px-5 pt-10">
@@ -39,7 +40,7 @@ const sheetsShort = kitId === "budget" ? "年間予算表（施策別）＋診�
           <a href={base}>← {p.title}の入口に戻る</a>
         </p>
         <div class="bk-notes" id="bk-notes" hidden />
-        <FlowInput doc={doc} />
+        <FlowInput doc={doc} maker={kit.maker} head={p.inputHead ?? "予算案の数字を入れる"} />
       </>
     )
   }

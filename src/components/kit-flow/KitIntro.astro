@@ -22,6 +22,12 @@ demo.input.channels[0].wins = 4;
 const demoDiag = diagnoseBudget(demo, kit);
 const demoIssues = buildIssues(demo, kit, demoDiag).slice(0, 2);
 const ST_LABEL = { fix: "直す", check: "確認" } as const;
+const T = p.stepTitles ?? ["入力する", "診断して直す", "ダウンロード"];
+const ENTRIES = p.entries ?? "all";
+const START_HEAD = p.startHead ?? "診断をはじめる";
+const START_SUB = p.startSub ?? "手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。";
+const FILE_DOC = p.fileDoc ?? kit.doc;
+const ACT_TAGS = ["リード数", "有効リード数", "商談数", "受注数"];
 
 const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
 const CH_TAGS = ["リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
@@ -45,19 +51,19 @@ const ICON = {
                 <li>
                   <span class="bk-3s-n">STEP 1</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" /><path d="M3 10h18M9 10v10M13 15h4" /></svg>
-                  <b>入力する</b>
+                  <b>{T[0]}</b>
                   <p>{p.steps[0]}</p>
                 </li>
                 <li>
                   <span class="bk-3s-n">STEP 2</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></svg>
-                  <b>診断して直す</b>
+                  <b>{T[1]}</b>
                   <p>{p.steps[1]}</p>
                 </li>
                 <li>
                   <span class="bk-3s-n">STEP 3</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
-                  <b>ダウンロード</b>
+                  <b>{T[2]}</b>
                   <p>{p.steps[2]}</p>
                 </li>
               </ol>
@@ -92,9 +98,13 @@ const ICON = {
       <!-- ===== 入口3つ（上下に余白をとって目立たせる） ===== -->
       <div class="bk-entry">
       <div class="bk-start-h" id="start">
-        <h2 class="bk-h2">診断をはじめる</h2>
-        <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
+        <h2 class="bk-h2">{START_HEAD}</h2>
+        <p class="bk-sub">{START_SUB}</p>
       </div>
+      {ENTRIES === "form" ? (
+        <div class="bk-start-wrap"><button type="button" class="bk-btn bk-start-btn" id="bk-start">画面で{START_HEAD}<span aria-hidden="true">→</span></button></div>
+      ) : (
+      <>
       <div class="bk-ents">
         <div class="bk-ent">
           <small><svg viewBox="0 0 24 24" aria-hidden="true">{ICON.ai.map((d) => <path d={d} />)}</svg>AIで作った案がある</small>
@@ -104,7 +114,7 @@ const ICON = {
         </div>
         <label class="bk-ent bk-drop" id="bk-drop" for="bk-file">
           <small><svg viewBox="0 0 24 24" aria-hidden="true">{ICON.file.map((d) => <path d={d} />)}</svg>{p.fileLabel}</small>
-          <b>{kit.doc}（.xlsx）をここに置く</b>
+          <b>{FILE_DOC}（.xlsx）をここに置く</b>
           {p.fileNote && <span class="bk-drop-hint">{p.fileNote}</span>}
           <span class="bk-drop-hint">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
           <span class="bk-btn">ファイルを選ぶ</span>
@@ -128,6 +138,8 @@ const ICON = {
         <button type="button" class="bk-btn" id="bk-import">読み込んで診断する<span aria-hidden="true">→</span></button>
       </div>
 
+      </>
+      )}
       <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
       <p class="bk-err" id="bk-err" role="alert" hidden></p>
       </div>
@@ -135,7 +147,7 @@ const ICON = {
       <!-- ===== ここから下は説明 ===== -->
       <div class="bk-band bk-info">
         <div class="bk-know">
-        <h2 class="bk-h2">診断でわかること</h2>
+        <h2 class="bk-h2">{p.knowHead ?? "診断でわかること"}</h2>
         <div class="bk-know-g">
           <ul class="bk-know-l">
             {p.know.map(([t, d], n) => <li><i>{"ABC"[n]}</i><div><b>{t}</b><p>{d}</p></div></li>)}
@@ -146,10 +158,11 @@ const ICON = {
 
         <div class="bk-need">
         <div>
-          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄か0でかまいません</span></p>
+          <p class="bk-need-top"><b>必要な数字</b><span>{kit.maker ? "率は入れません（件数から出します）。今期の実績がなければ空欄で、基本モデルの率で逆算します" : "率は入れません（件数から出します）。使わないチャネルは空欄か0でかまいません"}</span></p>
           <dl>
             <dt>前提</dt>
             <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            {kit.maker && <><dt>今期の実績</dt><dd>{ACT_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd></>}
             <dt>チャネル別（年間）</dt>
             <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
           </dl>

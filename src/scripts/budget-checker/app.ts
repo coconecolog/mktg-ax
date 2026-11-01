@@ -46,7 +46,7 @@ const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as 
 
 const INPUT_URL = `${KIT.path}/input`;
 /** 予算案診断Kit・KPI妥当性診断Kit（2026-11-01）は、入力のあとは ② 診断・修正（/check）に移る */
-const FLOW = KIT.id === "budget" || KIT.id === "kpi";
+const FLOW = true; // 2026-11-01：診断系・作る系の4つのKitとも、入力のあとは ② 診断・修正（/check）に移る
 const CHECK_URL = `${KIT.path}/check`;
 /** 予算案診断Kitの入力の画面（FlowInput、2026-11-01）：判定は出さず、1画面で前提・年間・月別 */
 const FI = !!document.getElementById("bk-fi-pre-n");

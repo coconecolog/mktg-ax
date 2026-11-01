@@ -11,8 +11,24 @@ import { CHANNELS } from "@/lib/kpi-sheet-maker";
 interface Props {
   /** 出力する資料の名前（年間予算表／KPI管理表） */
   doc?: string;
+  /** 作る系のKit（予算作成Kit・KPI管理表作成Kit）：「今期の実績と、来期に必要な数」を足し、有効リード数・商談数・受注数を自動配分（灰色、上書きすると水色・↺で戻す） */
+  maker?: boolean;
+  /** 画面の見出し（「予算案の数字を入れる」など） */
+  head?: string;
 }
-const { doc = "年間予算表" } = Astro.props;
+const { doc = "年間予算表", maker = false, head = "予算案の数字を入れる" } = Astro.props;
+const AUTO = new Set(["valid", "deals", "wins"]);
+const ACT = [
+  { key: "leads", label: "リード数" },
+  { key: "validRate", label: "有効リード率", rate: true },
+  { key: "valid", label: "有効リード数" },
+  { key: "dealRate", label: "商談化率", rate: true },
+  { key: "deals", label: "商談数" },
+  { key: "winRate", label: "受注率", rate: true },
+  { key: "wins", label: "受注数" },
+] as const;
+// 節の番号（作る系は「今期の実績」が2つ目に入る）
+const N = maker ? { ch: 3, m: 4 } : { ch: 2, m: 3 };
 
 const PRE = [
   { key: "goal", label: "売上目標", sub: "マーケ経由・年間", unit: "万円" },
@@ -39,9 +55,9 @@ const MK = [
 <form class="bk-fi" id="bk-form" novalidate autocomplete="off">
   <div class="bk-fi-top">
     <div>
-      <h2 class="bk-fi-h">予算案の数字を入れる</h2>
+      <h2 class="bk-fi-h">{head}</h2>
       <p class="bk-fi-lead">水色の欄に数字を入れて「診断する」を押すだけです。率は入れません（件数から出します）。</p>
-      <p class="bk-fi-order">1. 前提 → 2. チャネル別（年間）→ 3. 月別（任意。直さなくても診断できます）</p>
+      <p class="bk-fi-order">{maker ? "1. 前提 → 2. 今期の実績 → 3. チャネル別（年間）→ 4. 月別（任意。直さなくても進めます）" : "1. 前提 → 2. チャネル別（年間）→ 3. 月別（任意。直さなくても診断できます）"}</p>
     </div>
     <div class="bk-acts">
       <button type="button" class="bk-btn-o" id="bk-example">記入例を入れる</button>
@@ -74,10 +90,45 @@ const MK = [
     </div>
   </section>
 
+  {
+    maker && (
+      <section class="bk-fi-sec" aria-labelledby="bk-fi-act">
+        <div class="bk-fi-sh">
+          <h3 id="bk-fi-act">2. 今期の実績と、来期に必要な数</h3>
+          <span>今期の実績から率を出し、売上目標に必要な数をさかのぼります</span>
+        </div>
+        <div class="bk-tw">
+          <table class="bk-fi-t">
+            <thead>
+              <tr><th class="l" />{ACT.map((a) => <th>{a.label}</th>)}</tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="ch">今期の実績</td>
+                {ACT.map((a) =>
+                  "rate" in a ? (
+                    <td class="calc" data-out={`act.${a.key}`}>—</td>
+                  ) : (
+                    <td class="in"><input name={`act.${a.key}`} type="number" inputmode="numeric" min="0" step="any" aria-label={`今期の${a.label}`} /></td>
+                  ),
+                )}
+              </tr>
+              <tr class="sum">
+                <td class="ch">来期に必要な数</td>
+                {ACT.map((a) => ("rate" in a ? <td /> : <td data-out={`need.${a.key}`}>—</td>))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="bk-hint" id="bk-rate-n">受注数＝売上目標÷平均受注単価。そこから今期の率でさかのぼります。今期の実績が空欄なら、基本モデルの率を使います</p>
+      </section>
+    )
+  }
+
   <section class="bk-fi-sec" aria-labelledby="bk-fi-2">
     <div class="bk-fi-sh">
-      <h3 id="bk-fi-2">2. チャネル別の計画（年間）</h3>
-      <span>使わないチャネルは空欄か0のままでかまいません</span>
+      <h3 id="bk-fi-2">{N.ch}. チャネル別の計画（年間）</h3>
+      <span>{maker ? "リード数と費用を入れます。有効リード数・商談数・受注数は今期の率で自動で分けます（灰色。上書きすると水色、↺で自動に戻す）" : "使わないチャネルは空欄か0のままでかまいません"}</span>
       <b id="bk-fi-ch-n">0チャネル 入力済み</b>
     </div>
     <div class="bk-tw">
@@ -91,9 +142,16 @@ const MK = [
             CHANNELS.map((name, i) => (
               <tr>
                 <td class="ch">{name}</td>
-                {FIELDS.map((f) => (
-                  <td class="in"><input name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${f.label}`} /></td>
-                ))}
+                {FIELDS.map((f) =>
+                  maker && AUTO.has(f.key) ? (
+                    <td class="in auto">
+                      <input name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${f.label}（自動。上書きできます）`} />
+                      <button type="button" class="bk-ovr-x" data-ovr={`${i}.${f.key}`} title="自動に戻す" aria-label={`${name}の${f.label}を自動に戻す`}>↺</button>
+                    </td>
+                  ) : (
+                    <td class="in"><input name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${f.label}`} /></td>
+                  ),
+                )}
               </tr>
             ))
           }
@@ -101,6 +159,15 @@ const MK = [
             <td class="ch">合計</td>
             {FIELDS.map((f) => <td data-out={`total.${f.key}`}>0</td>)}
           </tr>
+          {
+            maker && (
+              <tr class="sum">
+                <td class="ch">必要との差</td>
+                {(["leads", "valid", "deals", "wins"] as const).map((k) => <td data-out={`diff.${k}`}>—</td>)}
+                <td colspan="2" />
+              </tr>
+            )
+          }
         </tbody>
       </table>
     </div>
@@ -108,7 +175,7 @@ const MK = [
 
   <section class="bk-fi-sec" aria-labelledby="bk-fi-3">
     <div class="bk-fi-sh">
-      <h3 id="bk-fi-3">3. 月別の計画（任意）</h3>
+      <h3 id="bk-fi-3">{N.m}. 月別の計画（任意）</h3>
       <span>最初は年間÷12が入っています。季節で増減する月だけ直します（直さなくても診断できます）</span>
       <b id="bk-fi-m-n">手で直した 0チャネル</b>
     </div>
