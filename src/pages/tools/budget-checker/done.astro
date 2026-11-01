@@ -2,12 +2,11 @@
 // src/pages/tools/budget-checker/done.astro
 //
 // 予算案診断Kitの「④ 次へ」（/tools/budget-checker/done）2026-11-01
-// ③ でダウンロードが終わると自動でここに移る。上にダウンロードしたことを1行で出し、次のKit（KPI管理表作成Kit）へ誘導する
+// ③ でダウンロードが終わると自動でここに移る。Thanksページの形（流れの帯なし、中央に「ダウンロードしました」）→ 次のKit（KPI管理表作成Kit）へ誘導する
 // 年間予算表ができたことと、次にやること（KPI管理表作成Kitに数字を引き継ぐ・資料）を出す
 // 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="done"）。数字は入力の画面と同じ localStorage を読む
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
 import "@/styles/budget-checker.css";
 
 const TOOL_TITLE = "予算案診断Kit";
@@ -28,22 +27,21 @@ const breadcrumbItems = [
   </div>
 
   <main class="bk" id="bk" data-kit="budget" data-mode="done">
-    <FlowSteps current={4} />
-    <div id="bk-flow">
-      <div class="bk-done2" role="status">
-        <span class="bk-done2-ck" aria-hidden="true">✓</span>
-        <div>
-          <b>年間予算表をダウンロードしました</b>
-          <span><span id="bk-done-file"></span>（年間予算表（施策別）＋診断結果）<span id="bk-done-left" hidden></span></span>
-        </div>
-        <span class="bk-done2-a">
+    <div id="bk-flow" class="bk-ty">
+      <section class="bk-ty-h" role="status" aria-labelledby="bk-ty-t">
+        <span class="bk-ty-ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
+        <h2 class="bk-ty-t" id="bk-ty-t">年間予算表をダウンロードしました</h2>
+        <p class="bk-ty-f"><span id="bk-done-file"></span></p>
+        <p class="bk-ty-n">「年間予算表（施策別）」と「診断結果」の2シートです<span id="bk-done-left" hidden></span></p>
+        <p class="bk-ty-a">
           <button type="button" class="bk-link" id="bk-again">もう一度ダウンロード</button>
           <a class="bk-link" href="/tools/budget-checker/check?back=1">数字を直す（② に戻る）</a>
-        </span>
-      </div>
-      <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+        </p>
+        <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+      </section>
 
       <section class="bk-nextk" aria-labelledby="bk-next-h">
+        <p class="bk-ty-next-l">NEXT</p>
         <h2 class="bk-fi-h" id="bk-next-h">次は、この予算をKPIにして毎月追いかける</h2>
         <div class="bk-nextk-main">
           <div>
