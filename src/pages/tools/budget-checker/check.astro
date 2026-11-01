@@ -2,7 +2,8 @@
 // src/pages/tools/budget-checker/check.astro
 //
 // 予算案診断Kitの「② 診断・修正」（/tools/budget-checker/check）2026-11-01
-// 判定の「直す」「確認」を1件ずつのカードにし、カードの中で数字を直す。上に直す・確認・対応済みの数と、目標に届くか・コストは上限以内か
+// 判定の「直す」「確認」を1件ずつのカードにし、カードの中で数字を直す。上に直す・確認・問題なしの数と、目標に届くか（2026-11-01 見直し）
+// カード：上の帯に「直す／確認」と見出し、左に いま・OKになる条件・直し方、右に直す欄。下に固定の帯（残りの数と「最終チェックへ」）
 // 入口でAIの案・.xlsxを読み込んだ人はここに直接来る。画面で入力した人は入力の画面の「診断する」から来る
 // 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="check"）。数字は入力の画面と同じ localStorage を読む
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -30,32 +31,43 @@ const breadcrumbItems = [
   <main class="bk" id="bk" data-kit="budget" data-mode="check">
     <FlowSteps current={2} />
     <div id="bk-flow">
-      <div class="bk-head-r">
-        <h2 class="bk-h2">② 診断結果を確認・修正</h2>
-        <p class="bk-sub">直すところを1件ずつ出します。カードの中の数字を直すと、その場で判定し直します。</p>
+      <div class="bk-ck-top">
+        <div>
+          <h2 class="bk-fi-h">診断の結果を見て、カードの数字を直す</h2>
+          <p class="bk-fi-lead">カードの水色の欄を直すと、その場で判定し直します。「直す」がなくなったら、最終チェックへ進みます。</p>
+        </div>
+        <a class="bk-ck-all" href="/tools/budget-checker/input?from=check">表全体で見る・直す（① 入力に戻る）</a>
       </div>
       <p class="bk-backmsg" id="bk-back-msg" role="status" hidden></p>
       <div class="bk-notes" id="bk-notes" hidden></div>
 
-      <div class="bk-sum" aria-label="判定のまとめ">
+      <div class="bk-ck-sum" aria-label="判定のまとめ">
         <div class="fix"><span>直す</span><b id="bk-s-fix">0</b></div>
         <div class="check"><span>確認</span><b id="bk-s-check">0</b></div>
-        <div class="ok"><span>対応済み</span><b id="bk-s-ok">0</b></div>
+        <div class="ok"><span>問題なし</span><b id="bk-s-ok">0</b></div>
         <div class="wide"><span>目標に届くか</span><b id="bk-s-goal">—</b></div>
-        <div class="wide"><span>コストは上限以内か</span><b id="bk-s-cost">—</b></div>
       </div>
       <p class="bk-live" id="bk-live" role="status" aria-live="polite" hidden></p>
 
       <p class="bk-okall" id="bk-okall" hidden>直すところも、確認するところもありません。最終チェックへ進めます。</p>
       <div class="bk-issues" id="bk-issues"></div>
-      <details class="bk-resolved" id="bk-resolved" hidden>
+      <details class="bk-ck-more" id="bk-okl" hidden>
+        <summary>問題なし <span id="bk-okl-n">0</span>件<small id="bk-okl-s"></small></summary>
+        <ul id="bk-okl-l"></ul>
+      </details>
+      <details class="bk-ck-more" id="bk-resolved" hidden>
         <summary>対応済み（<span id="bk-resolved-n">0</span>件）</summary>
         <div class="bk-issues" id="bk-resolved-l"></div>
       </details>
 
-      <div class="bk-gobar">
-        <a class="bk-btn-o" href="/tools/budget-checker/input?from=check">表全体で見る・直す</a>
-        <span class="bk-gobar-r"><span class="bk-gobar-n" id="bk-s-next"></span><a class="bk-btn bk-go" href="/tools/budget-checker/final">最終チェックへ<span aria-hidden="true">→</span></a></span>
+      <div class="bk-fi-bar">
+        <div class="bk-fi-bar-in">
+          <div>
+            <b id="bk-s-next">残り：直す 0・確認 0</b>
+            <span>残っていても進めます（最終チェックで、もう一度一覧で確かめます）</span>
+          </div>
+          <a class="bk-btn bk-go" href="/tools/budget-checker/final">最終チェックへ<span aria-hidden="true">→</span></a>
+        </div>
       </div>
     </div>
   </main>

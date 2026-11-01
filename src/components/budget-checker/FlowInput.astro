@@ -1,0 +1,181 @@
+---
+// src/components/budget-checker/FlowInput.astro
+// 予算案診断Kitの「① 入力・取り込み」の画面（/tools/budget-checker/input）の入力。2026-11-01
+// 1画面で上から 1. 前提 → 2. チャネル別の計画（年間）→ 3. 月別の計画（開いたまま）。判定は出さない（② 診断・修正で出す）
+// - 期首は月別の表のはじまりの月なので、3. 月別の上に置く（最初の前提で聞かない）
+// - 月別はリード数｜有効リード数のタブ。行ごとに「月の合計」「年間」「状態（年間と合っているか）」と、手で直した行は「÷12に戻す」
+// - 欄の name は BudgetGrid と同じ（app.ts の onInput・writeForm がそのまま使う）。この画面だけの表示（入力済みの数・状態）は app.ts の updateFlowInput
+// - 他のKitは BudgetGrid のまま（予算案診断Kitで確かめてから広げる）
+import { CHANNELS } from "@/lib/kpi-sheet-maker";
+
+const PRE = [
+  { key: "goal", label: "売上目標", sub: "マーケ経由・年間", unit: "万円" },
+  { key: "price", label: "平均受注単価", sub: "1社あたり", unit: "万円" },
+  { key: "gmPct", label: "粗利率", sub: "", unit: "%" },
+  { key: "paybackYears", label: "回収期間", sub: "CACを何年で取り返すか", unit: "年" },
+  { key: "leadTime", label: "リードタイム", sub: "リードから受注まで", unit: "か月" },
+  { key: "common", label: "共通費", sub: "任意", unit: "万円", note: "どのチャネルにも配らない費用（MAツールなど）" },
+] as const;
+const FIELDS = [
+  { key: "leads", label: "リード数" },
+  { key: "valid", label: "有効リード数" },
+  { key: "deals", label: "商談数" },
+  { key: "wins", label: "受注数" },
+  { key: "ext", label: "外部費用" },
+  { key: "labor", label: "人件費" },
+] as const;
+const MK = [
+  { key: "leads", label: "リード数" },
+  { key: "valid", label: "有効リード数" },
+] as const;
+---
+
+<form class="bk-fi" id="bk-form" novalidate autocomplete="off">
+  <div class="bk-fi-top">
+    <div>
+      <h2 class="bk-fi-h">予算案の数字を入れる</h2>
+      <p class="bk-fi-lead">水色の欄に数字を入れて「診断する」を押すだけです。率は入れません（件数から出します）。</p>
+      <p class="bk-fi-order">1. 前提 → 2. チャネル別（年間）→ 3. 月別（任意。直さなくても診断できます）</p>
+    </div>
+    <div class="bk-acts">
+      <button type="button" class="bk-btn-o" id="bk-example">記入例を入れる</button>
+      <button type="button" class="bk-btn-o" id="bk-clear">すべて消す</button>
+    </div>
+  </div>
+
+  <section class="bk-fi-sec" aria-labelledby="bk-fi-1">
+    <div class="bk-fi-sh">
+      <h3 id="bk-fi-1">1. 前提</h3>
+      <span>会社全体の目標と、コストの上限を決める数字</span>
+      <b id="bk-fi-pre-n">必須 0 / 5 入力済み</b>
+    </div>
+    <div class="bk-fi-pre">
+      {
+        PRE.map((p) => (
+          <div class="bk-fi-f">
+            <label for={`bk-in-${p.key}`}>
+              {p.label}
+              {p.sub && <small>{p.sub}</small>}
+            </label>
+            <span class="bk-fi-box">
+              <input id={`bk-in-${p.key}`} name={p.key} type="number" inputmode="decimal" min="0" step="any" />
+              <em>{p.unit}</em>
+            </span>
+            {"note" in p && <p>{p.note}</p>}
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="bk-fi-sec" aria-labelledby="bk-fi-2">
+    <div class="bk-fi-sh">
+      <h3 id="bk-fi-2">2. チャネル別の計画（年間）</h3>
+      <span>使わないチャネルは空欄か0のままでかまいません</span>
+      <b id="bk-fi-ch-n">0チャネル 入力済み</b>
+    </div>
+    <div class="bk-tw">
+      <table class="bk-fi-t">
+        <thead>
+          <tr class="g"><th></th><th colspan="4"><span>件数（件）</span></th><th colspan="2"><span>費用（万円）</span></th></tr>
+          <tr><th class="l">チャネル</th>{FIELDS.map((f) => <th>{f.label}</th>)}</tr>
+        </thead>
+        <tbody>
+          {
+            CHANNELS.map((name, i) => (
+              <tr>
+                <td class="ch">{name}</td>
+                {FIELDS.map((f) => (
+                  <td class="in"><input name={`ch${i}.${f.key}`} type="number" inputmode="decimal" min="0" step="any" aria-label={`${name}の${f.label}`} /></td>
+                ))}
+              </tr>
+            ))
+          }
+          <tr class="sum">
+            <td class="ch">合計</td>
+            {FIELDS.map((f) => <td data-out={`total.${f.key}`}>0</td>)}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bk-fi-sec" aria-labelledby="bk-fi-3">
+    <div class="bk-fi-sh">
+      <h3 id="bk-fi-3">3. 月別の計画（任意）</h3>
+      <span>最初は年間÷12が入っています。季節で増減する月だけ直します（直さなくても診断できます）</span>
+      <b id="bk-fi-m-n">手で直した 0チャネル</b>
+    </div>
+    <div class="bk-fi-mtop">
+      <div class="bk-fi-mtabs" role="tablist" aria-label="月別の表">
+        {MK.map((m, n) => (
+          <button type="button" role="tab" class="bk-fi-mtab" data-mtab={m.key} aria-selected={n === 0 ? "true" : "false"} aria-controls={`bk-fi-m-${m.key}`}>
+            {m.label}<span class="bk-tck" aria-hidden="true">✓</span>
+          </button>
+        ))}
+      </div>
+      <div class="bk-fi-start">
+        <span class="bk-fi-start-l" id="bk-fi-start-l">期首（表のはじまりの月）</span>
+        <span class="bk-fi-box bk-fi-box-s">
+          <input name="startYear" type="number" inputmode="numeric" min="2000" max="2100" aria-label="期首の年" />
+          <em>年</em>
+        </span>
+        <span class="bk-fi-box bk-fi-box-s">
+          <select name="startMonth" aria-label="期首の月">{Array.from({ length: 12 }).map((_, i) => <option value={String(i + 1)}>{i + 1}月</option>)}</select>
+        </span>
+      </div>
+      <span class="bk-fi-legend">単位 件　水色＝入力（濃い水色＝手で直した月）　灰色＝自動計算</span>
+    </div>
+    {
+      MK.map((m, n) => (
+        <div class="bk-tw" id={`bk-fi-m-${m.key}`} role="tabpanel" hidden={n !== 0}>
+          <table class="bk-fi-t bk-fi-mt">
+            <thead>
+              <tr>
+                <th class="l">チャネル</th>
+                {Array.from({ length: 12 }).map((_, k) => <th data-mlabel={k}>{((3 + k) % 12) + 1}月</th>)}
+                <th>月の合計</th>
+                <th>年間</th>
+                <th class="l">状態</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CHANNELS.map((name, i) => (
+                <tr data-mrow={i}>
+                  <td class="ch">{name}<small data-mmode={i}>年間÷12</small></td>
+                  {Array.from({ length: 12 }).map((_, j) => (
+                    <td class="in"><input name={`m${i}.${m.key}.${j}`} type="number" inputmode="numeric" min="0" step="1" aria-label={`${name}の${m.label}（${j + 1}か月目）`} /></td>
+                  ))}
+                  <td class="calc" data-out={`m${i}.${m.key}.sum`}>0</td>
+                  <td class="calc" data-out={`m${i}.${m.key}.year`}>0</td>
+                  <td class="st" data-mstate={`${i}.${m.key}`}>
+                    <span data-mst-t>✓ 合っている</span>
+                    <button type="button" class="bk-link" data-reset={i} hidden>÷12に戻す</button>
+                  </td>
+                </tr>
+              ))}
+              <tr class="sum">
+                <td class="ch">合計</td>
+                {Array.from({ length: 12 }).map((_, j) => <td data-out={`mt.${m.key}.${j}`}>0</td>)}
+                <td data-out={`mt.${m.key}.sum`}>0</td>
+                <td data-out={`mt.${m.key}.year`}>0</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ))
+    }
+    <p class="bk-hint">「年間」は 2. チャネル別（年間）の数です。月の合計と年間がずれたまま診断すると、② で「月別の合計が、年間と合いません」の「直す」が出ます。外部費用・人件費の月別は、ダウンロードする年間予算表に年額÷12の式で入ります。</p>
+  </section>
+
+  <div class="bk-fi-bar">
+    <div class="bk-fi-bar-in">
+      <div>
+        <b id="bk-fi-bar-n">前提（必須）0 / 5・チャネル 0 入力済み</b>
+        <span>月別を直していないときは、年間÷12で診断します。入力の途中の値は、このブラウザの中にだけ保存されます</span>
+      </div>
+      <button type="button" class="bk-btn bk-go" data-go-check>診断する<span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</form>

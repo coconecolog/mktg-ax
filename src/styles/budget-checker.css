@@ -367,7 +367,7 @@ a.bk-th:hover { border-color: var(--ink); }
 /* ===== 予算案診断Kit：5ステップの流れ（2026-11-01） =====
    ① 入力・取り込み（入口・/input）→ ② 診断・修正（/check）→ ③ 最終チェック（/final）→ ④ ダウンロード ⑤ 次へ（/done）
    色は判定（直す＝赤、確認＝オレンジ）と入力欄（水色）だけ。いまの段階は黒、済みは✓、先は灰色 */
-.bk-fs { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1.5px solid var(--ink); }
+.bk-fs { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1.5px solid var(--ink); }
 .bk-fs-i { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-right: 1px solid var(--line); background: #fff; color: var(--faint); min-width: 0; }
 .bk-fs-i:last-child { border-right: 0; }
 .bk-fs-n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1.5px solid currentColor; font-size: 0.76rem; font-weight: 800; }
@@ -524,3 +524,150 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-demo-st.is-fix { color: var(--red); background: var(--red-bg); }
 .bk-demo-st.is-check { color: var(--org); background: var(--org-bg); }
 #start { scroll-margin-top: 80px; }
+
+/* ===== 予算案診断Kit ① 入力の画面（FlowInput、2026-11-01）：1画面で 1. 前提 → 2. 年間 → 3. 月別（開いたまま）。判定は出さない ===== */
+.bk-fi { display: flex; flex-direction: column; gap: 32px; }
+.bk-fi-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 24px; flex-wrap: wrap; }
+.bk-fi-h { font-size: 1.35rem; font-weight: 800; margin: 0; }
+.bk-fi-lead { font-size: 0.9rem; color: var(--sub); margin-top: 4px !important; }
+.bk-fi-order { font-size: 0.82rem; font-weight: 700; margin-top: 4px !important; }
+.bk-fi .bk-acts { display: flex; gap: 8px; }
+.bk-fi .bk-acts .bk-btn-o { height: 40px; }
+.bk-fi-sec { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 80px; }
+.bk-fi-sh { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; border-bottom: 1.5px solid var(--ink); padding-bottom: 8px; }
+.bk-fi-sh h3 { font-size: 1.1rem; font-weight: 800; margin: 0; }
+.bk-fi-sh span { font-size: 0.82rem; color: var(--sub); }
+.bk-fi-sh b { margin-left: auto; font-size: 0.82rem; }
+.bk-fi-pre { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 20px; }
+@media (max-width: 860px) { .bk-fi-pre { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .bk-fi-pre { grid-template-columns: minmax(0, 1fr); } }
+.bk-fi-f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bk-fi-f label { font-size: 0.9rem; font-weight: 700; }
+.bk-fi-f label small { font-weight: 400; color: var(--mute); margin-left: 6px; font-size: 0.75rem; }
+.bk-fi-f p { font-size: 0.75rem; color: var(--mute); line-height: 1.5; }
+.bk-fi-box { display: flex; align-items: center; border: 1px solid var(--in-line); background: var(--in); height: 48px; }
+.bk-fi-box:focus-within { outline: 2px solid var(--ink); outline-offset: -1px; }
+.bk-fi-box input, .bk-fi-box select { flex: 1 1 auto; min-width: 0; height: 100%; border: 0; background: transparent; font: inherit; font-size: 1.1rem; font-weight: 700; text-align: right; padding: 0 10px; color: var(--ink); outline: none; }
+.bk-fi-box em { flex: none; font-style: normal; padding-right: 12px; font-size: 0.8rem; color: var(--sub); }
+.bk-fi-box-s { height: 40px; }
+.bk-fi-box-s input { width: 76px; font-size: 0.95rem; }
+.bk-fi-box-s select { text-align: left; font-size: 0.95rem; padding-right: 6px; cursor: pointer; }
+.bk-fi-t { width: 100%; border-collapse: collapse; min-width: 720px; }
+.bk-fi-t th { background: var(--ink); color: #fff; font-size: 0.8rem; font-weight: 700; padding: 8px 10px; text-align: right; white-space: nowrap; }
+.bk-fi-t th.l { text-align: left; }
+.bk-fi-t tr.g th { background: #fff; color: var(--sub); font-size: 0.75rem; text-align: center; padding: 0 0 6px; }
+.bk-fi-t tr.g th span { display: block; border-bottom: 1.5px solid var(--ink); padding-bottom: 4px; margin: 0 4px; }
+.bk-fi-t td { border-bottom: 1px solid var(--line); height: 44px; padding: 0 10px; text-align: right; font-size: 0.9rem; white-space: nowrap; }
+.bk-fi-t td.ch { text-align: left; font-weight: 700; }
+.bk-fi-t td.ch small { display: block; font-size: 0.68rem; font-weight: 400; color: var(--mute); line-height: 1.3; }
+.bk-fi-t td.in { background: var(--in); border-left: 1px solid #fff; padding: 0; }
+.bk-fi-t td.in.is-man { background: #d6e8f3; }
+.bk-fi-t td.in.is-man input { font-weight: 800; }
+.bk-fi-t td.in input { width: 100%; height: 44px; border: 0; background: transparent; font: inherit; font-size: 0.95rem; text-align: right; padding: 0 10px; color: var(--ink); }
+.bk-fi-t td.in input:focus { outline: 2px solid var(--ink); outline-offset: -2px; }
+.bk-fi-t td.calc { background: var(--calc); font-weight: 800; border-left: 1px solid #fff; }
+.bk-fi-t td.calc.is-ng { background: var(--red-bg); color: var(--red); }
+.bk-fi-t td.st { text-align: left; font-size: 0.78rem; }
+.bk-fi-t td.st.is-ng { color: var(--red); font-weight: 800; }
+.bk-fi-t td.st .bk-link { margin-left: 10px; font-size: 0.76rem; font-weight: 700; }
+.bk-fi-t tr.sum td { background: var(--calc); font-weight: 800; border-bottom: 0; }
+.bk-fi-mt { min-width: 1080px; }
+.bk-fi-mt td, .bk-fi-mt th { padding-left: 6px; padding-right: 6px; }
+.bk-fi-mt td.in input { padding: 0 6px; }
+.bk-fi-mtop { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; }
+.bk-fi-mtabs { display: flex; gap: 6px; }
+.bk-fi-mtab { font: inherit; font-size: 0.88rem; font-weight: 800; background: var(--ink); color: #fff; border: 0; padding: 0 18px; height: 40px; cursor: pointer; opacity: 0.7; }
+.bk-fi-mtab .bk-tck { display: none; margin-left: 4px; }
+.bk-fi-mtab[aria-selected="true"] { opacity: 1; box-shadow: inset 0 -4px 0 #f2c200; }
+.bk-fi-mtab[aria-selected="true"] .bk-tck { display: inline; }
+.bk-fi-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bk-fi-start-l { font-size: 0.88rem; font-weight: 700; }
+.bk-fi-legend { font-size: 0.75rem; color: var(--sub); margin-left: auto; }
+.bk-fi-bar { position: sticky; bottom: 0; z-index: 5; background: #fff; border-top: 1.5px solid var(--ink); box-shadow: 0 -6px 16px rgba(11, 11, 18, 0.06); margin: 0 -1.25rem; }
+.bk-fi-bar-in { display: flex; align-items: center; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; padding: 12px 1.25rem; }
+.bk-fi-bar-in > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bk-fi-bar-in b { font-size: 0.92rem; }
+.bk-fi-bar-in span { font-size: 0.74rem; color: var(--mute); }
+.bk-fi-bar .bk-go { height: 52px; padding: 0 32px; font-size: 1rem; color: #fff; }
+@media (max-width: 760px) { .bk-fi-bar .bk-go { width: 100%; } .bk-fi-legend { margin-left: 0; } .bk-fi-bar-in > div > span { display: none; } }
+
+/* ===== 予算案診断Kit ② 診断・修正（2026-11-01 見直し）：数のまとめ → カード（上に帯、左に いま・OKになる条件・直し方、右に直す欄）→ 下の固定の帯 ===== */
+#bk-flow { display: flex; flex-direction: column; gap: 16px; }
+.bk-ck-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px 24px; flex-wrap: wrap; }
+.bk-ck-all { font-size: 0.85rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.bk-ck-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr); gap: 8px; }
+.bk-ck-sum > div { background: var(--bg); border: 1px solid var(--line); padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; }
+.bk-ck-sum span { font-size: 0.75rem; color: var(--sub); font-weight: 700; }
+.bk-ck-sum b { font-size: 1.6rem; font-weight: 800; line-height: 1.3; }
+.bk-ck-sum .wide b { font-size: 0.95rem; }
+.bk-ck-sum .wide b.is-fix { color: var(--red); }
+.bk-ck-sum .fix.on { background: var(--red-bg); border-color: #f1b9b9; }
+.bk-ck-sum .fix.on b, .bk-ck-sum .fix.on span { color: var(--red); }
+.bk-ck-sum .check.on { background: var(--org-bg); border-color: #f3c9a1; }
+.bk-ck-sum .check.on b, .bk-ck-sum .check.on span { color: var(--org); }
+@media (max-width: 760px) { .bk-ck-sum { grid-template-columns: repeat(3, minmax(0, 1fr)); } .bk-ck-sum .wide { grid-column: span 3; } }
+.bk-is.bk-ck { padding: 0; border-width: 2px; }
+.bk-ck[data-tone="fix"] { border-color: var(--red); }
+.bk-ck[data-tone="check"] { border-color: var(--org); }
+.bk-ck-h { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 12px 18px; background: var(--bg); }
+.bk-ck[data-tone="fix"] .bk-ck-h { background: var(--red-bg); }
+.bk-ck[data-tone="check"] .bk-ck-h { background: var(--org-bg); }
+.bk-ck-h b { font-size: 1.05rem; }
+.bk-ck-h .bk-tg { font-size: 0.75rem; padding: 2px 10px; margin: 0; }
+.bk-ck-no { margin-left: auto; font-size: 0.75rem; font-weight: 700; color: var(--sub); }
+.bk-ck-b { display: flex; flex-wrap: wrap; gap: 18px 32px; padding: 16px 18px; }
+.bk-ck-d { flex: 1 1 380px; min-width: 0; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 0.9rem; line-height: 1.6; align-content: start; }
+.bk-ck-d dt { font-weight: 700; color: var(--sub); font-size: 0.82rem; padding-top: 1px; }
+.bk-ck-d dd { margin: 0; font-weight: 700; }
+.bk-ck-d dd.todo { font-weight: 400; color: var(--sub); font-size: 0.82rem; }
+.bk-ck-d [hidden] { display: none !important; }
+@media (max-width: 520px) { .bk-ck-d { grid-template-columns: minmax(0, 1fr); gap: 2px; } .bk-ck-d dd { margin-bottom: 8px; } }
+.bk-ck-fx { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.bk-ck-fh { font-size: 0.85rem; font-weight: 800; }
+.bk-ck-f { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .bk-ck-f { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bk-ck-in { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bk-ck-in > span:first-child { font-size: 0.75rem; font-weight: 700; color: var(--sub); }
+.bk-ck-v { display: flex; align-items: center; border: 1px solid var(--in-line); background: var(--in); height: 42px; }
+.bk-ck-v:focus-within { outline: 2px solid var(--ink); outline-offset: -1px; }
+.bk-ck-v input { flex: 1 1 auto; min-width: 0; height: 100%; border: 0; background: transparent; font: inherit; font-size: 1rem; font-weight: 700; text-align: right; padding: 0 8px; color: var(--ink); outline: none; }
+.bk-ck-v em { flex: none; font-style: normal; padding-right: 10px; font-size: 0.75rem; color: var(--sub); }
+.bk-ck-r { display: flex; flex-wrap: wrap; gap: 8px; }
+.bk-ck-total { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 800; border-top: 1px solid var(--line); padding-top: 8px; }
+.bk-ck-total.is-ng { color: var(--red); }
+.bk-ck-a { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.bk-ck-a:empty { display: none; }
+.bk-ck-an { font-size: 0.82rem; color: var(--sub); }
+.bk-ck.is-ok .bk-ck-f { opacity: 0.75; }
+.bk-ck-more { border: 1px solid var(--line); background: var(--bg); }
+.bk-ck-more summary { cursor: pointer; padding: 12px 16px; font-size: 0.9rem; font-weight: 700; }
+.bk-ck-more ul { list-style: none; margin: 0; padding: 0 16px 12px; font-size: 0.85rem; color: var(--sub); display: flex; flex-direction: column; gap: 4px; }
+.bk-ck-more .bk-issues { padding: 0 12px 12px; }
+.bk-fi-bar-in b .is-fix { color: var(--red); }
+.bk-fi-bar-in b .is-check { color: var(--org); }
+.bk-ck-h .bk-tg.fix { background: var(--red); color: #fff; border-color: var(--red); }
+.bk-ck-h .bk-tg.check { background: var(--org); color: #fff; border-color: var(--org); }
+
+/* ===== 予算案診断Kit ③ 最終チェック・ダウンロード／④ 次へ（2026-11-01 見直し） ===== */
+.bk-fin-g { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.bk-fin-l { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.bk-fin-sum { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bk-fin-g .bk-fin-dl { flex: 1 1 320px; min-width: 0; margin: 0; gap: 14px; }
+.bk-fin-file { display: flex; gap: 14px; align-items: center; }
+.bk-fin-file svg { width: 44px; height: 54px; flex: none; fill: none; stroke: var(--ink); stroke-width: 2; }
+.bk-fin-file svg rect { fill: var(--ink); stroke: none; }
+.bk-fin-file svg text { fill: #fff; stroke: none; font-size: 8px; font-weight: 800; font-family: sans-serif; }
+.bk-fin-file b { display: block; font-size: 1rem; word-break: break-all; }
+.bk-fin-file span { font-size: 0.8rem; color: var(--sub); }
+.bk-fin-g .bk-agree { border-top: 1px solid var(--line); padding-top: 14px; }
+.bk-agree small { display: block; font-weight: 400; color: var(--sub); font-size: 0.76rem; margin-top: 2px; }
+.bk-fin-g .bk-back { margin: 0 !important; }
+.bk-done2 { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; border: 1.5px solid var(--ink); padding: 14px 18px; }
+.bk-done2-ck { flex: none; display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; background: var(--ink); color: #fff; font-weight: 800; }
+.bk-done2 > div { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; }
+.bk-done2 > div > b { font-size: 1rem; }
+.bk-done2 > div > span { font-size: 0.82rem; color: var(--sub); word-break: break-all; }
+.bk-done2-a { display: flex; gap: 16px; flex-wrap: wrap; }
+.bk-done2-a .bk-link { font-weight: 700; }
+.bk-nextk { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.bk-nextk .bk-nextk-sub { margin-top: 0; }

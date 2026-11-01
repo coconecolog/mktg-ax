@@ -122,15 +122,22 @@ function fieldsHtml(is: Issue) {
   const f = is.fields
     .map(
       (x) =>
-        `<label class="bk-is-in"><span>${esc(x.label)}</span><span class="bk-is-v"><input type="number" inputmode="decimal" min="0" step="any" name="${esc(x.name)}" value="${esc(
+        `<label class="bk-ck-in"><span>${esc(x.label)}</span><span class="bk-ck-v"><input type="number" inputmode="decimal" min="0" step="any" name="${esc(x.name)}" value="${esc(
           getField(st, x.name),
-        )}" aria-label="${esc(x.label)}" /><em>${esc(x.unit)}</em></span></label>`,
+        )}" /><em>${esc(x.unit)}</em></span></label>`,
     )
     .join("");
   const r = (is.resets ?? [])
     .map((i) => `<button type="button" class="bk-btn-o" data-reset="${i}">${esc(CHANNELS[i])}の月別を年間÷12に戻す</button>`)
     .join("");
-  return `<div class="bk-is-f">${f}${r}</div>`;
+  const head = is.key === "need" ? "直す欄（どれか1つを直せばOK）" : "直す欄";
+  return `<p class="bk-ck-fh">${head}</p><div class="bk-ck-f">${f}</div>${r ? `<div class="bk-ck-r">${r}</div>` : ""}<p class="bk-ck-total" data-total hidden></p>`;
+}
+
+/** 目標に届くかのカードだけ：受注数の合計と必要な数（直すたびに書きかえる） */
+function totalText(key: IssueKey) {
+  if (key !== "need" || !d.r) return "";
+  return `受注数の合計 ${fmt(d.r.plan.wins)}件 ／ 必要 ${fmt(d.r.need.wins)}件`;
 }
 
 function cardHtml(key: IssueKey) {
@@ -139,22 +146,27 @@ function cardHtml(key: IssueKey) {
   const table = key === "monthly" ? `${URL_INPUT}?from=check&tab=m` : `${URL_INPUT}?from=check`;
   const canAck = is?.status === "check";
   return `
-    <div class="bk-is-h"><span class="bk-tg ${tone}" data-tag>${label}</span><span class="bk-new" data-new hidden>新しく出た</span><b data-title>${esc(is?.title ?? ISSUE_TITLE[key])}</b></div>
-    <dl class="bk-is-d">
-      <dt>いま</dt><dd data-now>${esc(is?.now ?? "OKになりました")}</dd>
-      <dt data-target-h${is ? "" : " hidden"}>OKになる条件</dt><dd data-target${is ? "" : " hidden"}>${esc(is?.target ?? "")}</dd>
-    </dl>
-    ${is ? fieldsHtml(is) : ""}
-    <div class="bk-is-a">
-      ${canAck ? `<button type="button" class="bk-btn-o" data-ack>このまま進める</button>` : ""}
-      ${is?.key === "rate" || is?.key === "monthly" || is?.key === "roi" ? `<a class="bk-link" href="${table}">表全体で直す →</a>` : ""}
-      ${is?.reason ? `<details class="bk-is-why"><summary>くわしい理由</summary><p data-reason>${esc(is.reason)}</p>${is.todo ? `<p class="bk-is-todo">${esc(is.todo)}</p>` : ""}</details>` : ""}
+    <div class="bk-ck-h"><span class="bk-tg ${tone}" data-tag>${label}</span><span class="bk-new" data-new hidden>新しく出た</span><b data-title>${esc(is?.title ?? ISSUE_TITLE[key])}</b><span class="bk-ck-no" data-no></span></div>
+    <div class="bk-ck-b">
+      <dl class="bk-ck-d">
+        <dt>いま</dt><dd data-now>${esc(is?.now ?? "OKになりました")}</dd>
+        <dt data-target-h${is ? "" : " hidden"}>OKになる条件</dt><dd data-target${is ? "" : " hidden"}>${esc(is?.target ?? "")}</dd>
+        <dt data-todo-h${is?.todo ? "" : " hidden"}>直し方</dt><dd class="todo" data-todo${is?.todo ? "" : " hidden"}>${esc(is?.todo ?? "")}</dd>
+      </dl>
+      <div class="bk-ck-fx">
+        ${is ? fieldsHtml(is) : ""}
+        <div class="bk-ck-a">
+          ${canAck ? `<span class="bk-ck-an" data-ack-n>数字はそのままで進めてもよい項目です</span><button type="button" class="bk-btn-o" data-ack>このまま進める（確認済みにする）</button>` : ""}
+          ${is?.key === "rate" || is?.key === "monthly" || is?.key === "roi" ? `<a class="bk-link" href="${table}">表全体で直す →</a>` : ""}
+        </div>
+        ${is?.reason ? `<details class="bk-is-why"><summary>くわしい理由</summary><p data-reason>${esc(is.reason)}</p></details>` : ""}
+      </div>
     </div>`;
 }
 
 function makeCard(key: IssueKey) {
   const el = document.createElement("article");
-  el.className = "bk-is";
+  el.className = "bk-is bk-ck";
   el.id = `issue-${key}`;
   el.dataset.key = key;
   el.innerHTML = cardHtml(key);
@@ -173,6 +185,19 @@ function refreshCard(key: IssueKey) {
   tag.className = `bk-tg ${tone}`;
   tag.textContent = label;
   el.classList.toggle("is-ok", s !== "open");
+  el.dataset.tone = s !== "open" ? "ok" : is?.status ?? "ok";
+  const todo = el.querySelector<HTMLElement>("[data-todo]");
+  if (todo) {
+    todo.textContent = is?.todo ?? "";
+    todo.hidden = !is?.todo;
+    el.querySelector<HTMLElement>("[data-todo-h]")!.hidden = !is?.todo;
+  }
+  const tot = el.querySelector<HTMLElement>("[data-total]");
+  if (tot) {
+    tot.textContent = is ? totalText(key) : "";
+    tot.hidden = !tot.textContent;
+    tot.classList.toggle("is-ng", !!is && is.status === "fix");
+  }
   el.querySelector<HTMLElement>("[data-title]")!.textContent = is?.title ?? ISSUE_TITLE[key];
   el.querySelector<HTMLElement>("[data-now]")!.textContent = is ? is.now : "OKになりました";
   const tgt = el.querySelector<HTMLElement>("[data-target]")!;
@@ -184,7 +209,9 @@ function refreshCard(key: IssueKey) {
   const ack = el.querySelector<HTMLButtonElement>("[data-ack]");
   if (ack) {
     ack.hidden = !is || is.status !== "check";
-    ack.textContent = s === "ack" ? "確認済みを取り消す" : "このまま進める";
+    ack.textContent = s === "ack" ? "確認済みを取り消す" : "このまま進める（確認済みにする）";
+    const an = el.querySelector<HTMLElement>("[data-ack-n]");
+    if (an) an.hidden = ack.hidden;
   }
   // 状態が変わって、カードに入力欄がない（修正済みのカードが同じ判定で戻ってきた）ときは作り直す
   if (is && is.fields.length && !el.querySelector("input")) el.innerHTML = cardHtml(key);
@@ -194,22 +221,35 @@ function renderSummary() {
   const open = openIssues();
   const fix = open.filter((i) => i.status === "fix").length;
   const check = open.filter((i) => i.status === "check").length;
-  const doneN = memo.seen.filter((k) => stateOf(k) !== "open").length;
-  const h = headline();
+  const okItems = d.items.filter((i) => i.status === "ok");
   $("bk-s-fix").textContent = String(fix);
   $("bk-s-check").textContent = String(check);
-  $("bk-s-ok").textContent = String(doneN);
+  $("bk-s-ok").textContent = String(okItems.length);
   $("bk-s-fix").parentElement!.classList.toggle("on", fix > 0);
   $("bk-s-check").parentElement!.classList.toggle("on", check > 0);
   const g = $("bk-s-goal");
-  g.textContent = h.goal[0];
-  g.className = `is-${h.goal[1]}`;
-  const c = $("bk-s-cost");
-  c.textContent = h.cost[0];
-  c.className = `is-${h.cost[1]}`;
-  const bar = $("bk-s-next");
-  bar.textContent = open.length ? `未対応 ${open.length}件` : "未対応はありません";
+  if (!d.ready || !d.r) {
+    g.textContent = "—";
+    g.className = "";
+  } else {
+    const gap = d.r.need.wins - d.r.plan.wins;
+    g.textContent = gap > 0 ? `受注数が ${fmt(gap)}件足りない（計画${fmt(d.r.plan.wins)}・必要${fmt(d.r.need.wins)}）` : `届く（受注数 計画${fmt(d.r.plan.wins)}・必要${fmt(d.r.need.wins)}）`;
+    g.className = gap > 0 ? "is-fix" : "";
+  }
+  $("bk-s-next").innerHTML = `残り：<span class="is-fix">直す ${fix}</span>・<span class="is-check">確認 ${check}</span>`;
   $("bk-okall").hidden = issues.length > 0 || memo.seen.length > 0;
+  // 問題なしの一覧
+  const okl = $("bk-okl");
+  okl.hidden = !okItems.length;
+  $("bk-okl-n").textContent = String(okItems.length);
+  $("bk-okl-l").innerHTML = okItems.map((i) => `<li>✓ ${esc(i.title)}</li>`).join("");
+  // カードの番号（未対応のカードだけ、上から n / N）
+  const list = Array.from($("bk-issues").children) as HTMLElement[];
+  list.forEach((el, n) => {
+    const no = el.querySelector<HTMLElement>("[data-no]");
+    if (no) no.textContent = `${n + 1} / ${list.length}`;
+  });
+  $("bk-resolved-l").querySelectorAll<HTMLElement>("[data-no]").forEach((no) => (no.textContent = ""));
 }
 
 function placeCards() {
@@ -361,17 +401,23 @@ function initFinal() {
   }
   if (!memo.seen.length && d.ready) rows.push(`<li class="bk-fin-r"><div><span>直すところ・確認するところ</span><span class="bk-fin-v is-ok">ありません</span></div></li>`);
   $("bk-fin-l").innerHTML = rows.join("");
+  const fixN = openIssues().filter((i) => i.status === "fix").length;
+  const checkN = openIssues().filter((i) => i.status === "check").length;
+  $("bk-f-fix").textContent = String(fixN);
+  $("bk-f-check").textContent = String(checkN);
+  $("bk-f-ok").textContent = String(d.items.filter((i) => i.status === "ok").length);
+  $("bk-f-fix").parentElement!.classList.toggle("on", fixN > 0);
+  $("bk-f-check").parentElement!.classList.toggle("on", checkN > 0);
+  $("bk-fin-name").textContent = planFileName(st, KIT);
 
   const open = openIssues();
   const agree = $<HTMLInputElement>("bk-agree");
   const btn = $<HTMLButtonElement>("bk-dl");
   const err = $("bk-dlerr");
-  $("bk-agree-t").textContent = open.length
-    ? `診断結果を確認しました。未対応の${open.length}件は、Excelの「診断結果」シートに残ります`
-    : "診断結果を確認しました";
+  $("bk-agree-t").textContent = "診断結果を確認しました";
   $("bk-fin-lead").textContent = open.length
-    ? `未対応が${open.length}件あります。直す場合は、行を押すと ② のそのカードに戻ります。このまま進めることもできます。`
-    : "未対応の項目はありません。年間予算表（Excel）をダウンロードして完成です。";
+    ? `未対応が${open.length}件あります。直す場合は、行を押すと ② のそのカードに戻ります。問題なければチェックを入れてダウンロードします。`
+    : "未対応の項目はありません。チェックを入れて、年間予算表（Excel）をダウンロードします。";
 
   const yearOk = Number.isInteger(st.input.startYear) && st.input.startYear >= 2000 && st.input.startYear <= 2100;
   if (!d.ready || !yearOk) {
@@ -394,7 +440,8 @@ function initFinal() {
     btn.textContent = "作っています…";
     try {
       await writePlanFile(st, d, KIT, handle);
-      location.href = URL_DONE;
+      // 保存が終わったら、自動で ④ 次へ（通常のダウンロードが始まりきるよう少しだけ待つ）
+      window.setTimeout(() => (location.href = URL_DONE), 600);
     } catch (e) {
       console.error(e);
       err.textContent = "ファイルを作れませんでした。通信を確かめて、もう一度お試しください。";
@@ -414,7 +461,7 @@ function initDone() {
   const open = openIssues();
   const left = $("bk-done-left");
   left.hidden = !open.length;
-  left.textContent = open.length ? `未対応の${open.length}件は、Excelの「診断結果」シートに載っています。` : "";
+  left.textContent = open.length ? `。未対応の${open.length}件は「診断結果」シートに載っています` : "";
 
   const again = $<HTMLButtonElement>("bk-again");
   const err = $("bk-dlerr");
