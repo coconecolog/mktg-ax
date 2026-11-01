@@ -736,3 +736,34 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-ty .bk-nextk > h2 { text-align: center; }
 .bk-ty-next-l { text-align: center; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; color: var(--sub); }
 @media (max-width: 760px) { .bk-ty-t { font-size: 1.3rem; } .bk-ty-h { padding: 28px 8px 32px; } }
+
+/* ===== 予算案診断Kit ③ 最終チェック（2026-11-01 添付のイメージ）：診断結果の数 → 最終チェック → いちばん下にダウンロード ===== */
+.bk-f2 { gap: 28px; }
+.bk-f2-n { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.bk-f2-n > div { display: flex; flex-direction: column; gap: 6px; }
+.bk-f2-n b { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+.bk-f2-n b.is-fix { color: var(--red); }
+.bk-f2-n b.is-check { color: var(--org); }
+.bk-f2-n span { font-size: 0.85rem; color: var(--sub); }
+.bk-f2-lead { font-size: 1rem; font-weight: 800; margin-top: 22px !important; }
+.bk-f2-chk { padding-left: 14px; }
+.bk-f2-chk h3 { font-size: 1rem; font-weight: 800; margin: 0 0 10px; }
+.bk-f2-l { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem; }
+.bk-f2-l > li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.bk-f2-ic { display: inline-flex; width: 18px; justify-content: center; font-weight: 800; }
+.bk-f2-ic.is-ok { color: var(--ink); }
+.bk-f2-ic.is-fix { color: var(--red); }
+.bk-f2-ic.is-check { color: var(--org); }
+.bk-f2-agree { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; }
+.bk-f2-agree input { width: 20px; height: 20px; margin: 0; accent-color: #0b0b12; }
+.bk-f2-sub { list-style: none; margin: 2px 0 0 28px; padding: 0; flex-basis: 100%; display: flex; flex-direction: column; gap: 4px; }
+.bk-f2-sub a { display: inline-flex; gap: 12px; align-items: baseline; font-size: 0.85rem; color: var(--sub); text-decoration: none; }
+.bk-f2-sub a:hover { color: var(--ink); text-decoration: underline; }
+.bk-f2-sub .bk-go { font-size: 0.78rem; font-weight: 700; color: var(--ink); }
+.bk-f2-dl { border: 1.5px solid var(--line); background: var(--bg); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+.bk-f2-dl.is-ready { border-color: var(--ink); background: #fff; }
+.bk-f2-dl h3 { font-size: 1.05rem; font-weight: 800; margin: 0; }
+.bk-f2-tag { align-self: flex-start; font-size: 0.75rem; font-weight: 800; border: 1.5px solid var(--ink); background: #fff; padding: 1px 8px; }
+.bk-f2-dl .bk-fin-btn { width: 100%; padding: 16px; font-size: 1.05rem; }
+.bk-f2-dl .bk-hint { margin-top: 0 !important; }
+@media (max-width: 760px) { .bk-f2-n b { font-size: 1.5rem; } .bk-f2-chk { padding-left: 0; } }
