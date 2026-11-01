@@ -2,7 +2,7 @@
 // Lab（記事・資料）トップ（2026-10-12リニューアル、2026-11-02 右ナビを廃止して1カラム化）。
 // 上から：H1エリア（右寄せでミーアキャット public/images/logo/meerkat-symbol.svg）
 // →「カテゴリから探す」（カテゴリトップへの導線）
-// →「Kitで確かめる」（診断系Kit 3つ。src/data/tools.ts の KIT_GROUPS から名前に「診断」を含むKit。カード全体がリンク）
+// →「Kitで確かめる」（カテゴリの下の薄いグレー枠のレコメンド。診断系Kit 3つ。src/data/tools.ts の KIT_GROUPS から名前に「診断」を含むKit。カード全体がリンク）
 // →「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う。
 // 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
 // 「記事だけ」「資料だけ」の一覧へも /lab?type=post・/lab?type=resource でリンクできる。
@@ -87,29 +87,29 @@ const breadcrumbItems = [
     {/* Kitで確かめる（診断系Kit） */}
     {
       checkKits.length > 0 && (
-        <section aria-labelledby="lab-kits" class="mt-12 border-t-2 border-ink-950 pt-8">
+        <aside aria-labelledby="lab-kits" class="mt-6 border border-neutral-200 bg-neutral-100 p-4 sm:p-5">
           <div class="flex flex-wrap items-end justify-between gap-2">
-            <h2 id="lab-kits" class="text-xl font-bold text-ink-950">Kitで確かめる</h2>
+            <h2 id="lab-kits" class="text-sm font-bold text-ink-950">Kitで確かめる</h2>
             <a href="/tools" class="group flex items-center gap-2 text-xs font-bold text-ink-950 hover:underline">
               Kit一覧を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
             </a>
           </div>
-          <p class="mt-2 text-sm leading-relaxed text-neutral-500">記事・資料をもとに作った予算案やKPIを、診断Kitで確かめられます。</p>
-          <ul class="mt-5 grid grid-cols-1 gap-3 bg-neutral-100 p-3 sm:p-4 md:grid-cols-3">
+          <p class="mt-1 text-xs leading-relaxed text-neutral-500">記事・資料をもとに作った予算案やKPIを、診断Kitで確かめられます。</p>
+          <ul class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             {checkKits.map((k) => (
               <li>
-                <a href={k.href} class="group block h-full border border-neutral-300 bg-white px-4 py-3.5 hover:border-ink-950">
+                <a href={k.href} class="group block h-full border border-neutral-300 bg-white px-4 py-3 hover:border-ink-950">
                   <span class="block text-xs text-neutral-500">{k.situation}</span>
-                  <span class="mt-1 flex items-center justify-between gap-3 text-base font-bold text-ink-950">
+                  <span class="mt-0.5 flex items-center justify-between gap-3 text-sm font-bold text-ink-950">
                     {k.name}
                     <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
                   </span>
-                  <span class="mt-1.5 block text-xs leading-relaxed text-neutral-500">{k.description}</span>
+                  <span class="mt-1 block text-xs leading-relaxed text-neutral-500">{k.description}</span>
                 </a>
               </li>
             ))}
           </ul>
-        </section>
+        </aside>
       )
     }
 
