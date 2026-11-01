@@ -8,6 +8,12 @@
 // - 他のKitは BudgetGrid のまま（予算案診断Kitで確かめてから広げる）
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 
+interface Props {
+  /** 出力する資料の名前（年間予算表／KPI管理表） */
+  doc?: string;
+}
+const { doc = "年間予算表" } = Astro.props;
+
 const PRE = [
   { key: "goal", label: "売上目標", sub: "マーケ経由・年間", unit: "万円" },
   { key: "price", label: "平均受注単価", sub: "1社あたり", unit: "万円" },
@@ -166,7 +172,7 @@ const MK = [
         </div>
       ))
     }
-    <p class="bk-hint">「年間」は 2. チャネル別（年間）の数です。月の合計と年間がずれたまま診断すると、② で「月別の合計が、年間と合いません」の「直す」が出ます。外部費用・人件費の月別は、ダウンロードする年間予算表に年額÷12の式で入ります。</p>
+    <p class="bk-hint">「年間」は 2. チャネル別（年間）の数です。月の合計と年間がずれたまま診断すると、② で「月別の合計が、年間と合いません」の「直す」が出ます。外部費用・人件費の月別は、ダウンロードする{doc}に年額÷12の式で入ります。</p>
   </section>
 
   <div class="bk-fi-bar">

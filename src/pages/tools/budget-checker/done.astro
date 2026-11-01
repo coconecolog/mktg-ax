@@ -1,63 +1,28 @@
 ---
 // src/pages/tools/budget-checker/done.astro
-//
-// 予算案診断Kitの「④ 次へ」（/tools/budget-checker/done）2026-11-01
-// ③ でダウンロードが終わると自動でここに移る。Thanksページの形（流れの帯なし、中央に「ダウンロードしました」）→ 次のKit（KPI管理表作成Kit）へ誘導する
-// 年間予算表ができたことと、次にやること（KPI管理表作成Kitに数字を引き継ぐ・資料）を出す
-// 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="done"）。数字は入力の画面と同じ localStorage を読む
+// 完了の画面（noindex）。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "予算案診断Kit";
+const KIT_ID = "budget";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
-  { name: TOOL_TITLE, href: "/tools/budget-checker" },
-  { name: "完了", href: "/tools/budget-checker/done" },
+  { name: p.title, href: base },
+  { name: "完了", href: `${base}/done` },
 ];
 ---
 
-<BaseLayout title={`${TOOL_TITLE} 完了｜MeerKitLab`} description="予算案診断Kitの完了の画面です。年間予算表（Excel）のダウンロードと、次に使うKitへの案内です。" ogImage="/open-graph/default.png" noindex>
+<BaseLayout title={`${p.title} 完了｜MeerKitLab`} description={`${p.title}の完了の画面です。ダウンロードと、次に使うKitへの案内です。`} ogImage="/open-graph/default.png" noindex>
   <Breadcrumb items={breadcrumbItems} />
+  <KitFlow kitId={KIT_ID} mode="done" />
 
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
-  </div>
-
-  <main class="bk" id="bk" data-kit="budget" data-mode="done">
-    <div id="bk-flow" class="bk-ty">
-      <section class="bk-ty-h" role="status" aria-labelledby="bk-ty-t">
-        <span class="bk-ty-ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
-        <h2 class="bk-ty-t" id="bk-ty-t">年間予算表をダウンロードしました</h2>
-        <p class="bk-ty-f"><span id="bk-done-file"></span></p>
-        <p class="bk-ty-n">「年間予算表（施策別）」と「診断結果」の2シートです<span id="bk-done-left" hidden></span></p>
-        <p class="bk-ty-a">
-          <button type="button" class="bk-link" id="bk-again">もう一度ダウンロード</button>
-          <a class="bk-link" href="/tools/budget-checker/check?back=1">数字を直す（② に戻る）</a>
-        </p>
-        <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
-      </section>
-
-      <section class="bk-nextk" aria-labelledby="bk-next-h">
-        <p class="bk-ty-next-l">NEXT</p>
-        <h2 class="bk-fi-h" id="bk-next-h">次は、この予算をKPIにして毎月追いかける</h2>
-        <div class="bk-nextk-main">
-          <div>
-            <span class="bk-tag-o">おすすめ</span>
-            <b>KPI管理表作成Kit</b>
-            <p>いま作った年間予算表の数字を引き継いで、KPI管理表（M-B-04）を作ります。ファイルのアップロードは不要です。</p>
-          </div>
-          <button type="button" class="bk-btn" id="bk-to-kpi">この数字でKPI管理表を作る<span aria-hidden="true">→</span></button>
-        </div>
-        <div class="bk-nextk-sub">
-          <a href="/lab/whitepapers/kpi-management-template"><span class="bk-ft">資料</span><b>KPI管理表（無料）</b><small>スプレッドシートで自分で入力したい方へ</small></a>
-          <a href="/lab/whitepapers/budget-justification-sheet"><span class="bk-ft">資料</span><b>予算の根拠整理シート（3つのWhy）</b><small>稟議で予算の根拠を説明するときに</small></a>
-        </div>
-      </section>
-    </div>
-  </main>
 </BaseLayout>
 
 <script>

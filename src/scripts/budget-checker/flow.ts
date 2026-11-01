@@ -26,10 +26,10 @@ import {
 } from "@/lib/budgetFlow";
 import { planFileName } from "@/lib/budget-sheet";
 import { toMake } from "@/lib/budgetMake";
-import { KITS } from "@/lib/planKits";
+import { KITS, type KitId } from "@/lib/planKits";
 import { pickSaveTarget, writePlanFile } from "@/scripts/budget-checker/download";
 
-const KIT = KITS.budget;
+const KIT = KITS[((document.getElementById("bk")?.dataset.kit ?? "budget") as KitId)] ?? KITS.budget;
 const BASE = KIT.path;
 const URL_CHECK = `${BASE}/check`;
 const URL_FINAL = `${BASE}/final`;
@@ -107,7 +107,7 @@ function headline() {
 
 function noData() {
   const box = $("bk-flow");
-  box.innerHTML = `<div class="bk-empty"><b>予算案の数字がまだありません</b><p>入口でAIの案を貼りつけるか、年間予算表（.xlsx）を読み込むか、画面で入力してください。</p><a class="bk-btn" href="${BASE}">入口へ<span aria-hidden="true">→</span></a></div>`;
+  box.innerHTML = `<div class="bk-empty"><b>${KIT.subject}の数字がまだありません</b><p>入口でAIの案を貼りつけるか、${KIT.doc}（.xlsx）を読み込むか、画面で入力してください。</p><a class="bk-btn" href="${BASE}">入口へ<span aria-hidden="true">→</span></a></div>`;
 }
 
 // =====================================================================
@@ -417,7 +417,7 @@ function initFinal() {
   $("bk-agree-t").textContent = "診断結果を確認しました";
   $("bk-fin-lead").textContent = open.length
     ? `未対応が${open.length}件あります。直す場合は、行を押すと ② のそのカードに戻ります。問題なければチェックを入れてダウンロードします。`
-    : "未対応の項目はありません。チェックを入れて、年間予算表（Excel）をダウンロードします。";
+    : `未対応の項目はありません。チェックを入れて、${KIT.doc}（Excel）をダウンロードします。`;
 
   const yearOk = Number.isInteger(st.input.startYear) && st.input.startYear >= 2000 && st.input.startYear <= 2100;
   if (!d.ready || !yearOk) {
@@ -482,7 +482,7 @@ function initDone() {
   });
 
   // 次のKit：この数字のまま、KPI管理表作成Kitの入力の画面に移る（アップロード不要）
-  $("bk-to-kpi").addEventListener("click", () => {
+  document.getElementById("bk-to-kpi")?.addEventListener("click", () => {
     const store = KITS.kpimake.store;
     let has = false;
     try {

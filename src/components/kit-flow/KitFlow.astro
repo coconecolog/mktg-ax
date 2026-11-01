@@ -1,0 +1,171 @@
+---
+// src/components/kit-flow/KitFlow.astro
+// 診断系Kitの中の画面（2026-11-01、予算案診断Kitで決めた形を共通にした）。mode で画面を分ける：
+// - input：① 入力（1画面で 1. 前提 → 2. チャネル別（年間）→ 3. 月別。判定は出さない）。動きは src/scripts/budget-checker/app.ts
+// - check：② 診断・修正（直す・確認を1件ずつカードに）
+// - final：③ 最終チェック・ダウンロード（一覧は全幅、いちばん下にチェック｜ファイル名とボタン。保存が終わると自動で完了へ）
+// - done：完了（Thanksページの形。流れの帯なし。次のKitへ）
+// check・final・done の動きは src/scripts/budget-checker/flow.ts。文言は src/data/kitPages.ts、計算の違いは src/lib/planKits.ts
+import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
+import FlowInput from "@/components/budget-checker/FlowInput.astro";
+import { KITS, type KitId } from "@/lib/planKits";
+import { kitPage } from "@/data/kitPages";
+
+interface Props {
+  kitId: KitId;
+  mode: "input" | "check" | "final" | "done";
+}
+const { kitId, mode } = Astro.props;
+const kit = KITS[kitId];
+const p = kitPage(kitId);
+const base = kit.path;
+const doc = kit.doc;
+// 出力するExcelのシート（予算：年間予算表（施策別）＋診断結果／KPI：KPI管理表の全シート＋診断結果）
+const sheets = kitId === "budget" ? "「年間予算表（施策別）」と「診断結果」の2シートです" : `${doc}の全シート（はじめに入力を埋めたもの）と「診断結果」です`;
+const sheetsShort = kitId === "budget" ? "年間予算表（施策別）＋診断結果" : `${doc}の全シート＋診断結果`;
+---
+
+<div class="mx-auto max-w-6xl px-5 pt-10">
+  <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{p.title}</h1>
+  <p class="mt-4 text-lg font-bold text-ink-950">{p.catch}</p>
+</div>
+
+<main class="bk" id="bk" data-kit={kitId} data-mode={mode}>
+  {
+    mode === "input" && (
+      <>
+        <FlowSteps current={1} doc={doc} />
+        <p class="bk-back" id="bk-back">
+          <a href={base}>← {p.title}の入口に戻る</a>
+        </p>
+        <div class="bk-notes" id="bk-notes" hidden />
+        <FlowInput doc={doc} />
+      </>
+    )
+  }
+
+  {
+    mode === "check" && (
+      <>
+        <FlowSteps current={2} doc={doc} />
+        <div id="bk-flow">
+          <div class="bk-ck-top">
+            <div>
+              <h2 class="bk-fi-h">診断の結果を見て、カードの数字を直す</h2>
+              <p class="bk-fi-lead">カードの水色の欄を直すと、その場で判定し直します。「直す」がなくなったら、最終チェックへ進みます。</p>
+            </div>
+            <a class="bk-ck-all" href={`${base}/input?from=check`}>表全体で見る・直す（① 入力に戻る）</a>
+          </div>
+          <p class="bk-backmsg" id="bk-back-msg" role="status" hidden />
+          <div class="bk-notes" id="bk-notes" hidden />
+
+          <div class="bk-ck-sum" aria-label="判定のまとめ">
+            <div class="fix"><span>直す</span><b id="bk-s-fix">0</b></div>
+            <div class="check"><span>確認</span><b id="bk-s-check">0</b></div>
+            <div class="ok"><span>問題なし</span><b id="bk-s-ok">0</b></div>
+            <div class="wide"><span>目標に届くか</span><b id="bk-s-goal">—</b></div>
+          </div>
+          <p class="bk-live" id="bk-live" role="status" aria-live="polite" hidden />
+
+          <p class="bk-okall" id="bk-okall" hidden>直すところも、確認するところもありません。最終チェックへ進めます。</p>
+          <div class="bk-issues" id="bk-issues" />
+          <details class="bk-ck-more" id="bk-okl" hidden>
+            <summary>問題なし <span id="bk-okl-n">0</span>件<small id="bk-okl-s" /></summary>
+            <ul id="bk-okl-l" />
+          </details>
+          <details class="bk-ck-more" id="bk-resolved" hidden>
+            <summary>対応済み（<span id="bk-resolved-n">0</span>件）</summary>
+            <div class="bk-issues" id="bk-resolved-l" />
+          </details>
+
+          <div class="bk-fi-bar">
+            <div class="bk-fi-bar-in">
+              <div>
+                <b id="bk-s-next">残り：直す 0・確認 0</b>
+                <span>残っていても進めます（最終チェックで、もう一度一覧で確かめます）</span>
+              </div>
+              <a class="bk-btn bk-go" href={`${base}/final`}>最終チェックへ<span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  {
+    mode === "final" && (
+      <>
+        <FlowSteps current={3} doc={doc} />
+        <div id="bk-flow">
+          <div>
+            <h2 class="bk-fi-h">最後に確かめて、{doc}をダウンロードする</h2>
+            <p class="bk-fi-lead" id="bk-fin-lead" />
+          </div>
+          <div class="bk-ck-sum bk-fin-sum" aria-label="判定のまとめ">
+            <div class="fix"><span>直す</span><b id="bk-f-fix">0</b></div>
+            <div class="check"><span>確認（未対応）</span><b id="bk-f-check">0</b></div>
+            <div class="ok"><span>問題なし</span><b id="bk-f-ok">0</b></div>
+          </div>
+          <ul class="bk-fin" id="bk-fin-l" />
+          <p class="bk-back"><a href={`${base}/check?back=1`}>← ② 診断・修正に戻る</a></p>
+
+          <div class="bk-fin-bottom">
+            <div class="bk-fin-row">
+              <label class="bk-agree">
+                <input type="checkbox" id="bk-agree" />
+                <span><b id="bk-agree-t">診断結果を確認しました</b><small>直す・確認が残っていてもダウンロードできます。残りはExcelの「診断結果」シートに載ります</small></span>
+              </label>
+              <div class="bk-fin-file">
+                <svg viewBox="0 0 44 54" aria-hidden="true"><path d="M2 2h28l12 12v38H2z" /><path d="M30 2v12h12" /><rect x="0" y="34" width="30" height="12" /><text x="15" y="43" text-anchor="middle">XLSX</text></svg>
+                <div><b id="bk-fin-name">{doc}.xlsx</b><span>{sheetsShort}</span></div>
+              </div>
+            </div>
+            <button type="button" class="bk-btn bk-fin-btn" id="bk-dl" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>{doc}をダウンロード（Excel）</button>
+            <p class="bk-hint">保存が終わると、自動で完了の画面に移ります</p>
+            <p class="bk-err" id="bk-dlerr" role="alert" hidden />
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  {
+    mode === "done" && (
+      <div id="bk-flow" class="bk-ty">
+        <section class="bk-ty-h" role="status" aria-labelledby="bk-ty-t">
+          <span class="bk-ty-ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
+          <h2 class="bk-ty-t" id="bk-ty-t">{doc}をダウンロードしました</h2>
+          <p class="bk-ty-f"><span id="bk-done-file" /></p>
+          <p class="bk-ty-n">{sheets}<span id="bk-done-left" hidden /></p>
+          <p class="bk-ty-a">
+            <button type="button" class="bk-link" id="bk-again">もう一度ダウンロード</button>
+            <a class="bk-link" href={`${base}/check?back=1`}>数字を直す（② に戻る）</a>
+          </p>
+          <p class="bk-err" id="bk-dlerr" role="alert" hidden />
+        </section>
+
+        <section class="bk-nextk" aria-labelledby="bk-next-h">
+          <p class="bk-ty-next-l">NEXT</p>
+          <h2 class="bk-fi-h" id="bk-next-h">{p.next.head}</h2>
+          <div class="bk-nextk-main">
+            <div>
+              <span class="bk-tag-o">おすすめ</span>
+              <b>{p.next.name}</b>
+              <p>{p.next.desc}</p>
+            </div>
+            {p.next.handoff ? (
+              <button type="button" class="bk-btn" id="bk-to-kpi">{p.next.cta}<span aria-hidden="true">→</span></button>
+            ) : (
+              <a class="bk-btn" href={p.next.href}>{p.next.cta}<span aria-hidden="true">→</span></a>
+            )}
+          </div>
+          <div class="bk-nextk-sub">
+            {p.resources.map((r) => (
+              <a href={r.href}><span class="bk-ft">資料</span><b>{r.name}</b><small>{r.note}</small></a>
+            ))}
+          </div>
+        </section>
+      </div>
+    )
+  }
+</main>

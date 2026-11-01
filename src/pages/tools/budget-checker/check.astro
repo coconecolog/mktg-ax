@@ -1,76 +1,28 @@
 ---
 // src/pages/tools/budget-checker/check.astro
-//
-// 予算案診断Kitの「② 診断・修正」（/tools/budget-checker/check）2026-11-01
-// 判定の「直す」「確認」を1件ずつのカードにし、カードの中で数字を直す。上に直す・確認・問題なしの数と、目標に届くか（2026-11-01 見直し）
-// カード：上の帯に「直す／確認」と見出し、左に いま・OKになる条件・直し方、右に直す欄。下に固定の帯（残りの数と「最終チェックへ」）
-// 入口でAIの案・.xlsxを読み込んだ人はここに直接来る。画面で入力した人は入力の画面の「診断する」から来る
-// 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="check"）。数字は入力の画面と同じ localStorage を読む
+// 診断・修正の画面（noindex）。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "予算案診断Kit";
+const KIT_ID = "budget";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
-  { name: TOOL_TITLE, href: "/tools/budget-checker" },
-  { name: "診断・修正", href: "/tools/budget-checker/check" },
+  { name: p.title, href: base },
+  { name: "診断・修正", href: `${base}/check` },
 ];
 ---
 
-<BaseLayout title={`${TOOL_TITLE} 診断・修正｜MeerKitLab`} description="予算案診断Kitの診断・修正の画面です。直すところを1件ずつ、いまの数字とOKになる条件を見ながら、その場で直せます。" ogImage="/open-graph/default.png" noindex>
+<BaseLayout title={`${p.title} 診断・修正｜MeerKitLab`} description={`${p.title}の診断・修正の画面です。直すところを1件ずつ、いまの数字とOKになる条件を見ながら、その場で直せます。`} ogImage="/open-graph/default.png" noindex>
   <Breadcrumb items={breadcrumbItems} />
+  <KitFlow kitId={KIT_ID} mode="check" />
 
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
-  </div>
-
-  <main class="bk" id="bk" data-kit="budget" data-mode="check">
-    <FlowSteps current={2} />
-    <div id="bk-flow">
-      <div class="bk-ck-top">
-        <div>
-          <h2 class="bk-fi-h">診断の結果を見て、カードの数字を直す</h2>
-          <p class="bk-fi-lead">カードの水色の欄を直すと、その場で判定し直します。「直す」がなくなったら、最終チェックへ進みます。</p>
-        </div>
-        <a class="bk-ck-all" href="/tools/budget-checker/input?from=check">表全体で見る・直す（① 入力に戻る）</a>
-      </div>
-      <p class="bk-backmsg" id="bk-back-msg" role="status" hidden></p>
-      <div class="bk-notes" id="bk-notes" hidden></div>
-
-      <div class="bk-ck-sum" aria-label="判定のまとめ">
-        <div class="fix"><span>直す</span><b id="bk-s-fix">0</b></div>
-        <div class="check"><span>確認</span><b id="bk-s-check">0</b></div>
-        <div class="ok"><span>問題なし</span><b id="bk-s-ok">0</b></div>
-        <div class="wide"><span>目標に届くか</span><b id="bk-s-goal">—</b></div>
-      </div>
-      <p class="bk-live" id="bk-live" role="status" aria-live="polite" hidden></p>
-
-      <p class="bk-okall" id="bk-okall" hidden>直すところも、確認するところもありません。最終チェックへ進めます。</p>
-      <div class="bk-issues" id="bk-issues"></div>
-      <details class="bk-ck-more" id="bk-okl" hidden>
-        <summary>問題なし <span id="bk-okl-n">0</span>件<small id="bk-okl-s"></small></summary>
-        <ul id="bk-okl-l"></ul>
-      </details>
-      <details class="bk-ck-more" id="bk-resolved" hidden>
-        <summary>対応済み（<span id="bk-resolved-n">0</span>件）</summary>
-        <div class="bk-issues" id="bk-resolved-l"></div>
-      </details>
-
-      <div class="bk-fi-bar">
-        <div class="bk-fi-bar-in">
-          <div>
-            <b id="bk-s-next">残り：直す 0・確認 0</b>
-            <span>残っていても進めます（最終チェックで、もう一度一覧で確かめます）</span>
-          </div>
-          <a class="bk-btn bk-go" href="/tools/budget-checker/final">最終チェックへ<span aria-hidden="true">→</span></a>
-        </div>
-      </div>
-    </div>
-  </main>
 </BaseLayout>
 
 <script>

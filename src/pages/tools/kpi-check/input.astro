@@ -1,76 +1,29 @@
 ---
 // src/pages/tools/kpi-check/input.astro
-//
-// KPI妥当性診断Kitの入力の画面（/tools/kpi-check/input）2026-10-30。予算案診断Kitの入力の画面（/tools/budget-checker/input）と同じ作り
-// 入口（/tools/kpi-check）の3つの入口は、どれもこのページに移る（localStorage で受け渡す）。?sample=1 で記入例を入れて開く
-// 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-kit="kpi" data-mode="input"）
+// 入力の画面（noindex）。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
-import BudgetGrid from "@/components/budget-checker/BudgetGrid.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "KPI妥当性診断Kit";
+const KIT_ID = "kpi";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
-  { name: TOOL_TITLE, href: "/tools/kpi-check" },
-  { name: "入力", href: "/tools/kpi-check/input" },
+  { name: p.title, href: base },
+  { name: "入力", href: `${base}/input` },
 ];
 ---
 
-<BaseLayout
-  title={`${TOOL_TITLE} 入力｜MeerKitLab`}
-  description="KPI妥当性診断Kitの入力の画面です。KPIの数字を入れると、売上目標とつながっているか・率やコストに無理がないかをその場で判定し、KPI管理表（Excel）をダウンロードできます。"
-  ogImage="/open-graph/default.png"
-  noindex
->
+<BaseLayout title={`${p.title} 入力｜MeerKitLab`} description={`${p.title}の入力の画面です。数字を入れて「診断する」を押すと、次の画面で判定します。`} ogImage="/open-graph/default.png" noindex>
   <Breadcrumb items={breadcrumbItems} />
-
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">作ったKPIを、診断して直し、KPI管理表に仕上げる。</p>
-    <p class="mt-3 text-sm leading-relaxed text-neutral-500">自分やAIで作ったKPIを取りこみ、売上目標とつながっているか・率やコストに無理がないかを判定します。画面でNGを直すと、そのまま期初から使えるKPI管理表（Excel）になります。</p>
-  </div>
-
-  <main class="bk" id="bk" data-kit="kpi" data-mode="input">
-    <p class="bk-back"><a href="/tools/kpi-check">← KPI妥当性診断Kitに戻る</a></p>
-
-    <section class="bk-howto" aria-labelledby="bk-howto-h">
-      <h2 class="bk-howto-h" id="bk-howto-h">使い方</h2>
-      <div class="bk-howto-b">
-        <ol class="bk-howto-l">
-          <li>
-            <span class="bk-tno">1</span>
-            <div><b>まず「年間」を入力</b><p>前提と、チャネル別の年間の計画を入れます。</p></div>
-          </li>
-          <li>
-            <span class="bk-tno">2</span>
-            <div><b>次に「月別」で調整</b><p>年間÷12が入っています。季節で増減する月だけ直します。</p></div>
-          </li>
-        </ol>
-        <ul class="bk-howto-n">
-          <li>水色のセルに入力してください。</li>
-          <li>灰色のセルは自動計算されるセルです。</li>
-          <li>右の判定で「直す」「確認」が出たら、その欄を直してください（残っていてもKPI管理表をダウンロードできます）。</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="bk-work">
-      <div class="bk-notes" id="bk-notes" hidden></div>
-
-      <BudgetGrid kit="kpi" />
-
-      <div class="bk-mbar" id="bk-mbar">
-        <span class="fix"><b id="bk-m-fix">0</b>直す</span>
-        <span class="check"><b id="bk-m-check">0</b>確認</span>
-        <button type="button" class="bk-btn" id="bk-mopen">判定を見る</button>
-      </div>
-    </section>
-  </main>
-
-  <ToolFooter path="/tools/kpi-check" />
+  <KitFlow kitId={KIT_ID} mode="input" />
+  <ToolFooter path={base} />
 </BaseLayout>
 
 <script>

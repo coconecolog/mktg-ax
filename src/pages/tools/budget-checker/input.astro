@@ -1,67 +1,31 @@
 ---
 // src/pages/tools/budget-checker/input.astro
-//
-// 予算案診断キットの入力の画面（/tools/budget-checker/input）2026-10-30・2026-11-01 流れを5ステップに
-// 2026-11-01：「① 入力・取り込み」の画面。判定は出さず入力だけにし、「診断する →」で ② 診断・修正（/check）に移る。
-//   入口で「画面で入力する」を選んだ人が来る。② の「表全体で見る・直す」（?from=check）からも来る（そのときは上の戻り先が ② になる）
-// 入口（/tools/budget-checker）の3つの入口（AIの案／年間予算表の.xlsx／画面で入力）は、どれもこのページに移る。
-// - 入口で読み込んだ数字は localStorage（app.ts の STORE）で受け渡す。直接開いたときは、前回の入力（なければ空）から始める
-// - 2026-11-01：使い方の枠と年間｜月別のタブをやめ、1画面で 1. 前提 → 2. チャネル別（年間）→ 3. 月別（開いたまま）にした（FlowInput）。
-//   「診断する」は画面の下に固定した帯。ダウンロードは ③ の画面
-// - ?sample=1 で記入例（基本モデルの安定期）を入れて開く
-// 画面の動きは src/scripts/budget-checker/app.ts（#bk の data-mode="input"）
+// 入力の画面（noindex）。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
-import FlowInput from "@/components/budget-checker/FlowInput.astro";
-import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
-const TOOL_TITLE = "予算案診断Kit";
+const KIT_ID = "budget";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
-  { name: TOOL_TITLE, href: "/tools/budget-checker" },
-  { name: "入力", href: "/tools/budget-checker/input" },
+  { name: p.title, href: base },
+  { name: "入力", href: `${base}/input` },
 ];
 ---
 
-<BaseLayout
-  title={`${TOOL_TITLE} 入力｜MeerKitLab`}
-  description="予算案診断Kitの入力の画面です。予算案の数字を入れて「診断する」を押すと、目標に届くか・コストが上限以内かを判定します。"
-  ogImage="/open-graph/default.png"
-  noindex
->
+<BaseLayout title={`${p.title} 入力｜MeerKitLab`} description={`${p.title}の入力の画面です。数字を入れて「診断する」を押すと、次の画面で判定します。`} ogImage="/open-graph/default.png" noindex>
   <Breadcrumb items={breadcrumbItems} />
-
-  <div class="mx-auto max-w-6xl px-5 pt-10">
-    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
-    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
-  </div>
-
-  <main class="bk" id="bk" data-kit="budget" data-mode="input">
-    <FlowSteps current={1} />
-    <p class="bk-back" id="bk-back"><a href="/tools/budget-checker">← 予算案診断Kitの入口に戻る</a></p>
-
-    <div class="bk-notes" id="bk-notes" hidden></div>
-    <FlowInput />
-  </main>
-
-  <ToolFooter path="/tools/budget-checker" />
+  <KitFlow kitId={KIT_ID} mode="input" />
+  <ToolFooter path={base} />
 </BaseLayout>
 
 <script>
   import "@/scripts/budget-checker/app";
-</script>
-<script>
-  // ② 診断・修正の「表全体で見る・直す」から来たときは、戻り先を ② にする
-  if (new URLSearchParams(location.search).get("from") === "check") {
-    const a = document.querySelector<HTMLAnchorElement>("#bk-back a");
-    if (a) {
-      a.href = "/tools/budget-checker/check";
-      a.textContent = "← 診断・修正に戻る";
-    }
-    const go = document.querySelector<HTMLElement>("[data-go-check]");
-    if (go) go.firstChild!.textContent = "診断・修正に戻る";
-  }
 </script>

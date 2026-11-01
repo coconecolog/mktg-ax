@@ -1,0 +1,170 @@
+---
+// src/components/kit-flow/KitIntro.astro
+// 診断系Kitの入口ページの中身（2026-11-01、予算案診断Kitで決めた形を共通にした）。
+// 上から：H1（Kit名）・問いかけ・説明・3ステップ（左）と診断結果の見本（右）→ 診断をはじめる（入口3つ）→ 診断でわかること＋必要な数字（1つの枠）
+// 文言は src/data/kitPages.ts、計算の違いは src/lib/planKits.ts。動きは src/scripts/budget-checker/app.ts（data-mode="intro"）
+import { aiPrompt, diagnoseBudget, sampleState } from "@/lib/budgetCheck";
+import { buildIssues } from "@/lib/budgetFlow";
+import { KITS, type KitId } from "@/lib/planKits";
+import { kitPage } from "@/data/kitPages";
+
+interface Props {
+  kitId: KitId;
+}
+const { kitId } = Astro.props;
+const kit = KITS[kitId];
+const p = kitPage(kitId);
+
+// 右の「診断結果の見本」：基本モデルの安定期の記入例から、展示会の商談数・受注数を減らした案を実際に判定した結果
+const demo = sampleState();
+demo.input.channels[0].deals = 15;
+demo.input.channels[0].wins = 4;
+const demoDiag = diagnoseBudget(demo, kit);
+const demoIssues = buildIssues(demo, kit, demoDiag).slice(0, 2);
+const ST_LABEL = { fix: "直す", check: "確認" } as const;
+
+const PRE_TAGS = ["売上目標", "平均受注単価", "粗利率", "回収期間", "リードタイム", "共通費"];
+const CH_TAGS = ["リード数", "有効リード数", "商談数", "受注数", "外部費用", "人件費"];
+const ICON = {
+  ai: ["M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"],
+  file: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6M8 13h8M8 17h8M12 11v8"],
+  key: "M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10",
+};
+---
+
+  <!-- H1はKit名。その下に問いかけ（何をするKitか）と説明、右に診断結果の見本（2026-11-01） -->
+  <div class="bk bk-top">
+    <div class="bk-top-l">
+      <h1 class="bk-top-h1">{p.title}</h1>
+      <p class="bk-top-q">{p.question}</p>
+      <p class="bk-top-d" set:html={p.lead}></p>
+      <!-- 3ステップ（入力 → 診断して直す → ダウンロード）。ファーストビューの左、説明のすぐ下に置く（2026-11-01） -->
+            <section class="bk-3s" aria-labelledby="bk-3s-h">
+              <h2 class="bk-3s-h" id="bk-3s-h">{p.stepsHead}</h2>
+              <ol class="bk-3s-l">
+                <li>
+                  <span class="bk-3s-n">STEP 1</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" /><path d="M3 10h18M9 10v10M13 15h4" /></svg>
+                  <b>入力する</b>
+                  <p>{p.steps[0]}</p>
+                </li>
+                <li>
+                  <span class="bk-3s-n">STEP 2</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></svg>
+                  <b>診断して直す</b>
+                  <p>{p.steps[1]}</p>
+                </li>
+                <li>
+                  <span class="bk-3s-n">STEP 3</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
+                  <b>ダウンロード</b>
+                  <p>{p.steps[2]}</p>
+                </li>
+              </ol>
+            </section>
+    </div>
+    <figure class="bk-demo" aria-label="診断結果の見本">
+      <figcaption><b>診断結果</b><span>見本</span></figcaption>
+      <div class="bk-demo-sum">
+        <div class="is-fix"><span>直す</span><b>{demoDiag.counts.fix}</b></div>
+        <div class="is-check"><span>確認</span><b>{demoDiag.counts.check}</b></div>
+        <div><span>問題なし</span><b>{demoDiag.counts.ok}</b></div>
+      </div>
+      <ul class="bk-demo-l">
+        {
+          demoIssues.map((x) => (
+            <li>
+              <div>
+                <b>{x.title}</b>
+                <p>いま：{x.now}</p>
+                <p class="ok">OKになる条件：{x.target}</p>
+              </div>
+              <span class={`bk-demo-st is-${x.status}`}>{ST_LABEL[x.status]}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </figure>
+  </div>
+
+  <main class="bk" id="bk" data-kit={kitId} data-mode="intro">
+    <section id="bk-intro">
+      <!-- ===== 入口3つ（上下に余白をとって目立たせる） ===== -->
+      <div class="bk-entry">
+      <div class="bk-start-h" id="start">
+        <h2 class="bk-h2">診断をはじめる</h2>
+        <p class="bk-sub">手元の状態に合うものを1つ選んでください。どれを選んでも、診断の中身は同じです。</p>
+      </div>
+      <div class="bk-ents">
+        <div class="bk-ent">
+          <small><svg viewBox="0 0 24 24" aria-hidden="true">{ICON.ai.map((d) => <path d={d} />)}</svg>AIで作った案がある</small>
+          <b>AIの案を貼りつける</b>
+          <p>プロンプトをAIに渡し、返ってきた結果を貼ります</p>
+          <button type="button" class="bk-btn" id="bk-ai-open" aria-expanded="false" aria-controls="bk-ai">はじめる<span aria-hidden="true">→</span></button>
+        </div>
+        <label class="bk-ent bk-drop" id="bk-drop" for="bk-file">
+          <small><svg viewBox="0 0 24 24" aria-hidden="true">{ICON.file.map((d) => <path d={d} />)}</svg>{p.fileLabel}</small>
+          <b>{kit.doc}（.xlsx）をここに置く</b>
+          {p.fileNote && <span class="bk-drop-hint">{p.fileNote}</span>}
+          <span class="bk-drop-hint">Googleスプレッドシート：ファイル → ダウンロード → Microsoft Excel（.xlsx）</span>
+          <span class="bk-btn">ファイルを選ぶ</span>
+        </label>
+        <input type="file" id="bk-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+        <div class="bk-ent">
+          <small><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" /><path d={ICON.key} /></svg>数字が手元にある</small>
+          <b>画面で入力する</b>
+          <p>必要な数字を画面の表に入れます</p>
+          <button type="button" class="bk-btn" id="bk-start">入力する<span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+
+      <div class="bk-ai" id="bk-ai" hidden>
+        <p class="bk-ai-st">{p.aiStep}</p>
+        <pre class="bk-prompt" id="bk-prompt" set:text={aiPrompt(kit)}></pre>
+        <button type="button" class="bk-btn2" id="bk-copy">プロンプトをコピー</button>
+        <p class="bk-ai-st">② AIが返した結果を、ここに貼る</p>
+        <textarea class="bk-paste" id="bk-paste" rows="6" placeholder="AIが返したJSON（```json から ``` まで）をそのまま貼りつけます" aria-label="AIが返した結果"></textarea>
+        <p class="bk-ai-st">③ 読み込むと、すぐに診断します</p>
+        <button type="button" class="bk-btn" id="bk-import">読み込んで診断する<span aria-hidden="true">→</span></button>
+      </div>
+
+      <p class="bk-busy" id="bk-busy" role="status" hidden>読み込んでいます…</p>
+      <p class="bk-err" id="bk-err" role="alert" hidden></p>
+      </div>
+
+      <!-- ===== ここから下は説明 ===== -->
+      <div class="bk-band bk-info">
+        <div class="bk-know">
+        <h2 class="bk-h2">診断でわかること</h2>
+        <div class="bk-know-g">
+          <ul class="bk-know-l">
+            {p.know.map(([t, d], n) => <li><i>{"ABC"[n]}</i><div><b>{t}</b><p>{d}</p></div></li>)}
+          </ul>
+          <a class="bk-shot" href={`${kit.path}/sample?tab=sheet`}><img src={p.shot} alt="" width="640" height="420" loading="lazy" /><span>{kit.doc}（完成イメージ）を見る →</span></a>
+        </div>
+        </div>
+
+        <div class="bk-need">
+        <div>
+          <p class="bk-need-top"><b>必要な数字</b><span>率は入れません（件数から出します）。使わないチャネルは空欄か0でかまいません</span></p>
+          <dl>
+            <dt>前提</dt>
+            <dd>{PRE_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+            <dt>チャネル別（年間）</dt>
+            <dd>{CH_TAGS.map((t) => <span class="bk-tag">{t}</span>)}</dd>
+          </dl>
+        </div>
+        <div class="bk-need-dl">
+          <div class="bk-doc" aria-hidden="true"><i></i><b>{kit.doc}</b><em></em><em></em></div>
+          <div class="bk-need-dl-t">
+            <span class="bk-tag-o">スプレッドシートで入力したい方へ</span>
+            <b>{kit.doc}（無料）</b>
+            <p>画面ではなくスプレッドシートで入力したい方向けの資料です。入力して.xlsxで保存し、上の枠に置くと同じ診断ができます。</p>
+          </div>
+          <a class="bk-btn2" href={p.sheetUrl}>無料でダウンロード<span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      </div>
+    </section>
+  </main>
+
