@@ -26,6 +26,8 @@ export interface LibraryItem {
   readMinutes: number | null;
   /** 資料ファイルの拡張子（PDF・XLSX等）。記事・不明はnull */
   fileExt: string | null;
+  /** 表示用のファイル形式（資料DBの「ファイル形式」、なければ拡張子）。記事はnull */
+  fileFormat: string | null;
   typeLabel: string;
   metaLabel: string | null;
   ctaLabel: string;
@@ -69,6 +71,7 @@ function postToItem(post: Post): LibraryItem {
     thumbnail: post.thumbnail,
     readMinutes: estimateReadMinutes(post),
     fileExt: null,
+    fileFormat: null,
     typeLabel: "📝 ブログ記事",
     metaLabel: `◷ 読了${estimateReadMinutes(post)}分`,
     ctaLabel: "記事を読む →",
@@ -91,6 +94,7 @@ function resourceToItem(resource: Resource): LibraryItem {
     thumbnail: resource.thumbnail,
     readMinutes: null,
     fileExt: ext,
+    fileFormat: resource.fileFormat || ext,
     typeLabel: ext ? `📄 無料資料（${ext}）` : "📄 無料資料",
     metaLabel: null,
     ctaLabel: "無料で資料をもらう",

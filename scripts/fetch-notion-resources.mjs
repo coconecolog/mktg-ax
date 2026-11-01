@@ -147,6 +147,7 @@ async function main() {
     const homeOrder = getNumber(page, HOME_PROP.order);
     const homeCatch = getRichTextPlain(page, HOME_PROP.catch).trim();
     const contents = getRichTextPlain(page, HOME_PROP.contents).trim();
+    const fileFormat = getRichTextPlain(page, RESOURCE_PROP.fileFormat).trim();
 
     // ページ本文（記事と同じ仕組み）。「目次」「導入事例紹介」など、都度自由に見出し・内容を変えたい
     // 可変セクションはここに書けば、資料DBのプロパティを増やさずにNotion側だけで表現できる。
@@ -173,6 +174,7 @@ async function main() {
       coverImage,
       excerptImages,
       homeOrder,
+      fileFormat,
       homeCatch,
       contents,
       blocks,
