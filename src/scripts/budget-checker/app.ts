@@ -45,8 +45,8 @@ const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", 
 const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
 
 const INPUT_URL = `${KIT.path}/input`;
-/** 予算案診断Kitだけ、入力のあとは ② 診断・修正（/check）に移る */
-const FLOW = KIT.id === "budget";
+/** 予算案診断Kit・KPI妥当性診断Kit（2026-11-01）は、入力のあとは ② 診断・修正（/check）に移る */
+const FLOW = KIT.id === "budget" || KIT.id === "kpi";
 const CHECK_URL = `${KIT.path}/check`;
 /** 予算案診断Kitの入力の画面（FlowInput、2026-11-01）：判定は出さず、1画面で前提・年間・月別 */
 const FI = !!document.getElementById("bk-fi-pre-n");
@@ -742,6 +742,16 @@ drop?.addEventListener("drop", (e) => {
   else if (MODE === "input") {
     openWork(q.get("sample") === "1" ? sample() : (restore() ?? blank()));
     if (q.get("tab") === "m") tab("m"); // ② 診断・修正の「月別を表で直す」から
+    // ② 診断・修正の「表全体で見る・直す」から来たときは、戻り先を ② にする
+    if (q.get("from") === "check") {
+      const a = document.querySelector<HTMLAnchorElement>("#bk-back a");
+      if (a) {
+        a.href = CHECK_URL;
+        a.textContent = "← 診断・修正に戻る";
+      }
+      const go = document.querySelector<HTMLElement>("[data-go-check]");
+      if (go?.firstChild) go.firstChild.textContent = "診断・修正に戻る";
+    }
   }
   else if (q.get("sample") === "1") location.replace(`${INPUT_URL}?sample=1`);
 }

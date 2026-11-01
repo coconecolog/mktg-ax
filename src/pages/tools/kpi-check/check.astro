@@ -1,0 +1,30 @@
+---
+// src/pages/tools/kpi-check/check.astro
+// 診断・修正の画面（noindex）。中身は共通の部品 src/components/kit-flow/KitFlow.astro（2026-11-01）
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import KitFlow from "@/components/kit-flow/KitFlow.astro";
+import { kitPage } from "@/data/kitPages";
+import { KITS } from "@/lib/planKits";
+import "@/styles/budget-checker.css";
+
+const KIT_ID = "kpi";
+const p = kitPage(KIT_ID);
+const base = KITS[KIT_ID].path;
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: p.title, href: base },
+  { name: "診断・修正", href: `${base}/check` },
+];
+---
+
+<BaseLayout title={`${p.title} 診断・修正｜MeerKitLab`} description={`${p.title}の診断・修正の画面です。直すところを1件ずつ、いまの数字とOKになる条件を見ながら、その場で直せます。`} ogImage="/open-graph/default.png" noindex>
+  <Breadcrumb items={breadcrumbItems} />
+  <KitFlow kitId={KIT_ID} mode="check" />
+
+</BaseLayout>
+
+<script>
+  import "@/scripts/budget-checker/flow";
+</script>
