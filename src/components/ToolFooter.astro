@@ -1,6 +1,7 @@
 ---
 // ツールページ共通の下部ブロック（2026-10-17）。
 // よくある質問 → 関連資料・記事 → 便利ツール一覧ボタン → ContactCta（カテゴリ一覧・タグ一覧・ご要望・ご質問）の順に表示する。
+// 2026-11-01：Kitのページではタグ一覧を出さない（カテゴリ一覧は残す）。関連に「Kit」（次に使うKit）を足せるようにした
 // 中身は src/data/tool-footer.ts の TOOL_FOOTER[path] から取る。path はツールページのURL（例: "/tools/kpi-benchmark"）。
 import { TOOL_FOOTER } from "@/data/tool-footer";
 import { buildFaqSchemaFromItems } from "@/lib/schema";
@@ -17,6 +18,7 @@ const faqSchema = data.faq.length > 0 ? buildFaqSchemaFromItems(data.faq) : null
 const LABEL = {
   resource: { badge: "資料", kind: "ダウンロード資料", more: "資料を見る" },
   post: { badge: "記事", kind: "ブログ記事", more: "記事を読む" },
+  kit: { badge: "Kit", kind: "無料のKit", more: "Kitを使う" },
 } as const;
 ---
 
@@ -102,5 +104,5 @@ const LABEL = {
   </div>
 </section>
 
-<ContactCta />
+<ContactCta showTags={false} />
 </div>

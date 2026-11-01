@@ -7,6 +7,9 @@
 // - sample（…/sample）：記入例だけを表示する（保存・ダウンロードはしない）
 // 作る系のKit（予算作成Kit data-kit="make"・KPI管理表作成Kit data-kit="kpimake"、2026-10-30）：今期の実績と、自動配分の欄（上書き可）がある（src/lib/budgetMake.ts）
 //   予算作成Kitの入口は「画面で作成をはじめる」だけ。KPI管理表作成KitはAI・.xlsxの入口もあり、読んだ数字は toMake で作る系の状態にする
+// 2026-11-01 予算案診断Kit（data-kit="budget"）だけ、画面を5ステップに分けた（FLOW）：
+//   入口 → 入力（判定は出さない、画面で入力する人だけ）→ ② 診断・修正（/check）→ ③ 最終チェック（/final）→ ④⑤ 完了（/done）
+//   AIの案・.xlsxを読み込んだ人は入力を飛ばして /check に移る。②〜⑤の画面は src/scripts/budget-checker/flow.ts
 // 入れた数字やファイルはサーバーに送らない
 import {
   BASE_RATES,
@@ -27,7 +30,8 @@ import {
   type ChannelInput,
 } from "@/lib/budgetCheck";
 import { calc } from "@/lib/kpi-sheet-maker";
-import { fillPlanWorkbook, planFileName } from "@/lib/budget-sheet";
+import { clearMemo } from "@/lib/budgetFlow";
+import { pickSaveTarget, writePlanFile } from "@/scripts/budget-checker/download";
 import { KITS, readSheets, type KitId } from "@/lib/planKits";
 import { readBook } from "@/scripts/kpi-analysis/xlsx";
 import { diagHtml, sheetHtml } from "@/scripts/budget-checker/preview";
@@ -37,12 +41,14 @@ const KIT = KITS[((document.getElementById("bk")?.dataset.kit ?? "budget") as Ki
 const MAKE = KIT.maker;
 const STORE = KIT.store;
 const TEMPLATE = KIT.template;
-const LIB_ZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
 const KEYS: (keyof ChannelInput)[] = ["leads", "valid", "deals", "wins", "ext", "labor"];
 const PRE = ["goal", "price", "gmPct", "paybackYears", "leadTime", "common"] as const;
 
 const INPUT_URL = `${KIT.path}/input`;
-const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+/** 予算案診断Kitだけ、入力のあとは ② 診断・修正（/check）に移る */
+const FLOW = KIT.id === "budget";
+const CHECK_URL = `${KIT.path}/check`;
+const NO_MARKS = !!document.querySelector(".bk-grid.is-flow");
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const MODE = (document.getElementById("bk")?.dataset.mode ?? "intro") as "intro" | "input" | "sample";
@@ -223,7 +229,9 @@ function update() {
   form!.querySelectorAll("td.is-fix, td.is-check").forEach((td) => td.classList.remove("is-fix", "is-check"));
   document.querySelectorAll(".bk-mblock").forEach((b) => b.classList.remove("is-fix", "is-check"));
   let mdot: "fix" | "check" | null = null;
-  for (const [key, s] of Object.entries(d.marks)) {
+  // 予算案診断Kitの入力の画面（判定なし）では、欄に色を付けない（判定は ② 診断・修正で出す）
+  const marks = NO_MARKS ? {} : d.marks;
+  for (const [key, s] of Object.entries(marks)) {
     if (key.startsWith("m:")) {
       $(`bk-m${key.slice(2)}`)?.classList.add(`is-${s}`);
       if (mdot !== "fix") mdot = s;
@@ -323,8 +331,11 @@ function renderPanel(d: BudgetDiagnosis) {
   $("bk-c-fix").textContent = String(c.fix);
   $("bk-c-check").textContent = String(c.check);
   $("bk-c-ok").textContent = String(c.ok);
-  $("bk-m-fix").textContent = String(c.fix);
-  $("bk-m-check").textContent = String(c.check);
+  // 下の帯（スマホ）は、予算案診断Kitの入力の画面にはない
+  const mf = document.getElementById("bk-m-fix");
+  const mc = document.getElementById("bk-m-check");
+  if (mf) mf.textContent = String(c.fix);
+  if (mc) mc.textContent = String(c.check);
   document.querySelectorAll(".bk-counts .fix, .bk-mbar .fix").forEach((e) => e.classList.toggle("on", c.fix > 0));
   document.querySelectorAll(".bk-counts .check, .bk-mbar .check").forEach((e) => e.classList.toggle("on", c.check > 0));
 
@@ -449,11 +460,12 @@ function renderNotes() {
   });
 }
 
-// 入口：読み込んだ数字を保存して、入力の画面に移る
-function goInput(next: BudgetState) {
+// 入口：読み込んだ数字を保存して、入力の画面に移る（予算案診断Kitで読み込んだときは ② 診断・修正へ）
+function goInput(next: BudgetState, to = INPUT_URL) {
   st = next;
   save();
-  location.href = INPUT_URL;
+  if (FLOW && next.source !== "form") clearMemo(KIT); // 新しい予算案。前の「修正済み」「確認済み」は消す
+  location.href = to;
 }
 
 // 入力の画面・見本：数字を画面に入れて判定する
@@ -480,7 +492,7 @@ async function handleFile(file: File) {
   try {
     const book = await readBook(file, readSheets(KIT));
     const read = stateFromBook(book, file.name, KIT);
-    goInput(MAKE ? toMake(read) : read);
+    goInput(MAKE ? toMake(read) : read, FLOW ? CHECK_URL : INPUT_URL);
   } catch (e) {
     showIntroError(e instanceof ReadError ? e.message : `ファイルを読めませんでした。${KIT.doc}（.xlsx）を選んでください。`);
     console.error(e);
@@ -490,22 +502,6 @@ async function handleFile(file: File) {
 }
 
 // ---------- ダウンロード ----------
-let zipLib: Promise<any> | null = null;
-function loadZip(): Promise<any> {
-  if ((window as any).JSZip) return Promise.resolve((window as any).JSZip);
-  zipLib ??= new Promise((ok, ng) => {
-    const s = document.createElement("script");
-    s.src = LIB_ZIP;
-    s.onload = () => ok((window as any).JSZip);
-    s.onerror = () => {
-      zipLib = null;
-      ng(new Error("zip"));
-    };
-    document.head.appendChild(s);
-  });
-  return zipLib;
-}
-
 async function download() {
   const err = $("bk-dlerr");
   err.hidden = true;
@@ -521,48 +517,14 @@ async function download() {
     return;
   }
   const btn = $<HTMLButtonElement>("bk-dl");
-  // Chrome・Edge：保存先を選ぶ画面を先に開く（押した直後でないと開けないため）。ほかのブラウザは通常のダウンロード
-  let handle: any = null;
-  const picker = (window as any).showSaveFilePicker;
-  if (typeof picker === "function") {
-    try {
-      handle = await picker({ suggestedName: planFileName(st, KIT), types: [{ description: "Excel", accept: { [XLSX_MIME]: [".xlsx"] } }] });
-    } catch (e) {
-      if ((e as DOMException)?.name === "AbortError") return; // 保存をやめた
-      handle = null; // 開けない環境（埋め込みなど）は通常のダウンロード
-    }
-  }
+  const handle = await pickSaveTarget(st, KIT);
+  if (handle === "abort") return; // 保存をやめた
   btn.disabled = true;
   const label = btn.textContent;
   btn.textContent = "作っています…";
   let saved = false;
   try {
-    const [JSZip, buf] = await Promise.all([
-      loadZip(),
-      fetch(TEMPLATE).then((r) => {
-        if (!r.ok) throw new Error("template");
-        return r.arrayBuffer();
-      }),
-    ]);
-    const zip = await JSZip.loadAsync(buf);
-    const files: Record<string, string> = {};
-    for (const n of Object.keys(zip.files)) if (/\.(xml|rels)$/.test(n)) files[n] = await zip.file(n).async("string");
-    const changed = fillPlanWorkbook(files, st, d, KIT);
-    for (const [n, xml] of Object.entries(changed)) zip.file(n, xml);
-    const blob: Blob = await zip.generateAsync({ type: "blob", mimeType: XLSX_MIME, compression: "DEFLATE" });
-    if (handle) {
-      const w = await handle.createWritable();
-      await w.write(blob);
-      await w.close();
-    } else {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = planFileName(st, KIT);
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    }
+    await writePlanFile(st, d, KIT, handle);
     saved = true;
   } catch (e) {
     console.error(e);
@@ -617,6 +579,13 @@ if (form) {
   });
   $("bk-mopen")?.addEventListener("click", () => $("bk-panel").scrollIntoView({ behavior: "smooth", block: "start" }));
   $("bk-dl")?.addEventListener("click", download);
+  // 予算案診断Kit：入力が終わったら ② 診断・修正へ
+  document.querySelectorAll<HTMLElement>("[data-go-check]").forEach((b) =>
+    b.addEventListener("click", () => {
+      save();
+      location.href = CHECK_URL;
+    }),
+  );
   $("bk-v-diag")?.addEventListener("click", () => setView("diag"));
   $("bk-v-sheet")?.addEventListener("click", () => setView("sheet"));
   $("bk-s-main")?.addEventListener("click", () => {
@@ -677,7 +646,7 @@ $("bk-import")?.addEventListener("click", () => {
   }
   try {
     const read = stateFromAi(text);
-    goInput(MAKE ? toMake(read) : read);
+    goInput(MAKE ? toMake(read) : read, FLOW ? CHECK_URL : INPUT_URL);
   } catch (e) {
     showIntroError(e instanceof ReadError ? e.message : "読み込めませんでした。");
   }
@@ -708,6 +677,9 @@ drop?.addEventListener("drop", (e) => {
 {
   const q = new URLSearchParams(location.search);
   if (SAMPLE) openWork(sample(), q.get("tab") === "sheet" ? "sheet" : "diag");
-  else if (MODE === "input") openWork(q.get("sample") === "1" ? sample() : (restore() ?? blank()));
+  else if (MODE === "input") {
+    openWork(q.get("sample") === "1" ? sample() : (restore() ?? blank()));
+    if (q.get("tab") === "m") tab("m"); // ② 診断・修正の「月別を表で直す」から
+  }
   else if (q.get("sample") === "1") location.replace(`${INPUT_URL}?sample=1`);
 }

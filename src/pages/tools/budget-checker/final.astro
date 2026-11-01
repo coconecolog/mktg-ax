@@ -1,0 +1,51 @@
+---
+// src/pages/tools/budget-checker/final.astro
+//
+// 予算案診断Kitの「③ 最終チェック」（/tools/budget-checker/final）2026-11-01
+// カードの状態の一覧（押すと ② のそのカードへ）→「診断結果を確認しました」にチェックするとダウンロードのボタンが押せる
+// NGが残っていてもダウンロードできる（以前からの決定）。保存が終わったら完了（/done）に移る
+// 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="final"）。数字は入力の画面と同じ localStorage を読む
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
+import "@/styles/budget-checker.css";
+
+const TOOL_TITLE = "予算案診断Kit";
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/budget-checker" },
+  { name: "最終チェック", href: "/tools/budget-checker/final" },
+];
+---
+
+<BaseLayout title={`${TOOL_TITLE} 最終チェック｜MeerKitLab`} description="予算案診断Kitの最終チェックの画面です。未対応の項目を確かめて、年間予算表（Excel）をダウンロードします。" ogImage="/open-graph/default.png" noindex>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
+  </div>
+
+  <main class="bk" id="bk" data-kit="budget" data-mode="final">
+    <FlowSteps current={3} />
+    <div id="bk-flow">
+      <div class="bk-head-r">
+        <h2 class="bk-h2">③ 最終チェック</h2>
+        <p class="bk-sub" id="bk-fin-lead"></p>
+      </div>
+      <ul class="bk-fin" id="bk-fin-l"></ul>
+      <div class="bk-fin-dl">
+        <label class="bk-agree"><input type="checkbox" id="bk-agree" /><span id="bk-agree-t">診断結果を確認しました</span></label>
+        <button type="button" class="bk-btn bk-fin-btn" id="bk-dl" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>年間予算表をダウンロード（Excel）</button>
+        <p class="bk-hint">「年間予算表（施策別）」と「診断結果」の2シートです。チェックを入れると押せるようになります</p>
+        <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+      </div>
+      <p class="bk-back"><a href="/tools/budget-checker/check?back=1">← 診断・修正に戻る</a></p>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import "@/scripts/budget-checker/flow";
+</script>

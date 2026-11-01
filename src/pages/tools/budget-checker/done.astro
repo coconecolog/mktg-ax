@@ -1,0 +1,66 @@
+---
+// src/pages/tools/budget-checker/done.astro
+//
+// 予算案診断Kitの「④ ダウンロード ⑤ 次へ」（/tools/budget-checker/done）2026-11-01
+// 年間予算表ができたことと、次にやること（KPI管理表作成Kitに数字を引き継ぐ・資料）を出す
+// 画面の動きは src/scripts/budget-checker/flow.ts（#bk の data-mode="done"）。数字は入力の画面と同じ localStorage を読む
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import FlowSteps from "@/components/budget-checker/FlowSteps.astro";
+import "@/styles/budget-checker.css";
+
+const TOOL_TITLE = "予算案診断Kit";
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: TOOL_TITLE, href: "/tools/budget-checker" },
+  { name: "完了", href: "/tools/budget-checker/done" },
+];
+---
+
+<BaseLayout title={`${TOOL_TITLE} 完了｜MeerKitLab`} description="予算案診断Kitの完了の画面です。年間予算表（Excel）のダウンロードと、次に使うKitへの案内です。" ogImage="/open-graph/default.png" noindex>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="mx-auto max-w-6xl px-5 pt-10">
+    <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{TOOL_TITLE}</h1>
+    <p class="mt-4 text-lg font-bold text-ink-950">作った予算案を、診断して直し、年間予算表に仕上げる。</p>
+  </div>
+
+  <main class="bk" id="bk" data-kit="budget" data-mode="done">
+    <FlowSteps current={5} />
+    <div id="bk-flow">
+      <section class="bk-done" aria-labelledby="bk-done-h">
+        <div class="bk-done-file" aria-hidden="true"><span class="bk-xl"><span class="bk-xl-file"></span><span class="bk-xl-fold"></span><span class="bk-xl-grid"><i class="k"></i><i class="k"></i><i class="k"></i><i class="k"></i><i class="k"></i><i></i><i class="b"></i><i class="b"></i><i></i><i></i><i></i><i class="b"></i><i class="b"></i><i></i><i></i></span><span class="bk-xl-tag">XLSX</span></span></div>
+        <p class="bk-done-tag">④ ダウンロード 完了</p>
+        <h2 class="bk-done-h" id="bk-done-h">年間予算表ができました</h2>
+        <p class="bk-done-n"><span id="bk-done-file"></span>（年間予算表（施策別）＋診断結果）</p>
+        <p class="bk-done-n" id="bk-done-left" hidden></p>
+        <div class="bk-done-a">
+          <button type="button" class="bk-btn-o" id="bk-again">もう一度ダウンロード</button>
+          <a class="bk-btn-o" href="/tools/budget-checker/check?back=1">数字を直す（② に戻る）</a>
+        </div>
+        <p class="bk-err" id="bk-dlerr" role="alert" hidden></p>
+      </section>
+
+      <section class="bk-nextk" aria-labelledby="bk-next-h">
+        <h2 class="bk-h2" id="bk-next-h">⑤ 次は、この予算をKPIにして毎月追いかける</h2>
+        <div class="bk-nextk-main">
+          <div>
+            <span class="bk-tag-o">おすすめ</span>
+            <b>KPI管理表作成Kit</b>
+            <p>いま作った年間予算表の数字を引き継いで、KPI管理表（M-B-04）を作ります。ファイルのアップロードは不要です。</p>
+          </div>
+          <button type="button" class="bk-btn" id="bk-to-kpi">この数字でKPI管理表を作る<span aria-hidden="true">→</span></button>
+        </div>
+        <div class="bk-nextk-sub">
+          <a href="/lab/whitepapers/kpi-management-template"><span class="bk-ft">資料</span><b>KPI管理表（無料）</b><small>スプレッドシートで自分で入力したい方へ</small></a>
+          <a href="/lab/whitepapers/budget-justification-sheet"><span class="bk-ft">資料</span><b>予算の根拠整理シート（3つのWhy）</b><small>稟議で予算の根拠を説明するときに</small></a>
+        </div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import "@/scripts/budget-checker/flow";
+</script>
