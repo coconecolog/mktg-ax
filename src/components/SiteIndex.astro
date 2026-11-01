@@ -2,10 +2,15 @@
 // フッター手前の共通ブロック「カテゴリ一覧」「タグ一覧」（2026-10-15）。
 // ContactCta（ご要望・ご質問）の直前に自動で表示されるので、ContactCta を置いている全ページで共通になる。
 // カテゴリはマスターカテゴリDBの全件（並び順どおり）、タグは記事に使われている全タグ（記事数の多い順）。
+// 2026-11-01：showTags={false} でタグ一覧を出さない（Kitのページ。ToolFooter → ContactCta から渡す）
 import { getAllCategories, getAllTags, getCategoryPath, getTagPath } from "@/lib/posts";
 
+interface Props {
+  showTags?: boolean;
+}
+const { showTags = true } = Astro.props;
 const categories = getAllCategories();
-const tags = getAllTags();
+const tags = showTags ? getAllTags() : [];
 ---
 
 {

@@ -4,6 +4,8 @@
 // kit＝キット（src/lib/planKits.ts）。KPI妥当性診断キットだけ、判定に「率は目安の範囲か」を出す
 // 動きは src/scripts/budget-checker/app.ts。sample＝見本のページ（ダウンロードの代わりにキットへのリンク、記入例・すべて消すはなし）
 // 2026-10-30：作る系のKit（予算作成Kit kit="make"・KPI管理表作成Kit kit="kpimake"）は「2. 今期の実績と、来期に必要な数」を足し、チャネルの有効リード数・商談数・受注数を自動配分（灰色、上書きすると水色・↺で戻す）にする
+// 2026-11-01：flow＝予算案診断Kitの入力の画面。判定（右の列）とダウンロードを出さず、入力だけにする（判定は次の ② 診断・修正で出す）。
+//   右の列は app.ts が数字を書き込むので、消さずに隠す
 // 2026-10-30：タブは「1 年間を入力 → 2 月別で調整」（どちらも黒、開いている方に黄色の線と✓）。ダウンロードは判定の枠の外に独立し、判定の上に置く
 import { CHANNELS } from "@/lib/kpi-sheet-maker";
 import { KITS, type KitId } from "@/lib/planKits";
@@ -11,8 +13,9 @@ import { KITS, type KitId } from "@/lib/planKits";
 interface Props {
   sample?: boolean;
   kit?: KitId;
+  flow?: boolean;
 }
-const { sample = false, kit: kitId = "budget" } = Astro.props;
+const { sample = false, kit: kitId = "budget", flow = false } = Astro.props;
 const kit = KITS[kitId];
 const MAKE = kit.maker;
 const AUTO = new Set(["valid", "deals", "wins"]);
@@ -38,7 +41,7 @@ const FIELDS = ["leads", "valid", "deals", "wins", "ext", "labor"] as const;
 const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals: "商談数", wins: "受注数", ext: "外部費用", labor: "人件費" } as const;
 ---
 
-      <div class="bk-grid" id="bk-diagview">
+      <div class={flow ? "bk-grid is-flow" : "bk-grid"} id="bk-diagview">
         <form class="bk-left" id="bk-form" novalidate autocomplete="off">
           <div class="bk-tabs">
             <div class="bk-tabset" role="tablist" aria-label="入力の順番">
@@ -207,7 +210,7 @@ const FIELD_LABEL = { leads: "リード数", valid: "有効リード数", deals:
           </div>
         </form>
 
-        <div class="bk-side">
+        <div class="bk-side" hidden={flow}>
           <div class="bk-out">
             <p class="bk-remain" id="bk-remain" hidden></p>
             {
