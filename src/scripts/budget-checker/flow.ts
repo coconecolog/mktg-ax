@@ -461,7 +461,7 @@ function initDone() {
   const open = openIssues();
   const left = $("bk-done-left");
   left.hidden = !open.length;
-  left.textContent = open.length ? `。未対応の${open.length}件は「診断結果」シートに載っています` : "";
+  left.textContent = open.length ? `。未対応の${open.length}件も「診断結果」シートに載っています` : "";
 
   const again = $<HTMLButtonElement>("bk-again");
   const err = $("bk-dlerr");

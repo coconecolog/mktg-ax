@@ -713,3 +713,26 @@ a.bk-th:hover { border-color: var(--ink); }
 .bk-other-t small { font-size: 0.82rem; color: var(--sub); }
 .bk-other-go { flex: none; display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: #fff; font-weight: 800; font-size: 0.9rem; padding: 10px 18px; }
 @media (max-width: 760px) { .bk-other-go { width: 100%; justify-content: center; } }
+
+/* ===== 予算案診断Kit ③ 最終チェック：一覧は全幅、ダウンロードはいちばん下（2026-11-01） ===== */
+.bk-fin-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; align-items: center; gap: 16px 28px; margin: 12px 0 0; padding: 20px 22px; border-width: 2px; }
+.bk-fin-bottom .bk-agree { border: 0; padding: 0; }
+.bk-fin-go { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.bk-fin-bottom .bk-fin-btn { width: auto; min-width: 240px; }
+.bk-fin-bottom .bk-err { grid-column: 1 / -1; }
+@media (max-width: 860px) { .bk-fin-bottom { grid-template-columns: minmax(0, 1fr); } .bk-fin-bottom .bk-fin-btn { width: 100%; } }
+
+/* ===== 予算案診断Kit 完了：Thanksページの形（2026-11-01） ===== */
+.bk-ty { gap: 0; }
+.bk-ty-h { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 40px 20px 44px; border-bottom: 1px solid var(--line); }
+.bk-ty-ck { display: inline-flex; width: 64px; height: 64px; align-items: center; justify-content: center; background: var(--ink); margin-bottom: 8px; }
+.bk-ty-ck svg { width: 36px; height: 36px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: square; }
+.bk-ty-t { font-size: 1.7rem; font-weight: 800; margin: 0; }
+.bk-ty-f { font-size: 1rem; font-weight: 700; word-break: break-all; }
+.bk-ty-n { font-size: 0.85rem; color: var(--sub); }
+.bk-ty-a { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 8px !important; }
+.bk-ty-a .bk-link { font-size: 0.85rem; font-weight: 700; }
+.bk-ty .bk-nextk { margin-top: 36px; max-width: 880px; width: 100%; align-self: center; }
+.bk-ty .bk-nextk > h2 { text-align: center; }
+.bk-ty-next-l { text-align: center; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; color: var(--sub); }
+@media (max-width: 760px) { .bk-ty-t { font-size: 1.3rem; } .bk-ty-h { padding: 28px 8px 32px; } }
