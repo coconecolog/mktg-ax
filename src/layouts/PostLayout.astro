@@ -11,7 +11,7 @@ import ToolCta from "@/components/ToolCta.astro";
 import { getResourceById } from "@/lib/resources";
 import { getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
-import { buildToc, getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
+import { buildToc, getAllPosts, getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
 import { getLibraryItemsByCategory } from "@/lib/library";
 import { autoLinkTagKeywords } from "@/lib/tagKeywordLinks";
 import type { Post } from "@/lib/types";
@@ -46,8 +46,20 @@ if (post.ctaToolId && !ctaTool) {
 }
 
 // 同じカテゴリの他記事（自分自身を除く、最大2件）。ブログ記事ページのみで表示するため PostLayout.astro 側に置く。
+// 共通するタグが多い記事を先に出す（同じ数なら新しい順）。関係の近い記事へ内部リンクを集めるため。
+const postTagSet = new Set(post.tags || []);
+const tagsBySlug = new Map(getAllPosts().map((p) => [p.slug, p.tags || []]));
 const relatedItems = post.category
-  ? getLibraryItemsByCategory(post.category, "post").filter((item) => item.slug !== post.slug).slice(0, 2)
+  ? getLibraryItemsByCategory(post.category, "post")
+      .filter((item) => item.slug !== post.slug)
+      .map((item, index) => ({
+        item,
+        index,
+        score: (tagsBySlug.get(item.slug) || []).filter((tag) => postTagSet.has(tag)).length,
+      }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, 2)
+      .map(({ item }) => item)
   : [];
 
 const breadcrumbItems = [
@@ -148,7 +160,7 @@ const dateLabel = (iso: string) =>
 {
   post.thumbnail && (
     <div class="mt-8 aspect-video w-full overflow-hidden border border-neutral-300 bg-neutral-100">
-      <img src={post.thumbnail} alt="" class="h-full w-full object-cover" />
+      <img src={post.thumbnail} alt={post.title} class="h-full w-full object-cover" />
     </div>
   )
 }

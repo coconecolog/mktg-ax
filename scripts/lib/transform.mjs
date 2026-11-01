@@ -365,11 +365,38 @@ export function rewriteLegacySiteHref(href) {
   }
 }
 
+// 2026-11-01：本文にNotionページへの普通のリンク（「/p/{ID}?pvs=25」「/{ID}」「https://www.notion.so/…-{ID}」など）が
+// 貼られていると、そのまま「https://meerkitlab.com/p/{ID}」のような存在しないURLになっていた。
+// リンク先のNotionページIDを取り出し、@メンションと同じく linkMap でサイト内のURL（/lab/blog/…・/lab/whitepapers/…）に変換する。
+// 変換できない（未公開・対象外のページ）場合はリンクなしにする。
+function notionPageIdFromHref(href) {
+  if (!href || typeof href !== "string") return null;
+  let hex = null;
+  if (href.startsWith("/") && !href.startsWith("//")) {
+    const m = href.match(/^\/(?:p\/)?([0-9a-f]{32})(?:[?#].*)?$/i);
+    if (m) hex = m[1];
+  } else {
+    try {
+      const u = new URL(href);
+      if (!/(^|\.)notion\.(so|com|site)$/i.test(u.hostname)) return null;
+      const m = u.pathname.match(/([0-9a-f]{32})\/?$/i);
+      if (m) hex = m[1];
+    } catch {
+      return null;
+    }
+  }
+  if (!hex) return null;
+  const h = hex.toLowerCase();
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 export function transformRichText(richText, linkMap) {
   if (!Array.isArray(richText)) return [];
   return richText.map((t) => {
     const a = t.annotations || {};
-    let href = rewriteLegacySiteHref(t.href || t.text?.link?.url || null);
+    const rawHref = t.href || t.text?.link?.url || null;
+    const notionPageId = notionPageIdFromHref(rawHref);
+    let href = notionPageId ? linkMap?.get(notionPageId) || null : rewriteLegacySiteHref(rawHref);
     if (t.type === "mention" && t.mention?.type === "page" && t.mention.page?.id) {
       href = linkMap?.get(t.mention.page.id) || null;
     }
