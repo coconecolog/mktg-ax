@@ -1,8 +1,8 @@
 ---
 // 資料ダウンロードページ（2026-11-02リニューアル）。
 // 上から：
-//   ファーストビュー  左＝カテゴリ・種別ラベル・H1・日付・リード（資料説明）・表紙／右＝フォーム（PCは追従）
-//                    スマホは リード → 「無料でダウンロード」ボタン（フォームへ移動）→ 表紙 → フォーム の順
+//   ファーストビュー  左＝カテゴリ・種別ラベル・H1・日付・表紙・リード（資料説明）／右＝フォーム（PCは追従）
+//                    スマホは 表紙 → リード → 「無料でダウンロード」ボタン（フォームへ移動）→ フォーム の順
 //   2列              左＝こんな方におすすめ（ターゲット・目次）／右＝資料プレビュー2枚（クリックで拡大）
 //   本文             資料DBページ本文のブロック（ある場合だけ）
 //   執筆者           記事ページと同じ、上下の細線だけの1行
@@ -120,9 +120,13 @@ const inputClass =
           }
         </p>
 
+        <div class="mt-6 aspect-video w-full overflow-hidden border border-neutral-300 bg-neutral-50">
+          <img src={cover} alt={`${resource.title}の表紙`} class="h-full w-full object-cover" />
+        </div>
+
         {
           resource.description && (
-            <p class="mt-6 whitespace-pre-line text-base leading-[1.9] text-ink-950">{resource.description}</p>
+            <p class="mt-8 whitespace-pre-line text-base leading-[1.9] text-ink-950">{resource.description}</p>
           )
         }
 
@@ -138,9 +142,6 @@ const inputClass =
           )
         }
 
-        <div class="mt-8 aspect-video w-full overflow-hidden border border-neutral-300 bg-neutral-50">
-          <img src={cover} alt={`${resource.title}の表紙`} class="h-full w-full object-cover" />
-        </div>
       </div>
 
       <aside id="download" class="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
