@@ -5,6 +5,7 @@ import type { BlockNode } from "@/lib/types";
 import RichText from "./RichText.astro";
 import NotionBlocksSelf from "./NotionBlocks.astro";
 import { SITE_URL } from "@/consts";
+import { isExternalHref } from "@/lib/externalLink";
 
 interface Props {
   blocks: BlockNode[] | undefined;
@@ -15,12 +16,7 @@ const { blocks = [] } = Astro.props;
 // サイト内（自ドメイン）へのリンクかどうかを判定。ブックマーク埋め込みが自サイトの記事/資料を指している場合、
 // 新規タブではなく画面遷移にする（RichText.astroの同名関数と同じロジック）。
 function isInternalHref(href: string): boolean {
-  if (href.startsWith("/") || href.startsWith("#")) return true;
-  try {
-    return new URL(href, SITE_URL).origin === new URL(SITE_URL).origin;
-  } catch {
-    return false;
-  }
+  return !isExternalHref(href, SITE_URL);
 }
 
 type ListKind = "bulleted" | "numbered" | "todo";
