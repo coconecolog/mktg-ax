@@ -1,0 +1,23 @@
+---
+// H1の下に置く一行の案内（その他のツール用、2026-11-02）。
+// 中身は src/data/tool-next-steps.ts の guide から取る。
+import { TOOL_NEXT_STEPS } from "@/data/tool-next-steps";
+
+interface Props {
+  path: string;
+}
+
+const guide = TOOL_NEXT_STEPS[Astro.props.path]?.guide;
+const guideType = guide?.href.startsWith("/tools/") ? "kit" : "resource";
+---
+
+{
+  guide && (
+    <p class="mt-5 bg-neutral-100 px-4 py-3 text-sm leading-relaxed text-neutral-700">
+      {guide.text}{" "}
+      <a href={guide.href} data-next-link="guide" data-next-type={guideType} class="whitespace-nowrap font-bold text-ink-950 underline underline-offset-4 hover:opacity-70">
+        {guide.label} →
+      </a>
+    </p>
+  )
+}

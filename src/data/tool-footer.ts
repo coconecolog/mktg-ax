@@ -294,12 +294,10 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
           "1/3は一般的な目安として表示しています。BtoBで経営と上限を決めるときは、1社の年間粗利×何年で取り返すかで決める方法もあります。",
       },
     ],
+    // 2026-11-02：Kit・資料・記事の3枚にそろえる（結果に合わせた案内は tool-next-steps.ts）
     related: [
-      {
-        type: "post",
-        title: "新規1社にいくらまでかけてよいか｜BtoBのCAC回収期間とLTVを粗利で出す",
-        href: "/lab/blog/cac-payback-period-btob",
-      },
+      { type: "kit", title: "予算作成Kit", href: "/tools/budget-simulator" },
+      { type: "resource", title: "年間予算表", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
       { type: "post", title: "BtoBマーケの評価軸は「リード数」から「CAC」へ", href: "/lab/blog/lead-volume-to-unit-economics" },
     ],
   },
@@ -323,7 +321,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/lab/whitepapers/budget-justification-sheet" },
+      { type: "kit", title: "予算作成Kit", href: "/tools/budget-simulator" },
+      { type: "resource", title: "年間予算表", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
       { type: "post", title: "広告費の相場は売上の何%？", href: "/lab/blog/advertising-cost-market-rate" },
     ],
   },
@@ -350,8 +349,9 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
-      { type: "resource", title: "予算の根拠整理シート（3つのWhy）", href: "/lab/whitepapers/budget-justification-sheet" },
+      { type: "kit", title: "予算作成Kit", href: "/tools/budget-simulator" },
       { type: "resource", title: "90日計画テンプレート", href: "/lab/whitepapers/90-day-plan-template" },
+      { type: "resource", title: "予算の根拠整理シート", href: "/lab/whitepapers/budget-justification-sheet" },
     ],
   },
 
@@ -379,6 +379,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     related: [
+      { type: "resource", title: "AIの回答に使われるコンテンツの作り方", href: "/lab/whitepapers/flow-to-stock-ideas" },
       {
         type: "post",
         title: "生成AIのマーケティング活用、どの業務から任せる？",

@@ -2,10 +2,12 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
+import ToolGuide from "@/components/ToolGuide.astro";
+import ToolNextStep from "@/components/ToolNextStep.astro";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "便利ツール", href: "/tools" },
+  { name: "Kit一覧", href: "/tools" },
   { name: "簡易SEO・AEO・AIO診断", href: "/tools/seo-aeo-aio-check" },
 ];
 
@@ -18,44 +20,45 @@ const breadcrumbItems = [
 >
   <Breadcrumb items={breadcrumbItems} />
 
-  <section class="mx-auto max-w-5xl px-5 py-12">
+  <section class="mx-auto max-w-6xl px-5 py-12">
     <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">簡易SEO・AEO・AIO診断チェックリスト</h1>
     <p class="mt-3 text-neutral-500">
-      全15項目にチェックを入れると、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断します。実際のサイトをクロールするものではなく、自己申告のチェックリスト形式です。入力内容はブラウザ内だけで処理され、送信・保存はされません。
+      全15項目にチェックを入れると、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断します。実際のサイトをクロールするものではなく、自己申告のチェックリスト形式です。
     </p>
+    <ToolGuide path="/tools/seo-aeo-aio-check" />
 
-    <div class="mt-8 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+    <div class="mt-8 border border-neutral-200 bg-white p-6 md:p-8">
       <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
         <div>
           <h2 class="text-sm font-bold text-brand-700">① 従来のSEO</h2>
           <ul class="mt-3 space-y-2.5">
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>タイトルタグに狙ったキーワードを含めている</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>見出し（H1〜H3）が階層的に整理されている</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>メタディスクリプションを設定している</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>画像にalt属性を設定している</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="seo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>ページの表示速度が遅くないと感じる</span>
               </label>
             </li>
@@ -67,31 +70,31 @@ const breadcrumbItems = [
           <ul class="mt-3 space-y-2.5">
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>よくある質問（FAQ）を掲載し、構造化データを設定している</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>Q&amp;A形式の見出しを使っている</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>記事冒頭で結論・要約を先に書いている</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>著者情報・監修者情報を明記している</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aeo-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>独自データや一次情報を掲載している</span>
               </label>
             </li>
@@ -103,31 +106,31 @@ const breadcrumbItems = [
           <ul class="mt-3 space-y-2.5">
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>llms.txtを設置している</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>情報を箇条書きや表で整理している</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>AIに引用されやすい簡潔な定義文・要約文がある</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>他サイトやSNSでの言及・引用実績がある</span>
               </label>
             </li>
             <li>
               <label class="flex items-start gap-2 text-sm text-neutral-700">
-                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-400" />
+                <input type="checkbox" class="aio-check mt-0.5 h-4 w-4 border-neutral-300 accent-ink-950" />
                 <span>更新日を明記している</span>
               </label>
             </li>
@@ -136,21 +139,21 @@ const breadcrumbItems = [
       </div>
 
       <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-xl bg-neutral-50 p-4 text-center">
+        <div class="bg-neutral-50 p-4 text-center">
           <p class="text-xs font-medium text-neutral-500">SEOスコア</p>
           <p id="score-seo" class="mt-1 text-2xl font-extrabold text-ink-950">0/5</p>
         </div>
-        <div class="rounded-xl bg-neutral-50 p-4 text-center">
+        <div class="bg-neutral-50 p-4 text-center">
           <p class="text-xs font-medium text-neutral-500">AEOスコア</p>
           <p id="score-aeo" class="mt-1 text-2xl font-extrabold text-ink-950">0/5</p>
         </div>
-        <div class="rounded-xl bg-neutral-50 p-4 text-center">
+        <div class="bg-neutral-50 p-4 text-center">
           <p class="text-xs font-medium text-neutral-500">AIO/GEOスコア</p>
           <p id="score-aio" class="mt-1 text-2xl font-extrabold text-ink-950">0/5</p>
         </div>
       </div>
 
-      <div id="diagnosis-box" class="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+      <div id="diagnosis-box" class="mt-4 border border-neutral-200 bg-neutral-50 p-5">
         <p id="diagnosis-title" class="font-bold text-ink-950">項目にチェックを入れると診断結果が表示されます</p>
         <p id="diagnosis-desc" class="mt-1 text-sm text-neutral-500">合計0/15点</p>
       </div>
@@ -160,19 +163,22 @@ const breadcrumbItems = [
         <button
           id="share-btn"
           type="button"
-          class="inline-flex shrink-0 items-center rounded-xl bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100"
+          class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-4 py-2 text-xs font-bold text-ink-950 hover:bg-neutral-100"
         >
           この結果のURLをコピー
         </button>
       </div>
     </div>
 
+    <ToolNextStep path="/tools/seo-aeo-aio-check" class="mt-6" />
   </section>
 
   <ToolFooter path="/tools/seo-aeo-aio-check" />
 </BaseLayout>
 
 <script>
+  import { setNextStep } from "@/lib/toolNextStep";
+
   const seoChecks = Array.from(document.querySelectorAll(".seo-check")) as HTMLInputElement[];
   const aeoChecks = Array.from(document.querySelectorAll(".aeo-check")) as HTMLInputElement[];
   const aioChecks = Array.from(document.querySelectorAll(".aio-check")) as HTMLInputElement[];
@@ -220,25 +226,33 @@ const breadcrumbItems = [
     scoreAeoEl.textContent = `${aeoScore}/5`;
     scoreAioEl.textContent = `${aioScore}/5`;
 
+    // 2026-11-02：色は判定にだけ使う（12点以上＝表示なし／7〜11点＝確認／6点以下＝直す）
     if (total >= 12) {
-      diagnosisBox.className = "mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5";
-      diagnosisTitle.className = "font-bold text-emerald-900";
+      diagnosisBox.className = "mt-4 border border-neutral-200 bg-neutral-50 p-5";
+      diagnosisTitle.className = "font-bold text-ink-950";
       diagnosisTitle.textContent = "AI検索時代に対応できています";
-      diagnosisDesc.className = "mt-1 text-sm text-emerald-800";
+      diagnosisDesc.className = "mt-1 text-sm text-neutral-600";
       diagnosisDesc.textContent = `合計${total}/15点。従来のSEOだけでなくAEO・AIO/GEOにも対応が進んでいます。`;
     } else if (total >= 7) {
-      diagnosisBox.className = "mt-4 rounded-xl border border-amber-200 bg-amber-50 p-5";
-      diagnosisTitle.className = "font-bold text-amber-900";
-      diagnosisTitle.textContent = "基礎はできていますが、伸びしろがあります";
-      diagnosisDesc.className = "mt-1 text-sm text-amber-800";
+      diagnosisBox.className = "mt-4 border border-orange-500 bg-white p-5";
+      diagnosisTitle.className = "font-bold text-orange-600";
+      diagnosisTitle.innerHTML = `<span class="mr-2 border border-orange-500 px-1.5 text-xs">確認</span>基礎はできていますが、伸びしろがあります`;
+      diagnosisDesc.className = "mt-1 text-sm text-neutral-600";
       diagnosisDesc.textContent = `合計${total}/15点。チェックが付かなかった項目から優先的に着手しましょう。`;
     } else {
-      diagnosisBox.className = "mt-4 rounded-xl border border-rose-200 bg-rose-50 p-5";
-      diagnosisTitle.className = "font-bold text-rose-900";
-      diagnosisTitle.textContent = "従来型のSEOにとどまっている可能性があります";
-      diagnosisDesc.className = "mt-1 text-sm text-rose-800";
+      diagnosisBox.className = "mt-4 border border-red-600 bg-white p-5";
+      diagnosisTitle.className = "font-bold text-red-700";
+      diagnosisTitle.innerHTML = `<span class="mr-2 border border-red-600 px-1.5 text-xs">直す</span>従来型のSEOにとどまっている可能性があります`;
+      diagnosisDesc.className = "mt-1 text-sm text-neutral-600";
       diagnosisDesc.textContent = `合計${total}/15点。特にAEO・AIO/GEO（AI検索・生成AI対策）から着手することをおすすめします。`;
     }
+
+    // 次の一手：3つとも4点以上＝good／SEOがいちばん低い＝seo／それ以外＝aio
+    let variant: "aio" | "seo" | "good";
+    if (seoScore >= 4 && aeoScore >= 4 && aioScore >= 4) variant = "good";
+    else if (seoScore < aeoScore && seoScore < aioScore) variant = "seo";
+    else variant = "aio";
+    setNextStep(variant);
 
     syncUrl();
   }

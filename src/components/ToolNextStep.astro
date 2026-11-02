@@ -1,0 +1,128 @@
+---
+// 結果の直下に置く「この結果を、次の一手に」（その他のツール用、2026-11-02）。
+// 判定ごとの中身をすべて書き出し、ページのスクリプトが setNextStep()（src/lib/toolNextStep.ts）で1つだけ表示する。
+// 中身は src/data/tool-next-steps.ts。クリックはGA4のイベント tool_next_click で送る
+// （GTMを使っているときは、GTM側にカスタムイベント「tool_next_click」のトリガーとGA4イベントのタグが必要）。
+import { TOOL_NEXT_STEPS, type NextLinkType } from "@/data/tool-next-steps";
+
+interface Props {
+  path: string;
+  /** 最初は隠しておく（ベンチマークのように「診断する」を押してから出すとき） */
+  hidden?: boolean;
+  class?: string;
+}
+
+const { path, hidden = false, class: extraClass = "" } = Astro.props;
+const data = TOOL_NEXT_STEPS[path];
+
+const BADGE: Record<NextLinkType, string> = { kit: "Kit", resource: "資料", post: "記事", tag: "記事" };
+const MORE: Record<NextLinkType, string> = { kit: "Kitを使う", resource: "無料でダウンロード", post: "記事を読む", tag: "記事一覧を見る" };
+
+/** "上限 {allowable} を…" → [{text:"上限 "},{slot:"allowable"},{text:" を…"}] */
+function parts(body: string): { text?: string; slot?: string }[] {
+  return body.split(/(\{\w+\})/).filter(Boolean).map((p) => {
+    const m = p.match(/^\{(\w+)\}$/);
+    return m ? { slot: m[1] } : { text: p };
+  });
+}
+---
+
+{
+  data && (
+    <section
+      class:list={["tool-next border border-ink-950 bg-white p-5 md:p-7 print:hidden", extraClass]}
+      aria-label="この結果を、次の一手に"
+      data-tool-next
+      hidden={hidden}
+    >
+      {Object.entries(data.variants).map(([key, v]) => (
+        <div data-next-variant={key} hidden={key !== data.defaultVariant} class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
+          <div>
+            <p id={key === data.defaultVariant ? "tool-next-heading" : undefined} class="text-xs font-bold tracking-wide text-neutral-500">
+              この結果を、次の一手に
+            </p>
+            <h2 class="mt-2 text-lg font-extrabold leading-snug text-ink-950 md:text-xl">{v.title}</h2>
+            <p class="mt-3 text-sm leading-[1.9] text-neutral-600">
+              {parts(v.body).map((p) => (p.slot ? <span class="font-bold text-ink-950" data-slot={p.slot}>—</span> : p.text))}
+            </p>
+            <a
+              href={v.cta.href}
+              data-next-link={key}
+              data-next-type={v.cta.type}
+              class="mt-6 inline-flex items-center gap-4 bg-ink-950 px-6 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-neutral-800"
+            >
+              {v.cta.label}
+              <span aria-hidden="true">→</span>
+            </a>
+            {v.sub && (
+              <p class="mt-3 text-xs text-neutral-500">
+                {v.sub.text}{" "}
+                <a href={v.sub.href} data-next-link={key} data-next-type={v.sub.type} class="font-bold text-ink-950 underline underline-offset-4 hover:opacity-70">
+                  {v.sub.label} →
+                </a>
+              </p>
+            )}
+          </div>
+          {v.links.length > 0 && (
+            <ul class="flex flex-col gap-3">
+              {v.links.map((l) => (
+                <li class="flex-1">
+                  <a
+                    href={l.href}
+                    data-next-link={key}
+                    data-next-type={l.type}
+                    class="group flex h-full flex-col border border-neutral-300 bg-white p-5 text-ink-950 no-underline transition-colors hover:border-ink-950"
+                  >
+                    <span
+                      class:list={[
+                        "self-start px-2 py-px text-[0.7rem] font-bold",
+                        l.type === "resource" ? "bg-ink-950 text-white" : "border border-ink-950 text-ink-950",
+                      ]}
+                    >
+                      {BADGE[l.type]}
+                    </span>
+                    <span class="mt-3 text-base font-bold leading-snug">{l.title}</span>
+                    <span class="mt-1.5 text-[0.8rem] leading-relaxed text-neutral-600">{l.desc}</span>
+                    <span class="mt-3 flex items-center justify-end gap-2 text-xs font-bold">
+                      {MORE[l.type]}
+                      <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </section>
+  )
+}
+
+<script is:inline>
+  (function () {
+    if (window.__toolNextTracked) return;
+    window.__toolNextTracked = true;
+    var match = location.pathname.match(/^\/tools\/([^/]+)/);
+    var toolName = match ? match[1] : "";
+    document.addEventListener(
+      "click",
+      function (e) {
+        var a = e.target && e.target.closest && e.target.closest("a[data-next-link]");
+        if (!a) return;
+        var params = {
+          tool_name: toolName,
+          next_variant: a.getAttribute("data-next-link") || "",
+          link_type: a.getAttribute("data-next-type") || "",
+          link_url: a.getAttribute("href") || "",
+        };
+        if (typeof window.gtag === "function") {
+          window.gtag("event", "tool_next_click", params);
+        } else {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push(Object.assign({ event: "tool_next_click" }, params));
+        }
+      },
+      true,
+    );
+  })();
+</script>
