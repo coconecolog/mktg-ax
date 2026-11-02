@@ -79,6 +79,8 @@ export type KitResource = {
 };
 
 export type Kit = {
+  /** create＝作成Kit（/tools の「01 これから作る」）、check＝診断Kit（「02 作ったものを確かめる」） */
+  kind: "create" | "check";
   icon: string;
   situation: string;
   description: string;
@@ -100,6 +102,7 @@ export const KIT_GROUPS: KitGroup[] = [
     note: "来期の予算づくりに",
     kits: [
       {
+        kind: "create",
         icon: "chart-no-axes-combined",
         situation: "予算をまだ作っていない",
         description: "売上目標から必要なリード数と予算を逆算。チャネルごとにリード数と費用を配るだけで、CPL・CACまで判定し、年間予算表（Excel）にします。",
@@ -109,11 +112,12 @@ export const KIT_GROUPS: KitGroup[] = [
         resource: { before: "スプレッドシートで作りたい方は", label: "年間予算表", after: "", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
       },
       {
+        kind: "check",
         icon: "file-search",
-        situation: "自分で作った予算案の妥当性を確認したい",
+        situation: "予算案が正しいか確かめたい",
         description: "AIや自社で作った予算案を取りこみ、NGを直して年間予算表（Excel）に仕上げます。",
         name: "予算案診断Kit",
-        button: "診断する",
+        button: "予算案を診断する",
         href: "/tools/budget-checker",
         resource: { before: "", label: "年間予算表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
       },
@@ -124,6 +128,7 @@ export const KIT_GROUPS: KitGroup[] = [
     note: "期初の設計から毎月の運用まで",
     kits: [
       {
+        kind: "create",
         icon: "sheet",
         situation: "KPI管理表がほしい",
         description: "売上目標と今期の実績から逆算し、チャネルに分割すると、判定つきのKPI管理表（Excel）ができます。",
@@ -133,26 +138,63 @@ export const KIT_GROUPS: KitGroup[] = [
         resource: { before: "Kitを使わなくても", label: "KPI管理表", after: "をダウンロードして直接記入できます。", href: "/lab/whitepapers/kpi-management-template" },
       },
       {
+        kind: "check",
         icon: "scan-search",
-        situation: "自分で作ったKPIの妥当性を確認したい",
+        situation: "KPIが正しいか確かめたい",
         description: "KPIと施策の目標が、売上目標とつながっているかを判定します。",
         name: "KPI妥当性診断Kit",
-        button: "診断する",
+        button: "KPIを診断する",
         href: "/tools/kpi-check",
         resource: { before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kpi-management-template" },
       },
       {
+        kind: "check",
         icon: "file-chart-column",
-        situation: "施策の効果測定をしたい",
+        situation: "施策の効果を測りたい",
         description: "打った施策が効いたか、続いている課題は何かを示し、KPI管理表に仕上げます。",
         name: "施策効果診断Kit",
-        button: "診断する",
+        button: "効果を診断する",
         href: "/tools/kpi-analysis",
         resource: { before: "", label: "KPI管理表", after: "で作っていれば、読み込むだけで診断できます", href: "/lab/whitepapers/kpi-management-template" },
       },
     ],
   },
 ];
+
+// /tools の2つのセクション（2026-11-02：カテゴリページと同じ型に変更）。
+// Kitは KIT_GROUPS の kind で振り分ける。resources は右のグレーの枠に出す資料（slug は資料DBのSlug）。
+export const KIT_SECTIONS = [
+  {
+    kind: "create",
+    number: "01",
+    anchor: "create",
+    title: "これから作る",
+    countLabel: "作成Kit",
+    description: "計画がまだない方へ。入力しながら判定まで行います。",
+    mainLabel: "Kitで作る",
+    sideLabel: "スプレッドシートで作る",
+    sideNote: "",
+    resources: [
+      { label: "年間予算表", slug: "kgi-kpi-backcast-sheet", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
+      { label: "KPI管理表", slug: "kpi-management-template", href: "/lab/whitepapers/kpi-management-template" },
+    ],
+  },
+  {
+    kind: "check",
+    number: "02",
+    anchor: "check",
+    title: "作ったものを確かめる",
+    countLabel: "診断Kit",
+    description: "AIや自社で作った計画、毎月の実績を診断し、直して仕上げます。",
+    mainLabel: "Kitで確かめる",
+    sideLabel: "資料があれば読み込むだけ",
+    sideNote: "次の資料で作っていれば、ファイルを読み込むだけで診断できます。",
+    resources: [
+      { label: "年間予算表", slug: "kgi-kpi-backcast-sheet", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
+      { label: "KPI管理表", slug: "kpi-management-template", href: "/lab/whitepapers/kpi-management-template" },
+    ],
+  },
+] as const;
 
 // /tools の「その他」。
 export const OTHER_TOOLS = [
