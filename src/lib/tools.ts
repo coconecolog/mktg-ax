@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Tool, ToolsCache } from "./types";
 import { getAllCategories } from "./posts";
+import { KIT_GROUPS, type Kit } from "@/data/tools";
 
 const CACHE_PATH = path.resolve(process.cwd(), ".notion-cache/tools.json");
 
@@ -154,4 +155,23 @@ export function getToolNavItems(): ToolNavItem[] {
     label: t.title,
     description: t.shortDescription || shorten(t.description),
   }));
+}
+
+// ---- 記事ページ右カラムの「関連するKit」（2026-11-02） ----
+// 1. 記事DBの「CTAツール」がKitなら、そのKit 1つ
+// 2. なければカテゴリで決める：「予算」を含む→予算のKit、「KPI」「分析」を含む→KPIのKit
+// 3. どれにも当たらないカテゴリ（戦略・組織など）→ 作成Kit（予算作成Kit・KPI管理表作成Kit）
+
+const ALL_KITS: Kit[] = KIT_GROUPS.flatMap((g) => g.kits);
+
+export function getSideKits(category: string | undefined | null, ctaToolHref?: string): Kit[] {
+  const picked = ctaToolHref ? ALL_KITS.find((k) => k.href === ctaToolHref) : undefined;
+  if (picked) return [picked];
+  const name = category || "";
+  const group = name.includes("予算")
+    ? KIT_GROUPS.find((g) => g.title === "予算")
+    : name.includes("KPI") || name.includes("分析")
+      ? KIT_GROUPS.find((g) => g.title === "KPI")
+      : undefined;
+  return group ? group.kits : ALL_KITS.filter((k) => k.kind === "create");
 }
