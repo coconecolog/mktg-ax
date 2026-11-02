@@ -2,10 +2,12 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
+import ToolGuide from "@/components/ToolGuide.astro";
+import ToolNextStep from "@/components/ToolNextStep.astro";
 
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
-  { name: "便利ツール", href: "/tools" },
+  { name: "Kit一覧", href: "/tools" },
   { name: "内製 vs 外注 コスト比較", href: "/tools/inhouse-vs-outsource" },
 ];
 
@@ -21,10 +23,11 @@ const breadcrumbItems = [
   <section class="mx-auto max-w-5xl px-5 py-12">
     <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">内製 vs 外注 コスト比較シミュレーター</h1>
     <p class="mt-3 text-neutral-500">
-      マーケティング担当者を新規採用する場合と、外注（代理店・フリーランス）に任せる場合の累計コストを比較します。入力内容はブラウザ内だけで処理され、送信・保存はされません。
+      マーケティング担当者を新規採用する場合と、外注（代理店・フリーランス）に任せる場合の累計コストを比較します。
     </p>
+    <ToolGuide path="/tools/inhouse-vs-outsource" />
 
-    <div class="mt-8 rounded-2xl border border-neutral-100 bg-white p-6 md:p-8">
+    <div class="mt-8 border border-neutral-200 bg-white p-6 md:p-8">
       <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div class="space-y-5">
           <h2 class="border-b border-neutral-100 pb-2 text-sm font-bold text-brand-700">① 内製（採用）の条件</h2>
@@ -37,7 +40,7 @@ const breadcrumbItems = [
               step="100000"
               value="5000000"
               inputmode="numeric"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              class="mt-1.5 w-full border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </label>
           <label class="block">
@@ -49,7 +52,7 @@ const breadcrumbItems = [
               step="10000"
               value="300000"
               inputmode="numeric"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              class="mt-1.5 w-full border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </label>
 
@@ -63,7 +66,7 @@ const breadcrumbItems = [
               step="10000"
               value="300000"
               inputmode="numeric"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              class="mt-1.5 w-full border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </label>
           <label class="block">
@@ -75,7 +78,7 @@ const breadcrumbItems = [
               step="10000"
               value="100000"
               inputmode="numeric"
-              class="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              class="mt-1.5 w-full border border-neutral-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </label>
 
@@ -91,51 +94,51 @@ const breadcrumbItems = [
               max="36"
               step="1"
               value="24"
-              class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-200 accent-brand-600"
+              class="h-2 w-full cursor-pointer appearance-none bg-neutral-200 accent-brand-600"
             />
           </div>
         </div>
 
         <div class="space-y-5">
           <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-xl bg-neutral-50 p-4">
+            <div class="bg-neutral-50 p-4">
               <p class="text-xs font-medium text-neutral-500">内製 累計コスト</p>
               <p id="out-inhouse" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
             </div>
-            <div class="rounded-xl bg-neutral-50 p-4">
+            <div class="bg-neutral-50 p-4">
               <p class="text-xs font-medium text-neutral-500">外注 累計コスト</p>
               <p id="out-outsource" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
             </div>
           </div>
 
-          <div class="rounded-xl border border-neutral-200 p-4">
+          <div class="border border-neutral-200 p-4">
             <p class="mb-3 text-xs font-semibold text-neutral-600">比較期間終了時点の累計コスト</p>
             <div class="flex h-40 items-end gap-6">
               <div class="flex flex-1 flex-col items-center">
                 <div class="flex h-32 w-full items-end justify-center">
-                  <div id="bar-inhouse" class="w-12 rounded-t-lg bg-brand-600" style="height: 0%;"></div>
+                  <div id="bar-inhouse" class="w-12 bg-brand-600" style="height: 0%;"></div>
                 </div>
                 <span class="mt-2 text-[11px] text-neutral-500">内製</span>
               </div>
               <div class="flex flex-1 flex-col items-center">
                 <div class="flex h-32 w-full items-end justify-center">
-                  <div id="bar-outsource" class="w-12 rounded-t-lg bg-neutral-400" style="height: 0%;"></div>
+                  <div id="bar-outsource" class="w-12 bg-neutral-400" style="height: 0%;"></div>
                 </div>
                 <span class="mt-2 text-[11px] text-neutral-500">外注</span>
               </div>
             </div>
           </div>
 
-          <div id="diagnosis-box" class="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+          <div id="diagnosis-box" class="border border-neutral-200 bg-neutral-50 p-5">
             <p id="diagnosis-title" class="font-bold text-ink-950">入力すると診断結果が表示されます</p>
             <p id="diagnosis-desc" class="mt-1 text-sm text-neutral-500"></p>
           </div>
         </div>
       </div>
 
-      <div class="mt-8 rounded-xl border border-amber-100 bg-amber-50 p-4">
-        <p class="text-xs font-semibold text-amber-800">コストだけで判断する前に</p>
-        <ul class="mt-2 list-inside list-disc space-y-1 text-xs text-amber-800">
+      <div class="mt-8 bg-neutral-100 p-4">
+        <p class="text-xs font-bold text-ink-950">コストだけで判断する前に</p>
+        <ul class="mt-2 list-inside list-disc space-y-1 text-xs text-neutral-700">
           <li>繁忙期など業務量の増減が大きい場合は、外注の方が柔軟に調整しやすい</li>
           <li>社内にノウハウ・データを蓄積したい場合は、内製に分がある</li>
           <li>専門性の高い最新知見がすぐ必要な場合は、外注の方が早い</li>
@@ -148,19 +151,22 @@ const breadcrumbItems = [
         <button
           id="share-btn"
           type="button"
-          class="inline-flex shrink-0 items-center rounded-xl bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100"
+          class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-4 py-2 text-xs font-bold text-ink-950 hover:bg-neutral-100"
         >
           この結果のURLをコピー
         </button>
       </div>
     </div>
 
+    <ToolNextStep path="/tools/inhouse-vs-outsource" class="mt-6" />
   </section>
 
   <ToolFooter path="/tools/inhouse-vs-outsource" />
 </BaseLayout>
 
 <script>
+  import { setNextStep } from "@/lib/toolNextStep";
+
   const salaryInput = document.getElementById("salary") as HTMLInputElement;
   const hireSetupInput = document.getElementById("hire-setup") as HTMLInputElement;
   const outMonthlyInput = document.getElementById("out-monthly") as HTMLInputElement;
@@ -253,11 +259,13 @@ const breadcrumbItems = [
       }
     }
 
-    diagnosisBox.className = "rounded-xl border border-brand-200 bg-brand-50 p-5";
-    diagnosisTitle.className = "font-bold text-brand-900";
+    diagnosisBox.className = "border border-neutral-200 bg-neutral-50 p-5";
+    diagnosisTitle.className = "font-bold text-ink-950";
     diagnosisTitle.textContent = `${months}ヶ月時点では「${cheaper}」の方がコストが低い試算です`;
-    diagnosisDesc.className = "mt-1 text-sm text-brand-800";
+    diagnosisDesc.className = "mt-1 text-sm text-neutral-600";
     diagnosisDesc.textContent = message;
+
+    setNextStep(cheaper === "内製" ? "inhouse" : "outsource", { months: String(months) });
 
     syncUrl();
   }

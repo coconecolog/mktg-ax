@@ -7,6 +7,9 @@
 //   使っている import に合わせて、BaseLayoutを@/エイリアスで読み込むようにしてあります。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import ToolGuide from "@/components/ToolGuide.astro";
+import ToolNextStep from "@/components/ToolNextStep.astro";
 import benchmarkData from "@/data/benchmark-data.json";
 
 const industries = benchmarkData.industries;
@@ -14,16 +17,24 @@ const industries = benchmarkData.industries;
 // PDFダウンロード機能の表示切り替え。
 // 一時的に非表示にしたいだけなら、このtrue/falseを書き換えるだけでOK（コードの削除は不要）。
 const SHOW_PDF_EXPORT = false;
+
+// 2026-11-02：ほかのツールと同じパンくずにそろえる
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: "広告宣伝費 業界ベンチマーク診断", href: "/tools/kpi-benchmark" },
+];
 ---
 
 <BaseLayout
-  title="広告宣伝費 業界ベンチマーク診断｜MeerKitLab"
+  title="広告宣伝費 業界ベンチマーク診断"
   description="自社の広告宣伝費が業界水準に対して多いか少ないかを診断します。"
-  ogImage="/open-graph/default.png"
+  ogImage="/open-graph/tools/kpi-benchmark.png"
 >
-  <main class="benchmark-tool">
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="benchmark-tool">
     <header class="tool-header">
-      <p class="eyebrow">無料診断ツール</p>
       <h1>広告宣伝費 業界ベンチマーク診断</h1>
       <p class="lead">
         あなたの会社の広告宣伝費が、同業種の実データと比べて多いのか少ないのかを診断します。
@@ -31,6 +42,7 @@ const SHOW_PDF_EXPORT = false;
       <p class="source-note">
         データ出典：{benchmarkData.sourceTitle}
       </p>
+      <ToolGuide path="/tools/kpi-benchmark" />
     </header>
 
     <section class="tool-form" aria-label="診断入力フォーム">
@@ -125,7 +137,9 @@ const SHOW_PDF_EXPORT = false;
         <button id="download-pdf-btn" type="button">この結果を稟議用PDFでダウンロード</button>
       )}
     </section>
-  </main>
+
+    <ToolNextStep path="/tools/kpi-benchmark" hidden class="mt-6" />
+  </div>
 
   <ToolFooter path="/tools/kpi-benchmark" />
 </BaseLayout>
@@ -134,6 +148,7 @@ const SHOW_PDF_EXPORT = false;
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
+  import { showNextStep } from "@/lib/toolNextStep";
   // このスクリプトはブラウザ側でのみ動きます（サーバー処理は一切なし）。
   const industrySelect = document.getElementById('industry-select') as HTMLSelectElement;
   const inputSales = document.getElementById('input-sales') as HTMLInputElement;
@@ -163,6 +178,7 @@ const SHOW_PDF_EXPORT = false;
   }
 
   diagnoseBtn?.addEventListener('click', () => {
+
     const selectedOption = industrySelect.selectedOptions[0];
     const industryName = selectedOption.value;
     const industryRatio = parseFloat(selectedOption.dataset.ratio || '0');
@@ -202,6 +218,7 @@ const SHOW_PDF_EXPORT = false;
     }
 
     resultSection?.removeAttribute('hidden');
+    showNextStep();
     resultSection?.scrollIntoView({ behavior: 'smooth' });
   });
 
@@ -229,19 +246,16 @@ const SHOW_PDF_EXPORT = false;
 
 <style>
   .benchmark-tool {
-    max-width: 720px;
+    max-width: 64rem;
     margin: 0 auto;
-    padding: 2rem 1rem 4rem;
-  }
-  .tool-header .eyebrow {
-    color: var(--color-accent, #2563eb);
-    font-weight: 600;
-    font-size: 0.85rem;
-    letter-spacing: 0.05em;
+    padding: 3rem 1.25rem;
   }
   .tool-header h1 {
-    margin: 0.25rem 0 0.75rem;
-    font-size: 1.9rem;
+    margin: 0 0 0.75rem;
+    font-size: 1.875rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--color-ink-950);
   }
   .tool-header .lead {
     color: #444;
@@ -254,9 +268,8 @@ const SHOW_PDF_EXPORT = false;
   .tool-form {
     margin-top: 2rem;
     padding: 1.5rem;
-    border: 1px solid #e2e2e2;
-    border-radius: 12px;
-    background: #fafafa;
+    border: 1px solid #e5e5e5;
+    background: #fff;
   }
   .form-grid {
     display: grid;
@@ -274,7 +287,8 @@ const SHOW_PDF_EXPORT = false;
   .form-grid select {
     padding: 0.6rem 0.7rem;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 0;
+    background: #fff;
     font-size: 1rem;
   }
   .advanced-section {
@@ -284,18 +298,17 @@ const SHOW_PDF_EXPORT = false;
   }
   .advanced-section summary {
     cursor: pointer;
-    font-weight: 600;
-    color: var(--color-accent, #2563eb);
+    font-weight: 700;
+    color: var(--color-ink-950);
   }
   #diagnose-btn,
   #download-pdf-btn {
     margin-top: 1.5rem;
     padding: 0.8rem 1.5rem;
     border: none;
-    border-radius: 999px;
-    background: var(--color-accent, #2563eb);
+    background: var(--color-ink-950);
     color: #fff;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
   }
@@ -308,8 +321,7 @@ const SHOW_PDF_EXPORT = false;
   }
   .result-card {
     padding: 1.5rem;
-    border: 1px solid #e2e2e2;
-    border-radius: 12px;
+    border: 1px solid #e5e5e5;
     background: #fff;
   }
   .result-row {
@@ -321,7 +333,7 @@ const SHOW_PDF_EXPORT = false;
   }
   .result-row--highlight {
     font-weight: 700;
-    color: var(--color-accent, #2563eb);
+    color: var(--color-ink-950);
   }
   .result-footnote {
     margin-top: 1rem;
