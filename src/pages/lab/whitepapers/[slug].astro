@@ -1,13 +1,22 @@
 ---
+// 資料ダウンロードページ（2026-11-02リニューアル）。
+// 上から：
+//   ファーストビュー  左＝カテゴリ・種別ラベル・H1・日付・リード（資料説明）・表紙／右＝フォーム（PCは追従）
+//                    スマホは リード → 「無料でダウンロード」ボタン（フォームへ移動）→ 表紙 → フォーム の順
+//   2列              左＝こんな方におすすめ（ターゲット・目次）／右＝資料プレビュー2枚（クリックで拡大）
+//   本文             資料DBページ本文のブロック（ある場合だけ）
+//   執筆者           記事ページと同じ、上下の細線だけの1行
+//   ご要望・ご質問    ContactCta（カテゴリ一覧・タグ一覧は出さない）
+// 角丸なし・白黒。フォームの項目と送信後の動き（サンクスページへの遷移・GA4のresource_download）は変えていない。
 import type { GetStaticPaths } from "astro";
 import type { Resource } from "@/lib/types";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
-import AuthorCard from "@/components/AuthorCard.astro";
 import { getAllResources } from "@/lib/resources";
-import { getAuthorByName, getCategoryPath, getCategorySlug, getTagPath } from "@/lib/posts";
+import { getAuthorByName, getCategoryPath, getCategorySlug } from "@/lib/posts";
+import { toRouteSlug } from "@/lib/routeSlug";
 import { DEFAULT_OG_IMAGE } from "@/consts";
 import { buildFaqSchema, buildResourceSchema } from "@/lib/schema";
 
@@ -43,9 +52,21 @@ const breadcrumbItems = [
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
+
+// 種別ラベル：「無料資料 ／ ファイル形式 ／ 内容物」。Notionの「ファイル形式」「内容物」が空なら、その部分は出さない
+const typeLabel = ["無料資料", resource.fileFormat, resource.contents].filter((s) => s && s.trim()).join(" ／ ");
+
+// 表紙：PDF1ページ目の自動キャプチャ（無ければサムネイル→共通OG画像）
+const cover = resource.coverImage || resource.thumbnail || DEFAULT_OG_IMAGE;
+
+// 資料プレビュー：「抜粋ページ」の画像を先頭から2枚だけ（表紙はファーストビューに出すのでここには入れない）
+const previews = resource.excerptImages.slice(0, 2);
+
 // 「ターゲット・目次」プロパティは1行目を見出し、2行目以降を箇条書きとして扱う。
 // 見出し名も箇条書きの内容も資料ごとにNotion側で自由に変えられる。
 const [targetTocHeading, ...targetTocItems] = resource.targetToc;
+const hasTarget = targetTocItems.length > 0;
+const hasPreview = previews.length > 0;
 
 const author = resource.author ? getAuthorByName(resource.author) : undefined;
 
@@ -54,6 +75,9 @@ const author = resource.author ? getAuthorByName(resource.author) : undefined;
 // ?slug= は、サンクスページ側で「今ダウンロードした資料」を名前表示・おすすめから除外するために渡す。
 const thanksCategorySegment = resource.category ? encodeURIComponent(getCategorySlug(resource.category)) : "general";
 const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encodeURIComponent(resource.slug)}`;
+
+const inputClass =
+  "mt-1 w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400 focus:border-ink-950 focus:outline-none";
 ---
 
 <BaseLayout
@@ -65,119 +89,63 @@ const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encod
   <Breadcrumb items={breadcrumbItems} />
 
   <article class="mx-auto max-w-6xl px-5 py-10">
-    <header>
-      {
-        (resource.category || resource.tags.length > 0) && (
-          <div class="mb-4 flex flex-wrap items-center gap-1.5">
-            {resource.category && (
-              <a href={getCategoryPath(resource.category)}
-                class="rounded border border-brand-300 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-50"
+    {/* ファーストビュー：左＝資料の説明と表紙、右＝フォーム */}
+    <div class="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {
+            resource.category && (
+              <a
+                href={getCategoryPath(resource.category)}
+                class="border border-ink-950 px-2.5 py-0.5 text-xs font-bold text-ink-950 no-underline hover:bg-ink-950 hover:text-white"
               >
                 {resource.category}
               </a>
-            )}
-            {resource.tags.map((tag) => (
-              <a href={getTagPath(tag)}
-                class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 no-underline hover:bg-brand-100"
-              >
-                {tag}
-              </a>
-            ))}
-          </div>
-        )
-      }
-      <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
-        {resource.title}
-      </h1>
-      <p class="mt-4 text-sm text-neutral-400">
-        公開日: <time datetime={resource.publishedAt}>{dateLabel(resource.publishedAt)}</time>
-        {resource.updatedAt !== resource.publishedAt && (
-          <>
-            {" "}／ 更新日: <time datetime={resource.updatedAt}>{dateLabel(resource.updatedAt)}</time>
-          </>
-        )}
-      </p>
-    </header>
-
-    <div class="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
-      <div class="min-w-0">
-        <div class="aspect-video w-full overflow-hidden rounded-2xl bg-neutral-50">
-          <img src={resource.thumbnail || DEFAULT_OG_IMAGE} alt="" class="h-full w-full object-cover" />
+            )
+          }
+          <span class="text-xs font-bold text-neutral-500">{typeLabel}</span>
         </div>
 
+        <h1 class="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-ink-950 md:text-4xl">
+          {resource.title}
+        </h1>
+        <p class="mt-3 text-xs text-neutral-400">
+          公開日: <time datetime={resource.publishedAt}>{dateLabel(resource.publishedAt)}</time>
+          {
+            resource.updatedAt !== resource.publishedAt && (
+              <>
+                {" "}／ 更新日: <time datetime={resource.updatedAt}>{dateLabel(resource.updatedAt)}</time>
+              </>
+            )
+          }
+        </p>
+
         {
-          (resource.coverImage || resource.excerptImages.length > 0) && (
-            <div class="mt-6">
-              <p class="text-sm font-bold text-ink-950">資料プレビュー</p>
-              <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {resource.coverImage && (
-                  <button
-                    type="button"
-                    class="preview-thumb group overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50"
-                    data-preview-src={resource.coverImage}
-                    data-preview-alt={`${resource.title}の表紙`}
-                  >
-                    <img
-                      src={resource.coverImage}
-                      alt={`${resource.title}の表紙`}
-                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
-                    />
-                  </button>
-                )}
-                {resource.excerptImages.map((src, i) => (
-                  <button
-                    type="button"
-                    class="preview-thumb group overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50"
-                    data-preview-src={src}
-                    data-preview-alt={`${resource.title}のプレビュー${i + 1}`}
-                  >
-                    <img
-                      src={src}
-                      alt={`${resource.title}のプレビュー${i + 1}`}
-                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
+          resource.description && (
+            <p class="mt-6 whitespace-pre-line text-base leading-[1.9] text-ink-950">{resource.description}</p>
           )
         }
 
-        <p class="mt-8 whitespace-pre-line leading-relaxed text-neutral-700">{resource.description}</p>
-
+        {/* スマホだけ：フォームへ移動するボタン（PCはフォームが右に見えているので出さない） */}
         {
-          resource.targetToc.length > 0 && (
-            <div class="mt-8 rounded-2xl border border-neutral-100 bg-neutral-50 p-6">
-              {targetTocHeading && <p class="text-base font-bold text-ink-950">{targetTocHeading}</p>}
-              {targetTocItems.length > 0 && (
-                <ul class="mt-4 space-y-2">
-                  {targetTocItems.map((line) => (
-                    <li class="flex gap-2 text-sm leading-relaxed text-neutral-600">
-                      <span class="mt-0.5 shrink-0 text-brand-500">✓</span>
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+          resource.fileUrl && (
+            <a
+              href="#download"
+              class="mt-6 block bg-ink-950 px-5 py-3 text-center text-sm font-bold text-white no-underline hover:bg-neutral-800 lg:hidden"
+            >
+              無料でダウンロードする<span aria-hidden="true" class="ml-1">↓</span>
+            </a>
           )
         }
 
-        {
-          resource.blocks.length > 0 && (
-            <div class="prose-notion mt-10 w-full">
-              <NotionBlocks blocks={resource.blocks} />
-            </div>
-          )
-        }
-
-        {author && <AuthorCard author={author} />}
+        <div class="mt-8 aspect-video w-full overflow-hidden border border-neutral-300 bg-neutral-50">
+          <img src={cover} alt={`${resource.title}の表紙`} class="h-full w-full object-cover" />
+        </div>
       </div>
 
-      <aside class="lg:sticky lg:top-24 lg:self-start">
-        <div class="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-          <p class="text-xs font-bold text-brand-600">無料ダウンロード</p>
-          <h2 class="mt-1 text-lg font-bold text-ink-950">この資料をダウンロードする</h2>
+      <aside id="download" class="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
+        <div class="border border-ink-950 bg-white p-6">
+          <h2 class="text-lg font-extrabold text-ink-950">この資料をダウンロードする</h2>
           <p class="mt-2 text-xs leading-relaxed text-neutral-500">
             以下のフォームにご入力いただくと、資料のダウンロードリンクをメールでお送りします。
           </p>
@@ -193,42 +161,22 @@ const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encod
                 data-thanks-url={thanksUrl}
               >
                 <div>
-                  <label for="rdf-name" class="text-xs font-medium text-neutral-600">
-                    お名前 <span class="text-red-500">*</span>
+                  <label for="rdf-name" class="text-xs font-bold text-neutral-600">
+                    お名前 <span class="text-red-600">*</span>
                   </label>
-                  <input
-                    id="rdf-name"
-                    name="name"
-                    type="text"
-                    required
-                    placeholder="山田 太郎"
-                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-                  />
+                  <input id="rdf-name" name="name" type="text" required placeholder="山田 太郎" class={inputClass} />
                 </div>
                 <div>
-                  <label for="rdf-company" class="text-xs font-medium text-neutral-600">
+                  <label for="rdf-company" class="text-xs font-bold text-neutral-600">
                     会社名
                   </label>
-                  <input
-                    id="rdf-company"
-                    name="company"
-                    type="text"
-                    placeholder="株式会社サンプル"
-                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-                  />
+                  <input id="rdf-company" name="company" type="text" placeholder="株式会社サンプル" class={inputClass} />
                 </div>
                 <div>
-                  <label for="rdf-email" class="text-xs font-medium text-neutral-600">
-                    メールアドレス <span class="text-red-500">*</span>
+                  <label for="rdf-email" class="text-xs font-bold text-neutral-600">
+                    メールアドレス <span class="text-red-600">*</span>
                   </label>
-                  <input
-                    id="rdf-email"
-                    name="email"
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    class="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-ink-950 placeholder:text-neutral-400"
-                  />
+                  <input id="rdf-email" name="email" type="email" required placeholder="you@example.com" class={inputClass} />
                 </div>
                 {/* ハニーポット: 人間には見えない項目。自動投稿botはよく埋めてしまうため、値が入っていたら送信を無視する */}
                 <div class="hidden" aria-hidden="true">
@@ -236,10 +184,10 @@ const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encod
                   <input id="rdf-website" name="website" type="text" tabindex={-1} autocomplete="off" />
                 </div>
                 <label class="flex items-start gap-2 pt-1">
-                  <input id="rdf-consent" name="consent" type="checkbox" required class="mt-0.5" />
+                  <input id="rdf-consent" name="consent" type="checkbox" required class="mt-0.5 accent-ink-950" />
                   <span class="text-xs leading-relaxed text-neutral-500">
                     ご入力いただいた情報は、資料の送付およびサービスに関するご案内のために利用します。
-                    <a href="/privacy" class="text-brand-600 underline">
+                    <a href="/privacy" class="text-ink-950 underline">
                       個人情報保護方針
                     </a>
                     に同意のうえ送信します。配信停止はいつでも可能です。
@@ -248,24 +196,105 @@ const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encod
                 <button
                   id="rdf-submit"
                   type="submit"
-                  class="mt-2 w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  class="mt-2 w-full bg-ink-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   無料でダウンロードする
                 </button>
                 <p id="rdf-message" class="hidden text-xs leading-relaxed" role="status" />
               </form>
             ) : (
-              <p class="mt-5 text-xs leading-relaxed text-neutral-500">
-                現在準備中です。しばらくお待ちください。
-              </p>
+              <p class="mt-5 text-xs leading-relaxed text-neutral-500">現在準備中です。しばらくお待ちください。</p>
             )
           }
         </div>
       </aside>
     </div>
+
+    {/* 2列：こんな方におすすめ／資料プレビュー（どちらか一方しかなければ全幅） */}
+    {
+      (hasTarget || hasPreview) && (
+        <div
+          class:list={[
+            "mt-16 grid grid-cols-1 gap-10",
+            hasTarget && hasPreview && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]",
+          ]}
+        >
+          {hasTarget && (
+            <section>
+              <h2 class="border-l-4 border-ink-950 pl-3 text-lg font-extrabold text-ink-950">
+                {targetTocHeading || "こんな方におすすめ"}
+              </h2>
+              <ul class="mt-4 border-t border-neutral-200">
+                {targetTocItems.map((line) => (
+                  <li class="flex gap-2.5 border-b border-neutral-200 py-3 text-sm leading-relaxed text-neutral-700">
+                    <span class="shrink-0 font-bold text-ink-950" aria-hidden="true">✓</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {hasPreview && (
+            <section>
+              <h2 class="border-l-4 border-ink-950 pl-3 text-lg font-extrabold text-ink-950">資料プレビュー</h2>
+              <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {previews.map((src, i) => (
+                  <button
+                    type="button"
+                    class="preview-thumb group relative block w-full overflow-hidden border border-neutral-300 bg-neutral-50"
+                    data-preview-src={src}
+                    data-preview-alt={`${resource.title}のプレビュー${i + 1}`}
+                    aria-label={`プレビュー${i + 1}を拡大する`}
+                  >
+                    <img
+                      src={src}
+                      alt={`${resource.title}のプレビュー${i + 1}`}
+                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
+                      loading="lazy"
+                    />
+                    <span class="absolute bottom-0 right-0 bg-ink-950 px-2 py-0.5 text-[11px] font-bold text-white">拡大</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )
+    }
+
+    {
+      resource.blocks.length > 0 && (
+        <div class="prose-notion mt-14 w-full">
+          <NotionBlocks blocks={resource.blocks} />
+        </div>
+      )
+    }
+
+    {/* 執筆者（記事ページと同じ、上下の細線だけの1行） */}
+    {
+      author && (
+        <a
+          href={`/authors/${encodeURIComponent(toRouteSlug(author.name))}`}
+          class="group mt-16 flex items-center gap-3 border-y border-neutral-300 py-3 no-underline"
+        >
+          {author.image && (
+            <img src={author.image} alt={author.name} class="aspect-square h-9 w-9 shrink-0 rounded-full object-cover" loading="lazy" />
+          )}
+          <span class="min-w-0 flex-1 text-sm leading-relaxed">
+            <span class="text-neutral-500">執筆者</span>
+            <span class="ml-3 font-bold text-ink-950">{author.name}</span>
+            {author.expertise && <span class="ml-3 hidden text-neutral-500 sm:inline">{author.expertise.split("\n")[0]}</span>}
+          </span>
+          <span class="shrink-0 text-sm font-bold text-ink-950 group-hover:underline">
+            プロフィール<span aria-hidden="true" class="ml-1 inline-block transition-transform group-hover:translate-x-1">→</span>
+          </span>
+        </a>
+      )
+    }
   </article>
 
-  <ContactCta />
+  <ContactCta showSiteIndex={false} />
 
   <dialog id="preview-modal" class="preview-modal">
     <button type="button" class="preview-modal-close" aria-label="閉じる">✕</button>
@@ -275,10 +304,7 @@ const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encod
 
 <style>
   .preview-thumb {
-    display: block;
-    width: 100%;
     padding: 0;
-    border: 0;
     cursor: zoom-in;
   }
 
@@ -292,31 +318,30 @@ const thanksUrl = `/lab/whitepapers/thanks/${thanksCategorySegment}?slug=${encod
     max-height: 92vh;
     padding: 0;
     border: none;
-    border-radius: 1rem;
+    border-radius: 0;
     background: transparent;
   }
 
   .preview-modal::backdrop {
-    background: rgba(15, 15, 25, 0.75);
+    background: rgba(11, 11, 18, 0.8);
   }
 
   .preview-modal img {
     display: block;
     width: 100%;
     height: auto;
-    border-radius: 1rem;
   }
 
   .preview-modal-close {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 9999px;
+    top: 0;
+    right: 0;
+    width: 2.5rem;
+    height: 2.5rem;
     border: none;
-    background: rgba(255, 255, 255, 0.92);
-    color: #111827;
+    border-radius: 0;
+    background: #0b0b12;
+    color: #fff;
     font-size: 1rem;
     line-height: 1;
     cursor: pointer;
