@@ -24,6 +24,12 @@
 /blog/advertising-expense-to-sales-ratio    /lab/blog/marketing-budget-justification 301
 /blog/advertising-expense-to-sales-ratio/   /lab/blog/marketing-budget-justification 301
 
+# 廃盤にした資料（2026-11-02 年間予算計画テンプレート → 年間予算表）
+/lab/whitepapers/annual-budget-plan         /lab/whitepapers/kgi-kpi-backcast-sheet 301
+/lab/whitepapers/annual-budget-plan/        /lab/whitepapers/kgi-kpi-backcast-sheet 301
+/resources/annual-budget-plan               /lab/whitepapers/kgi-kpi-backcast-sheet 301
+/resources/annual-budget-plan/              /lab/whitepapers/kgi-kpi-backcast-sheet 301
+
 # 一覧ページ（2026-10-29 URL構造の変更）
 /library          /lab 301
 /library/         /lab 301
