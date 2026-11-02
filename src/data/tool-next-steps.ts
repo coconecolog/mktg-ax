@@ -20,9 +20,9 @@ export interface NextVariant {
   body: string;
   /** 黒いボタン（1つだけ） */
   cta: { label: string; href: string; type: NextLinkType };
-  /** ボタンの横の小さな案内（任意） */
-  sub?: { text: string; label: string; href: string; type: NextLinkType };
-  /** 右に並べるカード（Kit・資料・記事。2つまで） */
+  /** 枠の右に置く資料（表紙つき） */
+  feature: NextLink;
+  /** 枠の下に2列で並べるカード（Kit・資料・記事。2つ） */
   links: NextLink[];
 }
 
@@ -122,6 +122,12 @@ const L: Record<string, NextLink> = {
     desc: "広告宣伝費が売上の何%かという相場と、その数字を予算づくりでどう使うかを解説します。",
     href: "/lab/blog/advertising-cost-market-rate",
   },
+  seoTag: {
+    type: "tag",
+    title: "SEOの記事一覧",
+    desc: "タイトル・見出し・説明文など、検索で読まれるページの基本をまとめて読めます。",
+    href: "/lab/tag/seo",
+  },
   aioTag: {
     type: "tag",
     title: "AIO・AEO・LLMO・GEOの記事一覧",
@@ -142,21 +148,21 @@ export const TOOL_NEXT_STEPS: Record<string, ToolNextStepData> = {
         title: "この上限CACを、チャネル別の年間予算に落とす",
         body: "上限 {allowable} を超えないように、展示会・Web広告などのチャネルにリード数と費用を配ります。CPL・CACの判定つきで、年間予算表（Excel）になります。",
         cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
-        sub: { text: "スプレッドシートで作りたい方は", label: "年間予算表", href: WP.annualBudget.href, type: "resource" },
+        feature: L.annualBudget,
         links: [L.budgetWhy, L.cacPayback],
       },
       check: {
         title: "上限に近いCACです。チャネル別に見て、余裕を持たせる",
         body: "いまのCACは許容上限の {pct} です。チャネル別のCPL・CACを判定しながら年間予算を作ると、どのチャネルを絞るかが見えます。",
         cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
-        sub: { text: "予算案がすでにある方は", label: KIT.budgetCheck.label, href: KIT.budgetCheck.href, type: "kit" },
-        links: [L.cacPayback, L.unitEconomics],
+        feature: L.annualBudget,
+        links: [L.budgetCheckKit, L.cacPayback],
       },
       fix: {
         title: "どのチャネルがCACを押し上げているかを確かめる",
-        body: "いまのCACは許容上限を {over} 超えています。予算案を読み込むと、チャネルごとのCPL・CACを判定し、上限を超えている施策がわかります。直した予算案は年間予算表（Excel）でダウンロードできます。",
+        body: "いまのCACは許容上限を {over} 超えています。予算案を読み込むと、チャネルごとのCPL・CACを判定し、上限を超えている施策がわかります。",
         cta: { label: "予算案診断Kitで確かめる", href: KIT.budgetCheck.href, type: "kit" },
-        sub: { text: "予算案がまだない方は", label: KIT.budgetMake.label, href: KIT.budgetMake.href, type: "kit" },
+        feature: L.annualBudget,
         links: [L.cacPayback, L.unitEconomics],
       },
     },
@@ -172,21 +178,24 @@ export const TOOL_NEXT_STEPS: Record<string, ToolNextStepData> = {
     variants: {
       aio: {
         title: "AIの回答に使われるコンテンツを作る",
-        body: "AEO・AIO/GEOの点が低めです。展示会やウェビナーなどの施策から、AIに引用されやすい録画・ホワイトペーパー・FAQ・記事を作る方法を、資料にまとめています。",
-        cta: { label: "資料を無料でダウンロード", href: WP.aiContent.href, type: "resource" },
-        links: [L.aioTag, L.aiUseCases],
+        body: "AEO・AIO/GEOの点が低めです。展示会やウェビナーなどの施策から、AIに引用されやすい録画・ホワイトペーパー・FAQ・記事を作ってください。",
+        cta: { label: "AIO・AEOの記事を読む", href: "/lab/tag/aio-aeo", type: "tag" },
+        feature: L.aiContent,
+        links: [L.aiUseCases, L.seoTag],
       },
       seo: {
         title: "まず、従来のSEOの基本を固める",
         body: "SEOの点がいちばん低い状態です。AI検索も、検索で読まれているページをもとに答えを作ります。タイトル・見出し・説明文から整えてください。",
         cta: { label: "SEOの記事を読む", href: "/lab/tag/seo", type: "tag" },
-        links: [L.aiContent, L.aiUseCases],
+        feature: L.aiContent,
+        links: [L.aioTag, L.aiUseCases],
       },
       good: {
         title: "次は、AIに引用される一次情報を増やす",
         body: "3つとも対応が進んでいます。次は、施策のたびにAIに引用されやすい資料・FAQ・記事を作り、ほかのサイトにない情報を積み上げてください。",
-        cta: { label: "資料を無料でダウンロード", href: WP.aiContent.href, type: "resource" },
-        links: [L.aiUseCases, L.aioTag],
+        cta: { label: "AIO・AEOの記事を読む", href: "/lab/tag/aio-aeo", type: "tag" },
+        feature: L.aiContent,
+        links: [L.aiUseCases, L.seoTag],
       },
     },
   },
@@ -200,15 +209,17 @@ export const TOOL_NEXT_STEPS: Record<string, ToolNextStepData> = {
     variants: {
       inhouse: {
         title: "採用するなら、最初の90日の計画から",
-        body: "{months}か月の累計では、内製のほうが安くなる試算です。採用した担当者が最初の90日で何をするかを決めておくと、立ち上がりが早くなります。",
-        cta: { label: "資料を無料でダウンロード", href: WP.dayPlan.href, type: "resource" },
-        links: [L.skillmap, L.budgetMakeKit],
+        body: "{months}か月の累計では、内製のほうが安くなる試算です。採用した担当者の人件費を予算に入れ、最初の90日で何をするかを決めておくと、立ち上がりが早くなります。",
+        cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
+        feature: L.dayPlan,
+        links: [L.skillmap, L.budgetWhy],
       },
       outsource: {
         title: "外注するなら、予算の根拠をそろえる",
         body: "{months}か月の累計では、外注のほうが安くなる試算です。外注費を予算に入れるときは、なぜ今・なぜこの額・なぜこの施策かを示すと、通りやすくなります。",
-        cta: { label: "資料を無料でダウンロード", href: WP.budgetWhy.href, type: "resource" },
-        links: [L.budgetMakeKit, L.dayPlan],
+        cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
+        feature: L.budgetWhy,
+        links: [L.dayPlan, L.annualBudget],
       },
     },
   },
@@ -224,7 +235,7 @@ export const TOOL_NEXT_STEPS: Record<string, ToolNextStepData> = {
         title: "業界の比率ではなく、受注目標から必要な額を出す",
         body: "比率だけでは、予算の額は決まりません。受注目標から必要なリード数と費用を逆算し、いまの広告宣伝費と並べてください。",
         cta: { label: "予算作成Kitで逆算する", href: KIT.budgetMake.href, type: "kit" },
-        sub: { text: "スプレッドシートで作りたい方は", label: "年間予算表", href: WP.annualBudget.href, type: "resource" },
+        feature: L.annualBudget,
         links: [L.adCostRate, L.budgetWhy],
       },
     },

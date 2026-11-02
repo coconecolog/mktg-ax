@@ -295,11 +295,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
       },
     ],
     // 2026-11-02：Kit・資料・記事の3枚にそろえる（結果に合わせた案内は tool-next-steps.ts）
-    related: [
-      { type: "kit", title: "予算作成Kit", href: "/tools/budget-simulator" },
-      { type: "resource", title: "年間予算表", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
-      { type: "post", title: "BtoBマーケの評価軸は「リード数」から「CAC」へ", href: "/lab/blog/lead-volume-to-unit-economics" },
-    ],
+    // 2026-11-03：関連はツールの直下（tool-next-steps.ts）と、ツールDBのカテゴリの記事・資料（ToolFooter の lab）で出す
+    related: [],
   },
 
   "/tools/kpi-benchmark": {
@@ -320,11 +317,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
           "目標受注件数をリードから受注までの転換率で割って必要なリード数を出し、リード1件あたりの獲得コストを掛けて必要な費用を出します。",
       },
     ],
-    related: [
-      { type: "kit", title: "予算作成Kit", href: "/tools/budget-simulator" },
-      { type: "resource", title: "年間予算表", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
-      { type: "post", title: "広告費の相場は売上の何%？", href: "/lab/blog/advertising-cost-market-rate" },
-    ],
+    // 2026-11-03：関連はツールの直下（tool-next-steps.ts）と、ツールDBのカテゴリの記事・資料（ToolFooter の lab）で出す
+    related: [],
   },
 
   "/tools/inhouse-vs-outsource": {
@@ -348,11 +342,8 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
         answer: "採用して立ち上がるまでに数か月かかる場合、その間は外注で埋める費用か、成果が出ない期間として見込んでください。",
       },
     ],
-    related: [
-      { type: "kit", title: "予算作成Kit", href: "/tools/budget-simulator" },
-      { type: "resource", title: "90日計画テンプレート", href: "/lab/whitepapers/90-day-plan-template" },
-      { type: "resource", title: "予算の根拠整理シート", href: "/lab/whitepapers/budget-justification-sheet" },
-    ],
+    // 2026-11-03：関連はツールの直下（tool-next-steps.ts）と、ツールDBのカテゴリの記事・資料（ToolFooter の lab）で出す
+    related: [],
   },
 
   "/tools/seo-aeo-aio-check": {
@@ -378,13 +369,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
           "llms.txtは、サイトの概要と主なページをAI向けにまとめたテキストファイルです。効果はまだ定まっていないため、ほかの項目を済ませてからで構いません。",
       },
     ],
-    related: [
-      { type: "resource", title: "AIの回答に使われるコンテンツの作り方", href: "/lab/whitepapers/flow-to-stock-ideas" },
-      {
-        type: "post",
-        title: "生成AIのマーケティング活用、どの業務から任せる？",
-        href: "/lab/blog/generative-ai-marketing-use-cases",
-      },
-    ],
+    // 2026-11-03：関連はツールの直下（tool-next-steps.ts）と、ツールDBのカテゴリの記事・資料（ToolFooter の lab）で出す
+    related: [],
   },
 };
