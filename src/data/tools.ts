@@ -161,6 +161,24 @@ export const KIT_GROUPS: KitGroup[] = [
   },
 ];
 
+// カテゴリページ（/lab/category/…）の「このカテゴリで使えるKit」（2026-11-02）。
+// カテゴリ名に含まれる語で、出すKit（href）を2つ決める。上から順に見て、最初に当てはまったものを使う。
+// どれにも当てはまらないカテゴリ（戦略・組織など）は、これから作る人向けの2つを出す。
+const CATEGORY_KIT_RULES: { words: string[]; hrefs: string[] }[] = [
+  { words: ["予算", "ROI"], hrefs: ["/tools/budget-simulator", "/tools/budget-checker"] },
+  { words: ["KPI", "KGI"], hrefs: ["/tools/kpi-sheet-maker", "/tools/kpi-check"] },
+  { words: ["施策"], hrefs: ["/tools/kpi-sheet-maker", "/tools/kpi-analysis"] },
+  { words: ["分析", "ダッシュボード"], hrefs: ["/tools/kpi-analysis", "/tools/kpi-check"] },
+];
+const CATEGORY_KIT_DEFAULT = ["/tools/budget-simulator", "/tools/kpi-sheet-maker"];
+
+export function getKitsForCategory(categoryName: string): Kit[] {
+  const rule = CATEGORY_KIT_RULES.find((r) => r.words.some((w) => categoryName.includes(w)));
+  const hrefs = rule ? rule.hrefs : CATEGORY_KIT_DEFAULT;
+  const kits = KIT_GROUPS.flatMap((g) => g.kits);
+  return hrefs.map((href) => kits.find((k) => k.href === href)).filter((k): k is Kit => !!k);
+}
+
 // /tools の2つのセクション（2026-11-02：カテゴリページと同じ型に変更）。
 // Kitは KIT_GROUPS の kind で振り分ける。resources は右のグレーの枠に出す資料（slug は資料DBのSlug）。
 export const KIT_SECTIONS = [

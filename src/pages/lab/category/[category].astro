@@ -15,6 +15,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
 import { getCategoryGuide } from "@/lib/library";
 import { getCategoryMeerkat } from "@/lib/categoryMeerkat";
+import { getKitsForCategory } from "@/data/tools";
 import { buildCollectionPageSchema, buildFaqSchema } from "@/lib/schema";
 
 export const getStaticPaths = (() => {
@@ -49,6 +50,9 @@ function relatedFor(index: number) {
 
 // カテゴリごとのミーアキャット（src/lib/categoryMeerkat.ts。サービスページと共通）
 const meerkat = getCategoryMeerkat(category.name);
+
+// 「このカテゴリで使えるKit」（2026-11-02。カテゴリ名からKitを2つ選ぶ。src/data/tools.ts の getKitsForCategory）
+const categoryKits = getKitsForCategory(category.name);
 
 // 検索の「形式」ボタン（/lab と同じ形。件数はカテゴリ内の重複なしの件数）
 const kindFilters = [
@@ -128,6 +132,34 @@ const breadcrumbItems = [
           </ul>
           <p class="shrink-0 text-xs leading-relaxed text-neutral-500 lg:w-24">順番に読む必要はありません</p>
         </div>
+      )
+    }
+
+    {/* このカテゴリで使えるKit（2026-11-02。/lab の「Kitで確かめる」と同じ見た目。カード全体がリンク） */}
+    {
+      categoryKits.length > 0 && (
+        <aside aria-labelledby="category-kits" class="mt-8 border border-neutral-200 bg-neutral-100 p-4 sm:p-5">
+          <div class="flex flex-wrap items-end justify-between gap-2">
+            <h2 id="category-kits" class="text-sm font-bold text-ink-950">このカテゴリで使えるKit</h2>
+            <a href="/tools" class="group flex items-center gap-2 text-xs font-bold text-ink-950 hover:underline">
+              Kit一覧を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+            </a>
+          </div>
+          <ul class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+            {categoryKits.map((k) => (
+              <li>
+                <a href={k.href} class="group block h-full border border-neutral-300 bg-white px-4 py-3 hover:border-ink-950">
+                  <span class="block text-xs text-neutral-500">{k.situation}</span>
+                  <span class="mt-0.5 flex items-center justify-between gap-3 text-base font-bold text-ink-950">
+                    {k.name}
+                    <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                  <span class="mt-1 block text-xs leading-relaxed text-neutral-500">{k.description}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </aside>
       )
     }
 
