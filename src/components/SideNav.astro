@@ -1,15 +1,18 @@
 ---
 // 記事ページ・タグページ共通の右カラム（2026-10-15統一）。
-// 上から「目次」（ページ内の見出し2・01からの連番。PCのみ表示）→ 薄い区切り線 →「関連する資料」（1件）。
+// 上から「目次」（ページ内の見出し2・01からの連番。PCのみ表示）→ 薄い区切り線 →「関連する資料」（1件）
+// →「関連するKit」（記事ページのみ。選び方は src/lib/tools.ts の getSideKits、2026-11-02）。
 // 表紙は資料の表紙画像（PDF1ページ目のキャプチャ）。画像が無い資料は資料名から白黒で生成する。
 import type { Resource } from "@/lib/types";
+import type { Kit } from "@/data/tools";
 
 interface Props {
   toc: { anchor: string; text: string }[];
   resource?: Resource;
+  kits?: Kit[];
 }
 
-const { toc, resource } = Astro.props;
+const { toc, resource, kits = [] } = Astro.props;
 const cover = resource ? resource.thumbnail || resource.coverImage : null;
 ---
 
@@ -62,6 +65,30 @@ const cover = resource ? resource.thumbnail || resource.coverImage : null;
             <span aria-hidden="true">→</span>
           </a>
         </div>
+      </div>
+    )
+  }
+  {
+    kits.length > 0 && (
+      <div class={toc.length > 0 || resource ? "mt-8 border-t border-neutral-300 pt-6" : ""}>
+        <div class="flex items-end justify-between gap-2">
+          <p class="text-sm font-bold text-ink-950">関連するKit</p>
+          <a href="/tools" class="text-xs font-bold text-ink-950 hover:underline">Kit一覧 →</a>
+        </div>
+        <ul class="mt-3 space-y-2 bg-neutral-100 p-3">
+          {kits.map((k) => (
+            <li>
+              <a href={k.href} class="group block border border-neutral-300 bg-white px-4 py-3 no-underline hover:border-ink-950">
+                <span class="block text-xs text-neutral-500">{k.situation}</span>
+                <span class="mt-0.5 flex items-center justify-between gap-3 text-sm font-bold text-ink-950">
+                  {k.name}
+                  <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                </span>
+                <span class="mt-1 block text-xs leading-relaxed text-neutral-500">{k.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
     )
   }
