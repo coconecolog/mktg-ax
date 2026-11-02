@@ -1,0 +1,41 @@
+---
+// Labの一覧の1行（記事・資料）。/lab の「すべての記事・資料」と、ツールページの「関連する記事・資料」で同じ見た目にする（2026-11-03）。
+// <li> は呼び出し側で置く（/lab は絞り込み用の data 属性を <li> に付けるため）。
+import type { LibraryItem } from "@/lib/library";
+
+interface Props {
+  item: LibraryItem;
+}
+
+const { item } = Astro.props;
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo" }).replaceAll("/", ".");
+---
+
+<a href={item.href} class="group grid grid-cols-1 gap-3 px-3 py-6 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:items-center sm:gap-6 sm:px-3">
+  <span class="flex gap-3 text-xs leading-relaxed text-neutral-500 sm:block">
+    <span class="block tabular-nums">{formatDate(item.publishedAt)}</span>
+    <span class="block">{item.kind === "post" ? `読了${item.readMinutes}分` : item.fileExt ? `${item.fileExt}資料` : "無料資料"}</span>
+  </span>
+  <span class="min-w-0">
+    <span class="flex flex-wrap items-center gap-2">
+      {item.kind === "post" ? (
+        <span class="inline-flex items-center border border-ink-950 bg-white px-1.5 py-0.5 text-[11px] font-bold leading-none text-ink-950">記事</span>
+      ) : (
+        <span class="inline-flex items-center bg-ink-950 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">無料資料</span>
+      )}
+      {item.categories[0] && <span class="text-xs text-neutral-500">{item.categories[0]}</span>}
+    </span>
+    <span class="mt-2 block text-base font-bold leading-relaxed text-ink-950 group-hover:underline sm:text-[17px]">{item.title}</span>
+    {item.description && <span class="mt-1 line-clamp-2 text-xs leading-relaxed text-neutral-500">{item.description}</span>}
+  </span>
+  {item.kind === "post" ? (
+    <span class="flex items-center gap-6 text-xs font-bold text-ink-950 sm:justify-end">
+      記事を読む<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+    </span>
+  ) : (
+    <span class="flex w-fit items-center gap-4 bg-ink-950 px-4 py-2.5 text-xs font-bold text-white sm:justify-self-end">
+      資料を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+    </span>
+  )}
+</a>
