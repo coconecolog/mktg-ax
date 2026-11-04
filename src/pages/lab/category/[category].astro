@@ -266,31 +266,37 @@ const breadcrumbItems = [
           section.hidden = true;
           continue;
         }
+        // 2026-11-04：絞り込むのは左（main：記事と資料の混合リスト）だけ。右（resource：代表資料1件）はいつも同じ表示にする
         let sectionHits = 0;
-        // 左（main）は記事と資料の混合リスト、右（resource）は代表資料1件
-        for (const column of ["main", "resource"]) {
-          const columnEl = section.querySelector<HTMLElement>(`[data-column="${column}"]`);
-          if (!columnEl) continue;
-          const items = Array.from(columnEl.querySelectorAll<HTMLElement>("[data-item]"));
-          const list = section.querySelector<HTMLElement>(`[data-list="${column}"]`);
+        const mainEl = section.querySelector<HTMLElement>('[data-column="main"]');
+        if (mainEl) {
+          const items = Array.from(mainEl.querySelectorAll<HTMLElement>("[data-item]"));
+          const list = section.querySelector<HTMLElement>('[data-list="main"]');
           const expanded = list?.dataset.expanded === "true";
-          let columnHits = 0;
           for (const item of items) {
             const text = normalize(item.dataset.search || "");
             const hit = (kind === "all" || kind === item.dataset.kind) && words.every((w) => text.includes(w));
             if (hit) {
-              columnHits++;
+              sectionHits++;
               matched.add(hrefOf(item));
             }
             item.hidden = active ? !hit : item.hasAttribute("data-extra") && !expanded;
           }
-          sectionHits += columnHits;
-          const more = section.querySelector<HTMLElement>(`[data-more="${column}"]`);
+          const more = section.querySelector<HTMLElement>('[data-more="main"]');
           if (more) more.hidden = active || expanded;
-          columnEl.hidden = active && columnHits === 0;
+          // 左が0件でも列は残し（右の位置をずらさない）、中身だけ見えなくする
+          mainEl.style.visibility = active && sectionHits === 0 ? "hidden" : "";
         }
-        section.querySelectorAll<HTMLElement>("[data-related], [data-tools]").forEach((el) => (el.hidden = active));
-        section.hidden = active && sectionHits === 0;
+        // 右の代表資料は表示を変えない。件数とブロックの表示は、条件に合うときだけ数える
+        const resourceItem = section.querySelector<HTMLElement>('[data-column="resource"] [data-item]');
+        let resourceHit = false;
+        if (resourceItem) {
+          const text = normalize(resourceItem.dataset.search || "");
+          resourceHit = (kind === "all" || kind === resourceItem.dataset.kind) && words.every((w) => text.includes(w));
+          if (resourceHit) matched.add(hrefOf(resourceItem));
+        }
+        section.querySelectorAll<HTMLElement>("[data-tools]").forEach((el) => (el.hidden = active));
+        section.hidden = active && sectionHits === 0 && !resourceHit;
       }
 
       const filtered = active || theme !== "";
