@@ -259,6 +259,19 @@ export function getDateISO(page, name) {
   return null;
 }
 
+/**
+ * 予約公開：公開日が今より未来なら true（2026-11-05追加）。
+ * 日付だけ（例 2026-11-06）は日本時間のその日の0:00、時刻つきはその時刻から公開。
+ * ビルドは30分ごとに自動で走るため、公開日時から30分以内に公開される。
+ */
+export function isScheduledForFuture(page, name, now = new Date()) {
+  const iso = getDateISO(page, name);
+  if (!iso) return false;
+  const at = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00+09:00`) : new Date(iso);
+  if (Number.isNaN(at.getTime())) return false;
+  return at.getTime() > now.getTime();
+}
+
 /** files プロパティの先頭のURLを取得する（Notionアップロード / 外部URLどちらも対応）。 */
 export function getFirstFileUrl(page, name) {
   const prop = getProperty(page, name);
@@ -1131,6 +1144,7 @@ export async function buildNotionLinkMap(token) {
       for (const page of pages) {
         const status = getStatusOrSelectName(page, PROP.status);
         if (status !== POST_STATUS.published && status !== POST_STATUS.editing) continue;
+        if (isScheduledForFuture(page, PROP.publishedAt)) continue;
         const title = getTitleText(page, PROP.title) || "";
         const slug = resolveSlug(getRichTextPlain(page, PROP.slug), page.id, title);
         linkMap.set(page.id, `/lab/blog/${slug}`);
@@ -1148,6 +1162,7 @@ export async function buildNotionLinkMap(token) {
         filter: { property: RESOURCE_PROP.published, checkbox: { equals: true } },
       });
       for (const page of pages) {
+        if (isScheduledForFuture(page, RESOURCE_PROP.publishedAt)) continue;
         const title = getTitleText(page, RESOURCE_PROP.title) || "";
         const slug = resolveSlug(getRichTextPlain(page, RESOURCE_PROP.slug), page.id, title);
         linkMap.set(page.id, `/lab/whitepapers/${slug}`);

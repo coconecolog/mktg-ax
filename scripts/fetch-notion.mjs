@@ -27,6 +27,7 @@ import {
   getRichTextPlain,
   resolveRepresentativeSlug,
   getStatusOrSelectName,
+  isScheduledForFuture,
   getSelectColor,
   getNumber,
   getDateISO,
@@ -385,7 +386,13 @@ async function main() {
   }
   const rawPages = allPages.filter((p) => {
     const status = getStatusOrSelectName(p, PROP.status);
-    return status === POST_STATUS.published || status === POST_STATUS.editing;
+    if (status !== POST_STATUS.published && status !== POST_STATUS.editing) return false;
+    // 予約公開：公開日が未来の記事は、その日時になるまで出さない
+    if (isScheduledForFuture(p, PROP.publishedAt)) {
+      console.log(`  - ${getTitleText(p, PROP.title) || "(無題)"}（予約公開：${getDateISO(p, PROP.publishedAt)} に公開）`);
+      return false;
+    }
+    return true;
   });
 
   console.log(`[fetch-notion] 全${allPages.length}件中${rawPages.length}件が公開対象です。`);
