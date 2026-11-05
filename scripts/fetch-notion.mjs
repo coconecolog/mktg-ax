@@ -477,8 +477,7 @@ async function main() {
     const author = await getFirstRelationName(token, page, PROP.author);
     const publishedAt = getDateISO(page, PROP.publishedAt) || page.created_time;
     const updatedAt = getDateISO(page, PROP.updatedAt) || page.last_edited_time;
-    // 「この記事でわかること」ボックス用の箇条書き。1行1項目、未入力ならボックスごと非表示。
-    const keyPoints = splitBulletLines(getRichTextPlain(page, PROP.keyPoints));
+    // 「この記事でわかること」は本文（Notionのページ本文）に書く。記事DBの「記事の要点」プロパティは使わない（2026-11-05〜）。
     // 「CTA資料」は資料DBとのリレーション（単一選択想定）。名前ではなくページIDを保持し、
     // 記事ページ側で資料キャッシュ（resources.json）のidと突き合わせて表紙・説明文を引く。
     // 未設定なら null（CTAを表示しない）。
@@ -525,7 +524,6 @@ async function main() {
       categories,
       subcategoryIds,
       author,
-      keyPoints,
       ctaResourceId,
       ctaToolId,
       publishedAt,
