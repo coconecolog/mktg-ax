@@ -164,11 +164,13 @@ export const KIT_GROUPS: KitGroup[] = [
 // カテゴリページ（/lab/category/…）の「このカテゴリで使えるKit」（2026-11-02）。
 // カテゴリ名に含まれる語で、出すKit（href）を2つ決める。上から順に見て、最初に当てはまったものを使う。
 // どれにも当てはまらないカテゴリ（戦略・組織など）は、これから作る人向けの2つを出す。
+// 2026-11-05：「分析」は「戦略・市場分析」にも含まれ、戦略のカテゴリにKPI系のKitが出ていたので語から外した
+// （データ分析の記事は「KPI・効果測定・分析」へ移り、そちらは「KPI」で当たる）。
 const CATEGORY_KIT_RULES: { words: string[]; hrefs: string[] }[] = [
   { words: ["予算", "ROI"], hrefs: ["/tools/budget-simulator", "/tools/budget-checker"] },
   { words: ["KPI", "KGI"], hrefs: ["/tools/kpi-sheet-maker", "/tools/kpi-check"] },
   { words: ["施策"], hrefs: ["/tools/kpi-sheet-maker", "/tools/kpi-analysis"] },
-  { words: ["分析", "ダッシュボード"], hrefs: ["/tools/kpi-analysis", "/tools/kpi-check"] },
+  { words: ["ダッシュボード"], hrefs: ["/tools/kpi-analysis", "/tools/kpi-check"] },
 ];
 const CATEGORY_KIT_DEFAULT = ["/tools/budget-simulator", "/tools/kpi-sheet-maker"];
 
