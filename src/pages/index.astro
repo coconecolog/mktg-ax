@@ -332,7 +332,10 @@ const latestResources = getLibraryItems("resource").slice(0, HOME_LATEST.count);
                 </div>
               </div>
               <h3 class="mt-5 text-lg font-extrabold leading-snug">
-                <a href={step.href} class="hover:underline">{step.name}</a>
+                <a href={step.href} class="group flex items-center justify-between gap-3">
+                  <span class="group-hover:underline">{step.name}</span>
+                  <span class="shrink-0 text-xl font-normal transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+                </a>
               </h3>
               {/* PCで3枚の区切り線の高さをそろえるため、説明文は3行分の高さを確保 */}
               <p class="mt-2 text-sm leading-relaxed text-neutral-700 lg:min-h-[4.875em]">{step.description}</p>
