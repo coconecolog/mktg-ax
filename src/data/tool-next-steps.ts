@@ -137,6 +137,37 @@ const L: Record<string, NextLink> = {
 };
 
 export const TOOL_NEXT_STEPS: Record<string, ToolNextStepData> = {
+  "/tools/ma-selection": {
+    guide: {
+      text: "MAを入れてよいかと、合う製品を出すツールです。MAの費用と運用の人件費を、チャネル別の年間予算に入れるなら",
+      ...KIT.budgetMake,
+    },
+    defaultVariant: "ok",
+    variants: {
+      ok: {
+        title: "MAの費用を、メールの年間予算に入れて判定する",
+        body: "出せる上限は {cap} です。MAの費用と運用の人件費をメールのチャネルに入れると、リード1件・受注1件あたりの費用が上限に収まるかを判定できます。",
+        cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
+        feature: L.annualBudget,
+        links: [L.budgetWhy, L.cacPayback],
+      },
+      nocap: {
+        title: "受注1件にかけてよい額から、出せる費用を決め直す",
+        body: "いまの条件では、MAに出せる額がありません。受注1件の粗利と回収期間から、新規1社にいくらまでかけてよいかを出し、MAに回せる額を決めます。",
+        cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
+        feature: L.annualBudget,
+        links: [L.cacPayback, L.unitEconomics],
+      },
+      none: {
+        title: "MAより先に、リードと受注の計画を作る",
+        body: "いまは手で追うか、メール配信で足ります。売上目標から必要なリード数を逆算し、どのチャネルで集めるかを先に決めます。",
+        cta: { label: "予算作成Kitで予算を作る", href: KIT.budgetMake.href, type: "kit" },
+        feature: L.annualBudget,
+        links: [L.unitEconomics, L.cacPayback],
+      },
+    },
+  },
+
   "/tools/roas-cac-simulator": {
     guide: {
       text: "1社あたりのCACの上限を試算するツールです。チャネル別の年間予算まで作るなら",

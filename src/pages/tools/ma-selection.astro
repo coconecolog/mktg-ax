@@ -1,0 +1,310 @@
+---
+// MAツール選定チェック（その他のツール、2026-11-05）。
+// 仕様：Drive「02_ツール仕様／MAツール選定チェック 仕様（ma-selection）」。製品データ：src/data/ma-products.ts
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
+import ToolGuide from "@/components/ToolGuide.astro";
+import ToolNextStep from "@/components/ToolNextStep.astro";
+import { MA_ANNOUNCE, MA_SURVEY_DATE } from "@/data/ma-products";
+
+const PATH = "/tools/ma-selection";
+const TITLE = "MAツール選定チェック";
+
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: TITLE, href: PATH },
+];
+
+const inputCls =
+  "w-full border border-neutral-300 bg-white px-3 py-2 text-right text-sm focus:border-ink-950 focus:outline-none";
+const selectCls = "w-full border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-ink-950 focus:outline-none";
+
+type Field = { id: string; label: string; unit: string; value: number; step: number };
+const LEADS: Field[] = [
+  { id: "list", label: "寝ているリストの件数", unit: "件", value: 3000, step: 100 },
+  { id: "follow", label: "手で追えている件数（月）", unit: "件", value: 100, step: 10 },
+  { id: "lt", label: "買うまでの期間", unit: "か月", value: 6, step: 1 },
+];
+const MONEY: Field[] = [
+  { id: "price", label: "平均受注単価", unit: "万円", value: 300, step: 10 },
+  { id: "mg", label: "粗利率", unit: "%", value: 30, step: 1 },
+  { id: "hrs", label: "MAの運用にかける時間（月）", unit: "時間", value: 20, step: 1 },
+  { id: "rate", label: "1時間あたりの人件費", unit: "円", value: 3000, step: 100 },
+];
+---
+
+<BaseLayout
+  title={`${TITLE}｜自社に合うMAと、出せる費用の上限がわかる`}
+  description="寝ているリストの件数・買うまでの期間・体制・受注単価を入れると、MAを入れてよいか、合うMAの製品（HubSpot・SATORI・List Finderなど10製品から）、出せる費用の上限がわかる無料ツールです。"
+  ogImage="/open-graph/tools/ma-selection.png"
+>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <section class="mx-auto max-w-6xl px-5 py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight text-ink-950">{TITLE}</h1>
+    <p class="mt-3 text-neutral-500">
+      自社のリードと体制、受注1件の粗利から、MAを入れてよいか、合うMAの製品、出せる費用の上限を出します。
+    </p>
+    <ToolGuide path={PATH} />
+
+    <div class="mt-6 border border-neutral-300 bg-white px-5 py-4">
+      <p class="text-sm font-bold text-ink-950">このツールは、次の10製品から選びます（料金は{MA_SURVEY_DATE}調べ・税別）</p>
+      <ul class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-700">
+        {
+          MA_ANNOUNCE.map((p) => (
+            <li>
+              {p.name}
+              {p.note && <span class="text-neutral-500">（{p.note}）</span>}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="mt-6 border border-neutral-200 bg-white p-6 md:p-8">
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <!-- 入力 -->
+        <div class="space-y-7">
+          <fieldset class="space-y-4">
+            <legend class="w-full border-b border-neutral-200 pb-2 text-sm font-bold text-ink-950">1. リードと買うまでの期間</legend>
+            {
+              LEADS.map((f) => (
+                <label class="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
+                  <span class="text-sm text-neutral-700">{f.label}</span>
+                  <span class="flex items-center gap-1.5">
+                    <input id={f.id} type="number" min="0" step={f.step} value={f.value} inputmode="numeric" class={inputCls} />
+                    <span class="w-8 shrink-0 text-xs text-neutral-500">{f.unit}</span>
+                  </span>
+                </label>
+              ))
+            }
+            <p class="text-xs leading-relaxed text-neutral-500">寝ているリスト＝今は商談になっていないが、連絡してよい見込み顧客。手で追えている件数＝電話や個別のメールで、いま月に連絡できている件数。</p>
+          </fieldset>
+
+          <fieldset class="space-y-4">
+            <legend class="w-full border-b border-neutral-200 pb-2 text-sm font-bold text-ink-950">2. 体制</legend>
+            <label class="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
+              <span class="text-sm text-neutral-700">見込み顧客に送る資料・記事・導入事例を、毎月1つ以上新しく用意できる</span>
+              <select id="cont" class={selectCls}><option value="yes">はい</option><option value="no">いいえ</option></select>
+            </label>
+            <label class="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
+              <span class="text-sm text-neutral-700">有効リード（営業に渡すリード）の定義がある</span>
+              <select id="def" class={selectCls}><option value="yes">はい</option><option value="no">いいえ</option></select>
+            </label>
+            <label class="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
+              <span class="text-sm text-neutral-700">営業が使っているCRM・SFA</span>
+              <select id="crm" class={selectCls}>
+                <option value="none">なし</option>
+                <option value="sf">Salesforce</option>
+                <option value="kintone">kintone</option>
+                <option value="other">その他</option>
+              </select>
+            </label>
+          </fieldset>
+
+          <fieldset class="space-y-4">
+            <legend class="w-full border-b border-neutral-200 pb-2 text-sm font-bold text-ink-950">3. 受注1件の粗利と運用の人件費</legend>
+            {
+              MONEY.map((f) => (
+                <label class="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
+                  <span class="text-sm text-neutral-700">{f.label}</span>
+                  <span class="flex items-center gap-1.5">
+                    <input id={f.id} type="number" min="0" step={f.step} value={f.value} inputmode="numeric" class={inputCls} />
+                    <span class="w-8 shrink-0 text-xs text-neutral-500">{f.unit}</span>
+                  </span>
+                </label>
+              ))
+            }
+          </fieldset>
+        </div>
+
+        <!-- 結果 -->
+        <div class="space-y-5">
+          <div id="verdict-box" class="border-2 border-ink-950 bg-white p-5">
+            <p class="text-xs font-bold text-neutral-500">結果</p>
+            <p id="verdict" class="mt-1 text-xl font-extrabold text-ink-950">—</p>
+            <p id="why" class="mt-2 text-sm leading-relaxed text-neutral-600"></p>
+          </div>
+
+          <div id="cap-box" class="border border-neutral-300 bg-white p-5">
+            <p class="text-sm font-bold text-ink-950">出せる費用の上限</p>
+            <div class="mt-3 flex items-center gap-3 text-sm text-neutral-700">
+              <span class="shrink-0">MAで年に増やせそうな受注数</span>
+              <input id="n" type="range" min="0" max="10" step="1" value="2" class="h-2 w-full cursor-pointer appearance-none bg-neutral-200 accent-ink-950" />
+              <span id="n-out" class="w-10 shrink-0 text-right font-bold text-ink-950">2件</span>
+            </div>
+            <p id="cap" class="mt-3 text-2xl font-extrabold text-ink-950">—</p>
+            <p id="cap-detail" class="mt-1 text-xs text-neutral-500"></p>
+          </div>
+
+          <div id="cand-box" class="border border-neutral-300 bg-white p-5">
+            <p class="text-sm font-bold text-ink-950">あなたに合うMA</p>
+            <p class="mt-1 text-xs text-neutral-500">年額（月額×12＋初期費用）が上限に収まるものを、安い順に並べています。</p>
+            <ul id="cands" class="mt-2 divide-y divide-neutral-200"></ul>
+            <p class="mt-5 text-sm font-bold text-ink-950">上限を超える・料金は問い合わせ</p>
+            <ul id="others" class="mt-2 divide-y divide-neutral-200"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 bg-neutral-100 p-4 text-xs leading-relaxed text-neutral-700">
+        <p class="font-bold text-ink-950">判定の考え方</p>
+        <ul class="mt-2 list-inside list-disc space-y-1">
+          <li>MAの役割は、手で追いきれないリードに接触し続けることと、興味が高まった人を営業に知らせることです。</li>
+          <li>手で一巡できるリスト、1か月以内に決まる商材、送る資料などがない体制では、MAは効きません。</li>
+          <li>出せる上限は、増やせる受注数×受注1件の粗利から、運用の人件費を引いた額です。外部の目安は使っていません。</li>
+          <li>料金は各社の公式サイトなどの公開情報（{MA_SURVEY_DATE}時点・税別）です。従量の加算は含みません。契約の前に各社で確かめてください。</li>
+        </ul>
+      </div>
+
+      <div class="mt-6 flex flex-col items-start gap-2 border-t border-neutral-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-neutral-400">入力した条件はURLに保存されます。このURLをコピーすれば、今の結果のまま共有できます。</p>
+        <button id="share-btn" type="button" class="inline-flex shrink-0 items-center border border-ink-950 bg-white px-4 py-2 text-xs font-bold text-ink-950 hover:bg-neutral-100">
+          この結果のURLをコピー
+        </button>
+      </div>
+    </div>
+
+    <ToolNextStep path={PATH} class="mt-14" />
+  </section>
+
+  <ToolFooter path={PATH} lab />
+</BaseLayout>
+
+<script>
+  import { setNextStep } from "@/lib/toolNextStep";
+  import { MA_PLANS as PLANS, type MaPlan } from "@/data/ma-products";
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+  const NUM_IDS = ["list", "follow", "lt", "price", "mg", "hrs", "rate", "n"];
+  const SEL_IDS = ["cont", "def", "crm"];
+  const num = (id: string) => {
+    const v = parseFloat($<HTMLInputElement>(id).value);
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  };
+  const sel = (id: string) => $<HTMLSelectElement>(id).value;
+
+  const man = (yen: number) =>
+    yen < 10000 ? `${Math.round(yen).toLocaleString("ja-JP")}円` : `${(Math.round(yen / 1000) / 10).toLocaleString("ja-JP")}万円`;
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
+
+  function restoreFromUrl() {
+    const p = new URLSearchParams(location.search);
+    NUM_IDS.forEach((id) => {
+      const v = p.get(id);
+      if (v !== null && v !== "" && !Number.isNaN(Number(v))) $<HTMLInputElement>(id).value = v;
+    });
+    SEL_IDS.forEach((id) => {
+      const v = p.get(id);
+      const el = $<HTMLSelectElement>(id);
+      if (v && [...el.options].some((o) => o.value === v)) el.value = v;
+    });
+  }
+
+  function syncUrl() {
+    const url = new URL(location.href);
+    NUM_IDS.forEach((id) => url.searchParams.set(id, $<HTMLInputElement>(id).value));
+    SEL_IDS.forEach((id) => url.searchParams.set(id, sel(id)));
+    history.replaceState(null, "", url);
+  }
+
+  function setFix(el: HTMLElement, fix: boolean) {
+    el.classList.toggle("text-red-700", fix);
+    el.classList.toggle("text-ink-950", !fix);
+  }
+
+  function update() {
+    const list = num("list"), follow = num("follow"), lt = num("lt");
+    const n = Math.round(num("n"));
+    const profit = num("price") * 10000 * (num("mg") / 100);
+    const ops = num("hrs") * num("rate") * 12;
+    const cap = n * profit - ops;
+
+    $("n-out").textContent = `${n}件`;
+    const capEl = $("cap");
+    capEl.innerHTML = cap > 0
+      ? `年${man(cap)}<span class="ml-2 text-base font-bold">（月${man(cap / 12)}）まで</span>`
+      : `<span class="mr-2 border border-red-600 px-1.5 align-middle text-xs">直す</span>出せる額はありません`;
+    setFix(capEl, cap <= 0);
+    $("cap-detail").textContent = `受注1件の粗利 ${man(profit)} × ${n}件 − 運用の人件費 年${man(ops)}`;
+
+    // 前提1〜3（上から見て、最初に当てはまったところで結論）
+    const cycle = follow > 0 ? list / follow : Infinity;
+    let stop = "";
+    if (cycle <= lt) stop = `手で一巡するのに${Math.ceil(cycle)}か月です。買うまでの${lt}か月のうちに手で回れるので、人が電話や個別のメールで追うほうが濃く、安くすみます。`;
+    else if (lt <= 1) stop = "1か月以内に決まる商材なので、MAで追い続ける余地がありません。";
+    else if (sel("cont") === "no") stop = "送る資料などを用意できないと、MAはメール配信だけで止まります。いまはメール配信の仕組みで足ります。";
+
+    const verdict = $("verdict"), why = $("why");
+    const capBox = $("cap-box"), candBox = $("cand-box");
+    if (stop) {
+      verdict.textContent = "MAはまだ入れなくてよい";
+      setFix(verdict, true);
+      why.textContent = stop;
+      capBox.hidden = true;
+      candBox.hidden = true;
+      setNextStep("none");
+      syncUrl();
+      return;
+    }
+    capBox.hidden = false;
+    candBox.hidden = false;
+
+    const stage = sel("def") === "yes" ? "link" : "basic";
+    const crm = sel("crm");
+    verdict.textContent = stage === "link" ? "営業との連携まで使うMAが合います" : "基本の機能のMAが合います";
+    setFix(verdict, false);
+    why.textContent = stage === "link"
+      ? "有効リードの定義があるので、興味が高まった人を営業に渡すところまでMAで組めます。営業が使っているCRM・SFAとつながる製品から選んでいます。"
+      : "有効リードの定義がないので、まずはリストに接触し続け、興味の高い人を見つけるところまでで十分です。営業に渡す基準を決めたら、連携まで使う製品を検討します。";
+
+    const ok: { y: number; html: string }[] = [];
+    const others: string[] = [];
+    PLANS.filter((p) => p.stage === stage && p.crm.includes(crm as MaPlan["crm"][number])).forEach((p) => {
+      const name = `<span class="font-bold text-ink-950">${esc(p.product)}</span>（${esc(p.plan)}）`;
+      if (p.monthly === null) {
+        others.push(`<li class="py-2.5 text-sm text-neutral-700"><span class="mr-2 border border-neutral-400 px-1 text-xs text-neutral-600">料金は問い合わせ</span>${name}<span class="block text-xs text-neutral-500">${esc(p.note)}</span></li>`);
+        return;
+      }
+      const year = p.monthly * 12 + (p.initial ?? 0);
+      const price = `月${man(p.monthly)}${p.from ? "〜" : ""}・年${man(year)}${p.from ? "〜" : ""}${p.initial === null ? "＋初期費用（問い合わせ）" : p.initial > 0 ? `（初期費用${man(p.initial)}を含む）` : ""}`;
+      if (cap > 0 && year <= cap) {
+        ok.push({ y: year, html: `<li class="py-2.5 text-sm">${name}<span class="block text-neutral-700">${price}</span><span class="block text-xs text-neutral-500">${esc(p.note)}</span></li>` });
+      } else {
+        others.push(`<li class="py-2.5 text-sm text-neutral-700"><span class="mr-2 border border-red-600 px-1 text-xs text-red-700">上限を超える</span>${name}<span class="block text-xs text-neutral-500">${price}</span></li>`);
+      }
+    });
+    ok.sort((a, b) => a.y - b.y);
+    $("cands").innerHTML = ok.length
+      ? ok.map((o) => o.html).join("")
+      : `<li class="py-2.5 text-sm text-red-700">上限に収まる製品がありません。増やせる受注数を見直すか、運用の時間を減らします。</li>`;
+    $("others").innerHTML = others.length ? others.join("") : `<li class="py-2.5 text-sm text-neutral-500">なし</li>`;
+
+    setNextStep(cap > 0 ? "ok" : "nocap", { cap: cap > 0 ? `年${man(cap)}` : "0円" });
+    syncUrl();
+  }
+
+  async function copyShareUrl() {
+    const btn = $<HTMLButtonElement>("share-btn");
+    try {
+      await navigator.clipboard.writeText(location.href);
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = location.href;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand("copy");
+      document.body.removeChild(t);
+    }
+    const original = btn.textContent;
+    btn.textContent = "コピーしました";
+    setTimeout(() => (btn.textContent = original), 2000);
+  }
+
+  restoreFromUrl();
+  update();
+  [...NUM_IDS, ...SEL_IDS].forEach((id) => $(id).addEventListener("input", update));
+  $("share-btn").addEventListener("click", copyShareUrl);
+</script>

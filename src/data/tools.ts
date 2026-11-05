@@ -217,6 +217,13 @@ export const KIT_SECTIONS = [
 // /tools の「その他」。
 export const OTHER_TOOLS = [
   {
+    icon: "clipboard-check",
+    category: "MAツール",
+    title: "MAツール選定チェック",
+    description: "リードと体制、受注1件の粗利から、MAを入れてよいか、合う製品と出せる費用の上限を出します。",
+    href: "/tools/ma-selection",
+  },
+  {
     icon: "list-checks",
     category: "SEO・AI検索",
     title: "簡易SEO・AEO・AIO診断チェックリスト",
