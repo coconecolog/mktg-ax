@@ -321,6 +321,32 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
     related: [],
   },
 
+  "/tools/ma-selection": {
+    faq: [
+      {
+        question: "どの製品から選んでいますか？",
+        answer:
+          "導入サイト数の上位10製品（HubSpot・BowNow・Account Engagement・Adobe Marketo Engage・b→dash・KASIKA・SATORI・List Finder・Kairos3 Marketing・SHANON MARKETING PLATFORM）です。b→dashはBtoC向け、KASIKAは住宅・不動産向けのため、候補には出していません。",
+      },
+      {
+        question: "料金はいつの情報ですか？",
+        answer:
+          "各社の公式サイトなどの公開情報を、2026年11月5日に調べたものです（税別）。半年に1回、調べ直します。リード数やPVによる従量の加算は含まないので、契約の前に各社で確かめてください。",
+      },
+      {
+        question: "「年に増やせそうな受注数」は何件にすればよいですか？",
+        answer:
+          "寝ているリストから、MAで追い続けて受注に戻せそうな件数です。確かな目安はないので、0件から順に動かし、上限と製品の年額が釣り合う件数が現実的かを考えてください。",
+      },
+      {
+        question: "料金が「問い合わせ」の製品はどう比べればよいですか？",
+        answer:
+          "出せる上限の額を伝えて見積もりをとり、年額（月額×12＋初期費用）で上限と比べてください。",
+      },
+    ],
+    related: [],
+  },
+
   "/tools/inhouse-vs-outsource": {
     faq: [
       {
