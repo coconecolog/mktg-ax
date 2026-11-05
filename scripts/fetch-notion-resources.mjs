@@ -30,6 +30,7 @@ import {
   generateResourcePreviewImages,
   splitBulletLines,
   buildNotionLinkMap,
+  isScheduledForFuture,
 } from "./lib/transform.mjs";
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
@@ -80,6 +81,13 @@ async function main() {
     const allPages = await queryAllPages(token, dataSourceId, {});
     rawPages = allPages.filter((p) => getCheckbox(p, RESOURCE_PROP.published));
   }
+
+  // 予約公開：公開日が未来の資料は、その日時になるまで出さない
+  rawPages = rawPages.filter((p) => {
+    if (!isScheduledForFuture(p, RESOURCE_PROP.publishedAt)) return true;
+    console.log(`  - ${getTitleText(p, RESOURCE_PROP.title) || "(無題)"}（予約公開：${getDateISO(p, RESOURCE_PROP.publishedAt)} に公開）`);
+    return false;
+  });
 
   console.log(`[fetch-notion-resources] ${rawPages.length}件の公開資料を処理します。`);
 
