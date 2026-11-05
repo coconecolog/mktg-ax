@@ -50,8 +50,6 @@ export interface Post {
   subcategoryIds?: string[];
   /** 「執筆者リスト」DBとのリレーションから解決した執筆者名（単一選択想定。未設定ならnull）。 */
   author: string | null;
-  /** 「記事の要点」プロパティ（複数行テキスト）を1行ずつに分割した配列。記事冒頭の「この記事でわかること」ボックスに使う。空配列なら非表示。 */
-  keyPoints: string[];
   /** 「CTA資料」リレーション（資料DB）の先頭1件のページID。Resource.id と突き合わせて記事末尾の資料DLのCTAを表示する。未設定ならnull（CTA非表示）。 */
   ctaResourceId: string | null;
   /** 「CTAツール」リレーション（ツールDB）の先頭1件のページID。Tool.id と突き合わせて記事末尾のツールCTAを表示する。未設定ならnull（CTA非表示）。 */

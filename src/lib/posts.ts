@@ -15,7 +15,6 @@ function loadCache(): PostsCache {
       ...p,
       categories: p.categories || (p.category ? [p.category] : []),
       author: p.author ?? null,
-      keyPoints: p.keyPoints || [],
       // 「公開後の編集中」スナップショットなど、このフィールドが無い古いデータにも耐える
       ctaResourceId: p.ctaResourceId ?? null,
       ctaToolId: p.ctaToolId ?? null,
