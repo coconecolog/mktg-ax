@@ -171,38 +171,38 @@ const breadcrumbItems = [
       )}
     </div>
 
-    {/* テンプレート（代表資料） */}
-    {
-      representativeResource && (
-        <a
-          href={`/lab/whitepapers/${representativeResource.slug}`}
-          class="group mt-8 grid grid-cols-1 gap-5 border-2 border-ink-950 bg-white p-5 no-underline sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center sm:p-6"
-        >
-          <span class="block aspect-[4/3] overflow-hidden border border-neutral-200 bg-neutral-100">
-            {repCover ? (
-              <img src={repCover} alt="" class="h-full w-full object-cover object-top" loading="lazy" decoding="async" />
-            ) : (
-              <span class="flex h-full w-full items-center justify-center text-xs font-bold text-neutral-500">{repFormat || "無料資料"}</span>
-            )}
-          </span>
-          <span class="min-w-0">
-            <span class="block text-xs font-bold text-[#665334]">無料テンプレート</span>
-            <span class="mt-1 block text-lg font-bold leading-snug text-ink-950 group-hover:underline">{representativeResource.title}</span>
-            {(repFormat || representativeResource.contents) && (
-              <span class="mt-2 block text-[13px] leading-relaxed text-neutral-500">
-                {[repFormat, representativeResource.contents].filter(Boolean).join(" ／ ")}
-              </span>
-            )}
-            <span class="mt-4 inline-flex items-center gap-3 bg-ink-950 px-5 py-3 text-sm font-bold text-white">
-              無料でダウンロード<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
-            </span>
-          </span>
-        </a>
-      )
-    }
-
-    <div class="mt-14 grid grid-cols-1 gap-x-16 lg:grid-cols-[minmax(0,1fr)_300px]">
+    {/* 定義文の下から2カラム。左：テンプレート → 解説 → 記事・資料 → 関連用語、右：目次など（テンプレートの枠と同じ高さから始める） */}
+    <div class="mt-8 grid grid-cols-1 gap-x-16 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div class="min-w-0 lg:col-start-1 lg:row-start-1">
+        {/* テンプレート（代表資料） */}
+        {
+          representativeResource && (
+            <a
+              href={`/lab/whitepapers/${representativeResource.slug}`}
+              class="group mb-16 grid grid-cols-1 gap-5 border-2 border-ink-950 bg-white p-5 no-underline sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center sm:p-6"
+            >
+              <span class="block aspect-[4/3] overflow-hidden border border-neutral-200 bg-neutral-100">
+                {repCover ? (
+                  <img src={repCover} alt="" class="h-full w-full object-cover object-top" loading="lazy" decoding="async" />
+                ) : (
+                  <span class="flex h-full w-full items-center justify-center text-xs font-bold text-neutral-500">{repFormat || "無料資料"}</span>
+                )}
+              </span>
+              <span class="min-w-0">
+                <span class="block text-xs font-bold text-[#665334]">無料テンプレート</span>
+                <span class="mt-1 block text-lg font-bold leading-snug text-ink-950 group-hover:underline">{representativeResource.title}</span>
+                {(repFormat || representativeResource.contents) && (
+                  <span class="mt-2 block text-[13px] leading-relaxed text-neutral-500">
+                    {[repFormat, representativeResource.contents].filter(Boolean).join(" ／ ")}
+                  </span>
+                )}
+                <span class="mt-4 inline-flex items-center gap-3 bg-ink-950 px-5 py-3 text-sm font-bold text-white">
+                  無料でダウンロード<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                </span>
+              </span>
+            </a>
+          )
+        }
         {/* 解説エリア */}
         {mainBlocks.length > 0 && <TagBody blocks={mainBlocks} />}
 
