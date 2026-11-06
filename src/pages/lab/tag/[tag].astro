@@ -8,7 +8,7 @@
 //   ・解説エリア（TagBody）→「〇〇の記事・資料」（記事一覧。形式の絞り込みとページ送りはページ内JS）→ 関連用語。
 //     「関連用語」を含む見出し2のセクションだけ、記事一覧の後ろに回す。
 //   ・右カラム：目次だけ（追従。今読んでいる見出しを太字にする）。資料・タグ一覧は出さない
-//     （資料は最初の画面の枠と読み終えた位置のCTAで出す。タグ一覧はページ下の共通の帯にある）。
+//     （資料は最初の画面の枠と読み終えた位置のCTAで出す。関連するタグはページ下の共通の帯にある）。
 //   ・関連用語の下（共通フッターの上）に、代表資料のCTAを出す（2026-11-06）。
 // 構造化データ：CollectionPage＋DefinedTerm＋ItemList、本文にFAQ（トグル）があればFAQPage。
 // URLは /lab/tag/{slug} の1つだけ。旧URL（/blog/tag/{slug}、ページ送りなど）は public/_redirects で301転送している。
@@ -22,7 +22,7 @@ import { getAllSubcategories, getTagByName, getTagPath, getTagSlug } from "@/lib
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
 import { autoLinkRelatedTerms } from "@/lib/relatedTermLinks";
-import { getAllLibraryTagNames, getLibraryItemsByTag } from "@/lib/library";
+import { getAllLibraryTagNames, getLibraryItemsByTag, getRelatedTagsBySubcategories } from "@/lib/library";
 import { SITE_NAME, TAG_PAGE_SIZE } from "@/consts";
 import type { BlockNode, RichTextItem } from "@/lib/types";
 
@@ -37,6 +37,8 @@ const { tagName } = Astro.props as { tagName: string };
 
 const tagInfo = getTagByName(tagName);
 const tagPath = getTagPath(tagName);
+// フッター手前の「関連するタグ」：このタグとサブカテゴリが重なるタグ（自分は除く。2026-11-07）。0件ならブロックごと出さない
+const relatedTags = getRelatedTagsBySubcategories(tagInfo?.subcategoryIds || [], tagName);
 
 // ---- 記事・資料 ----
 const items = getLibraryItemsByTag(tagName, "all");
@@ -317,7 +319,7 @@ const breadcrumbItems = [
     </div>
   </div>
 
-  <ContactCta />
+  <ContactCta tags={relatedTags} />
 
   {/* スマホ：画面下にテンプレートへの帯を固定 */}
   {
