@@ -7,6 +7,7 @@
 // - PDFのダウンロード時にメール登録（POST /api/monthly-report-register）。サーバーに置くのはメールアドレスと報告日だけ。
 // - ライブラリはCDNから、PDFを作る・読むときだけ読み込む（npm依存は増やさない）。
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getToolMeta } from "@/lib/tools";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 
@@ -23,9 +24,11 @@ const breadcrumbItems = [
   { name: TOOL_TITLE, href: "/tools/monthly-report" },
 ];
 
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("monthly-report", { title: TOOL_TITLE, description: TOOL_DESCRIPTION });
 ---
 
-<BaseLayout title={TOOL_TITLE} description={TOOL_DESCRIPTION} ogImage="/open-graph/tools/monthly-report.png">
+<BaseLayout title={meta.title} description={meta.description} ogImage="/open-graph/tools/monthly-report.png">
   <Breadcrumb items={breadcrumbItems} />
 
   <section class="mx-auto max-w-5xl px-5 py-12">

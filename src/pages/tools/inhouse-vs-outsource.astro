@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getToolMeta } from "@/lib/tools";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import ToolGuide from "@/components/ToolGuide.astro";
@@ -11,11 +12,13 @@ const breadcrumbItems = [
   { name: "内製 vs 外注 コスト比較", href: "/tools/inhouse-vs-outsource" },
 ];
 
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("inhouse-vs-outsource", { title: "内製 vs 外注 コスト比較シミュレーター", description: "マーケティング担当者を採用するか、外注に任せるか。年収・採用コスト・外注費用を入力するだけで、月次の累計コストと損益分岐月を試算できる無料ツールです。" });
 ---
 
 <BaseLayout
-  title="内製 vs 外注 コスト比較シミュレーター"
-  description="マーケティング担当者を採用するか、外注に任せるか。年収・採用コスト・外注費用を入力するだけで、月次の累計コストと損益分岐月を試算できる無料ツールです。"
+  title={meta.title}
+  description={meta.description}
   ogImage="/open-graph/tools/inhouse-vs-outsource.png"
 >
   <Breadcrumb items={breadcrumbItems} />

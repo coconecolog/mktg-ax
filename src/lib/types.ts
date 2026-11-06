@@ -237,6 +237,10 @@ export interface Tool {
   description: string;
   /** 「短い説明」（ヘッダー・フッター・トップ用）。未入力なら空文字（表示側で説明文の冒頭を使う） */
   shortDescription: string;
+  /** ツールDB「SEOタイトル」（2026-11-06）。<title> 用。未入力なら null（ページのコードに書いたタイトルを使う） */
+  seoTitle?: string | null;
+  /** ツールDB「ディスクリプション」（2026-11-06）。meta description 用。未入力なら null */
+  metaDescription?: string | null;
   ctaLabel: string;
   duration: string | null;
   /** アイコンの配信パス（public/images/tool-icons/ 配下）。未設定・見つからない場合は null */

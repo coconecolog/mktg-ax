@@ -2,6 +2,7 @@
 // MAツール選定チェック（その他のツール、2026-11-05）。
 // 仕様：Drive「02_ツール仕様／MAツール選定チェック 仕様（ma-selection）」。製品データ：src/data/ma-products.ts
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getToolMeta } from "@/lib/tools";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import ToolGuide from "@/components/ToolGuide.astro";
@@ -33,11 +34,13 @@ const MONEY: Field[] = [
   { id: "hrs", label: "MAの運用にかける時間（月）", unit: "時間", value: 20, step: 1 },
   { id: "rate", label: "1時間あたりの人件費", unit: "円", value: 3000, step: 100 },
 ];
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("ma-selection", { title: `${TITLE}｜自社に合うMAと、出せる費用の上限がわかる`, description: "寝ているリストの件数・買うまでの期間・体制・受注単価を入れると、MAを入れてよいか、合うMAの製品（HubSpot・SATORI・List Finderなど10製品から）、出せる費用の上限がわかる無料ツールです。" });
 ---
 
 <BaseLayout
-  title={`${TITLE}｜自社に合うMAと、出せる費用の上限がわかる`}
-  description="寝ているリストの件数・買うまでの期間・体制・受注単価を入れると、MAを入れてよいか、合うMAの製品（HubSpot・SATORI・List Finderなど10製品から）、出せる費用の上限がわかる無料ツールです。"
+  title={meta.title}
+  description={meta.description}
   ogImage="/open-graph/tools/ma-selection.png"
 >
   <Breadcrumb items={breadcrumbItems} />
