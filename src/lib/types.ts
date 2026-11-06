@@ -118,6 +118,8 @@ export interface Tag {
   /** 「ディスクリプション」（2026-10-15追加）。タグページのmeta description。未入力・古いキャッシュでは空文字かundefined */
   metaDescription?: string;
   representativeSlug: string | null;
+  /** 「代表資料」（2026-11-06追加）。タグページの最初の画面に出すテンプレートの資料DBページID（Resource.id）。未設定・古いキャッシュではnull */
+  representativeResourceId?: string | null;
   /** タグページ本文（Notion側で「説明文」より下に書かれた解説文）のブロック。タグページ下部に表示する。 */
   blocks: BlockNode[];
 }
