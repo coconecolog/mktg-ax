@@ -1,0 +1,53 @@
+---
+// 404ページ（2026-11-06 新規）。
+// これが無いと Cloudflare Pages は「SPA」とみなし、存在しないURL（/tag/stp/2 など）にもトップページを200で返してしまう
+// （ソフト404。おかしなURLがインデックスに入る原因）。dist/404.html があれば、存在しないURLは404のステータスで返る。
+// どのURLでも表示されるので、リンクは必ず / から始まるパスで書く。
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const links = [
+  { title: "トップページ", text: "サイトの全体像を見る", href: "/" },
+  { title: "記事・資料", text: "実務ノウハウと資料を探す", href: "/lab" },
+  { title: "Kit一覧", text: "予算・KPIのKitを使う", href: "/tools" },
+  { title: "サイト内検索", text: "キーワードから探す", href: "/search" },
+];
+---
+
+<BaseLayout
+  title="ページが見つかりません"
+  description="お探しのページは見つかりませんでした。URLが変わったか、ページが削除された可能性があります。"
+  noindex
+  pagefindIgnore
+>
+  <div class="mx-auto max-w-6xl px-5 pt-10 pb-16 md:pb-20">
+    <div class="flex items-center justify-between gap-8">
+      <div>
+        <p class="text-sm font-bold text-ink-950 tabular-nums">404</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">ページが見つかりません</h1>
+        <p class="mt-4 text-sm leading-relaxed text-neutral-500">
+          URLが変わったか、ページが削除された可能性があります。下のリンクからお探しください。
+        </p>
+      </div>
+      <img src="/images/logo/meerkat-symbol.svg" alt="" width="160" height="160" class="hidden h-32 w-32 shrink-0 sm:block lg:h-40 lg:w-40" />
+    </div>
+
+    <section class="mt-12">
+      <div class="h-[2px] bg-ink-950"></div>
+      <ul class="mt-8 border-t border-[#dedee2]">
+        {
+          links.map((link) => (
+            <li class="border-b border-[#dedee2] bg-white">
+              <a href={link.href} class="group flex items-center gap-4 px-4 py-4 sm:gap-6 sm:px-6">
+                <span class="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-6">
+                  <span class="text-base font-bold text-ink-950 sm:w-56 sm:shrink-0">{link.title}</span>
+                  <span class="text-sm leading-[1.8] text-[#4f5057]">{link.text}</span>
+                </span>
+                <span class="shrink-0 text-xl text-ink-950 transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</BaseLayout>

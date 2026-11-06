@@ -16,6 +16,7 @@ const SITEMAP_EXCLUDE_PREFIXES = [
   "/internal-links",
   "/lab/whitepapers/thanks",
   "/contact/thanks",
+  "/404",
 ];
 const SITEMAP_EXCLUDE_EXACT = [
   "/search",
@@ -39,6 +40,12 @@ const SITEMAP_EXCLUDE_EXACT = [
   "/tools/kpi-analysis/input",
   "/tools/kpi-analysis/final",
   "/tools/kpi-analysis/done",
+  // サンプル画面（Kitの入口ページと内容が重なるので noindex。2026-11-06）
+  "/tools/budget-checker/sample",
+  "/tools/budget-simulator/sample",
+  "/tools/kpi-check/sample",
+  "/tools/kpi-sheet-maker/sample",
+  "/tools/kpi-analysis/sample",
 ];
 
 // サイトマップの lastmod 用：記事・資料の更新日（.notion-cache から読む。無ければ付けない）
@@ -84,8 +91,8 @@ export default defineConfig({
         const path = new URL(page).pathname.replace(/\/$/, "");
         if (SITEMAP_EXCLUDE_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))) return false;
         if (SITEMAP_EXCLUDE_EXACT.includes(path)) return false;
-        // タグページの「ブログ記事」「無料資料」タブは本体ページへcanonicalを向けているため、サイトマップには載せない
-        return !/\/lab\/tag\/[^/]+\/(blog|whitepapers)$/.test(path);
+        // 記事一覧の2ページ目以降（/lab/blog/2 など）は noindex なので載せない（2026-11-06）
+        return !/^\/lab\/blog\/\d+$/.test(path);
       },
       // 記事・資料ページには更新日（lastmod）を入れる（Googleが更新を早く見つけられるように）
       serialize: (item) => {
