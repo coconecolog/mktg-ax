@@ -103,7 +103,7 @@ async function fetchCategories(token, linkMap) {
     const slugRaw = getRichTextPlain(page, CATEGORY_PROP.slug).trim().toLowerCase();
     let slug = null;
     if (!slugRaw) {
-      console.warn(`[fetch-notion] カテゴリ「${name}」に英字Slugが未設定です（URLが日本語のままになります）。`);
+      console.warn(`[fetch-notion] カテゴリ「${name}」に英字Slugが未設定です。このタグは公開しません（タグページを作らず、記事のタグからも外します）。`);
     } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugRaw)) {
       console.warn(`[fetch-notion] カテゴリ「${name}」のSlug「${slugRaw}」は使えない文字を含みます（半角英小文字・数字・ハイフンのみ）。無視します。`);
     } else if (usedSlugs.has(slugRaw)) {
@@ -259,7 +259,7 @@ async function fetchTags(token, linkMap) {
     const slugRaw = getRichTextPlain(page, TAG_PROP.slug).trim().toLowerCase();
     let slug = null;
     if (!slugRaw) {
-      console.warn(`[fetch-notion] タグ「${name}」に英字Slugが未設定です（URLが日本語のままになります）。`);
+      console.warn(`[fetch-notion] タグ「${name}」に英字Slugが未設定です。このタグは公開しません（タグページを作らず、記事のタグからも外します）。`);
     } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugRaw)) {
       console.warn(`[fetch-notion] タグ「${name}」のSlug「${slugRaw}」は使えない文字を含みます（半角英小文字・数字・ハイフンのみ）。無視します。`);
     } else if (usedSlugs.has(slugRaw)) {

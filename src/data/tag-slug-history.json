@@ -1,0 +1,13 @@
+{
+  "_説明": "タグのURLを変えた記録（旧 → 新）。scripts/generate-tag-redirects.mjs が、新しいSlugのタグページがあるときだけ旧URLからの301を書く。fromは旧Slug、または旧URLだった日本語のタグ名。行を消さないこと（旧URLへの転送が止まる）。",
+  "redirects": [
+    { "from": "chanel", "to": "channel", "date": "2026-11-06" },
+    { "from": "fanel", "to": "marketing-funnel", "date": "2026-11-06" },
+    { "from": "buyer-journey", "to": "customer-journey", "date": "2026-11-06" },
+    { "from": "広告宣伝費", "to": "advertising-expenses", "date": "2026-11-06" },
+    { "from": "ユニットエコノミクス", "to": "unit-economics", "date": "2026-11-06" },
+    { "from": "N1分析", "to": "n1-analysis", "date": "2026-11-06" },
+    { "from": "RFM分析", "to": "rfm-analysis", "date": "2026-11-06" },
+    { "from": "カスタマージャーニー", "to": "customer-journey", "date": "2026-11-06" }
+  ]
+}

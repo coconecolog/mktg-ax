@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getToolMeta } from "@/lib/tools";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import ToolGuide from "@/components/ToolGuide.astro";
@@ -11,11 +12,13 @@ const breadcrumbItems = [
   { name: "広告費用対効果（ROAS/CAC）シミュレーター", href: "/tools/roas-cac-simulator" },
 ];
 
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("roas-cac-simulator", { title: "広告費用対効果（ROAS/CAC）シミュレーター", description: "月額単価・粗利率・解約率・獲得単価（CAC）を入力するだけで、LTV/CAC比率と投資回収期間（Payback）を診断できる無料ツールです。" });
 ---
 
 <BaseLayout
-  title="広告費用対効果（ROAS/CAC）シミュレーター"
-  description="月額単価・粗利率・解約率・獲得単価（CAC）を入力するだけで、LTV/CAC比率と投資回収期間（Payback）を診断できる無料ツールです。"
+  title={meta.title}
+  description={meta.description}
   ogImage="/open-graph/tools/roas-cac-simulator.png"
 >
   <Breadcrumb items={breadcrumbItems} />

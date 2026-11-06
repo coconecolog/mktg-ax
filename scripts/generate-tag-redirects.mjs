@@ -38,9 +38,31 @@ for (const p of postsCache.posts || []) for (const t of p.tags || []) usedNames.
 for (const r of resourcesCache?.resources || []) for (const t of r.tags || []) usedNames.add(t);
 
 const slugByName = new Map((postsCache.tags || []).filter((t) => t.slug).map((t) => [t.name, t.slug]));
+// 実際にタグページがある英字Slug（記事・資料に使われていて、Slugがあるタグ）
+const liveSlugs = new Set([...usedNames].map((n) => slugByName.get(n)).filter(Boolean));
 
 const OLD_TAG_SUBPATHS = ["blog", "resources", "2", "3", "4", "5"];
 const lines = [];
+const seenFrom = new Set(); // 同じ旧URLを2回書かない（先に書いた行が優先）
+const push = (fromRaw, to) => {
+  const fromEnc = fromRaw.split("/").map((seg) => (/^[\x21-\x7e]*$/.test(seg) ? seg : encodeURIComponent(seg))).join("/");
+  for (const from of new Set([fromRaw, fromEnc])) {
+    if (seenFrom.has(from)) continue;
+    seenFrom.add(from);
+    lines.push(`${from} ${to} 301`);
+  }
+};
+// 旧URLの1セグメント（oldSeg）から、新URL（to）へ1回で飛ぶ行をまとめて書く
+const pushAll = (oldSeg, to) => {
+  for (const base of ["/blog/tag", "/lab/tag"]) push(`${base}/${oldSeg}`, to);
+  // 2026-11-06：旧URLのタブ・ページ送り（/blog/tag/{旧}/blog・/2 など）も1回の転送で新URLへ送る
+  // （共通ルールだけだと /lab/tag/{旧} を経由して2回の転送になる）。ページ送りは実際にあった5ページ目までを書く。
+  for (const base of ["/blog/tag", "/lab/tag"]) {
+    for (const sub of OLD_TAG_SUBPATHS) push(`${base}/${oldSeg}/${sub}`, to);
+  }
+};
+
+// (1) 日本語のタグ名だった旧URL → 今の英字Slug
 const missingSlug = [];
 for (const name of usedNames) {
   const slug = slugByName.get(name);
@@ -50,20 +72,21 @@ for (const name of usedNames) {
   }
   const oldSeg = name.replaceAll("/", "／"); // routeSlug.ts の toRouteSlug() と同じ変換
   if (oldSeg === slug) continue;
+  pushAll(oldSeg, `/lab/tag/${slug}`);
+}
 
-  const to = `/lab/tag/${slug}`;
-  const push = (fromRaw, fromEnc) => {
-    lines.push(`${fromRaw} ${to} 301`);
-    if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
-  };
-  for (const base of ["/blog/tag", "/lab/tag"]) {
-    push(`${base}/${oldSeg}`, `${base}/${encodeURIComponent(oldSeg)}`);
+// (2) タグのURLを変えた記録（src/data/tag-slug-history.json）。2026-11-06〜
+// 新しいSlugのタグページがあり、旧URLのページがもう無いときだけ書く（NotionのSlugを変える前にデプロイしても、今のページを壊さない）。
+const history = readJson("src/data/tag-slug-history.json")?.redirects || [];
+const pending = [];
+for (const { from, to } of history) {
+  if (!from || !to) continue;
+  const oldSeg = from.replaceAll("/", "／");
+  if (!liveSlugs.has(to) || liveSlugs.has(oldSeg) || (slugByName.has(from) && usedNames.has(from) && slugByName.get(from) !== to)) {
+    if (!liveSlugs.has(to)) pending.push(`${from} → ${to}`);
+    continue;
   }
-  // 2026-11-06：旧URLのタブ・ページ送り（/blog/tag/{日本語}/blog・/2 など）も1回の転送で新URLへ送る
-  // （共通ルールだけだと /lab/tag/{日本語} を経由して2回の転送になる）。ページ送りは実際にあった5ページ目までを書く。
-  for (const sub of OLD_TAG_SUBPATHS) {
-    push(`/blog/tag/${oldSeg}/${sub}`, `/blog/tag/${encodeURIComponent(oldSeg)}/${sub}`);
-  }
+  pushAll(oldSeg, `/lab/tag/${to}`);
 }
 
 const redirectsPath = path.join(ROOT, "dist/_redirects");
@@ -88,5 +111,8 @@ if (lines.length > 1800) {
   console.warn("[tag-redirects] 静的リダイレクトが上限（2,000行）に近づいています。");
 }
 if (missingSlug.length > 0) {
-  console.warn(`[tag-redirects] 英字Slug未設定のタグ（URLが日本語のまま）: ${missingSlug.join("、")}`);
+  console.warn(`[tag-redirects] 英字Slug未設定のタグ（公開しない）: ${missingSlug.join("、")}`);
+}
+if (pending.length > 0) {
+  console.log(`[tag-redirects] 新しいSlugのタグページがまだ無いため保留した転送: ${pending.join("、")}`);
 }

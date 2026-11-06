@@ -52,7 +52,37 @@ function loadCache(): PostsCache {
   }
 }
 
-const cache = loadCache();
+const cache = hideTagsWithoutSlug(loadCache());
+
+/**
+ * 2026-11-06：マスタータグDBの英字Slugが空のタグは公開しない（日本語のURLのタグページを二度と作らないため）。
+ * 記事のタグからも外すので、タグページ・タグ一覧・記事のタグ表示・本文の自動リンクのどれにも出ない。
+ * マスタータグDBが読めていない環境（キャッシュにタグが0件）では、全タグが消えないよう何もしない。
+ * 資料のタグは resources.ts で同じく isPublishedTag() を通す。
+ */
+function hideTagsWithoutSlug(data: PostsCache): PostsCache {
+  if (data.tags.length === 0) return data;
+  const published = new Set(data.tags.filter((t) => t.slug).map((t) => t.name));
+  const hidden = new Set<string>();
+  const posts = data.posts.map((p) => ({
+    ...p,
+    tags: p.tags.filter((t) => {
+      if (published.has(t)) return true;
+      hidden.add(t);
+      return false;
+    }),
+  }));
+  if (hidden.size > 0) {
+    console.warn(`[posts] 英字Slugが空のタグは公開しません（マスタータグDBにSlugを入れると公開されます）: ${[...hidden].join("、")}`);
+  }
+  return { ...data, posts };
+}
+
+/** タグを公開してよいか（マスタータグDBに英字Slugがある）。マスタータグDBが読めていない環境では常にtrue。 */
+export function isPublishedTag(name: string): boolean {
+  if (cache.tags.length === 0) return true;
+  return !!cache.tags.find((t) => t.name === name)?.slug;
+}
 
 /** 公開日の新しい順にソートされた全記事 */
 export function getAllPosts(): Post[] {

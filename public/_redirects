@@ -70,6 +70,11 @@
 /blog/tag/:tag/              /lab/tag/:tag 301
 /blog/tag/:tag               /lab/tag/:tag 301
 
+# 2026-11-06 タグ・カテゴリは1ページに全件を載せている（ページ送りは画面の中だけ）。/lab/tag/stp/2 のような
+# 存在しないページ送りのURL（Search Consoleに出ていた）は1ページ目へ301で寄せる
+/lab/tag/:tag/:page            /lab/tag/:tag 301
+/lab/category/:cat/:page       /lab/category/:cat 301
+
 # 記事・ブログ一覧のページ送り（/blog/2 → /lab/blog/2 もこの行で転送される）
 /blog/:slug/   /lab/blog/:slug 301
 /blog/:slug    /lab/blog/:slug 301

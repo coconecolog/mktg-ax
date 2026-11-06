@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getToolMeta } from "@/lib/tools";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import ToolGuide from "@/components/ToolGuide.astro";
@@ -11,11 +12,13 @@ const breadcrumbItems = [
   { name: "簡易SEO・AEO・AIO診断", href: "/tools/seo-aeo-aio-check" },
 ];
 
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("seo-aeo-aio-check", { title: "簡易SEO・AEO・AIO診断チェックリスト", description: "全15項目のチェックだけで、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断できる無料ツールです。" });
 ---
 
 <BaseLayout
-  title="簡易SEO・AEO・AIO診断チェックリスト"
-  description="全15項目のチェックだけで、従来のSEOに加えてAEO（AI検索最適化）・AIO/GEO（生成AI最適化）への対応状況を簡易診断できる無料ツールです。"
+  title={meta.title}
+  description={meta.description}
   ogImage="/open-graph/tools/seo-aeo-aio-check.png"
 >
   <Breadcrumb items={breadcrumbItems} />

@@ -6,6 +6,7 @@
 // ✅ 調整済み：meerkitlab.comのブログ一覧ページ（src/pages/blog/[...page].astro）が
 //   使っている import に合わせて、BaseLayoutを@/エイリアスで読み込むようにしてあります。
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getToolMeta } from "@/lib/tools";
 import ToolFooter from "@/components/ToolFooter.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolGuide from "@/components/ToolGuide.astro";
@@ -24,11 +25,13 @@ const breadcrumbItems = [
   { name: "Kit一覧", href: "/tools" },
   { name: "広告宣伝費 業界ベンチマーク診断", href: "/tools/kpi-benchmark" },
 ];
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("kpi-benchmark", { title: "広告宣伝費 業界ベンチマーク診断", description: "自社の広告宣伝費が業界水準に対して多いか少ないかを診断します。" });
 ---
 
 <BaseLayout
-  title="広告宣伝費 業界ベンチマーク診断"
-  description="自社の広告宣伝費が業界水準に対して多いか少ないかを診断します。"
+  title={meta.title}
+  description={meta.description}
   ogImage="/open-graph/tools/kpi-benchmark.png"
 >
   <Breadcrumb items={breadcrumbItems} />

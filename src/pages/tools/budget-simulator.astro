@@ -12,11 +12,14 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import ToolFooter from "@/components/ToolFooter.astro";
 import KitIntro from "@/components/kit-flow/KitIntro.astro";
 import { kitPage } from "@/data/kitPages";
+import { getToolMeta } from "@/lib/tools";
 import { KITS } from "@/lib/planKits";
 import "@/styles/budget-checker.css";
 
 const KIT_ID = "make";
 const p = kitPage(KIT_ID);
+// <title>・meta description はツールDBの「SEOタイトル」「ディスクリプション」を優先（空なら今の値。2026-11-06）
+const meta = getToolMeta("budget-simulator", { title: p.metaTitle, description: p.description });
 const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Kit一覧", href: "/tools" },
@@ -24,7 +27,7 @@ const breadcrumbItems = [
 ];
 ---
 
-<BaseLayout title={p.metaTitle} description={p.description} ogImage={p.ogImage}>
+<BaseLayout title={meta.title} description={meta.description} ogImage={p.ogImage}>
   <Breadcrumb items={breadcrumbItems} />
   <KitIntro kitId={KIT_ID} />
   <ToolFooter path={KITS[KIT_ID].path} />

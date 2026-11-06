@@ -114,6 +114,19 @@ export function getAllTools(): Tool[] {
   return cache.tools.length > 0 ? [...cache.tools] : FALLBACK_TOOLS;
 }
 
+/**
+ * ツールページの <title> と meta description（2026-11-06）。
+ * ツールDBの「SEOタイトル」「ディスクリプション」があればそれを、空ならページのコードに書いた今の値（fallback）を使う。
+ * SEOタイトルの末尾のサイト名はSEO.astroが付ける。
+ */
+export function getToolMeta(slug: string, fallback: { title: string; description: string }): { title: string; description: string } {
+  const tool = cache.tools.find((t) => t.slug === slug);
+  return {
+    title: tool?.seoTitle || fallback.title,
+    description: tool?.metaDescription || fallback.description,
+  };
+}
+
 /** NotionページIDからツールを引く（記事の「CTAツール」リレーション用。DBに無い／非公開なら undefined）。 */
 export function getToolById(id: string): Tool | undefined {
   return cache.tools.find((t) => t.id === id);

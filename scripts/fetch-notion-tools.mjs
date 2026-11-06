@@ -27,6 +27,8 @@ const TOOL_PROP = {
   icon: "アイコンファイル名",
   order: "並び順",
   published: "公開",
+  seoTitle: "SEOタイトル", // 任意（2026-11-06）。<title> に使う。空ならページのコードに書いたタイトル
+  metaDescription: "ディスクリプション", // 任意（2026-11-06）。meta description に使う。空ならページのコードに書いた説明文
 };
 
 const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
@@ -88,6 +90,10 @@ async function main() {
     const shortDescription = getRichTextPlain(page, TOOL_PROP.shortDescription).trim();
     const ctaLabel = getRichTextPlain(page, TOOL_PROP.ctaLabel).trim();
     const duration = getRichTextPlain(page, TOOL_PROP.duration).trim();
+    // 末尾に「｜MeerKitLab」を書いてしまっても二重にならないよう取り除く（サイト名はSEO.astroが付ける。タグのSEOタイトルと同じ）
+    const seoTitle =
+      getRichTextPlain(page, TOOL_PROP.seoTitle).trim().replace(/\s*[|｜]\s*(MeerKitLab|MKTG\.AX)\s*$/i, "") || null;
+    const metaDescription = getRichTextPlain(page, TOOL_PROP.metaDescription).trim() || null;
 
     // アイコンはNotionに置かず、public/images/tool-icons/ にアップロードしたファイル名だけを入力してもらう。
     // ファイルが見つからなければ null（サイト側で汎用アイコンを使う）。
@@ -105,6 +111,8 @@ async function main() {
       title,
       description,
       shortDescription,
+      seoTitle,
+      metaDescription,
       ctaLabel: ctaLabel || "ツールを使ってみる →",
       duration: duration || null,
       icon,
