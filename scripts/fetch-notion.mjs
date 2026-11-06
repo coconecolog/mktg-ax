@@ -282,6 +282,9 @@ async function fetchTags(token, linkMap) {
       linkMap,
     ).trim();
 
+    // 代表資料（資料DBのページID）。サイト側で Resource.id と突き合わせる
+    const representativeResourceId = getRelationIds(page, TAG_PROP.representativeResource)[0] || null;
+
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
@@ -293,6 +296,7 @@ async function fetchTags(token, linkMap) {
       description,
       metaDescription,
       representativeSlug: representativeSlugRaw || null,
+      representativeResourceId,
       blocks,
     });
   }

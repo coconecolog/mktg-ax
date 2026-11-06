@@ -89,9 +89,9 @@ export const CATEGORY_TAG_PAGE_SIZE = 6;
 // 右の「資料で実践する」は代表資料1件だけ（2026-10-28）。
 export const CATEGORY_SECTION_POST_LIMIT = 4; // まずはこの記事から1件＋3件
 
-// タグページ（2026-10-15リニューアル）の「〇〇に関する記事・資料」で、1ページに表示する記事数。
+// タグページの「〇〇の記事・資料」で、1ページに表示する件数（2026-11-06に3→5。一覧を解説の下へ移したため）。
 // URLは /lab/tag/{slug} の1つだけで、ページ送りはページ内のJSで行う（全記事のリンクはHTMLに入っている）。
-export const TAG_PAGE_SIZE = 3;
+export const TAG_PAGE_SIZE = 5;
 
 // ラボ（記事・資料統合）ページで1ページに表示する件数
 export const LIBRARY_PAGE_SIZE = 8;

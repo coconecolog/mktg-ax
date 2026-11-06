@@ -29,6 +29,7 @@ function loadCache(): PostsCache {
       blocks: t.blocks || [],
       slug: t.slug ?? null,
       seoTitle: t.seoTitle ?? null,
+      representativeResourceId: t.representativeResourceId ?? null,
     }));
     // 執筆者一覧（執筆者リストDB）も後から追加したフィールドなので、古いキャッシュにも耐えるようにする
     const authors = (parsed.authors || []).map((a) => ({
