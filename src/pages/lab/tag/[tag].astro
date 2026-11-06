@@ -263,6 +263,37 @@ const breadcrumbItems = [
             </div>
           )
         }
+        {/* 読み終えた位置のCTA（関連用語の下。左カラムの幅に収める） */}
+        {
+          representativeResource && (
+            <section class="mt-16" aria-label="無料テンプレート" data-tag-bottom-cta>
+              <a
+                href={`/lab/whitepapers/${representativeResource.slug}`}
+                class="group grid grid-cols-1 gap-6 bg-ink-950 p-6 text-white no-underline sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center sm:p-8"
+              >
+                <span class="block aspect-[4/3] overflow-hidden bg-white">
+                  {repCover ? (
+                    <img src={repCover} alt="" class="h-full w-full object-cover object-top" loading="lazy" decoding="async" />
+                  ) : (
+                    <span class="flex h-full w-full items-center justify-center text-sm font-bold text-neutral-500">{repFormat || "無料資料"}</span>
+                  )}
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-xs font-bold text-neutral-400">{tagName}を、テンプレートで実践する</span>
+                  <span class="mt-2 block text-xl font-bold leading-snug sm:text-2xl">{representativeResource.title}</span>
+                  {(repFormat || representativeResource.contents) && (
+                    <span class="mt-3 block text-[13px] leading-relaxed text-neutral-300">
+                      {[repFormat, representativeResource.contents].filter(Boolean).join(" ／ ")}
+                    </span>
+                  )}
+                  <span class="mt-6 inline-flex items-center gap-3 bg-white px-6 py-3.5 text-sm font-bold text-ink-950">
+                    無料でダウンロード<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                </span>
+              </a>
+            </section>
+          )
+        }
       </div>
 
       {/* 右カラム：目次だけ */}
@@ -285,38 +316,6 @@ const breadcrumbItems = [
       </aside>
     </div>
   </div>
-
-  {/* 読み終えた位置のCTA（関連用語の下、共通フッターの上） */}
-  {
-    representativeResource && (
-      <section class="mx-auto max-w-6xl px-5 pb-20" aria-label="無料テンプレート" data-tag-bottom-cta>
-        <a
-          href={`/lab/whitepapers/${representativeResource.slug}`}
-          class="group grid grid-cols-1 gap-6 bg-ink-950 p-6 text-white no-underline sm:grid-cols-[240px_minmax(0,1fr)] sm:items-center sm:p-10"
-        >
-          <span class="block aspect-[4/3] overflow-hidden bg-white">
-            {repCover ? (
-              <img src={repCover} alt="" class="h-full w-full object-cover object-top" loading="lazy" decoding="async" />
-            ) : (
-              <span class="flex h-full w-full items-center justify-center text-sm font-bold text-neutral-500">{repFormat || "無料資料"}</span>
-            )}
-          </span>
-          <span class="min-w-0">
-            <span class="block text-xs font-bold text-neutral-400">{tagName}を、テンプレートで実践する</span>
-            <span class="mt-2 block text-xl font-bold leading-snug sm:text-2xl">{representativeResource.title}</span>
-            {(repFormat || representativeResource.contents) && (
-              <span class="mt-3 block text-[13px] leading-relaxed text-neutral-300">
-                {[repFormat, representativeResource.contents].filter(Boolean).join(" ／ ")}
-              </span>
-            )}
-            <span class="mt-6 inline-flex items-center gap-3 bg-white px-6 py-3.5 text-sm font-bold text-ink-950">
-              無料でダウンロード<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
-            </span>
-          </span>
-        </a>
-      </section>
-    )
-  }
 
   <ContactCta />
 
