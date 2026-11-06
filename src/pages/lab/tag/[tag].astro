@@ -18,6 +18,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import TagBody from "@/components/TagBody.astro";
 import ContactCta from "@/components/ContactCta.astro";
+import RelatedTagsNav from "@/components/RelatedTagsNav.astro";
 import { getAllSubcategories, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
@@ -298,10 +299,10 @@ const breadcrumbItems = [
         }
       </div>
 
-      {/* 右カラム：目次だけ */}
+      {/* 右カラム：目次（追従）→ 関連するタグ（追従しない。2026-11-07） */}
       <aside class="hidden lg:col-start-2 lg:row-start-1 lg:block">
         {sideToc.length > 0 && (
-          <nav aria-label="目次" class="sticky top-24 border-t-2 border-ink-950 pt-5" data-tag-toc>
+          <nav aria-label="目次" class="sticky top-24 z-10 border-t-2 border-ink-950 bg-[#FAF9F9] pt-5" data-tag-toc>
             <p class="text-sm font-bold text-ink-950">目次</p>
             <ol class="mt-4 space-y-3 text-sm">
               {sideToc.map((h, i) => (
@@ -315,6 +316,7 @@ const breadcrumbItems = [
             </ol>
           </nav>
         )}
+        <RelatedTagsNav tags={relatedTags} />
       </aside>
     </div>
   </div>

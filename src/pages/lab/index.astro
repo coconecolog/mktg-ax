@@ -11,7 +11,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import LabRow from "@/components/LabRow.astro";
-import { getLibraryItems } from "@/lib/library";
+import TagStrip from "@/components/TagStrip.astro";
+import { getAllTagNamesByCount, getLibraryItems } from "@/lib/library";
 import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
 import { KIT_GROUPS } from "@/data/tools";
 import { LIBRARY_PAGE_SIZE } from "@/consts";
@@ -48,6 +49,8 @@ const breadcrumbItems = [
   { name: "トップ", href: "/" },
   { name: "Lab（記事・資料）", href: "/lab" },
 ];
+// 「タグから探す」：全タグ（件数の多い順）。全タグへのリンクを置くのはこのページだけ（2026-11-07）
+const allTags = getAllTagNamesByCount();
 ---
 
 <BaseLayout title="Lab（記事・資料）" description={pageDescription} ogImage="/open-graph/default.png" pagefindIgnore>
@@ -81,6 +84,9 @@ const breadcrumbItems = [
         </section>
       )
     }
+
+    {/* タグから探す（カテゴリページの「このカテゴリのタグ」と同じ部品。2026-11-07） */}
+    <TagStrip heading="タグから探す" tags={allTags} id="lab-tags" />
 
     {/* Kitで確かめる（診断系Kit） */}
     {

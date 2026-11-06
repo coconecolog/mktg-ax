@@ -1,0 +1,61 @@
+---
+// Labトップ「タグから探す」・カテゴリページ「このカテゴリのタグ」の帯（2026-11-07）。
+// タグを1行に収め、入りきらない分は「すべて表示」で開く（上のエリアの高さを抑えるため）。
+// 閉じていても全タグのリンクはHTMLに入っている（クローラーはすべてたどれる）。
+import { getTagPath } from "@/lib/posts";
+
+interface Props {
+  heading: string;
+  tags: string[];
+  id: string;
+}
+const { heading, tags, id } = Astro.props;
+---
+
+{
+  tags.length > 0 && (
+    <section aria-labelledby={id} class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4" data-tag-strip>
+      <h2 id={id} class="shrink-0 py-1.5 text-sm font-bold text-ink-950 sm:w-36">{heading}</h2>
+      <div class="min-w-0 flex-1">
+        <ul class="flex max-h-[2.25rem] flex-wrap gap-2 overflow-hidden data-[open=true]:max-h-none" data-tag-strip-list>
+          {tags.map((name) => (
+            <li>
+              <a href={getTagPath(name)} class="block border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-700 transition-colors hover:border-ink-950 hover:bg-ink-950 hover:text-white">
+                {name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <button type="button" hidden class="shrink-0 py-1.5 text-xs font-bold text-ink-950 hover:underline" aria-expanded="false" data-tag-strip-toggle>
+        すべて表示
+      </button>
+    </section>
+  )
+}
+
+<script>
+  // 1行に入りきらないときだけ「すべて表示（＋件数）」を出す
+  function setup(strip: HTMLElement) {
+    const list = strip.querySelector<HTMLElement>("[data-tag-strip-list]");
+    const btn = strip.querySelector<HTMLButtonElement>("[data-tag-strip-toggle]");
+    if (!list || !btn) return;
+    const update = () => {
+      if (list.dataset.open === "true") return;
+      const top = list.firstElementChild?.getBoundingClientRect().top ?? 0;
+      const hidden = [...list.children].filter((li) => li.getBoundingClientRect().top > top + 4).length;
+      btn.hidden = hidden === 0;
+      btn.textContent = `すべて表示（＋${hidden}）`;
+    };
+    btn.addEventListener("click", () => {
+      const open = list.dataset.open !== "true";
+      list.dataset.open = String(open);
+      btn.setAttribute("aria-expanded", String(open));
+      if (open) btn.textContent = "閉じる";
+      else update();
+    });
+    update();
+    window.addEventListener("resize", update);
+  }
+  document.querySelectorAll<HTMLElement>("[data-tag-strip]").forEach(setup);
+</script>

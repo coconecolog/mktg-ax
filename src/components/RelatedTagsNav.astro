@@ -1,0 +1,27 @@
+---
+// 記事ページ・タグページの右カラム「関連するタグ」（PCだけ。2026-11-07）。
+// 目次の下に置き、追従させない（件数が多いと画面の高さを超えるため）。スマホはページ下の帯（SiteIndex）に出す。
+import { getTagPath } from "@/lib/posts";
+
+interface Props {
+  tags: string[];
+}
+const { tags } = Astro.props;
+---
+
+{
+  tags.length > 0 && (
+    <nav aria-label="関連するタグ" class="mt-8 hidden border-t border-neutral-300 pt-6 lg:block">
+      <p class="text-sm font-bold text-ink-950">関連するタグ</p>
+      <ul class="mt-3 flex flex-wrap gap-2">
+        {tags.map((name) => (
+          <li>
+            <a href={getTagPath(name)} class="block border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-700 no-underline transition-colors hover:border-ink-950 hover:bg-ink-950 hover:text-white">
+              {name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
