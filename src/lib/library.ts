@@ -307,3 +307,11 @@ export function getRelatedTagsBySubcategories(subcategoryIds: string[], excludeT
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ja"))
     .map((t) => t.name);
 }
+
+/** Labトップ「タグから探す」用（2026-11-07）。タグページがある全タグを、記事・資料の件数が多い順（同数は名前順）に返す。 */
+export function getAllTagNamesByCount(): string[] {
+  return getAllLibraryTagNames()
+    .map((name) => ({ name, count: getLibraryCountsByTag(name).all }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ja"))
+    .map((t) => t.name);
+}
