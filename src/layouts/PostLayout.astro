@@ -11,7 +11,7 @@ import { getResourceById } from "@/lib/resources";
 import { getSideKits, getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
 import { buildToc, getAllPosts, getAuthorByName, getCategoryPath, getTagPath } from "@/lib/posts";
-import { getLibraryItemsByCategory } from "@/lib/library";
+import { getLibraryItemsByCategory, getRelatedTagsBySubcategories } from "@/lib/library";
 import { autoLinkTagKeywords } from "@/lib/tagKeywordLinks";
 import type { Post } from "@/lib/types";
 import { toRouteSlug } from "@/lib/routeSlug";
@@ -75,6 +75,8 @@ const breadcrumbItems = [
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
+// フッター手前の「関連するタグ」：記事のサブカテゴリと重なるタグ（2026-11-07）。0件ならブロックごと出さない
+const relatedTags = getRelatedTagsBySubcategories(post.subcategoryIds || []);
 ---
 
 <BaseLayout
@@ -235,5 +237,5 @@ const dateLabel = (iso: string) =>
     </div>
   </article>
 
-  <ContactCta />
+  <ContactCta tags={relatedTags} />
 </BaseLayout>

@@ -120,6 +120,8 @@ export interface Tag {
   representativeSlug: string | null;
   /** 「代表資料」（2026-11-06追加）。タグページの最初の画面に出すテンプレートの資料DBページID（Resource.id）。未設定・古いキャッシュではnull */
   representativeResourceId?: string | null;
+  /** 「サブカテゴリ」（2026-11-07追加）。マスターサブカテゴリDBのページID（Subcategory.id と突き合わせる）。複数可。未設定・古いキャッシュでは空配列 */
+  subcategoryIds?: string[];
   /** タグページ本文（Notion側で「説明文」より下に書かれた解説文）のブロック。タグページ下部に表示する。 */
   blocks: BlockNode[];
 }

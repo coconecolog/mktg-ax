@@ -1,6 +1,6 @@
 // ブログ記事と資料を統合した「ライブラリ」ページ用のデータ層。
 // 記事(Post)と資料(Resource)を LibraryItem という共通の形に変換し、公開日順に並べる。
-import { getAllPosts, getSubcategoriesByCategory, getSubcategoryAnchor } from "./posts";
+import { getAllPosts, getSubcategoriesByCategory, getSubcategoryAnchor, getTagByName } from "./posts";
 import { getAllResources } from "./resources";
 import { getToolById } from "./tools";
 import type { BlockNode, Post, Resource, Subcategory, Tool } from "./types";
@@ -289,4 +289,21 @@ export function getCategoryGuide(categoryName: string): CategoryGuide {
     items,
     counts: { all: items.length, post: postCount, resource: items.length - postCount },
   };
+}
+
+/**
+ * フッター手前の「関連するタグ」用（2026-11-07）。マスタータグDBの「サブカテゴリ」が、
+ * 指定したサブカテゴリ（記事のサブカテゴリ、またはタグページのタグのサブカテゴリ）と1つでも重なるタグを返す。
+ * 対象はタグページがあるタグ（記事・資料に使われているタグ）だけ。記事・資料の件数が多い順、同数は名前順。
+ * excludeTagName はタグページで自分自身を外すために使う。重なるタグが無ければ空配列（ブロックごと出さない）。
+ */
+export function getRelatedTagsBySubcategories(subcategoryIds: string[], excludeTagName?: string): string[] {
+  if (subcategoryIds.length === 0) return [];
+  const wanted = new Set(subcategoryIds);
+  return getAllLibraryTagNames()
+    .filter((name) => name !== excludeTagName)
+    .filter((name) => (getTagByName(name)?.subcategoryIds || []).some((id) => wanted.has(id)))
+    .map((name) => ({ name, count: getLibraryCountsByTag(name).all }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ja"))
+    .map((t) => t.name);
 }

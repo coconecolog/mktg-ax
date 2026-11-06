@@ -6,6 +6,7 @@
 // showSiteIndex={false} で、直前のカテゴリ一覧・タグ一覧を出さない（サービスページなど）。
 // 2026-10-15: 直前に共通ブロック「カテゴリ一覧」「タグ一覧」（SiteIndex）を表示するようにした（フッター手前の統一）。
 // 2026-11-01: showTags={false} でタグ一覧だけを出さない（Kitのページ）。
+// 2026-11-07: showTags を廃止。tags（タグ名の配列）を渡したページだけ「関連するタグ」を出す（記事ページ・タグページ）。
 import { HOME_REQUEST } from "@/data/home";
 import SiteIndex from "./SiteIndex.astro";
 
@@ -13,13 +14,14 @@ interface Props {
   heading?: string;
   description?: string;
   showSiteIndex?: boolean;
-  showTags?: boolean;
+  /** フッター手前に出す関連タグ（タグ名）。未指定・空ならタグのブロックを出さない */
+  tags?: string[];
 }
 
-const { heading = HOME_REQUEST.heading, description = HOME_REQUEST.description, showSiteIndex = true, showTags = true } = Astro.props;
+const { heading = HOME_REQUEST.heading, description = HOME_REQUEST.description, showSiteIndex = true, tags = [] } = Astro.props;
 ---
 
-{showSiteIndex && <SiteIndex showTags={showTags} />}
+{showSiteIndex && <SiteIndex tags={tags} />}
 
 <section class="border-t border-neutral-200">
   <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">

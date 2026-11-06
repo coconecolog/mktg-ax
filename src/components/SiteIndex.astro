@@ -3,14 +3,17 @@
 // ContactCta（ご要望・ご質問）の直前に自動で表示されるので、ContactCta を置いている全ページで共通になる。
 // カテゴリはマスターカテゴリDBの全件（並び順どおり）、タグは記事に使われている全タグ（記事数の多い順）。
 // 2026-11-01：showTags={false} でタグ一覧を出さない（Kitのページ。ToolFooter → ContactCta から渡す）
-import { getAllCategories, getAllTags, getCategoryPath, getTagPath } from "@/lib/posts";
+// 2026-11-07：全タグの一覧をやめ、渡されたタグ（tags）だけを「関連するタグ」として出す。
+//   全ページから全タグへ同じリンクが張られ、どのタグとの関係も区別できなくなっていたため。
+//   記事ページ＝記事のサブカテゴリと重なるタグ、タグページ＝そのタグのサブカテゴリと重なるタグ（getRelatedTagsBySubcategories）。
+//   tags を渡さないページ（Labトップ・記事一覧・カテゴリ・資料一覧・執筆者・Kitなど）と、0件のときはタグのブロックを出さない。
+import { getAllCategories, getCategoryPath, getTagPath } from "@/lib/posts";
 
 interface Props {
-  showTags?: boolean;
+  tags?: string[];
 }
-const { showTags = true } = Astro.props;
+const { tags = [] } = Astro.props;
 const categories = getAllCategories();
-const tags = showTags ? getAllTags() : [];
 ---
 
 {
@@ -34,12 +37,12 @@ const tags = showTags ? getAllTags() : [];
         )}
         {tags.length > 0 && (
           <div class={categories.length > 0 ? "mt-12" : ""}>
-            <h2 class="text-lg font-bold text-ink-950">タグ一覧</h2>
+            <h2 class="text-lg font-bold text-ink-950">関連するタグ</h2>
             <ul class="mt-6 flex flex-wrap gap-2">
-              {tags.map((t) => (
+              {tags.map((name) => (
                 <li>
-                  <a href={getTagPath(t.name)} class="block bg-white px-3 py-1.5 text-xs text-neutral-700 transition-colors hover:bg-ink-950 hover:text-white">
-                    {t.name}
+                  <a href={getTagPath(name)} class="block bg-white px-3 py-1.5 text-xs text-neutral-700 transition-colors hover:bg-ink-950 hover:text-white">
+                    {name}
                   </a>
                 </li>
               ))}

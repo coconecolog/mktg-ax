@@ -285,6 +285,12 @@ async function fetchTags(token, linkMap) {
     // 代表資料（資料DBのページID）。サイト側で Resource.id と突き合わせる
     const representativeResourceId = getRelationIds(page, TAG_PROP.representativeResource)[0] || null;
 
+    // サブカテゴリ（マスターサブカテゴリDBのページID、複数可。2026-11-07追加）。フッター手前の「関連するタグ」に使う
+    const subcategoryIds = getRelationIds(page, TAG_PROP.subcategory);
+    if (slug && subcategoryIds.length === 0) {
+      console.warn(`[fetch-notion] タグ「${name}」にサブカテゴリが未設定です（フッター手前の「関連するタグ」に出ません）。`);
+    }
+
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
     const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
@@ -297,6 +303,7 @@ async function fetchTags(token, linkMap) {
       metaDescription,
       representativeSlug: representativeSlugRaw || null,
       representativeResourceId,
+      subcategoryIds,
       blocks,
     });
   }
