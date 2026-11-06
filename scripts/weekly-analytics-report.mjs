@@ -23,7 +23,7 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const DEFAULT_ANALYTICS_DATABASE_ID = "10dac08bc1a7425fbf51b1470f95a9c2";
 
 // ブランド名を含む検索（指名検索）の判定
-const BRAND_PATTERN = /mktg\s*\.?\s*ax|マーケティング\s*ax/i;
+const BRAND_PATTERN = /meer\s*kit\s*lab|ミーア\s*キット|mktg\s*\.?\s*ax|マーケティング\s*ax/i;
 // AI経由の流入として数える参照元（GA4の sessionSource）
 const AI_SOURCE_PATTERN =
   /(chatgpt\.com|chat\.openai\.com|openai|perplexity|gemini\.google|bard\.google|claude\.ai|copilot\.microsoft|copilot\.cloud\.microsoft|you\.com|felo\.ai|genspark)/i;
@@ -123,7 +123,13 @@ async function resolveGscSite(token, email) {
       `Search Consoleのサイトが見つかりません。Search Consoleの「設定」→「ユーザーと権限」に ${email} を追加してください。`,
     );
   }
-  const preferred = sites.find((s) => /mktg/i.test(s.siteUrl)) || sites[0];
+  // 2026-10-30にドメインを mktg.ax → meerkitlab.com へ変更。旧サイト（mktg.ax）には戻さない
+  const preferred = sites.find((s) => /meerkitlab\.com/i.test(s.siteUrl));
+  if (!preferred) {
+    throw new Error(
+      `Search Consoleの meerkitlab.com が見つかりません。meerkitlab.com のプロパティの「設定」→「ユーザーと権限」に ${email} を「フル」で追加してください。`,
+    );
+  }
   return preferred.siteUrl;
 }
 
