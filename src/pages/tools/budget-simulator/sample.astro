@@ -19,7 +19,7 @@ const breadcrumbItems = [
 ];
 ---
 
-<BaseLayout title={`${p.title} サンプル画面｜診断・修正の画面と${KITS[KIT_ID].doc}の完成イメージ｜MeerKitLab`} description={`${p.title}のサンプル画面です。架空の会社（基本モデルの安定期）の数字で、診断・修正の画面と完成イメージを見られます。`} ogImage="/open-graph/default.png">
+<BaseLayout title={`${p.title} サンプル画面｜診断・修正の画面と${KITS[KIT_ID].doc}の完成イメージ｜MeerKitLab`} description={`${p.title}のサンプル画面です。架空の会社（基本モデルの安定期）の数字で、診断・修正の画面と完成イメージを見られます。`} ogImage="/open-graph/default.png" noindex>
   <Breadcrumb items={breadcrumbItems} />
   <KitFlow kitId={KIT_ID} mode="sample" />
 

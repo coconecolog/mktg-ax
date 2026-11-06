@@ -19,6 +19,7 @@ const { page } = Astro.props;
 // 1ページ目には全記事を載せ、2ページ目以降に出る記事は隠しておく（絞り込みのときに全記事から探せるように）。
 // 2ページ目以降で絞り込むと、1ページ目（/lab/blog?category=…&q=…）へ移動して絞り込む。
 const isFirstPage = page.currentPage === 1;
+// 2ページ目以降は1ページ目と同じ記事の並び（1ページ目に全記事を載せている）なので noindex（2026-11-06）。サイトマップからも外す（astro.config.mjs）。
 const pageSlugs = new Set(page.data.map((p) => p.slug));
 const listPosts = isFirstPage ? getAllPosts() : page.data;
 
@@ -33,6 +34,7 @@ const breadcrumbItems = [
   title={isFirstPage ? "記事一覧" : `記事一覧（${page.currentPage}ページ目）`}
   description="マーケティング分析・施策・マーケット情報についての記事一覧です。"
   ogImage="/open-graph/default.png"
+  noindex={!isFirstPage}
 >
   <Breadcrumb items={breadcrumbItems} />
 

@@ -39,6 +39,7 @@ for (const r of resourcesCache?.resources || []) for (const t of r.tags || []) u
 
 const slugByName = new Map((postsCache.tags || []).filter((t) => t.slug).map((t) => [t.name, t.slug]));
 
+const OLD_TAG_SUBPATHS = ["blog", "resources", "2", "3", "4", "5"];
 const lines = [];
 const missingSlug = [];
 for (const name of usedNames) {
@@ -51,11 +52,17 @@ for (const name of usedNames) {
   if (oldSeg === slug) continue;
 
   const to = `/lab/tag/${slug}`;
-  for (const base of ["/blog/tag", "/lab/tag"]) {
-    const fromRaw = `${base}/${oldSeg}`;
-    const fromEnc = `${base}/${encodeURIComponent(oldSeg)}`;
+  const push = (fromRaw, fromEnc) => {
     lines.push(`${fromRaw} ${to} 301`);
     if (fromEnc !== fromRaw) lines.push(`${fromEnc} ${to} 301`);
+  };
+  for (const base of ["/blog/tag", "/lab/tag"]) {
+    push(`${base}/${oldSeg}`, `${base}/${encodeURIComponent(oldSeg)}`);
+  }
+  // 2026-11-06：旧URLのタブ・ページ送り（/blog/tag/{日本語}/blog・/2 など）も1回の転送で新URLへ送る
+  // （共通ルールだけだと /lab/tag/{日本語} を経由して2回の転送になる）。ページ送りは実際にあった5ページ目までを書く。
+  for (const sub of OLD_TAG_SUBPATHS) {
+    push(`/blog/tag/${oldSeg}/${sub}`, `/blog/tag/${encodeURIComponent(oldSeg)}/${sub}`);
   }
 }
 
