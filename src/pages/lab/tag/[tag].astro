@@ -7,7 +7,9 @@
 //     スマホでは画面下にも同じ資料への帯を固定で出す。空欄なら枠も帯も出さない。
 //   ・解説エリア（TagBody）→「〇〇の記事・資料」（記事一覧。形式の絞り込みとページ送りはページ内JS）→ 関連用語。
 //     「関連用語」を含む見出し2のセクションだけ、記事一覧の後ろに回す。
-//   ・右カラム：目次（ページの並びどおり）→ 代表資料（無ければこのタグの最新資料）→ タグ一覧。
+//   ・右カラム：目次だけ（追従。今読んでいる見出しを太字にする）。資料・タグ一覧は出さない
+//     （資料は最初の画面の枠と読み終えた位置のCTAで出す。タグ一覧はページ下の共通の帯にある）。
+//   ・関連用語の下（共通フッターの上）に、代表資料のCTAを出す（2026-11-06）。
 // 構造化データ：CollectionPage＋DefinedTerm＋ItemList、本文にFAQ（トグル）があればFAQPage。
 // URLは /lab/tag/{slug} の1つだけ。旧URL（/blog/tag/{slug}、ページ送りなど）は public/_redirects で301転送している。
 // 記事のラベルは自動: 記事の「サブカテゴリ」名（無ければ先頭のカテゴリ名）。
@@ -16,9 +18,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import TagBody from "@/components/TagBody.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import BlogSidebar from "@/components/BlogSidebar.astro";
-import SideNav from "@/components/SideNav.astro";
-import { getAllSubcategories, getAllTags, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
+import { getAllSubcategories, getTagByName, getTagPath, getTagSlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { buildFaqSchema, buildTagPageSchema } from "@/lib/schema";
 import { autoLinkRelatedTerms } from "@/lib/relatedTermLinks";
@@ -48,8 +48,6 @@ const resources = resourceItems.map((item) => resourceBySlug.get(item.slug)).fil
 const representativeResource = tagInfo?.representativeResourceId
   ? getAllResources().find((r) => r.id === tagInfo.representativeResourceId) || null
   : null;
-// 右カラムに出す資料：代表資料 → 無ければこのタグの最新資料1件
-const sideResource = representativeResource || resources[0];
 const repCover = representativeResource
   ? representativeResource.thumbnail || representativeResource.coverImage || representativeResource.excerptImages?.[0] || null
   : null;
@@ -59,7 +57,6 @@ const filters = [
   { key: "post", label: "記事", count: posts.length },
   { key: "resource", label: "無料資料", count: resourceItems.length },
 ];
-const sidebarTags = getAllTags();
 
 const subcategoryName = new Map(getAllSubcategories().map((s) => [s.id, s.name]));
 const labelOf = (item: (typeof items)[number]) =>
@@ -148,7 +145,7 @@ const breadcrumbItems = [
 <BaseLayout title={pageTitle} description={metaDescription} ogImage="/open-graph/default.png" jsonLd={jsonLd} pagefindIgnore>
   <Breadcrumb items={breadcrumbItems} />
 
-  <div class={`mx-auto max-w-6xl px-5 pt-8 pb-16 ${representativeResource ? "max-lg:pb-32" : ""}`}>
+  <div class="mx-auto max-w-6xl px-5 pt-8 pb-16">
     {/* H1＋定義文（＋冒頭の図） */}
     <h1 class="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{tagName}とは？</h1>
     <div class={`mt-8 border-y border-ink-950 py-7 ${heroImage ? "grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start" : ""}`}>
@@ -268,19 +265,58 @@ const breadcrumbItems = [
         }
       </div>
 
-      {/* 右カラム */}
-      <aside class="mt-14 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:self-start">
-        <SideNav toc={sideToc} resource={sideResource} />
-        {
-          sidebarTags.length > 0 && (
-            <div class="mt-10">
-              <BlogSidebar showSearch={false} categories={[]} popularPosts={[]} tags={sidebarTags} />
-            </div>
-          )
-        }
+      {/* 右カラム：目次だけ */}
+      <aside class="hidden lg:col-start-2 lg:row-start-1 lg:block">
+        {sideToc.length > 0 && (
+          <nav aria-label="目次" class="sticky top-24 border-t-2 border-ink-950 pt-5" data-tag-toc>
+            <p class="text-sm font-bold text-ink-950">目次</p>
+            <ol class="mt-4 space-y-3 text-sm">
+              {sideToc.map((h, i) => (
+                <li>
+                  <a href={`#${h.anchor}`} data-toc-link={h.anchor} class="flex gap-3 text-neutral-500 no-underline hover:text-ink-950 data-[active=true]:font-bold data-[active=true]:text-ink-950">
+                    <span class="shrink-0 tabular-nums text-neutral-400">{String(i + 1).padStart(2, "0")}</span>
+                    <span>{h.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
       </aside>
     </div>
   </div>
+
+  {/* 読み終えた位置のCTA（関連用語の下、共通フッターの上） */}
+  {
+    representativeResource && (
+      <section class="mx-auto max-w-6xl px-5 pb-20" aria-label="無料テンプレート" data-tag-bottom-cta>
+        <a
+          href={`/lab/whitepapers/${representativeResource.slug}`}
+          class="group grid grid-cols-1 gap-6 bg-ink-950 p-6 text-white no-underline sm:grid-cols-[240px_minmax(0,1fr)] sm:items-center sm:p-10"
+        >
+          <span class="block aspect-[4/3] overflow-hidden bg-white">
+            {repCover ? (
+              <img src={repCover} alt="" class="h-full w-full object-cover object-top" loading="lazy" decoding="async" />
+            ) : (
+              <span class="flex h-full w-full items-center justify-center text-sm font-bold text-neutral-500">{repFormat || "無料資料"}</span>
+            )}
+          </span>
+          <span class="min-w-0">
+            <span class="block text-xs font-bold text-neutral-400">{tagName}を、テンプレートで実践する</span>
+            <span class="mt-2 block text-xl font-bold leading-snug sm:text-2xl">{representativeResource.title}</span>
+            {(repFormat || representativeResource.contents) && (
+              <span class="mt-3 block text-[13px] leading-relaxed text-neutral-300">
+                {[repFormat, representativeResource.contents].filter(Boolean).join(" ／ ")}
+              </span>
+            )}
+            <span class="mt-6 inline-flex items-center gap-3 bg-white px-6 py-3.5 text-sm font-bold text-ink-950">
+              無料でダウンロード<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+            </span>
+          </span>
+        </a>
+      </section>
+    )
+  }
 
   <ContactCta />
 
@@ -289,7 +325,8 @@ const breadcrumbItems = [
     representativeResource && (
       <a
         href={`/lab/whitepapers/${representativeResource.slug}`}
-        class="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-ink-950 bg-white px-5 py-3 no-underline lg:hidden"
+        data-tag-sticky-bar
+        class="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-ink-950 bg-white px-5 py-3 no-underline transition-transform duration-200 data-[hidden=true]:translate-y-full lg:hidden"
       >
         <span class="min-w-0">
           <span class="block text-[11px] font-bold text-[#665334]">無料テンプレート</span>
@@ -377,5 +414,52 @@ const breadcrumbItems = [
     }
 
     render();
+  }
+</script>
+
+<script>
+  // 右カラムの目次：今読んでいる見出しを太字にする（画面の上から3割の位置を通り過ぎた最後の見出し）
+  const toc = document.querySelector<HTMLElement>("[data-tag-toc]");
+  if (toc) {
+    const links = Array.from(toc.querySelectorAll<HTMLAnchorElement>("[data-toc-link]"));
+    const targets = links
+      .map((a) => document.getElementById(a.dataset.tocLink || ""))
+      .filter((el): el is HTMLElement => !!el);
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const line = window.innerHeight * 0.3;
+      let current = "";
+      for (const el of targets) {
+        if (el.getBoundingClientRect().top <= line) current = el.id;
+      }
+      links.forEach((a) => a.setAttribute("data-active", String(a.dataset.tocLink === current)));
+    };
+    window.addEventListener("scroll", () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }, { passive: true });
+    update();
+  }
+</script>
+
+<script>
+  // スマホの画面下の帯：帯の高さだけページ下に余白を足し（フッターが隠れないように）、読み終えた位置のCTAが見えている間は帯を隠す
+  const bar = document.querySelector<HTMLElement>("[data-tag-sticky-bar]");
+  if (bar) {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const pad = () => {
+      document.body.style.paddingBottom = mq.matches ? `${bar.offsetHeight}px` : "";
+    };
+    pad();
+    mq.addEventListener("change", pad);
+    const cta = document.querySelector<HTMLElement>("[data-tag-bottom-cta]");
+    if (cta && "IntersectionObserver" in window) {
+      new IntersectionObserver((entries) => {
+        bar.setAttribute("data-hidden", String(entries.some((e) => e.isIntersecting)));
+      }).observe(cta);
+    }
   }
 </script>
