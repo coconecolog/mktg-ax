@@ -45,6 +45,11 @@
 # 2026-10-28 KPI妥当性診断キットの作り直しで廃止したURL
 /api/kpi-check-unsubscribe    /tools/kpi-check 302
 
+# 2026-11-07 マーケ月次報告メーカーを廃止（報告はKPI管理表の月次レポートシートで完結）
+/tools/monthly-report             /tools/kpi-analysis 301
+/api/monthly-report-register      /tools/kpi-analysis 302
+/api/monthly-report-unsubscribe   /tools/kpi-analysis 302
+
 # ===== 動的ルール（上ほど優先。細かい条件を先に書く） =====
 
 # 2026-10-12 ライブラリのリニューアルで廃止したURL（ページ送り・タブ）

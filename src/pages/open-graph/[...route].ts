@@ -29,7 +29,6 @@ const pages: Record<string, PageEntry> = {
   "tools/kpi-benchmark": { title: "広告宣伝費 業界ベンチマーク診断", description: SITE_DESCRIPTION },
   "tools/ma-selection": { title: "MAツール選定チェック", description: SITE_DESCRIPTION },
   "tools/inhouse-vs-outsource": { title: "内製 vs 外注 コスト比較シミュレーター", description: SITE_DESCRIPTION },
-  "tools/monthly-report": { title: "マーケ月次報告メーカー", description: SITE_DESCRIPTION },
   "tools/kpi-check": { title: "KPI妥当性診断Kit", description: SITE_DESCRIPTION },
   "tools/kpi-analysis": { title: "施策効果診断Kit", description: SITE_DESCRIPTION },
   resources: { title: "資料一覧", description: SITE_DESCRIPTION },
