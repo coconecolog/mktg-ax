@@ -12,7 +12,6 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import CategorySectionBlock from "@/components/CategorySectionBlock.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import TagStrip from "@/components/TagStrip.astro";
 import { getAllCategories, getCategoryPath, getCategorySlug, getSubcategoriesByCategory } from "@/lib/posts";
 import { getCategoryGuide, getRelatedTagsBySubcategories } from "@/lib/library";
 import { getCategoryMeerkat } from "@/lib/categoryMeerkat";
@@ -135,11 +134,9 @@ const breadcrumbItems = [
       )
     }
 
-    {/* このカテゴリのタグ（Labトップの「タグから探す」と同じ部品。2026-11-07） */}
-    <TagStrip heading="このカテゴリのタグ" tags={categoryTags} id="category-tags" />
-
-    {/* 2026-11-07：ここから下は、このページの中での移動（テーマ）と絞り込み。上は別のページへ移るもの（Kit・タグ） */}
+    {/* 2026-11-07：ここから下は、このページの中で記事・資料を探すエリア（テーマへの移動と絞り込み）。上は別のページへ移るもの（Kit） */}
     <div class="mt-10 border-t-2 border-ink-950 pt-8">
+    <h2 class="mb-5 text-xl font-bold text-ink-950">記事・資料を探す</h2>
     {/* いま、取り組みたいテーマは？ */}
     {
       themeSections.length > 0 && (
@@ -241,7 +238,8 @@ const breadcrumbItems = [
   </div>
 
   {/* フッター手前の共通ブロック（カテゴリ一覧・タグ一覧 → ご要望・ご質問）。2026-10-15に「ほかのテーマ」から差し替え */}
-  <ContactCta />
+  {/* ページ下の独立した帯に「このカテゴリのタグ」。2026-11-07 */}
+  <ContactCta tags={categoryTags} tagsHeading="このカテゴリのタグ" tagsOnPc />
 </BaseLayout>
 
 <script>

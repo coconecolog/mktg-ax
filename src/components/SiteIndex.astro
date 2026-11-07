@@ -8,21 +8,26 @@
 //   記事ページ＝記事のサブカテゴリと重なるタグ、タグページ＝そのタグのサブカテゴリと重なるタグ（getRelatedTagsBySubcategories）。
 //   tags を渡さないページ（Labトップ・記事一覧・カテゴリ・資料一覧・執筆者・Kitなど）と、0件のときはタグのブロックを出さない。
 // 2026-11-07：関連するタグはカテゴリ一覧の帯から独立させ、スマホ・タブレットだけに出す（PCは右カラム）。
+//   Labトップ（全タグ）・カテゴリページ（そのカテゴリのタグ）は、tagsOnPc でPCにも出す（上のエリアは記事を探す場所なので、タグは下に置く）。
 import { getAllCategories, getCategoryPath, getTagPath } from "@/lib/posts";
 
 interface Props {
   tags?: string[];
+  /** タグの帯の見出し（既定「関連するタグ」） */
+  tagsHeading?: string;
+  /** true：PCでも出す（Labトップ・カテゴリページ）。false：スマホ・タブレットだけ（記事・タグページ。PCは右カラム） */
+  tagsOnPc?: boolean;
 }
-const { tags = [] } = Astro.props;
+const { tags = [], tagsHeading = "関連するタグ", tagsOnPc = false } = Astro.props;
 const categories = getAllCategories();
 ---
 
 {/* 関連するタグ：独立した帯。PCは右カラム（RelatedTagsNav）に出すので、スマホ・タブレットだけ（2026-11-07） */}
 {
   tags.length > 0 && (
-    <section aria-labelledby="site-related-tags" class="border-t border-neutral-200 lg:hidden">
+    <section aria-labelledby="site-related-tags" class={`border-t border-neutral-200 ${tagsOnPc ? "" : "lg:hidden"}`}>
       <div class="mx-auto max-w-6xl px-5 py-10">
-        <h2 id="site-related-tags" class="text-lg font-bold text-ink-950">関連するタグ</h2>
+        <h2 id="site-related-tags" class="text-lg font-bold text-ink-950">{tagsHeading}</h2>
         <ul class="mt-5 flex flex-wrap gap-2">
           {tags.map((name) => (
             <li>
