@@ -55,17 +55,6 @@ export const MAIN_TOOLS = [
     note: "期のはじめにKPIを決めるときに",
     href: "/tools/kpi-check",
   },
-  {
-    step: "03",
-    phase: "報告",
-    purpose: "成果と課題を伝える",
-    icon: "file-chart-column",
-    titleLines: ["マーケ月次報告", "メーカー"],
-    description: "期初の計画と、毎月のリード・商談・受注などの数値を整理。経営に伝える月次報告を、A4横のPDF 1枚にまとめます。",
-    detail: "翌月は前回のPDFを読み込み、内容を引き継いで作成できます。",
-    note: "PDF出力にはメール登録が必要",
-    href: "/tools/monthly-report",
-  },
 ] as const;
 
 // /tools のキット（やりたいこと別）。
