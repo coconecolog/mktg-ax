@@ -42,8 +42,9 @@ const hasRight = section.resources.length > 0 || related.length > 0;
 ---
 
 <section id={section.anchor} data-section class="scroll-mt-24 border-t-2 border-ink-950 pt-8 pb-14">
-  <h2 class="flex items-baseline gap-4 text-2xl font-bold tracking-tight text-ink-950">
-    {section.number && <span class="text-3xl font-bold tabular-nums">{section.number}</span>}
+  <h2 class="flex items-center gap-4 text-2xl font-bold tracking-tight text-ink-950">
+    {/* 番号は上の矢羽根（テーマ）と同じ黒丸・白文字（2026-11-07） */}
+    {section.number && <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink-950 text-sm font-bold tabular-nums text-white">{section.number}</span>}
     <span>{section.name}</span>
   </h2>
 

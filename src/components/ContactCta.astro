@@ -16,12 +16,14 @@ interface Props {
   showSiteIndex?: boolean;
   /** フッター手前に出す関連タグ（タグ名）。未指定・空ならタグのブロックを出さない */
   tags?: string[];
+  tagsHeading?: string;
+  tagsOnPc?: boolean;
 }
 
-const { heading = HOME_REQUEST.heading, description = HOME_REQUEST.description, showSiteIndex = true, tags = [] } = Astro.props;
+const { heading = HOME_REQUEST.heading, description = HOME_REQUEST.description, showSiteIndex = true, tags = [], tagsHeading, tagsOnPc = false } = Astro.props;
 ---
 
-{showSiteIndex && <SiteIndex tags={tags} />}
+{showSiteIndex && <SiteIndex tags={tags} tagsHeading={tagsHeading} tagsOnPc={tagsOnPc} />}
 
 <section class="border-t border-neutral-200">
   <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
