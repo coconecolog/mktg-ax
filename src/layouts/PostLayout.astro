@@ -5,7 +5,6 @@ import TableOfContents from "@/components/TableOfContents.astro";
 import NotionBlocks from "@/components/NotionBlocks.astro";
 import SideNav from "@/components/SideNav.astro";
 import ContactCta from "@/components/ContactCta.astro";
-import RelatedTagsNav from "@/components/RelatedTagsNav.astro";
 import ResourceCta from "@/components/ResourceCta.astro";
 import ToolCta from "@/components/ToolCta.astro";
 import { getResourceById } from "@/lib/resources";
@@ -233,11 +232,10 @@ const relatedTags = getRelatedTagsBySubcategories(post.subcategoryIds || []);
 
       <aside>
         {/* 右カラム（タグページと共通。目次 → 関連する資料 → 関連するKit）。2026-10-15にタグ一覧を削除 */}
-        {/* 2026-11-07：追従するのは目次・資料・Kitだけ。下の関連するタグ（PCのみ）は追従させず、スクロールすると追従部分の下に隠れる */}
-        <div class="relative z-10 bg-[#FAF9F9] lg:sticky lg:top-24">
-          <SideNav toc={toc.map((h2) => ({ anchor: h2.anchor, text: h2.text }))} resource={ctaResource} kits={sideKits} />
+        {/* 2026-11-07：関連するタグ（PCのみ）は目次のすぐ下に置き、目次・資料・Kitと一緒に追従させる。画面より長いときは枠の中でスクロール */}
+        <div class="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <SideNav toc={toc.map((h2) => ({ anchor: h2.anchor, text: h2.text }))} resource={ctaResource} kits={sideKits} tags={relatedTags} />
         </div>
-        <RelatedTagsNav tags={relatedTags} />
       </aside>
     </div>
   </article>

@@ -5,14 +5,17 @@
 // 表紙は資料の表紙画像（PDF1ページ目のキャプチャ）。画像が無い資料は資料名から白黒で生成する。
 import type { Resource } from "@/lib/types";
 import type { Kit } from "@/data/tools";
+import RelatedTagsNav from "./RelatedTagsNav.astro";
 
 interface Props {
   toc: { anchor: string; text: string }[];
   resource?: Resource;
   kits?: Kit[];
+  /** 目次のすぐ下に出す関連するタグ（PCのみ。2026-11-07） */
+  tags?: string[];
 }
 
-const { toc, resource, kits = [] } = Astro.props;
+const { toc, resource, kits = [], tags = [] } = Astro.props;
 const cover = resource ? resource.thumbnail || resource.coverImage : null;
 ---
 
@@ -34,6 +37,8 @@ const cover = resource ? resource.thumbnail || resource.coverImage : null;
       </nav>
     )
   }
+
+  <RelatedTagsNav tags={tags} />
 
   {
     resource && (
