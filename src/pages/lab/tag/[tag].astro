@@ -299,10 +299,12 @@ const breadcrumbItems = [
         }
       </div>
 
-      {/* 右カラム：目次（追従）→ 関連するタグ（追従しない。2026-11-07） */}
+      {/* 右カラム：目次 → 関連するタグ（どちらも追従。2026-11-07） */}
       <aside class="hidden lg:col-start-2 lg:row-start-1 lg:block">
+        {/* 2026-11-07：目次と関連するタグを一緒に追従させる（タグが目次の下から消えないように）。画面より長いときは枠の中でスクロール */}
+        <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
         {sideToc.length > 0 && (
-          <nav aria-label="目次" class="sticky top-24 z-10 border-t-2 border-ink-950 bg-[#FAF9F9] pt-5" data-tag-toc>
+          <nav aria-label="目次" class="border-t-2 border-ink-950 pt-5" data-tag-toc>
             <p class="text-sm font-bold text-ink-950">目次</p>
             <ol class="mt-4 space-y-3 text-sm">
               {sideToc.map((h, i) => (
@@ -317,6 +319,7 @@ const breadcrumbItems = [
           </nav>
         )}
         <RelatedTagsNav tags={relatedTags} />
+        </div>
       </aside>
     </div>
   </div>
