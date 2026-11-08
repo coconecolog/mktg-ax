@@ -22,7 +22,7 @@ const cover = resource ? resource.thumbnail || resource.coverImage : null;
 <div>
   {
     toc.length > 0 && (
-      <nav aria-label="目次" class="hidden border-t-2 border-ink-950 pt-5 lg:block">
+      <nav aria-label="目次" class="hidden lg:block">
         <p class="text-sm font-bold text-ink-950">目次</p>
         <ol class="mt-4 space-y-3 text-sm">
           {toc.map((h, i) => (

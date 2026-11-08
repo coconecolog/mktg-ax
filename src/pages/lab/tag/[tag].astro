@@ -251,7 +251,7 @@ const breadcrumbItems = [
         {/* 2026-11-07：目次と関連するタグを一緒に追従させる（タグが目次の下から消えないように）。画面より長いときは枠の中でスクロール */}
         <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
         {sideToc.length > 0 && (
-          <nav aria-label="目次" class="border-t-2 border-ink-950 pt-5" data-tag-toc>
+          <nav aria-label="目次" data-tag-toc>
             <p class="text-sm font-bold text-ink-950">目次</p>
             <ol class="mt-4 space-y-3 text-sm">
               {sideToc.map((h, i) => (

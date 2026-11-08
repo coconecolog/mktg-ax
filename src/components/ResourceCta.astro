@@ -12,16 +12,18 @@ import type { Resource } from "@/lib/types";
 interface Props {
   resource: Resource;
   kits?: unknown;
+  /** 外側の余白。省略時は記事末尾用の mt-12（タグページでは呼び出し側で指定する） */
+  class?: string;
 }
 
-const { resource } = Astro.props;
+const { resource, class: spacing = "mt-12" } = Astro.props;
 const cover = resource.thumbnail || resource.coverImage;
 const href = `/lab/whitepapers/${resource.slug}`;
 const description = resource.ctaDescription || resource.metaDescription || resource.description;
 const features = (resource.targetToc || []).slice(1);
 ---
 
-<aside class="mt-12 border border-brand-200 bg-brand-50 p-6 sm:p-8" aria-label="資料ダウンロード">
+<aside class={`${spacing} border border-brand-200 bg-brand-50 p-6 sm:p-8`} aria-label="資料ダウンロード">
   <div class={cover ? "grid grid-cols-1 items-start gap-5 sm:grid-cols-[240px_1fr] sm:gap-8" : "grid grid-cols-1 gap-4"}>
     <div>
       <p class="text-xs font-bold tracking-wide text-ink-950">無料ダウンロード資料</p>
