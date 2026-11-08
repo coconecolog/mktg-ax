@@ -40,6 +40,9 @@ const CACHE_DIR = path.resolve(process.cwd(), ".notion-cache");
 // ・トップ用キャッチ（テキスト）: 大きい枠のタイトル上に出す一文。空欄なら非表示。
 // ・内容物（テキスト）: 大きい枠の下部に出す「管理シート＋16ページの使い方ガイド」などの説明。空欄なら非表示。
 const HOME_PROP = { order: "トップ掲載", catch: "トップ用キャッチ", contents: "内容物" };
+// 記事内の資料CTA用の任意プロパティ（2026-11-08。資料DBに無くても動く。名前は完全一致が必要）。
+// ・CTA説明文（テキスト）: 記事内CTAに出す2文・50〜65字の短い説明。空欄ならディスクリプション（無ければ資料説明）を出す。
+const CTA_PROP = { description: "CTA説明文" };
 const CACHE_FILE = path.join(CACHE_DIR, "resources.json");
 
 async function writeEmptyCache(reason) {
@@ -130,8 +133,10 @@ async function main() {
 
     // 資料ファイル本体はNotionにはアップロードせず、GitHubリポジトリの
     // public/files/resources/ に直接アップロードしてもらう運用。
-    // Notion側の「資料ファイル」プロパティには、そのファイル名だけを入力してもらう（テキストプロパティ）。
-    const fileFilename = getRichTextPlain(page, RESOURCE_PROP.file);
+    // ファイル名は「資料名.pdf」（2026-11-08。資料DBの「資料ファイル」列は廃止）。
+    // 資料名を変えたら、GitHub上のPDFのファイル名も同じに変えること。
+    // 「資料ファイル」列が残っていて値が入っている資料だけは、その値を優先する（移行期間の保険）。
+    const fileFilename = getRichTextPlain(page, RESOURCE_PROP.file).trim() || `${title}.pdf`;
     const fileUrl = await resolveLocalRepoFile("files/resources", fileFilename);
 
     // 「抜粋ページ」（例: "3,7"）で指定したページ番号を抜き出す。全角カンマ・スペース区切りも許容。
@@ -156,6 +161,7 @@ async function main() {
     const homeCatch = getRichTextPlain(page, HOME_PROP.catch).trim();
     const contents = getRichTextPlain(page, HOME_PROP.contents).trim();
     const fileFormat = getRichTextPlain(page, RESOURCE_PROP.fileFormat).trim();
+    const ctaDescription = getRichTextPlain(page, CTA_PROP.description).trim();
 
     // ページ本文（記事と同じ仕組み）。「目次」「導入事例紹介」など、都度自由に見出し・内容を変えたい
     // 可変セクションはここに書けば、資料DBのプロパティを増やさずにNotion側だけで表現できる。
@@ -185,6 +191,7 @@ async function main() {
       fileFormat,
       homeCatch,
       contents,
+      ctaDescription,
       blocks,
     });
   }
