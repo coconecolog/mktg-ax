@@ -216,6 +216,8 @@ export interface Resource {
   homeCatch?: string;
   /** 「内容物」（例: 管理シート＋16ページの使い方ガイド）。トップの大きい枠に表示。未設定なら空文字 */
   contents?: string;
+  /** 「CTA説明文」（2026-11-08）。記事内の資料CTAに出す短い説明。未設定なら空文字（古いキャッシュではundefined） */
+  ctaDescription?: string;
   /** 資料DBページ本文のブロック（記事と同じ形式）。見出し・リストなど自由に構成できる可変セクション用。 */
   blocks: BlockNode[];
 }
