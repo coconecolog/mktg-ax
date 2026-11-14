@@ -102,7 +102,7 @@ Notionでいつもどおり記事を書き、「公開」チェックをONにす
 
 ## 6. まだ仮実装の部分（次にやること）
 
-- **お問い合わせページ**: 実装方法（Googleフォーム／外部フォーム埋め込みなど）を相談して決める予定です。今はメールリンクだけの仮実装になっています（`src/pages/contact.astro` / `src/consts.ts` の `CONTACT_EMAIL`）。
+- **お問い合わせページ**: `src/pages/contact.astro` のフォームから `functions/api/contact.js` 経由で運営者に通知（宛先は環境変数 `CONTACT_NOTIFY_TO`）。サイト上にメールアドレスは載せない。
 - **資料一覧・資料ダウンロード**: 今回はダミーデータです（`src/data/resources.ts`）。実データに差し替える、またはNotionの別データベースと連携する方法は別途検討してください。
 
 ---

@@ -3,8 +3,7 @@
 // お問い合わせ種別は functions/api/contact.js の INQUIRY_TYPES と必ず同じにする。
 // お問い合わせフォームは functions/api/contact.js（Cloudflare Pages Function）経由で
 // Resendから運営者宛に通知メールを送信する。SNS導線は開設まではダミー表示のまま。
-// CONTACT_EMAIL は src/consts.ts のプレースホルダーです。実際のアドレスに書き換えてください
-// （フッター等の表示用。フォームの送信先は環境変数 CONTACT_NOTIFY_TO で別途設定）。
+// フォームの送信先は環境変数 CONTACT_NOTIFY_TO で設定する（サイト上にメールアドレスは載せない）。
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import FaqAccordion from "@/components/FaqAccordion.astro";
