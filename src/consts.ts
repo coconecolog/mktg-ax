@@ -99,10 +99,6 @@ export const LIBRARY_PAGE_SIZE = 8;
 // 執筆者ページで1ページに表示する記事・資料数（カテゴリ/タグページと同じ考え方で分けている）
 export const AUTHOR_PAGE_SIZE = 9;
 
-// お問い合わせ先メールアドレス（仮の値です。実際のアドレスに書き換えてください）
-// お問い合わせページの実装方法（Googleフォーム等への切り替え）は別途検討予定です。
-export const CONTACT_EMAIL = "info@example.com";
-
 // 個人情報保護方針（/privacy）に記載する事業者情報（仮の値です。確定次第、実際の内容に書き換えてください）
 export const OPERATOR_REPRESENTATIVE = "準備中";
 export const OPERATOR_ADDRESS = "準備中";
