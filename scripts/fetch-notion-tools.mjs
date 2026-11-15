@@ -13,7 +13,7 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { resolveDataSourceId, queryAllPages, getRelationNames } from "./lib/notion-client.mjs";
-import { getRichTextPlain, getCheckbox, getNumber, resolveSlug } from "./lib/transform.mjs";
+import { getRichTextPlain, getCheckbox, resolveSlug } from "./lib/transform.mjs";
 
 // Notion側のプロパティ名（完全一致が必要）。タイトル列は名前に関わらず「タイトル型のプロパティ」を自動で使う。
 const TOOL_PROP = {
@@ -25,7 +25,6 @@ const TOOL_PROP = {
   ctaLabel: "ボタン文言",
   duration: "所要時間",
   icon: "アイコンファイル名",
-  order: "並び順",
   published: "公開",
   seoTitle: "SEOタイトル", // 任意（2026-11-06）。<title> に使う。空ならページのコードに書いたタイトル
   metaDescription: "ディスクリプション", // 任意（2026-11-06）。meta description に使う。空ならページのコードに書いた説明文
@@ -120,17 +119,10 @@ async function main() {
       categories,
       tag: tags[0] || null,
       tags,
-      order: getNumber(page, TOOL_PROP.order),
+      // 2026-11-15：ツールDBの「並び順」は使わない（並びはコードの src/data/tools.ts で決める）
+      order: null,
     });
   }
-
-  // 並び順（数値）の昇順。未設定のものは末尾（Notion取得順）。
-  tools.sort((a, b) => {
-    if (a.order === null && b.order === null) return 0;
-    if (a.order === null) return 1;
-    if (b.order === null) return -1;
-    return a.order - b.order;
-  });
 
   await writeCache(tools);
   console.log(`[fetch-notion-tools] 完了: ${tools.length}件を .notion-cache/tools.json に書き出しました。`);

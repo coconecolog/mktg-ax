@@ -19,7 +19,7 @@ import { getAllCategories, getCategorySlug } from "@/lib/posts";
 import { getAllResources } from "@/lib/resources";
 import { getLibraryItems, getLibraryItemsByCategory } from "@/lib/library";
 import { getAllTools } from "@/lib/tools";
-import { KIT_GROUPS } from "@/data/tools";
+import { KIT_GROUPS, MAIN_KITS } from "@/data/tools";
 
 export const getStaticPaths = (async () => {
   // マスターカテゴリDBの全カテゴリ＋資料に実際に設定されているカテゴリ（マスターDB未設定の環境でも壊れないように）
@@ -39,9 +39,12 @@ export const getStaticPaths = (async () => {
 const { categoryName } = Astro.props as { categoryName: string | null };
 
 // KITS: メインのKit（/tools の KIT_GROUPS に載っているもの）だけを出す（最大3件）。
-// そのカテゴリのKitを優先し、該当が無いカテゴリ・カテゴリ未設定のときはKitの並び順の先頭3件。
-const kitHrefs = new Set(KIT_GROUPS.flatMap((g) => g.kits.map((k) => k.href)));
-const kits = getAllTools().filter((t) => kitHrefs.has(t.href));
+// そのカテゴリのKitを優先し、該当が無いカテゴリ・カテゴリ未設定のときはメインのKit 3件。
+// 2026-11-15：並びはコードで決める（メインのKit → ほかのKit。ツールDBの「並び順」は使わない）
+const kitOrder = [...new Set([...MAIN_KITS.map((m) => m.href as string), ...KIT_GROUPS.flatMap((g) => g.kits.map((k) => k.href))])];
+const kits = getAllTools()
+  .filter((t) => kitOrder.includes(t.href))
+  .sort((a, b) => kitOrder.indexOf(a.href) - kitOrder.indexOf(b.href));
 const categoryKits = categoryName ? kits.filter((t) => t.categories.includes(categoryName)) : [];
 const tools = (categoryKits.length > 0 ? categoryKits : kits).slice(0, 3);
 
