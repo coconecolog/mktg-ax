@@ -148,6 +148,22 @@ export const KIT_GROUPS: KitGroup[] = [
       },
     ],
   },
+  {
+    title: "SEO",
+    note: "毎月のSEOの効果測定に",
+    kits: [
+      {
+        kind: "check",
+        icon: "chart-spline",
+        situation: "SEOの成果を毎月確かめたい",
+        description: "GA4とSearch Consoleをつなぐだけで、毎月の悪化の判定と、ページごとの対策事項が出ます。",
+        name: "SEO月次分析Kit（データポータル）",
+        button: "SEOを分析する",
+        href: "/tools/seo-monthly-report",
+        resource: { before: "", label: "SEOの効果測定と改修の手順", after: "で、判定の見方と直し方を確認できます", href: "/lab/whitepapers/seo-effect-measurement" },
+      },
+    ],
+  },
 ];
 
 // カテゴリページ（/lab/category/…）の「このカテゴリで使えるKit」（2026-11-02）。
@@ -157,11 +173,11 @@ export const KIT_GROUPS: KitGroup[] = [
 // （データ分析の記事は「KPI・効果測定・分析」へ移り、そちらは「KPI」で当たる）。
 const CATEGORY_KIT_RULES: { words: string[]; hrefs: string[] }[] = [
   { words: ["予算", "ROI"], hrefs: ["/tools/budget-simulator", "/tools/budget-checker"] },
-  { words: ["KPI", "KGI"], hrefs: ["/tools/kpi-sheet-maker", "/tools/kpi-check"] },
-  { words: ["施策"], hrefs: ["/tools/kpi-sheet-maker", "/tools/kpi-analysis"] },
-  { words: ["ダッシュボード"], hrefs: ["/tools/kpi-analysis", "/tools/kpi-check"] },
+  { words: ["KPI", "KGI"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check"] },
+  { words: ["施策"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis"] },
 ];
-const CATEGORY_KIT_DEFAULT = ["/tools/budget-simulator", "/tools/kpi-sheet-maker"];
+// 2026-11-15：どれにも当てはまらないカテゴリ（戦略・組織など）は、メインのKitのうちKPIの2つを出す
+const CATEGORY_KIT_DEFAULT = ["/tools/kpi-analysis", "/tools/kpi-check"];
 
 export function getKitsForCategory(categoryName: string): Kit[] {
   const rule = CATEGORY_KIT_RULES.find((r) => r.words.some((w) => categoryName.includes(w)));
@@ -170,50 +186,57 @@ export function getKitsForCategory(categoryName: string): Kit[] {
   return hrefs.map((href) => kits.find((k) => k.href === href)).filter((k): k is Kit => !!k);
 }
 
-// /tools の2つのセクション（2026-11-02：カテゴリページと同じ型に変更）。
-// Kitは KIT_GROUPS の kind で振り分ける。resources は右のグレーの枠に出す資料（slug は資料DBのSlug）。
-export const KIT_SECTIONS = [
+// /tools の「01 分析する」（メインのKit、2026-11-15）。画面の画像つきの大きなカードで出す。
+// href は KIT_GROUPS のKit。名前は KIT_GROUPS から取り、ここではカードだけの中身を書く。
+export const MAIN_KITS = [
   {
-    kind: "create",
-    number: "01",
-    anchor: "create",
-    title: "これから作る",
-    countLabel: "作成Kit",
-    description: "計画がまだない方へ。入力しながら判定まで行います。",
-    mainLabel: "Kitで作る",
-    sideLabel: "スプレッドシートで作る",
-    sideNote: "",
-    resources: [
-      { label: "年間予算表", slug: "kgi-kpi-backcast-sheet", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
-      { label: "KPI管理表", slug: "kpi-management-template", href: "/lab/whitepapers/kpi-management-template" },
-    ],
+    href: "/tools/seo-monthly-report",
+    image: "/images/tools/seo-monthly-report-1.png",
+    data: ["GA4", "Search Console"],
   },
   {
-    kind: "check",
-    number: "02",
-    anchor: "check",
-    title: "作ったものを確かめる",
-    countLabel: "診断Kit",
-    description: "AIや自社で作った計画、毎月の実績を診断し、直して仕上げます。",
-    mainLabel: "Kitで確かめる",
-    sideLabel: "資料があれば読み込むだけ",
-    sideNote: "次の資料で作っていれば、ファイルを読み込むだけで診断できます。",
-    resources: [
-      { label: "年間予算表", slug: "kgi-kpi-backcast-sheet", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" },
-      { label: "KPI管理表", slug: "kpi-management-template", href: "/lab/whitepapers/kpi-management-template" },
-    ],
+    href: "/tools/kpi-analysis",
+    image: "/images/tools/kpi-analysis-screen.png",
+    data: ["KPI管理表", "月別の実績"],
+  },
+  {
+    href: "/tools/kpi-check",
+    image: "/images/tools/kpi-check-screen.png",
+    data: ["KPI管理表", "売上目標"],
   },
 ] as const;
 
+// /tools の「02 カテゴリから探す」（2026-11-15）。記事のカテゴリ（Notionのカテゴリ名と同じ）ごとに、Kit・ツール・資料を並べる。
+// hrefs は KIT_GROUPS のKitか OTHER_TOOLS のツール。メインのKitは「メイン」のラベルを付けて説明文を省く。該当がないカテゴリは書かない。
+export const TOOL_CATEGORIES: { name: string; hrefs: string[]; resources: { label: string; href: string }[] }[] = [
+  {
+    name: "予算配分・投資判断",
+    hrefs: ["/tools/budget-simulator", "/tools/budget-checker", "/tools/roas-cac-simulator", "/tools/kpi-benchmark"],
+    resources: [{ label: "年間予算表", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" }],
+  },
+  {
+    name: "KPI・効果測定・分析",
+    hrefs: ["/tools/kpi-sheet-maker", "/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check"],
+    resources: [
+      { label: "KPI管理表", href: "/lab/whitepapers/kpi-management-template" },
+      { label: "SEOの効果測定と改修の手順", href: "/lab/whitepapers/seo-effect-measurement" },
+    ],
+  },
+  {
+    name: "施策・AI活用",
+    hrefs: ["/tools/ma-selection", "/tools/seo-aeo-aio-check"],
+    resources: [],
+  },
+  {
+    name: "組織・人材育成",
+    hrefs: ["/tools/inhouse-vs-outsource"],
+    resources: [],
+  },
+];
+
 // /tools の「その他」。
 export const OTHER_TOOLS = [
-  {
-    icon: "chart-spline",
-    category: "SEO・効果測定",
-    title: "SEO月次分析テンプレート（データポータル）",
-    description: "GA4とSearch Consoleをつなぐだけで、毎月のSEOの悪化の判定と、ページごとの対策事項が出るデータポータルのテンプレート。",
-    href: "/tools/seo-monthly-report",
-  },
+
   {
     icon: "clipboard-check",
     category: "MAツール",
