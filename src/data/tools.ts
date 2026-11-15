@@ -160,7 +160,7 @@ export const KIT_GROUPS: KitGroup[] = [
         name: "SEO月次分析Kit（データポータル）",
         button: "SEOを分析する",
         href: "/tools/seo-monthly-report",
-        resource: { before: "", label: "SEOの効果測定と改修の手順", after: "で、判定の見方と直し方を確認できます", href: "/lab/whitepapers/seo-effect-measurement" },
+        resource: { before: "", label: "SEOの月次分析と改修の手順", after: "で、判定の見方と直し方を確認できます", href: "/lab/whitepapers/seo-monthly-analysis" },
       },
     ],
   },
@@ -219,7 +219,7 @@ export const TOOL_CATEGORIES: { name: string; hrefs: string[]; resources: { labe
     hrefs: ["/tools/kpi-sheet-maker", "/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check"],
     resources: [
       { label: "KPI管理表", href: "/lab/whitepapers/kpi-management-template" },
-      { label: "SEOの効果測定と改修の手順", href: "/lab/whitepapers/seo-effect-measurement" },
+      { label: "SEOの月次分析と改修の手順", href: "/lab/whitepapers/seo-monthly-analysis" },
     ],
   },
   {
