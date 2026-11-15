@@ -368,7 +368,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
         answer: "先々月のデータがないと、比べられないため表示されます。データが2か月分そろうと判定されます。",
       },
       {
-        question: "CSV版（SEOの効果測定と改修の手順）との違いは？",
+        question: "CSV版（SEOの月次分析と改修の手順）との違いは？",
         answer:
           "このテンプレートは、毎月のCSVの書き出しが不要で、検索キーワードごとの順位の変化とカニバリゼーションも自動で確認できます。CSV版は、スプレッドシートで手元に記録を残したい方向けです。",
       },
@@ -377,6 +377,6 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
         answer: "変えられます。表の計算フィールド（流入前の判定・流入後の判定など）の数字を書きかえてください。",
       },
     ],
-    related: [{ type: "resource", title: "SEOの効果測定と改修の手順", href: "/lab/whitepapers/seo-effect-measurement" }],
+    related: [{ type: "resource", title: "SEOの月次分析と改修の手順", href: "/lab/whitepapers/seo-monthly-analysis" }],
   },
 };

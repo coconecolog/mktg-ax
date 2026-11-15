@@ -127,10 +127,10 @@ export const HOME_PDCA = {
       href: "/tools/seo-monthly-report",
       resource: {
         label: "あわせて使う資料",
-        name: "SEOの効果測定と改修の手順",
-        coverTitle: "SEO\n効果測定",
+        name: "SEOの月次分析と改修の手順",
+        coverTitle: "SEO\n月次分析",
         typeLabel: "スライド",
-        href: "/lab/whitepapers/seo-effect-measurement",
+        href: "/lab/whitepapers/seo-monthly-analysis",
         guide: "判定の見方と、原因の調べ方・直し方をまとめた手順書です。",
       },
     },
