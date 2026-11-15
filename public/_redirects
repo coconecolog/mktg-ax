@@ -1,7 +1,8 @@
 # Cloudflare Pages のリダイレクト定義
 # ・上にあるルールが優先される。静的ルール（固定のURL）は動的ルール（:placeholder・*）より前に書く。
-# ・ビルド時に scripts/generate-tag-redirects.mjs・generate-category-redirects.mjs が、日本語URL→英字URLの静的ルールを
-#   dist/_redirects の先頭へ追記する（このファイルには書かない）。
+# ・サイト側の転送はこのファイルだけに書く（ビルドで転送を自動生成する仕組みは2026-11-15に廃止）。
+#   記事・資料・タグ・カテゴリのSlugを変えたときは、ここに「旧URL 新URL 301」を1行足す（転送先は必ず最終URLにする）。
+#   ドメインの転送（mktg.ax → meerkitlab.com、www → wwwなし）はCloudflareの設定にある。
 # ・2026-10-29 URL構造の変更（SEO）：/blog・/resources・/library を /lab 配下へ移した。
 #     /library                     → /lab
 #     /blog                        → /lab/blog

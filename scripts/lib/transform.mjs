@@ -438,8 +438,7 @@ export function richTextToPlain(richText) {
 // ------------------------------------------------------------
 
 // /lab/tag/[tag] のURL変換ルール（src/lib/routeSlug.tsのtoRouteSlug()と同じロジック）。
-// scripts側（.mjs）からTSファイルをimportできないため、ここに同じ1行だけ複製している
-// （scripts/generate-tag-redirects.mjsの既存コメントも参照）。「/」を含むタグ名でも
+// scripts側（.mjs）からTSファイルをimportできないため、ここに同じ1行だけ複製している。「/」を含むタグ名でも
 // ビルドが壊れないよう、URL上だけ全角スラッシュ「／」に置き換える。
 function toRouteSlugForAutoLink(name) {
   return name.replaceAll("/", "／");
