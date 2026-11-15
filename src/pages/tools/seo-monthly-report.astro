@@ -1,0 +1,192 @@
+---
+// src/pages/tools/seo-monthly-report.astro
+//
+// SEO月次分析テンプレート（データポータル）（/tools/seo-monthly-report、2026-11-15）。
+// データポータル（旧Looker Studio）のテンプレートを配るだけの入口ページ1枚（入力・診断・ダウンロードの画面はない）。
+// 形はKitの入口の標準（src/components/kit-flow/KitIntro.astro）を流用：ファーストビュー（左＝H1・問いかけ・説明・3ステップ／右＝画面）→ テンプレートを開く → グレーの枠（わかること・必要なもの・最初の設定）
+// 画面の画像：public/images/tools/seo-monthly-report-{1,2,3}.png（ページパス・検索キーワードはぼかす。資料M-X-04のスライドと同じ画像）
+// FAQ・関連資料：src/data/tool-footer.ts
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import ToolFooter from "@/components/ToolFooter.astro";
+import { getToolMeta } from "@/lib/tools";
+import "@/styles/budget-checker.css";
+
+const PATH = "/tools/seo-monthly-report";
+const TITLE = "SEO月次分析テンプレート（データポータル）";
+// データソース3つを閲覧者の認証情報にして、リンクを知っている全員に共有したレポート
+const TEMPLATE_URL = "https://datastudio.google.com/reporting/8feb4ffd-eda9-4e5d-8508-b5d90c6a3a7d";
+
+const meta = getToolMeta("seo-monthly-report", {
+  title: `${TITLE}｜毎月のSEOの悪化の判定と対策事項が自動で出る`,
+  description:
+    "GA4とSearch Consoleをつなぐだけで、毎月のSEOの悪化の判定と、ページごとの対策事項が自動で出るデータポータル（旧Looker Studio）の無料テンプレートです。検索キーワードごとの順位の変化と、カニバリゼーションも確認できます。",
+});
+const breadcrumbItems = [
+  { name: "トップ", href: "/" },
+  { name: "Kit一覧", href: "/tools" },
+  { name: TITLE, href: PATH },
+];
+
+const SHOT = {
+  trend: { src: "/images/tools/seo-monthly-report-1.png", w: 1308, h: 713, alt: "全体推移の画面：流入前・流入後の判定とスコアカード、週ごとの推移グラフ" },
+  page: { src: "/images/tools/seo-monthly-report-2.png", w: 898, h: 1017, alt: "判定と対策事項の画面：ページ別の判定表と、検索キーワードごとの順位の変化" },
+  cannibal: { src: "/images/tools/seo-monthly-report-3.png", w: 1088, h: 1174, alt: "カニバリゼーションの確認の画面：検索キーワードごとのページ数と判定" },
+};
+
+const STEPS = [
+  { t: "コピーする", d: "テンプレートを開き、自分のGoogleアカウントにコピー", icon: ["M8 8h12v12H8z", "M4 16V4h12"] },
+  { t: "自分のデータにつなぐ", d: "GA4とSearch Consoleを選び、最初の設定をする", icon: ["M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1", "M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"] },
+  { t: "毎月判定を見る", d: "月初に開いて、判定と対策事項を確認", icon: ["M4 5h16v15H4z", "M4 10h16M9 3v4M15 3v4", "M9 15l2 2 4-4"] },
+];
+
+const KNOW = [
+  { t: "全体推移", d: "先月と先々月を比べ、サイト全体の流入前・流入後が悪化したかを判定。週ごとの推移も表示", shot: SHOT.trend },
+  { t: "判定と対策事項", d: "ページごとに流入前・流入後を判定し、対策事項を表示。検索キーワードごとの順位の変化も確認", shot: SHOT.page },
+  { t: "カニバリゼーションの確認", d: "同じ検索キーワードで2ページ以上が表示されていないかを確認", shot: SHOT.cannibal },
+];
+
+const NEEDS = ["Googleアカウント", "GA4（対象サイトの閲覧権限）", "Search Console（対象サイトの閲覧権限）"];
+
+const GSC_PATH = String.raw`REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(Landing Page, "^https?://[^/]+", ""), "\\?.*$", ""), "(.)/$", "\\1")`;
+const GA4_PATH = String.raw`REGEXP_REPLACE(REGEXP_REPLACE(ランディング ページ + クエリ文字列, "\\?.*$", ""), "(.)/$", "\\1")`;
+---
+
+<BaseLayout title={meta.title} description={meta.description} ogImage="/open-graph/tools/seo-monthly-report.png">
+  <Breadcrumb items={breadcrumbItems} />
+
+  <!-- ファーストビュー：左＝H1・問いかけ・説明・3ステップ／右＝画面 -->
+  <div class="bk bk-top">
+    <div class="bk-top-l">
+      <h1 class="bk-top-h1">{TITLE}</h1>
+      <p class="bk-top-q">先月、検索からの流入は悪化した？ どのページを直せばいい？</p>
+      <p class="bk-top-d">
+        GA4とSearch Consoleをつなぐだけで、毎月の悪化の判定と、ページごとの対策事項が自動で出るデータポータル（旧Looker Studio）のテンプレートです。検索キーワードごとの順位の変化と、カニバリゼーションも確認できます。
+      </p>
+      <section class="bk-3s" aria-labelledby="sm-3s-h">
+        <h2 class="bk-3s-h" id="sm-3s-h">3ステップで毎月の判定を見る</h2>
+        <ol class="bk-3s-l">
+          {
+            STEPS.map((s, i) => (
+              <li>
+                <span class="bk-3s-n">STEP {i + 1}</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">{s.icon.map((d) => <path d={d} />)}</svg>
+                <b>{s.t}</b>
+                <p>{s.d}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+    </div>
+    <a class="bk-demo bk-demo-img" href={SHOT.trend.src} target="_blank" rel="noopener">
+      <img src={SHOT.trend.src} alt={SHOT.trend.alt} width={SHOT.trend.w} height={SHOT.trend.h} />
+      <span>全体推移の画面を拡大する →</span>
+    </a>
+  </div>
+
+  <main class="bk" id="bk" data-mode="intro">
+    <!-- テンプレートを開く（上下に余白をとって目立たせる） -->
+    <div class="bk-entry sm-open">
+      <a class="bk-btn bk-start-btn" href={TEMPLATE_URL} target="_blank" rel="noopener" data-template-link>テンプレートを開く<span aria-hidden="true">→</span></a>
+      <p class="sm-open-note">リンクを開いただけでは数字は表示されません。コピーして自分のデータにつなぐと表示されます。</p>
+    </div>
+
+    <!-- ここから下は説明 -->
+    <div class="bk-band bk-info">
+      <h2 class="bk-h2">このテンプレートでわかること</h2>
+      <ul class="sm-know">
+        {
+          KNOW.map((k, n) => (
+            <li>
+              <b><i>{"ABC"[n]}</i>{k.t}</b>
+              <p>{k.d}</p>
+              <a class="sm-shot" href={k.shot.src} target="_blank" rel="noopener" aria-label={`${k.t}の画面を拡大する`}>
+                <img src={k.shot.src} alt={k.shot.alt} width={k.shot.w} height={k.shot.h} loading="lazy" />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="sm-setup">
+        <div class="sm-need">
+          <h2 class="bk-h2">必要なもの</h2>
+          <ul>{NEEDS.map((x) => <li>{x}</li>)}</ul>
+        </div>
+
+        <div class="sm-first">
+          <h2 class="bk-h2">最初の設定<span>コピーしたあとに1回だけ</span></h2>
+          <ol>
+            <li>
+              <p>右上の︙から「コピーを作成」を選び、データソース3つを自分のものに置き換える</p>
+              <ul class="sm-ds">
+                <li>GA4：対象のプロパティ</li>
+                <li>Search Console（URLのインプレッション）：対象のプロパティ</li>
+                <li>Search Console（サイトのインプレッション）：対象のプロパティ</li>
+              </ul>
+            </li>
+            <li>
+              <p>Search Console（URLのインプレッション）のデータソースに、計算フィールド「GSCパス」を作る</p>
+              <div class="sm-code"><pre set:text={GSC_PATH}></pre><button type="button" class="bk-btn-o" data-copy={GSC_PATH}>コピー</button></div>
+            </li>
+            <li>
+              <p>GA4のデータソースに、計算フィールド「GA4パス」を作る</p>
+              <div class="sm-code"><pre set:text={GA4_PATH}></pre><button type="button" class="bk-btn-o" data-copy={GA4_PATH}>コピー</button></div>
+            </li>
+            <li>
+              <p>GA4のデータソースで、ディメンション「キーイベント」の名前を「キーイベント（ディメンション）」に変える（指標のキーイベントと名前が重なるため）</p>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <ToolFooter path={PATH} />
+</BaseLayout>
+
+<style>
+  .sm-open { text-align: center; }
+  .sm-open .bk-start-btn { margin: 0 auto 10px; }
+  .sm-open-note { font-size: 0.85rem; color: var(--sub); }
+
+  .sm-know { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .sm-know > li { display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--line); padding: 12px 14px 14px; }
+  .sm-know b { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+  .sm-know b i { font-style: normal; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--ink); color: #fff; font-size: 0.78rem; font-weight: 800; flex: 0 0 auto; }
+  .sm-know p { font-size: 0.8rem; color: var(--sub); line-height: 1.6; }
+  .sm-shot { display: block; margin-top: auto; border: 1px solid var(--line); aspect-ratio: 4 / 3; overflow: hidden; }
+  .sm-shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+  .sm-shot:hover { border-color: var(--ink); }
+
+  .sm-setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr); gap: 24px; border-top: 1px solid var(--line); margin-top: 22px; padding-top: 20px; }
+  .sm-need ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .sm-need li { background: #fff; border: 1px solid var(--line); padding: 6px 10px; font-size: 0.85rem; }
+  .sm-first .bk-h2 span { font-size: 0.78rem; font-weight: 400; color: var(--mute); margin-left: 10px; }
+  .sm-first > ol { margin: 0; padding: 0; list-style: none; counter-reset: sm; display: flex; flex-direction: column; gap: 12px; }
+  .sm-first > ol > li { counter-increment: sm; position: relative; padding-left: 32px; font-size: 0.88rem; line-height: 1.7; }
+  .sm-first > ol > li::before { content: counter(sm); position: absolute; left: 0; top: 2px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--ink); background: #fff; font-size: 0.75rem; font-weight: 800; }
+  .sm-ds { margin: 6px 0 0; padding-left: 1.2em; list-style: disc; font-size: 0.82rem; color: var(--sub); }
+  .sm-code { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; background: #fff; border: 1px solid var(--line); padding: 8px 10px; }
+  .sm-code pre { flex: 1; min-width: 0; margin: 0; font-size: 0.76rem; line-height: 1.6; white-space: pre-wrap; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  @media (max-width: 860px) {
+    .sm-know, .sm-setup { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
+<script>
+  // 計算フィールドの式をコピーする
+  document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy ?? "");
+        btn.textContent = "コピーしました";
+        setTimeout(() => (btn.textContent = "コピー"), 1600);
+      } catch {
+        btn.textContent = "コピーできません";
+      }
+    });
+  });
+</script>
