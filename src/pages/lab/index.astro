@@ -2,7 +2,7 @@
 // Lab（記事・資料）トップ（2026-10-12リニューアル、2026-11-02 右ナビを廃止して1カラム化）。
 // 上から：H1エリア（右寄せでミーアキャット public/images/logo/meerkat-symbol.svg）
 // →「カテゴリから探す」（カテゴリトップへの導線）
-// →「Kitで確かめる」（カテゴリの下の薄いグレー枠のレコメンド。診断系Kit 3つ。src/data/tools.ts の KIT_GROUPS から名前に「診断」を含むKit。カード全体がリンク）
+// →「Kitで分析する」（カテゴリの下の薄いグレー枠のレコメンド。メインのKit 3つ＝src/data/tools.ts の MAIN_KITS。カード全体がリンク）
 // →「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う。
 // 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
 // 「記事だけ」「資料だけ」の一覧へも /lab?type=post・/lab?type=resource でリンクできる。
@@ -13,7 +13,7 @@ import ContactCta from "@/components/ContactCta.astro";
 import LabRow from "@/components/LabRow.astro";
 import { getAllTagNamesByCount, getLibraryItems } from "@/lib/library";
 import { getAllCategories, getCategoryPath, getCategorySlug } from "@/lib/posts";
-import { KIT_GROUPS } from "@/data/tools";
+import { KIT_GROUPS, MAIN_KITS } from "@/data/tools";
 import { LIBRARY_PAGE_SIZE } from "@/consts";
 
 const items = getLibraryItems("all");
@@ -26,14 +26,9 @@ const categories = getAllCategories().map((c) => ({
   path: getCategoryPath(c.name),
 }));
 
-// 「Kitで確かめる」：診断系Kit（予算案診断Kit・KPI妥当性診断Kit・施策効果診断Kit）
-// Labでは説明文を短くするため、一部のKitだけ説明文をここで上書きする
-const LAB_KIT_DESCRIPTIONS: Record<string, string> = {
-  "/tools/budget-checker": "自社で作った予算案を取りこみ、NGを直して年間予算表（Excel）に仕上げます。",
-};
-const checkKits = KIT_GROUPS.flatMap((g) => g.kits)
-  .filter((k) => k.name.includes("診断"))
-  .map((k) => ({ ...k, description: LAB_KIT_DESCRIPTIONS[k.href] ?? k.description }));
+// 「Kitで分析する」：メインのKit（SEO月次分析Kit・施策効果診断Kit・KPI妥当性診断Kit。2026-11-15 src/data/tools.ts の MAIN_KITS）
+const allKits = KIT_GROUPS.flatMap((g) => g.kits);
+const checkKits = MAIN_KITS.map((m) => allKits.find((k) => k.href === m.href)).filter((k) => !!k);
 
 const filters = [
   { key: "all", label: "すべて", count: counts.all },
@@ -89,12 +84,12 @@ const allTags = getAllTagNamesByCount();
       checkKits.length > 0 && (
         <aside aria-labelledby="lab-kits" class="mt-6 border border-neutral-200 bg-neutral-100 p-4 sm:p-5">
           <div class="flex flex-wrap items-end justify-between gap-2">
-            <h2 id="lab-kits" class="text-sm font-bold text-ink-950">Kitで確かめる</h2>
+            <h2 id="lab-kits" class="text-sm font-bold text-ink-950">Kitで分析する</h2>
             <a href="/tools" class="group flex items-center gap-2 text-xs font-bold text-ink-950 hover:underline">
               Kit一覧を見る<span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
             </a>
           </div>
-          <p class="mt-1 text-xs leading-relaxed text-neutral-500">記事・資料をもとに作った予算案やKPIを、診断Kitで確かめられます。</p>
+          <p class="mt-1 text-xs leading-relaxed text-neutral-500">毎月の数字から、悪化したところと次に直すところをKitで出せます。</p>
           <ul class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             {checkKits.map((k) => (
               <li>

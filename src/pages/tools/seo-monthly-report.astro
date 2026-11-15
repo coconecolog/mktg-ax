@@ -1,7 +1,7 @@
 ---
 // src/pages/tools/seo-monthly-report.astro
 //
-// SEO月次分析テンプレート（データポータル）（/tools/seo-monthly-report、2026-11-15）。
+// SEO月次分析Kit（データポータル）（/tools/seo-monthly-report、2026-11-15）。
 // データポータル（旧Looker Studio）のテンプレートを配るだけの入口ページ1枚（入力・診断・ダウンロードの画面はない）。
 // 形はKitの入口の標準（src/components/kit-flow/KitIntro.astro）を流用：ファーストビュー（左＝H1・問いかけ・説明・3ステップ／右＝画面）→ テンプレートを開く → グレーの枠（わかること・必要なもの・最初の設定）
 // 画面の画像：public/images/tools/seo-monthly-report-{1,2,3}.png（ページパス・検索キーワードはぼかす。資料M-X-04のスライドと同じ画像）
@@ -13,7 +13,7 @@ import { getToolMeta } from "@/lib/tools";
 import "@/styles/budget-checker.css";
 
 const PATH = "/tools/seo-monthly-report";
-const TITLE = "SEO月次分析テンプレート（データポータル）";
+const TITLE = "SEO月次分析Kit（データポータル）";
 // データソース3つを閲覧者の認証情報にして、リンクを知っている全員に共有したレポート
 const TEMPLATE_URL = "https://datastudio.google.com/reporting/8feb4ffd-eda9-4e5d-8508-b5d90c6a3a7d";
 

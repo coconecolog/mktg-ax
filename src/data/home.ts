@@ -104,56 +104,40 @@ export const HOME_ISSUES = {
 };
 
 // ------------------------------------------------------------
-// 計画から改善、報告まで（3つのステップのKit）
+// メインのKit（3枚のカード）
 // ・resource は「あわせて使う資料」（1つ）。href を null にするとリンクなしで「準備中」と出ます
 // ・resource.label は資料の上の見出し（カードごとに変えられる）。coverTitle は表紙に出す名前（改行は \n）。guide は資料の下の案内文（空なら出さない）
-// ・2026-11-02：カードは診断系の3つ（自分で作ったExcelを読み込んで診断・修正する）。lead は見出しの下のリード文
+// ・2026-11-15：カードはメインのKit（SEO月次分析Kit・施策効果診断Kit・KPI妥当性診断Kit）。/tools の「01 分析する」と同じ3つ
 // ------------------------------------------------------------
 export const HOME_PDCA = {
-  heading: "計画から改善、報告まで。",
-  sub: "予算とKPIを1本でつなぐ、3つのステップ",
-  lead: "自分で作った予算表やKPI管理表を読み込むだけ。数値の妥当性や計画の整合性を診断し、修正した内容をExcelでダウンロードできます。",
-  note: "Kitと資料は同じ項目・同じ数字の定義でそろえています。どのステップから始めても使えます。",
+  heading: "毎月の数字を、Kitで分析する。",
+  sub: "GA4・Search Console・KPI管理表をつなぐ、3つのKit",
+  lead: "毎月の数字をつなぐ・読み込むだけで、悪化したところと次に直すところが出ます。",
+  note: "Kitと資料は同じ項目・同じ数字の定義でそろえています。",
   relatedLabel: "あわせて使う資料",
   comingSoonLabel: "準備中",
   listLink: { label: "Kit一覧", href: "/tools" },
   steps: [
     {
       step: "01",
-      phase: "計画",
-      purpose: "投資の根拠をつくる",
-      name: "予算案診断Kit",
-      description: "自分で作った予算表やAIの予算案を読み込み、CPL・CACと計画の整合性を診断します。直した予算は年間予算表（Excel）でダウンロードできます。",
-      href: "/tools/budget-checker",
+      phase: "SEO",
+      purpose: "検索からの流入を確かめる",
+      name: "SEO月次分析Kit（データポータル）",
+      description: "GA4とSearch Consoleをつなぐだけで、毎月の悪化の判定と、ページごとの対策事項が出ます。",
+      href: "/tools/seo-monthly-report",
       resource: {
         label: "あわせて使う資料",
-        name: "年間計画シート（KPIと予算）",
-        coverTitle: "年間\n予算表",
-        typeLabel: "スプレッドシート",
-        href: "/lab/whitepapers/kgi-kpi-backcast-sheet",
-        guide: "入力した年間予算表をこのKitにアップするだけで診断できます。表はKPI管理表の「はじめに入力」と同じなので、そのまま貼りつけられます。",
+        name: "SEOの効果測定と改修の手順",
+        coverTitle: "SEO\n効果測定",
+        typeLabel: "スライド",
+        href: "/lab/whitepapers/seo-effect-measurement",
+        guide: "判定の見方と、原因の調べ方・直し方をまとめた手順書です。",
       },
     },
     {
       step: "02",
-      phase: "管理",
-      purpose: "追う数字を決める",
-      name: "KPI妥当性診断Kit",
-      description: "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。直したKPIはKPI管理表（Excel）でダウンロードできます。",
-      href: "/tools/kpi-check",
-      resource: {
-        label: "あわせて使う資料",
-        name: "KPI管理表",
-        coverTitle: "KPI\n管理表",
-        typeLabel: "スプレッドシート",
-        href: "/lab/whitepapers/kpi-management-template",
-        guide: "KPI管理表の「はじめに入力」に計画を入れて、このKitにアップするだけで診断できます。",
-      },
-    },
-    {
-      step: "03",
-      phase: "改善・報告",
-      purpose: "打ち手を見直して伝える",
+      phase: "施策",
+      purpose: "打ち手が効いたかを確かめる",
       name: "施策効果診断Kit",
       description: "毎月の実績と施策ログから、続いている課題と、打ち手が効いたかを確率つきで示します。",
       href: "/tools/kpi-analysis",
@@ -164,6 +148,22 @@ export const HOME_PDCA = {
         typeLabel: "スプレッドシート",
         href: "/lab/whitepapers/kpi-management-template",
         guide: "毎月の実績をKPI管理表に入れて、このKitにアップするだけで診断が終わります。",
+      },
+    },
+    {
+      step: "03",
+      phase: "KPI",
+      purpose: "追う数字を確かめる",
+      name: "KPI妥当性診断Kit",
+      description: "自分で作ったKPIが売上目標とつながっているか、率やコストに無理がないかを診断します。直したKPIはKPI管理表（Excel）でダウンロードできます。",
+      href: "/tools/kpi-check",
+      resource: {
+        label: "あわせて使う資料",
+        name: "KPI管理表",
+        coverTitle: "KPI\n管理表",
+        typeLabel: "スプレッドシート",
+        href: "/lab/whitepapers/kpi-management-template",
+        guide: "KPI管理表の「はじめに入力」に計画を入れて、このKitにアップするだけで診断できます。",
       },
     },
   ],

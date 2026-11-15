@@ -351,7 +351,7 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
     related: [],
   },
 
-  // SEO月次分析テンプレート（データポータル）（2026-11-15）
+  // SEO月次分析Kit（データポータル）（2026-11-15）
   "/tools/seo-monthly-report": {
     faq: [
       { question: "無料で使えますか？", answer: "無料です。データポータル、GA4、Search Consoleも無料で使えます。" },
