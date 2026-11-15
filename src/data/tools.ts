@@ -208,6 +208,13 @@ export const KIT_SECTIONS = [
 // /tools の「その他」。
 export const OTHER_TOOLS = [
   {
+    icon: "chart-spline",
+    category: "SEO・効果測定",
+    title: "SEO月次分析テンプレート（データポータル）",
+    description: "GA4とSearch Consoleをつなぐだけで、毎月のSEOの悪化の判定と、ページごとの対策事項が出るデータポータルのテンプレート。",
+    href: "/tools/seo-monthly-report",
+  },
+  {
     icon: "clipboard-check",
     category: "MAツール",
     title: "MAツール選定チェック",

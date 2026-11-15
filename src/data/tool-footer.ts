@@ -350,4 +350,33 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
     // 2026-11-03：関連はツールの直下（tool-next-steps.ts）と、ツールDBのカテゴリの記事・資料（ToolFooter の lab）で出す
     related: [],
   },
+
+  // SEO月次分析テンプレート（データポータル）（2026-11-15）
+  "/tools/seo-monthly-report": {
+    faq: [
+      { question: "無料で使えますか？", answer: "無料です。データポータル、GA4、Search Consoleも無料で使えます。" },
+      {
+        question: "自分のデータをMeerKitLabに見られることはありますか？",
+        answer: "ありません。コピーしたレポートはあなたのGoogleアカウントの中にあり、MeerKitLabからは見えません。",
+      },
+      {
+        question: "リンクを開いても数字が表示されません。",
+        answer: "テンプレートのため、そのままでは表示されません。コピーして自分のGA4とSearch Consoleにつなぐと表示されます。",
+      },
+      {
+        question: "「比較データなし」「翌月に再判定」と表示されます。",
+        answer: "先々月のデータがないと、比べられないため表示されます。データが2か月分そろうと判定されます。",
+      },
+      {
+        question: "CSV版（SEOの効果測定と改修の手順）との違いは？",
+        answer:
+          "このテンプレートは、毎月のCSVの書き出しが不要で、検索キーワードごとの順位の変化とカニバリゼーションも自動で確認できます。CSV版は、スプレッドシートで手元に記録を残したい方向けです。",
+      },
+      {
+        question: "判定の基準は変えられますか？",
+        answer: "変えられます。表の計算フィールド（流入前の判定・流入後の判定など）の数字を書きかえてください。",
+      },
+    ],
+    related: [{ type: "resource", title: "SEOの効果測定と改修の手順", href: "/lab/whitepapers/seo-effect-measurement" }],
+  },
 };
