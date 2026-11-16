@@ -1031,6 +1031,22 @@ export async function generateArticleBanner(idHint, background, title, subtitle)
   }
 }
 
+// 2026-11-16〜：記事の最初の画面に結論とCTAを置くため、本文の「この記事でわかること」のコールアウトは表示しない。
+// Notionの本文は書き換えず、ビルド時に本文の先頭近く（最初のH2より前）にあるものだけを外す。
+const ARTICLE_SUMMARY_LABEL = "この記事でわかること";
+function plainOf(items) {
+  return (items || []).map((t) => t.text || "").join("");
+}
+export function removeArticleSummaryCallouts(blocks) {
+  const firstH2 = blocks.findIndex((b) => b.type === "heading_2");
+  const limit = firstH2 === -1 ? blocks.length : firstH2;
+  return blocks.filter((b, i) => {
+    if (i >= limit || b.type !== "callout") return true;
+    const head = (plainOf(b.richText) || plainOf(b.children?.[0]?.richText)).replace(/^[^\p{L}\p{N}]+/u, "");
+    return !head.startsWith(ARTICLE_SUMMARY_LABEL);
+  });
+}
+
 /**
  * ディスクリプションが未入力のときのフォールバック用に、
  * 本文の最初のテキストブロックから抜粋を作る。

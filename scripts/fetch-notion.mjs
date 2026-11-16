@@ -40,6 +40,7 @@ import {
   downloadImage,
   generateFallbackThumbnail,
   generateArticleBanner,
+  removeArticleSummaryCallouts,
   thumbnailPngPath,
   resolveCategoryBackgroundDataUri,
   extractExcerpt,
@@ -130,7 +131,7 @@ async function fetchCategories(token, linkMap) {
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
-    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
+    const blocks = removeArticleSummaryCallouts(await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap));
 
     categories.push({
       name,
