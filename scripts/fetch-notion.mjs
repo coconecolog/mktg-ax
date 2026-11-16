@@ -40,6 +40,7 @@ import {
   downloadImage,
   generateFallbackThumbnail,
   generateArticleBanner,
+  removeArticleSummaryCallouts,
   thumbnailPngPath,
   resolveCategoryBackgroundDataUri,
   extractExcerpt,
@@ -130,7 +131,7 @@ async function fetchCategories(token, linkMap) {
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
-    const blocks = await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap);
+    const blocks = removeArticleSummaryCallouts(await transformBlocks(rawBlocks, makeAnchor, page.id, linkMap));
 
     categories.push({
       name,
@@ -534,6 +535,8 @@ async function main() {
     // （全タグが対象・タグごとに初出1箇所・英字SlugのURL・「公開後の編集中」の記事にも適用するため）
 
     const description = getRichTextPlain(page, PROP.description).trim() || extractExcerpt(blocks);
+    // 記事の最初の画面に出す結論（2026-11-16〜）。未入力なら null（結論のボックスを出さない）
+    const conclusion = getRichTextPlain(page, PROP.conclusion).trim() || null;
 
     posts.push({
       id: page.id,
@@ -552,6 +555,7 @@ async function main() {
       thumbnail,
       banner,
       ogImage,
+      conclusion,
       blocks,
     });
   }

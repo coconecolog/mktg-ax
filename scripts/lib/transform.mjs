@@ -36,6 +36,9 @@ export const PROP = {
   thumbnailTitle: "サムネ用タイトル",
   // 自動生成サムネイルの補足文言（1行）。「テキスト」プロパティ。未入力なら表示しない。
   thumbnailSubtitle: "サムネ用サブタイトル",
+  // 2026-11-16追加: 記事の最初の画面に出す「結論」のボックス。「テキスト」プロパティ。
+  // 1行目＝見出し（例：結論：中小企業の広告費は売上の0.51%）、2行目以降＝箇条書き。未入力なら出さない。
+  conclusion: "結論",
   // 「執筆者リスト」DBとのリレーションプロパティ（単一選択想定）。値の解決には
   // getFirstRelationName（notion-client.mjs）を使う。複数選択されていても先頭1件だけを使う。
   author: "執筆者",
@@ -1026,6 +1029,22 @@ export async function generateArticleBanner(idHint, background, title, subtitle)
     console.warn(`  [notion] 記事用の横長アイキャッチの作成に失敗しました (${idHint}): ${err.message}`);
     return null;
   }
+}
+
+// 2026-11-16〜：記事の最初の画面に結論とCTAを置くため、本文の「この記事でわかること」のコールアウトは表示しない。
+// Notionの本文は書き換えず、ビルド時に本文の先頭近く（最初のH2より前）にあるものだけを外す。
+const ARTICLE_SUMMARY_LABEL = "この記事でわかること";
+function plainOf(items) {
+  return (items || []).map((t) => t.text || "").join("");
+}
+export function removeArticleSummaryCallouts(blocks) {
+  const firstH2 = blocks.findIndex((b) => b.type === "heading_2");
+  const limit = firstH2 === -1 ? blocks.length : firstH2;
+  return blocks.filter((b, i) => {
+    if (i >= limit || b.type !== "callout") return true;
+    const head = (plainOf(b.richText) || plainOf(b.children?.[0]?.richText)).replace(/^[^\p{L}\p{N}]+/u, "");
+    return !head.startsWith(ARTICLE_SUMMARY_LABEL);
+  });
 }
 
 /**

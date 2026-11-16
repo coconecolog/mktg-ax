@@ -1,0 +1,41 @@
+---
+// 記事の上のほうに出す、細い1行のCTA（2026-11-16〜）。記事DB「CTA資料」「CTAツール」から自動で組み立てる。
+// 記事末尾の大きなCTA（ResourceCta・ToolCta）は残したまま、最初の画面の近くにも入口を置く。
+// PC＝左に資料・右にツールを横に並べる／スマホ＝上下2段。片方だけなら全幅、両方なければ何も出さない。
+import type { Resource, Tool } from "@/lib/types";
+
+interface Props {
+  resource?: Resource;
+  tool?: Tool;
+  /** 外側の余白。省略時は mt-4 */
+  class?: string;
+}
+
+const { resource, tool, class: spacing = "mt-4" } = Astro.props;
+const items = [
+  resource && { href: `/lab/whitepapers/${resource.slug}`, label: "無料資料", title: resource.title, icon: "doc" },
+  tool && { href: tool.href, label: "無料ツール", title: tool.title, icon: "tool" },
+].filter(Boolean) as { href: string; label: string; title: string; icon: "doc" | "tool" }[];
+---
+
+{
+  items.length > 0 && (
+    <nav class={`${spacing} article-top-cta flex flex-col border border-neutral-300 bg-white text-sm sm:flex-row`} aria-label="この記事とあわせて使う資料・ツール">
+      {items.map((item, i) => (
+        <a
+          href={item.href}
+          class={`flex min-w-0 flex-1 items-center gap-2 px-4 py-2.5 text-ink-950 no-underline hover:bg-neutral-50 hover:text-brand-700 ${i > 0 ? "border-t border-neutral-300 sm:border-l sm:border-t-0" : ""}`}
+        >
+          {item.icon === "doc" ? (
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /><path d="M12 11v6" /><path d="M9.5 14.5L12 17l2.5-2.5" /></svg>
+          ) : (
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8L7 10" /></svg>
+          )}
+          <span class="shrink-0 text-xs font-bold text-neutral-500">{item.label}</span>
+          <span class="min-w-0 flex-1 truncate font-medium">{item.title}</span>
+          <span class="shrink-0 text-neutral-400" aria-hidden="true">→</span>
+        </a>
+      ))}
+    </nav>
+  )
+}
