@@ -119,7 +119,7 @@ export const KIT_GROUPS: KitGroup[] = [
       {
         kind: "create",
         icon: "sheet",
-        situation: "KPI管理表がほしい",
+        situation: "売上目標からKPIを逆算したい",
         description: "売上目標と今期の実績から逆算し、チャネルに分割すると、判定つきのKPI管理表（Excel）ができます。",
         name: "KPI管理表作成Kit",
         button: "管理表を作る",
@@ -173,7 +173,8 @@ export const KIT_GROUPS: KitGroup[] = [
 // （データ分析の記事は「KPI・効果測定・分析」へ移り、そちらは「KPI」で当たる）。
 const CATEGORY_KIT_RULES: { words: string[]; hrefs: string[] }[] = [
   { words: ["予算", "ROI"], hrefs: ["/tools/budget-simulator", "/tools/budget-checker"] },
-  { words: ["KPI", "KGI"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check"] },
+  // 2026-11-16：カニバリ解消（「kpi 管理 表」）。KPI管理表作成Kitは「KPI 逆算 ツール」を狙うため、カテゴリからリンクする
+  { words: ["KPI", "KGI"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check", "/tools/kpi-sheet-maker"] },
   { words: ["施策"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis"] },
 ];
 // 2026-11-15：どれにも当てはまらないカテゴリ（戦略・組織など）は、メインのKitのうちKPIの2つを出す
