@@ -105,6 +105,12 @@
 .prose-notion table {
   @apply w-full border-collapse text-sm;
 }
+/* 2026-11-16：列が多い表で、短い見出しの列（「費目」など）が2〜3文字幅まで潰れて読めなくなるため、
+   列の最小幅を決める。収まらない表は、外側の枠（overflow-x-auto）で横にスクロールする */
+.prose-notion th,
+.prose-notion td {
+  min-width: 6em;
+}
 .prose-notion img {
   @apply rounded-xl;
 }
