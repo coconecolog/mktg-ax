@@ -8,6 +8,9 @@ export async function GET(context) {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
     site: context.site,
+    // サイト全体は「/なし」（astro.config の trailingSlash: "never"）。
+    // @astrojs/rss は初期値でリンク末尾に「/」を付けるため、明示的に外す
+    trailingSlash: false,
     items: posts.map((post) => ({
       title: post.title,
       description: post.description,
