@@ -938,6 +938,96 @@ const decoFill = isLight ? "#000000" : "#ffffff";
   }
 }
 
+// ---- 記事ページの最初の画面に出す横長のアイキャッチ（2026-11-16〜） ----
+// 16:9のサムネイルは記事の最初の画面の大半を占め、本文が画面の外に押し出されていたため、
+// 記事ページだけ横長（1200×280）の帯にする。一覧カード・OGPは今までどおり16:9のサムネイルを使う。
+// 左にサムネ用サブタイトル・サムネ用タイトル、右にサブカテゴリの背景画像の図を縮小して置く。
+const BANNER_WIDTH = 1200;
+const BANNER_HEIGHT = 280;
+// サブカテゴリの背景SVG（1200×675）のうち、右側の図がある範囲（上下の罫線・左上のラベルは含めない）
+const BACKGROUND_FIGURE_VIEWBOX = "640 130 510 410";
+
+/** 背景SVGの先頭の全面の四角の色を返す（取れなければ null）。 */
+function backgroundSvgBaseColor(dataUri) {
+  try {
+    if (!dataUri?.startsWith("data:image/svg+xml")) return null;
+    const svg = Buffer.from(dataUri.split(",")[1], "base64").toString("utf-8");
+    return svg.match(/<rect[^>]*width="1200"[^>]*height="675"[^>]*fill="([^"]+)"/i)?.[1] || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 記事ページ用の横長のアイキャッチ（SVG）を作る。失敗したら null（記事ページは16:9のサムネイルを出す）。
+ * 引数は generateFallbackThumbnail() と同じ。
+ */
+export async function generateArticleBanner(idHint, background, title, subtitle) {
+  try {
+    const { dataUri, colorKey } = background || {};
+    const isLight = !dataUri && colorKey === "white";
+    const textFill = dataUri ? pickReadableTextColor(dataUri) : isLight ? "#0b0b12" : "#ffffff";
+    const decoFill = isLight ? "#000000" : "#ffffff";
+    const baseColor = backgroundSvgBaseColor(dataUri);
+
+    // 文字は x=56〜780 に収め、右側の図（x≒820〜）にかからないようにする
+    const textX = 56;
+    const subtitleFontSize = 26;
+    const titleFontSize = 50;
+    const titleLineHeight = 64;
+    const titleLines = wrapText(title, 14, 2); // 全角換算の文字数（724px ÷ 50px ≒ 14）
+    const subtitleLines = subtitle ? wrapText(subtitle, 26, 1) : [];
+
+    const subtitleBlock = subtitleLines.length > 0 ? subtitleFontSize + 20 : 0;
+    const blockHeight = subtitleBlock + titleLines.length * titleLineHeight - (titleLineHeight - titleFontSize);
+    let cursorY = (BANNER_HEIGHT - blockHeight) / 2;
+
+    const subtitleTspans = subtitleLines
+      .map((line) => `<tspan x="${textX}" y="${(cursorY + subtitleFontSize * 0.88).toFixed(1)}">${escapeXml(line)}</tspan>`)
+      .join("");
+    cursorY += subtitleBlock;
+    const titleTspans = titleLines
+      .map((line, i) => `<tspan x="${textX}" y="${(cursorY + titleFontSize * 0.88 + i * titleLineHeight).toFixed(1)}">${escapeXml(line)}</tspan>`)
+      .join("");
+
+    let backgroundMarkup;
+    if (dataUri && baseColor) {
+      // サブカテゴリの背景SVG：地の色で塗り、右側に図だけを切り出して縮小して置く
+      backgroundMarkup = `<rect width="${BANNER_WIDTH}" height="${BANNER_HEIGHT}" fill="${baseColor}" />
+  <svg x="820" y="16" width="340" height="${BANNER_HEIGHT - 32}" viewBox="${BACKGROUND_FIGURE_VIEWBOX}" preserveAspectRatio="xMidYMid meet">
+    <image href="${dataUri}" x="0" y="0" width="1200" height="675" />
+  </svg>`;
+    } else if (dataUri) {
+      // PNGなどの背景画像：帯の大きさに合わせて切り抜いて敷く
+      backgroundMarkup = `<image href="${dataUri}" x="0" y="0" width="${BANNER_WIDTH}" height="${BANNER_HEIGHT}" preserveAspectRatio="xMidYMid slice" />`;
+    } else {
+      const [colorFrom, colorTo] = CATEGORY_COLOR_GRADIENTS[colorKey] || CATEGORY_COLOR_GRADIENTS.default;
+      backgroundMarkup = `<defs>
+    <linearGradient id="bgrad-${idHint}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${colorFrom}" />
+      <stop offset="100%" stop-color="${colorTo}" />
+    </linearGradient>
+  </defs>
+  <rect width="${BANNER_WIDTH}" height="${BANNER_HEIGHT}" fill="url(#bgrad-${idHint})" />
+  <circle cx="1090" cy="40" r="150" fill="${decoFill}" opacity="${isLight ? "0.04" : "0.08"}" />`;
+    }
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${BANNER_WIDTH}" height="${BANNER_HEIGHT}" viewBox="0 0 ${BANNER_WIDTH} ${BANNER_HEIGHT}">
+  ${backgroundMarkup}
+  ${subtitleLines.length > 0 ? `<text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${subtitleFontSize}" font-weight="500" fill="${textFill}" opacity="0.8">${subtitleTspans}</text>` : ""}
+  <text font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="${titleFontSize}" font-weight="700" fill="${textFill}">${titleTspans}</text>
+</svg>`;
+
+    await fs.mkdir(GENERATED_THUMBNAIL_OUT_DIR, { recursive: true });
+    const filename = `banner-${idHint}.svg`;
+    await fs.writeFile(path.join(GENERATED_THUMBNAIL_OUT_DIR, filename), svg, "utf-8");
+    return `/images/generated/${filename}`;
+  } catch (err) {
+    console.warn(`  [notion] 記事用の横長アイキャッチの作成に失敗しました (${idHint}): ${err.message}`);
+    return null;
+  }
+}
+
 /**
  * ディスクリプションが未入力のときのフォールバック用に、
  * 本文の最初のテキストブロックから抜粋を作る。

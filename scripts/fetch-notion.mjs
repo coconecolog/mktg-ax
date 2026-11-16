@@ -39,6 +39,7 @@ import {
   transformBlocks,
   downloadImage,
   generateFallbackThumbnail,
+  generateArticleBanner,
   thumbnailPngPath,
   resolveCategoryBackgroundDataUri,
   extractExcerpt,
@@ -522,6 +523,8 @@ async function main() {
     const thumbnail = await generateFallbackThumbnail(page.id, background, thumbnailTitle, thumbnailSubtitle);
     // OGP・構造化データ用のPNG版（サムネイルと同じ絵柄）。作れなかったら null
     const ogImage = await thumbnailPngPath(thumbnail);
+    // 記事ページの最初の画面に出す横長のアイキャッチ（2026-11-16〜）。一覧カード・OGPは thumbnail を使う。
+    const banner = await generateArticleBanner(page.id, background, thumbnailTitle, thumbnailSubtitle);
 
     const rawBlocks = await fetchBlockChildrenRecursive(token, page.id);
     const makeAnchor = makeAnchorFactory();
@@ -547,6 +550,7 @@ async function main() {
       publishedAt,
       updatedAt,
       thumbnail,
+      banner,
       ogImage,
       blocks,
     });
