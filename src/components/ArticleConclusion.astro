@@ -1,0 +1,31 @@
+---
+// 記事の最初の画面に出す「結論」のボックス（2026-11-16〜）。記事DB「結論」から組み立てる。
+// 1行目＝見出し、2行目以降＝箇条書き（先頭の「・」「-」は取り除く）。本文のコールアウトと同じ見た目にそろえる。
+interface Props {
+  text: string;
+}
+
+const lines = Astro.props.text
+  .split("\n")
+  .map((line) => line.trim().replace(/^[・\-*•]\s*/, ""))
+  .filter(Boolean);
+const [heading, ...items] = lines;
+---
+
+{
+  heading && (
+    <div class="mt-8 flex gap-3 border border-neutral-300 bg-white p-4 sm:p-5" aria-label="結論">
+      <span class="text-xl leading-none">📌</span>
+      <div class="min-w-0 flex-1">
+        <p class="m-0 font-bold leading-snug text-ink-950">{heading}</p>
+        {
+          items.length > 0 && (
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-[0.98rem] leading-relaxed text-neutral-800">
+              {items.map((item) => <li>{item}</li>)}
+            </ul>
+          )
+        }
+      </div>
+    </div>
+  )
+}

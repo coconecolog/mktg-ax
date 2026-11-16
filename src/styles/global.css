@@ -81,6 +81,15 @@
 .prose-notion a:active {
   color: #ff0000;
 }
+/* 本文の途中に置く細いCTA（ArticleTopCta）は、本文のリンク色（青・下線）にしない */
+.prose-notion .article-top-cta a,
+.prose-notion .article-top-cta a:visited {
+  color: var(--color-ink-950, #0b0b12);
+  text-decoration: none;
+}
+.prose-notion .article-top-cta a:hover {
+  background-color: #fafafa;
+}
 .prose-notion strong {
   @apply font-bold text-ink-950;
 }

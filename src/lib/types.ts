@@ -61,6 +61,8 @@ export interface Post {
   ogImage?: string | null;
   /** 記事ページの最初の画面に出す横長のアイキャッチ（1200×280のSVG、2026-11-16〜）。古いキャッシュには無い。 */
   banner?: string | null;
+  /** 記事DB「結論」（2026-11-16〜）。1行目＝見出し、2行目以降＝箇条書き。未入力・古いキャッシュでは無い。 */
+  conclusion?: string | null;
   blocks: BlockNode[];
 }
 

@@ -7,6 +7,8 @@ import SideNav from "@/components/SideNav.astro";
 import ContactCta from "@/components/ContactCta.astro";
 import ResourceCta from "@/components/ResourceCta.astro";
 import ToolCta from "@/components/ToolCta.astro";
+import ArticleConclusion from "@/components/ArticleConclusion.astro";
+import ArticleTopCta from "@/components/ArticleTopCta.astro";
 import { getResourceById } from "@/lib/resources";
 import { getSideKits, getToolById } from "@/lib/tools";
 import { buildArticleSchema, buildFaqSchema } from "@/lib/schema";
@@ -43,6 +45,14 @@ if (post.ctaToolId && !ctaTool) {
     `[PostLayout] 「${post.title}」の「CTAツール」に指定されたツールが見つかりません（ツールDBで「公開」がOFF、またはSlugに対応するページが無いためスキップされた可能性があります）。`,
   );
 }
+
+// 記事の上のほうの細いCTA（2026-11-16〜）。記事DB「結論」があれば結論のボックスのすぐ下、
+// 無ければ本文の最初のH2の前（導入文の後）に出す。H2が無い記事は本文の前に出す。
+const firstH2Index = bodyBlocks.findIndex((b) => b.type === "heading_2");
+const ctaSplitIndex = post.conclusion ? -1 : Math.max(firstH2Index, 0);
+const leadBlocks = ctaSplitIndex > 0 ? bodyBlocks.slice(0, ctaSplitIndex) : [];
+const restBlocks = ctaSplitIndex > 0 ? bodyBlocks.slice(ctaSplitIndex) : bodyBlocks;
+const hasTopCta = !!(ctaResource || ctaTool);
 
 // 右カラムの「関連するKit」（CTAツールがKitならそれ、なければカテゴリで決める）
 const sideKits = getSideKits(post.category, ctaTool?.href);
@@ -162,6 +172,9 @@ const relatedTags = getRelatedTagsBySubcategories(post.subcategoryIds || []);
   )
 }
 
+        {post.conclusion && <ArticleConclusion text={post.conclusion} />}
+        {post.conclusion && hasTopCta && <ArticleTopCta resource={ctaResource} tool={ctaTool} />}
+
         {/* 目次は右カラムに表示。右カラムが記事の下に回るスマホ・タブレットだけ、ここに折りたたみで出す */}
         {
           toc.length > 0 && (
@@ -175,7 +188,9 @@ const relatedTags = getRelatedTagsBySubcategories(post.subcategoryIds || []);
         }
 
         <div class="prose-notion mt-10 w-full">
-          <NotionBlocks blocks={bodyBlocks} />
+          {leadBlocks.length > 0 && <NotionBlocks blocks={leadBlocks} />}
+          {!post.conclusion && hasTopCta && <ArticleTopCta resource={ctaResource} tool={ctaTool} class="" />}
+          <NotionBlocks blocks={restBlocks} />
         </div>
 
         {ctaResource && <ResourceCta resource={ctaResource} kits={sideKits} />}
