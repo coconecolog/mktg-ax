@@ -377,6 +377,14 @@ export const TOOL_FOOTER: Record<string, ToolFooterData> = {
         answer: "変えられます。表の計算フィールド（流入前の判定・流入後の判定など）の数字を書きかえてください。",
       },
     ],
-    related: [{ type: "resource", title: "SEOの月次分析と改修の手順", href: "/lab/whitepapers/seo-monthly-analysis" }],
+    // 2026-11-16：SEOメンテナンス（インデックス登録）。判定の手順を解説した記事へのリンクを追加
+    related: [
+      { type: "resource", title: "SEOの月次分析と改修の手順", href: "/lab/whitepapers/seo-monthly-analysis" },
+      {
+        type: "post",
+        title: "Search ConsoleとGA4の連携｜原因が検索流入か流入後の行動かを切り分ける",
+        href: "/lab/blog/search-console-ga4-integration",
+      },
+    ],
   },
 };
