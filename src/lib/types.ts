@@ -59,6 +59,8 @@ export interface Post {
   thumbnail: string | null;
   /** サムネイルのPNG版（OGP・構造化データ用）。古いキャッシュや作成失敗時は無い。 */
   ogImage?: string | null;
+  /** 記事ページの最初の画面に出す横長のアイキャッチ（1200×280のSVG、2026-11-16〜）。古いキャッシュには無い。 */
+  banner?: string | null;
   blocks: BlockNode[];
 }
 

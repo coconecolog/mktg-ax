@@ -148,8 +148,14 @@ const relatedTags = getRelatedTagsBySubcategories(post.subcategoryIds || []);
           </div>
         </header>
 
+{/* 2026-11-16〜：最初の画面に本文が入るよう、記事ページは横長のアイキャッチ（1200×280）を出す。
+    古いキャッシュで横長版が無いときだけ、16:9のサムネイルを出す */}
 {
-  post.thumbnail && (
+  post.banner ? (
+    <div class="mt-8 aspect-[30/7] w-full overflow-hidden border border-neutral-300 bg-neutral-100">
+      <img src={post.banner} alt={post.title} width="1200" height="280" class="h-full w-full object-cover" />
+    </div>
+  ) : post.thumbnail && (
     <div class="mt-8 aspect-video w-full overflow-hidden border border-neutral-300 bg-neutral-100">
       <img src={post.thumbnail} alt={post.title} class="h-full w-full object-cover" />
     </div>
