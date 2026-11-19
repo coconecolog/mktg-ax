@@ -1,12 +1,9 @@
 ---
-// 資料ダウンロードページ（2026-11-02リニューアル）。
-// 上から：
-//   ファーストビュー  左＝カテゴリ・種別ラベル・H1・日付・表紙・リード（資料説明）／右＝フォーム（PCは追従）
-//                    スマホは 表紙 → リード → 「無料でダウンロード」ボタン（フォームへ移動）→ フォーム の順
-//   2列              左＝こんな方におすすめ（ターゲット・目次）／右＝資料プレビュー2枚（クリックで拡大）
-//   本文             資料DBページ本文のブロック（ある場合だけ）
-//   執筆者           記事ページと同じ、上下の細線だけの1行
-//   ご要望・ご質問    ContactCta（カテゴリ一覧・タグ一覧は出さない）
+// 資料ダウンロードページ（2026-11-19改修）。
+// 2カラム：右＝フォーム（PCは画面に追従。左カラムの最後まで付いてくる）
+//          左＝上から カテゴリ・種別ラベル・H1・日付 → 表紙 → この資料の特徴 → 資料プレビュー2枚 → 説明文 → 本文ブロック（ある場合だけ）
+// スマホは 表紙の下に「無料でダウンロード」ボタン（フォームへ移動）、フォームは左カラムの内容のあと
+// その下（全幅）：執筆者（記事ページと同じ1行）→ ContactCta（カテゴリ一覧・タグ一覧は出さない）
 // 角丸なし・白黒。フォームの項目と送信後の動き（サンクスページへの遷移・GA4のresource_download）は変えていない。
 import type { GetStaticPaths } from "astro";
 import type { Resource } from "@/lib/types";
@@ -124,12 +121,6 @@ const inputClass =
           <img src={cover} alt={`${resource.title}の表紙`} class="h-full w-full object-cover" />
         </div>
 
-        {
-          resource.description && (
-            <p class="mt-8 whitespace-pre-line text-base leading-[1.9] text-ink-950">{resource.description}</p>
-          )
-        }
-
         {/* スマホだけ：フォームへ移動するボタン（PCはフォームが右に見えているので出さない） */}
         {
           resource.fileUrl && (
@@ -142,6 +133,68 @@ const inputClass =
           )
         }
 
+        {/* この資料の特徴（Notion「ターゲット・目次」の1行目が見出し、2行目以降が箇条書き） */}
+        {
+          hasTarget && (
+            <section class="mt-12">
+              <h2 class="border-l-4 border-ink-950 pl-3 text-lg font-extrabold text-ink-950">
+                {targetTocHeading || "この資料の特徴"}
+              </h2>
+              <ul class="mt-4 border-t border-neutral-200">
+                {targetTocItems.map((line) => (
+                  <li class="flex gap-2.5 border-b border-neutral-200 py-3 text-sm leading-relaxed text-neutral-700">
+                    <span class="shrink-0 font-bold text-ink-950" aria-hidden="true">✓</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {/* 資料プレビュー2枚（クリックで拡大） */}
+        {
+          hasPreview && (
+            <section class="mt-12">
+              <h2 class="border-l-4 border-ink-950 pl-3 text-lg font-extrabold text-ink-950">資料プレビュー</h2>
+              <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {previews.map((src, i) => (
+                  <button
+                    type="button"
+                    class="preview-thumb group relative block w-full overflow-hidden border border-neutral-300 bg-neutral-50"
+                    data-preview-src={src}
+                    data-preview-alt={`${resource.title}のプレビュー${i + 1}`}
+                    aria-label={`プレビュー${i + 1}を拡大する`}
+                  >
+                    <img
+                      src={src}
+                      alt={`${resource.title}のプレビュー${i + 1}`}
+                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
+                      loading="lazy"
+                    />
+                    <span class="absolute bottom-0 right-0 bg-ink-950 px-2 py-0.5 text-[11px] font-bold text-white">拡大</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )
+        }
+
+        {/* 説明文 */}
+        {
+          resource.description && (
+            <p class="mt-12 whitespace-pre-line text-base leading-[1.9] text-ink-950">{resource.description}</p>
+          )
+        }
+
+        {/* 資料DBページ本文のブロック（ある場合だけ） */}
+        {
+          resource.blocks.length > 0 && (
+            <div class="prose-notion mt-12 w-full">
+              <NotionBlocks blocks={resource.blocks} />
+            </div>
+          )
+        }
       </div>
 
       <aside id="download" class="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
@@ -210,67 +263,6 @@ const inputClass =
         </div>
       </aside>
     </div>
-
-    {/* 2列：こんな方におすすめ／資料プレビュー（どちらか一方しかなければ全幅） */}
-    {
-      (hasTarget || hasPreview) && (
-        <div
-          class:list={[
-            "mt-16 grid grid-cols-1 gap-10",
-            hasTarget && hasPreview && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]",
-          ]}
-        >
-          {hasTarget && (
-            <section>
-              <h2 class="border-l-4 border-ink-950 pl-3 text-lg font-extrabold text-ink-950">
-                {targetTocHeading || "こんな方におすすめ"}
-              </h2>
-              <ul class="mt-4 border-t border-neutral-200">
-                {targetTocItems.map((line) => (
-                  <li class="flex gap-2.5 border-b border-neutral-200 py-3 text-sm leading-relaxed text-neutral-700">
-                    <span class="shrink-0 font-bold text-ink-950" aria-hidden="true">✓</span>
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {hasPreview && (
-            <section>
-              <h2 class="border-l-4 border-ink-950 pl-3 text-lg font-extrabold text-ink-950">資料プレビュー</h2>
-              <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {previews.map((src, i) => (
-                  <button
-                    type="button"
-                    class="preview-thumb group relative block w-full overflow-hidden border border-neutral-300 bg-neutral-50"
-                    data-preview-src={src}
-                    data-preview-alt={`${resource.title}のプレビュー${i + 1}`}
-                    aria-label={`プレビュー${i + 1}を拡大する`}
-                  >
-                    <img
-                      src={src}
-                      alt={`${resource.title}のプレビュー${i + 1}`}
-                      class="aspect-video w-full object-cover transition group-hover:opacity-90"
-                      loading="lazy"
-                    />
-                    <span class="absolute bottom-0 right-0 bg-ink-950 px-2 py-0.5 text-[11px] font-bold text-white">拡大</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      )
-    }
-
-    {
-      resource.blocks.length > 0 && (
-        <div class="prose-notion mt-14 w-full">
-          <NotionBlocks blocks={resource.blocks} />
-        </div>
-      )
-    }
 
     {/* 執筆者（記事ページと同じ、上下の細線だけの1行） */}
     {
