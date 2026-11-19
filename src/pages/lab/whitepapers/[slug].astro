@@ -1,9 +1,9 @@
 ---
 // 資料ダウンロードページ（2026-11-19改修）。
 // 2カラム：右＝フォーム（PCは画面に追従。左カラムの最後まで付いてくる）
-//          左＝上から カテゴリ・種別ラベル・H1・日付 → 表紙 → この資料の特徴 → 資料プレビュー2枚 → 説明文 → 本文ブロック（ある場合だけ）
+//          左＝上から カテゴリ・種別ラベル・H1・日付 → 表紙 → この資料の特徴 → 資料プレビュー2枚 → 説明文 → 本文ブロック（ある場合だけ）→ 執筆者
 // スマホは 表紙の下に「無料でダウンロード」ボタン（フォームへ移動）、フォームは左カラムの内容のあと
-// その下（全幅）：執筆者（記事ページと同じ1行）→ ContactCta（カテゴリ一覧・タグ一覧は出さない）
+// 左カラムの最後に執筆者（記事ページと同じ1行）。その下（全幅）：ContactCta（カテゴリ一覧・タグ一覧は出さない）
 // 角丸なし・白黒。フォームの項目と送信後の動き（サンクスページへの遷移・GA4のresource_download）は変えていない。
 import type { GetStaticPaths } from "astro";
 import type { Resource } from "@/lib/types";
@@ -195,6 +195,28 @@ const inputClass =
             </div>
           )
         }
+
+        {/* 執筆者（記事ページと同じ、上下の細線だけの1行） */}
+        {
+          author && (
+            <a
+              href={`/authors/${encodeURIComponent(toRouteSlug(author.name))}`}
+              class="group mt-12 flex items-center gap-3 border-y border-neutral-300 py-3 no-underline"
+            >
+              {author.image && (
+                <img src={author.image} alt={author.name} class="aspect-square h-9 w-9 shrink-0 rounded-full object-cover" loading="lazy" />
+              )}
+              <span class="min-w-0 flex-1 text-sm leading-relaxed">
+                <span class="text-neutral-500">執筆者</span>
+                <span class="ml-3 font-bold text-ink-950">{author.name}</span>
+                {author.expertise && <span class="ml-3 hidden text-neutral-500 sm:inline">{author.expertise.split("\n")[0]}</span>}
+              </span>
+              <span class="shrink-0 text-sm font-bold text-ink-950 group-hover:underline">
+                プロフィール<span aria-hidden="true" class="ml-1 inline-block transition-transform group-hover:translate-x-1">→</span>
+              </span>
+            </a>
+          )
+        }
       </div>
 
       <aside id="download" class="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
@@ -264,27 +286,6 @@ const inputClass =
       </aside>
     </div>
 
-    {/* 執筆者（記事ページと同じ、上下の細線だけの1行） */}
-    {
-      author && (
-        <a
-          href={`/authors/${encodeURIComponent(toRouteSlug(author.name))}`}
-          class="group mt-16 flex items-center gap-3 border-y border-neutral-300 py-3 no-underline"
-        >
-          {author.image && (
-            <img src={author.image} alt={author.name} class="aspect-square h-9 w-9 shrink-0 rounded-full object-cover" loading="lazy" />
-          )}
-          <span class="min-w-0 flex-1 text-sm leading-relaxed">
-            <span class="text-neutral-500">執筆者</span>
-            <span class="ml-3 font-bold text-ink-950">{author.name}</span>
-            {author.expertise && <span class="ml-3 hidden text-neutral-500 sm:inline">{author.expertise.split("\n")[0]}</span>}
-          </span>
-          <span class="shrink-0 text-sm font-bold text-ink-950 group-hover:underline">
-            プロフィール<span aria-hidden="true" class="ml-1 inline-block transition-transform group-hover:translate-x-1">→</span>
-          </span>
-        </a>
-      )
-    }
   </article>
 
   <ContactCta showSiteIndex={false} />
