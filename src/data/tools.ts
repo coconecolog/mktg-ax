@@ -167,18 +167,16 @@ export const KIT_GROUPS: KitGroup[] = [
 ];
 
 // カテゴリページ（/lab/category/…）の「このカテゴリで使えるKit」（2026-11-02）。
-// カテゴリ名に含まれる語で、出すKit（href）を2つ決める。上から順に見て、最初に当てはまったものを使う。
-// どれにも当てはまらないカテゴリ（戦略・組織など）は、これから作る人向けの2つを出す。
-// 2026-11-05：「分析」は「戦略・市場分析」にも含まれ、戦略のカテゴリにKPI系のKitが出ていたので語から外した
-// （データ分析の記事は「KPI・効果測定・分析」へ移り、そちらは「KPI」で当たる）。
+// カテゴリ名に含まれる語で、出すKit（href）を決める。上から順に見て、最初に当てはまったものを使う。
+// 2026-11-25：カテゴリを4つ（戦略・計画／リード獲得／ナーチャリング・商談化／分析・レポート）に作り直した。
+// 合うKitがまだないカテゴリ（リード獲得・ナーチャリング・商談化）は、メインのKitを出す（CATEGORY_KIT_DEFAULT）。
 const CATEGORY_KIT_RULES: { words: string[]; hrefs: string[] }[] = [
-  { words: ["予算", "ROI"], hrefs: ["/tools/budget-simulator", "/tools/budget-checker"] },
+  { words: ["戦略"], hrefs: ["/tools/budget-simulator", "/tools/budget-checker"] },
   // 2026-11-16：カニバリ解消（「kpi 管理 表」）。KPI管理表作成Kitは「KPI 逆算 ツール」を狙うため、カテゴリからリンクする
-  { words: ["KPI", "KGI"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check", "/tools/kpi-sheet-maker"] },
-  { words: ["施策"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis"] },
+  { words: ["分析"], hrefs: ["/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check", "/tools/kpi-sheet-maker"] },
 ];
-// 2026-11-15：どれにも当てはまらないカテゴリ（戦略・組織など）は、メインのKitのうちKPIの2つを出す
-const CATEGORY_KIT_DEFAULT = ["/tools/kpi-analysis", "/tools/kpi-check"];
+// どれにも当てはまらないカテゴリは、メインのKitのうち2つを出す
+const CATEGORY_KIT_DEFAULT = ["/tools/seo-monthly-report", "/tools/kpi-analysis"];
 
 export function getKitsForCategory(categoryName: string): Kit[] {
   const rule = CATEGORY_KIT_RULES.find((r) => r.words.some((w) => categoryName.includes(w)));
@@ -211,27 +209,27 @@ export const MAIN_KITS = [
 // hrefs は KIT_GROUPS のKitか OTHER_TOOLS のツール。メインのKitは「メイン」のラベルを付けて説明文を省く。該当がないカテゴリは書かない。
 export const TOOL_CATEGORIES: { name: string; hrefs: string[]; resources: { label: string; href: string }[] }[] = [
   {
-    name: "予算配分・投資判断",
-    hrefs: ["/tools/budget-simulator", "/tools/budget-checker", "/tools/roas-cac-simulator", "/tools/kpi-benchmark"],
+    name: "戦略・計画",
+    hrefs: ["/tools/budget-simulator", "/tools/budget-checker", "/tools/roas-cac-simulator", "/tools/kpi-benchmark", "/tools/inhouse-vs-outsource"],
     resources: [{ label: "年間予算表", href: "/lab/whitepapers/kgi-kpi-backcast-sheet" }],
   },
   {
-    name: "KPI・効果測定・分析",
+    name: "リード獲得",
+    hrefs: ["/tools/seo-aeo-aio-check"],
+    resources: [{ label: "SEO・AIO対策ガイド", href: "/lab/whitepapers/seo-measures-guide" }],
+  },
+  {
+    name: "ナーチャリング・商談化",
+    hrefs: ["/tools/ma-selection"],
+    resources: [{ label: "MAツール比較資料2026", href: "/lab/whitepapers/ma-tool-comparison-2026" }],
+  },
+  {
+    name: "分析・レポート",
     hrefs: ["/tools/kpi-sheet-maker", "/tools/seo-monthly-report", "/tools/kpi-analysis", "/tools/kpi-check"],
     resources: [
       { label: "KPI管理表", href: "/lab/whitepapers/kpi-management-template" },
       { label: "SEOの月次分析と改修の手順", href: "/lab/whitepapers/seo-monthly-analysis" },
     ],
-  },
-  {
-    name: "施策・AI活用",
-    hrefs: ["/tools/ma-selection", "/tools/seo-aeo-aio-check"],
-    resources: [],
-  },
-  {
-    name: "組織・人材育成",
-    hrefs: ["/tools/inhouse-vs-outsource"],
-    resources: [],
   },
 ];
 

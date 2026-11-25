@@ -1,10 +1,9 @@
 // カテゴリごとのミーアキャット（2026-10-29）。カテゴリページとサービスページで共通に使う。
-// カテゴリ名の語で決める（「戦略・市場分析」に「分析」が含まれるため、戦略を先に判定する）。
+// カテゴリ名の語で決める（2026-11-25：4カテゴリに作り直し）。
 const MEERKATS: [string, string][] = [
   ["戦略", "/images/meerkat/standing.svg"],
-  ["予算", "/images/meerkat/circle.svg"],
-  ["KPI", "/images/meerkat/flask-hold.svg"],
-  ["組織", "/images/meerkat/parent-child.svg"],
+  ["リード獲得", "/images/meerkat/circle.svg"],
+  ["ナーチャリング", "/images/meerkat/parent-child.svg"],
   ["分析", "/images/meerkat/in-flask.svg"],
 ];
 
