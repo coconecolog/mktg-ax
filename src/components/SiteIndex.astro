@@ -48,7 +48,7 @@ const categories = getAllCategories();
       <div class="mx-auto max-w-6xl px-5 py-12 md:py-14">
         <div>
           <h2 class="text-lg font-bold text-ink-950">カテゴリ一覧</h2>
-          <ul class="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-5">
+          <ul class="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((c) => (
               <li class="border-b border-neutral-300">
                 <a href={getCategoryPath(c.name)} class="group block py-4 text-sm font-bold text-ink-950 hover:underline">

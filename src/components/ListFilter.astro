@@ -3,7 +3,7 @@
 // 左から「キーワード検索（＋検索する）」「カテゴリ」「条件をクリア」を1行で並べる（スマホでは2段）。
 //
 // 絞り込む対象は target で指定した要素の中の [data-row]。各行には次の属性を付けておく。
-//   data-categories … カテゴリ名を「|」区切りで（例: "KPI・効果測定・分析|予算配分・投資判断"）
+//   data-categories … カテゴリ名を「|」区切りで（例: "分析・レポート|戦略・計画"）
 //   data-search     … キーワード検索の対象にする文字列（タイトル・説明・カテゴリ名など）
 //   data-paged-out  … 絞り込みをしていないときに隠しておく行（ページ送りで2ページ目以降に出る行）
 // ページ内に次の要素があれば、あわせて切り替える。
@@ -12,7 +12,7 @@
 //   [data-filter-off]    … 絞り込み中は隠す要素（ページ送りなど）
 //
 // mode="redirect" のときはページ内で絞り込まず、action のURLへ移動する（ブログの2ページ目以降で使う）。
-// 状態はURLのクエリ（?category=kpi-measurement&q=予算）と同期するので、絞り込んだ一覧へリンクできる。
+// 状態はURLのクエリ（?category=analytics&q=予算）と同期するので、絞り込んだ一覧へリンクできる。
 import { getAllCategories, getCategorySlug } from "@/lib/posts";
 
 interface Props {

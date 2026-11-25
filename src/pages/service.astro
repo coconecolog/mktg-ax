@@ -70,12 +70,12 @@ const contents = [
   },
 ];
 
-// 活用例で扱うテーマ。今はKPI（検索ボリュームで決定）。強いテーマに変えるときは category を変える。
-const FEATURED_THEME = { category: "KPI" };
+// 活用例で扱うテーマ。今は分析・レポート（KPI。検索ボリュームで決定）。強いテーマに変えるときは category を変える。
+const FEATURED_THEME = { category: "分析", label: "KPI" };
 
 // テーマごとの文言。カテゴリ名に key の語を含むものに使う。無いテーマはカテゴリ名・カテゴリ説明で出す
 const THEME_COPY: Record<string, { heading: string; lead: string; body: string; output: { title: string; body: string } }> = {
-  KPI: {
+  分析: {
     heading: "たとえば、KPIの「なぜ？」に答える。",
     lead: "目標をつくるだけでなく、\n説明できるKPIへ。",
     body: "KPIを決めるだけでは、責任者やチームが同じ方向を見て動きにくい。目標の根拠、測定の仕方、判断の基準を整理し、説明しやすい形にまとめることが必要です。",
@@ -255,7 +255,7 @@ const heroMeerkats = ALL_MEERKATS.slice(0, 3);
         <div class="h-[2px] bg-ink-950"></div>
         <div class="mt-6 flex items-center justify-between gap-4">
           <h2 class="text-2xl font-bold leading-[1.5] text-ink-950 md:text-[30px]">{featuredCopy?.heading ?? `たとえば、${featuredCategory.name}に取り組む。`}</h2>
-          <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">USE CASE / {FEATURED_THEME.category}</p>
+          <p class="shrink-0 text-[11px] font-semibold tracking-wider text-[#7b7c83]">USE CASE / {FEATURED_THEME.label}</p>
         </div>
         <div class="mt-8 grid gap-10 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14">
           <div>

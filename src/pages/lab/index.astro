@@ -4,7 +4,7 @@
 // →「カテゴリから探す」（カテゴリトップへの導線）
 // →「Kitで分析する」（カテゴリの下の薄いグレー枠のレコメンド。メインのKit 3つ＝src/data/tools.ts の MAIN_KITS。カード全体がリンク）
 // →「すべての記事・資料」… 全件をページに載せ、検索・形式・カテゴリ・並び順・ページ送りをページ内のJSで行う。
-// 絞り込みの状態はURLのクエリ（?type=post&category=budget-roi&q=…&sort=old&page=2）に反映するので、
+// 絞り込みの状態はURLのクエリ（?type=post&category=strategy&q=…&sort=old&page=2）に反映するので、
 // 「記事だけ」「資料だけ」の一覧へも /lab?type=post・/lab?type=resource でリンクできる。
 // 旧URL（/library・/library/2・/library/blog・/library/resources）は public/_redirects でここへ301転送している。
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -65,7 +65,7 @@ const allTags = getAllTagNamesByCount();
       categories.length > 0 && (
         <section aria-labelledby="lab-categories" class="mt-12 border-t-2 border-ink-950 pt-8">
           <h2 id="lab-categories" class="text-xl font-bold text-ink-950">カテゴリから探す</h2>
-          <ul class="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <ul class="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((c) => (
               <li>
                 <a href={c.path} class="group flex h-full items-center justify-between gap-3 border border-neutral-300 bg-white px-4 py-3.5 text-sm font-bold text-ink-950 hover:border-ink-950">

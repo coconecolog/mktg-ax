@@ -79,16 +79,14 @@ const issueCategories = [...getAllCategories()]
 
 // カテゴリのアイコン（並び順の1番目から順に使う。足りないときは最初に戻る）
 const ISSUE_ICONS = [
-  // 戦略・市場分析
+  // 戦略・計画
   '<rect x="4" y="4" width="11" height="11"/><path d="M9.5 7v6M6.5 10h6"/><path d="M15 15l5 5"/>',
-  // 予算配分・投資判断
-  '<rect x="3" y="4" width="8" height="8"/><path d="M5.5 8h3"/><circle cx="17" cy="15" r="4"/><path d="M17 13v4M15 15h4"/>',
-  // KPI・効果測定・分析
-  '<rect x="9" y="3" width="6" height="4"/><rect x="3" y="16" width="6" height="4"/><rect x="15" y="16" width="6" height="4"/><path d="M12 7v4M6 16v-5h12v5"/>',
-  // 施策・AI活用（的と矢印＝施策を実行する）
+  // リード獲得（的と矢印）
   '<circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4"/><path d="M11 13l9-9M16 4h4v4"/>',
-  // 組織・人材育成
+  // ナーチャリング・商談化（マーケから営業へ渡す）
   '<circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 20c0-3 2-5 5-5s5 2 5 5M12 20c0-3 2-5 5-5s5 2 5 5"/>',
+  // 分析・レポート
+  '<rect x="9" y="3" width="6" height="4"/><rect x="3" y="16" width="6" height="4"/><rect x="15" y="16" width="6" height="4"/><path d="M12 7v4M6 16v-5h12v5"/>',
 ];
 
 // ===== 03 新着記事・資料（左に記事、右に資料） =====
@@ -296,7 +294,7 @@ const latestResources = getLibraryItems("resource").slice(0, HOME_LATEST.count);
         <section id="issues" class="scroll-mt-20 bg-neutral-100">
           <div class="mx-auto max-w-6xl px-5 py-16 md:py-20">
             <h2 class="text-2xl font-extrabold tracking-tight md:text-[2rem]">{HOME_ISSUES.heading}</h2>
-            <div class="mt-10 grid gap-px bg-neutral-200 sm:grid-cols-2 lg:grid-cols-5">
+            <div class="mt-10 grid gap-px bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4">
               {issueCategories.map((cat, i) => (
                 <a href={cat.href} class="group flex flex-col bg-white p-6 transition-colors hover:bg-neutral-50">
                   <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true" set:html={ISSUE_ICONS[i % ISSUE_ICONS.length]} />
